@@ -976,7 +976,7 @@
   }
   function sellerFromShopRow(profile, shop, authUser){
     var status = String(shop.status || "pending").toLowerCase();
-    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_license || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, vacation: !!shop.vacation, balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [] };
+    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, vacation: !!shop.vacation, balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [] };
   }
   async function loadCurrentSellerFromSupabase(authUser){
     if (!supabaseConnected || !supabase || !authUser) return null;
@@ -1145,15 +1145,32 @@
     if (supabaseConnected && supabase) {
       try {
         var signUpRes = await supabase.auth.signUp({ email: em, password: pw, options: { data: { full_name: owner, role: "seller" } } });
-        if (signUpRes.error) { fail(signUpRes.error.message || "Sign up hoy ni — abar chesta korun."); return; }
-        var newUser = signUpRes.data && signUpRes.data.user;
-        if (!newUser) { fail("Account toiri hoyeche kintu email confirmation lagte pare. Email check kore login korun."); return; }
-        var profileRes = await supabase.from('profiles').insert({ id: newUser.id, email: em, full_name: owner, role: "seller", phone: ph });
+        var newUser = null;
+        if (signUpRes.error) {
+          if (/already registered/i.test(signUpRes.error.message || "")) {
+            var signInRes = await supabase.auth.signInWithPassword({ email: em, password: pw });
+            if (signInRes.error || !signInRes.data || !signInRes.data.user) { fail("Ei email diye agei account ache — login korun, ba onno email diye chesta korun."); return; }
+            newUser = signInRes.data.user;
+          } else { fail(signUpRes.error.message || "Sign up hoy ni — abar chesta korun."); return; }
+        } else {
+          newUser = signUpRes.data && signUpRes.data.user;
+          if (!newUser) { fail("Account toiri hoyeche kintu email confirmation lagte pare. Email check kore login korun."); return; }
+        }
+        var profileRes = await supabase.from('profiles').upsert({ id: newUser.id, email: em, full_name: owner, role: "seller", phone: ph }, { onConflict: "id" });
         if (profileRes.error) { fail("Profile save hoy ni: " + profileRes.error.message); return; }
-        var shopPayload = { owner_id: newUser.id, name: shop, category: cat, district: district, pickup_address: address, payout_method: payMethod, payout_account: payAccount, payout_name: payName, nid_number: nid, trade_license: trade, status: "pending" };
-        var shopRes = await supabase.from('shops').insert(shopPayload).select().single();
-        if (shopRes.error) { fail("Shop save hoy ni: " + shopRes.error.message); return; }
-        var shopRow = shopRes.data;
+        var slug = shop.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + String(newUser.id).slice(0, 6);
+        var shopPayload = { owner_id: newUser.id, shop_name: shop, slug: slug, category: cat, district: district, pickup_address: address, payout_method: payMethod, payout_account: payAccount, payout_name: payName, nid_number: nid, trade_licence: trade, owner_phone: ph, status: "pending" };
+        var shopRow = null;
+        var existingShop = await supabase.from('shops').select('*').eq('owner_id', newUser.id).maybeSingle();
+        if (!existingShop.error && existingShop.data) {
+          var shopUpd = await supabase.from('shops').update(shopPayload).eq('id', existingShop.data.id).select().single();
+          if (shopUpd.error) { fail("Shop save hoy ni: " + shopUpd.error.message); return; }
+          shopRow = shopUpd.data;
+        } else {
+          var shopRes = await supabase.from('shops').insert(shopPayload).select().single();
+          if (shopRes.error) { fail("Shop save hoy ni: " + shopRes.error.message); return; }
+          shopRow = shopRes.data;
+        }
         var sellerSb = sellerFromShopRow({ full_name: owner, email: em, phone: ph }, shopRow, newUser);
         DB.sellers.push(sellerSb);
         session.sellerId = sellerSb.id;
@@ -2001,7 +2018,7 @@
     if (!s.owner) { toast("Owner er nam din."); return; }
     if (!/^01\d{9}$/.test(s.phone.replace(/[-\s]/g, ""))) { toast("Sothik 11 digit er mobile number din (01 diye shuru)."); return; }
     if (s.address.length < 8) { toast("Pickup address bistarito likhun."); return; }
-    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ name: s.shop, pickup_address: s.address, description: s.desc }).eq('id', s.shopId); await supabase.from('profiles').update({ full_name: s.owner, phone: s.phone }).eq('id', s.id); } catch(err){} }
+    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ shop_name: s.shop, pickup_address: s.address, description: s.desc }).eq('id', s.shopId); await supabase.from('profiles').update({ full_name: s.owner, phone: s.phone }).eq('id', s.id); } catch(err){} }
     syncShopUI(); toast("Shop information save hoyeche");
   });
   $("payoutForm").addEventListener("submit", async function(e){
