@@ -1,0 +1,1861 @@
+<!doctype html>
+<!--
+  AnboBD production build (static site).
+  Supabase: project AnboBD, https://qxkgbszrpcmuerrezupx.supabase.co
+  CONFIG NOTE: the Supabase anon key must be set as a Vercel environment
+  variable (NEXT_PUBLIC_SUPABASE_ANON_KEY) and injected into the blank
+  SUPABASE_CONFIG slot in this file at deploy time. Never commit a key
+  to Git. The service-role key must never be used in the browser.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>AnboBD Seller Center</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@600;700;800&display=swap" rel="stylesheet" />
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2.25rem; }
+      :root{
+        --bg:#eef3f0; --surface:#ffffff; --surface2:#f4f8f5; --ink:#122019; --muted:#5d6f66;
+        --line:#dce6df; --brand:#0b7a55; --brand-dark:#075c40; --brand-soft:#e2f2ea;
+        --amber:#e8862e; --amber-soft:#fdf0e1; --red:#d64545; --red-soft:#fdecec;
+        --blue:#2563eb; --blue-soft:#e7eefc; --violet:#7c4dff; --violet-soft:#efe9ff;
+        --shadow:0 10px 30px rgba(10,40,28,.10); --radius:14px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#0c130f; --surface:#141d17; --surface2:#18231b; --ink:#e9f2ec; --muted:#9db3a6;
+          --line:#26352b; --brand:#2fbf8f; --brand-dark:#2fbf8f; --brand-soft:#173528;
+          --amber:#f0a04b; --amber-soft:#33240f; --red:#f07676; --red-soft:#3a1a1a;
+          --blue:#7aa5ff; --blue-soft:#1a2745; --violet:#b79bff; --violet-soft:#2a2145;
+          --shadow:0 10px 30px rgba(0,0,0,.45);
+        }
+      }
+      *{box-sizing:border-box}
+      html,body{margin:0;padding:0}
+      body{font-family:"Plus Jakarta Sans",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5}
+      h1,h2,h3,.display{font-family:"Sora","Plus Jakarta Sans",sans-serif}
+      button{font-family:inherit;cursor:pointer}
+      input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
+      a{color:var(--brand)}
+      .hidden{display:none !important}
+
+      /* ---------- Buttons / inputs ---------- */
+      .btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;border:1px solid transparent;border-radius:10px;padding:.5rem 1rem;font-weight:700;font-size:.9rem;background:var(--brand);color:#fff;transition:background .15s,transform .1s}
+      .btn:hover{background:var(--brand-dark)}
+      .btn:active{transform:scale(.98)}
+      .btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--line)}
+      .btn.ghost:hover{border-color:var(--brand);color:var(--brand)}
+      .btn.amber{background:var(--amber);color:#fff}
+      .btn.danger{background:var(--surface);color:var(--red);border-color:var(--line)}
+      .btn.danger:hover{border-color:var(--red)}
+      .btn.sm{padding:.3rem .7rem;font-size:.82rem;min-height:2rem;border-radius:8px}
+      .btn:disabled{opacity:.5;cursor:not-allowed}
+      .field{margin-bottom:.9rem}
+      .field label{display:block;font-size:.8rem;font-weight:700;margin-bottom:.35rem;color:var(--ink)}
+      .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:var(--surface);outline:none}
+      .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand)}
+      .field .hint{font-size:.78rem;color:var(--muted);margin-top:.25rem}
+      .err{color:var(--red);font-size:.83rem;font-weight:600;min-height:1.2em}
+      .form-section{font-family:"Sora";font-weight:800;font-size:.95rem;margin:1.25rem 0 .7rem;padding-top:1.1rem;border-top:1px solid var(--line)}
+      .form-section:first-of-type{border-top:0;padding-top:0;margin-top:.4rem}
+      .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+      @media(max-width:520px){.grid-2{grid-template-columns:1fr}}
+
+      /* ---------- Login / Register ---------- */
+      #loginView{min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:1.6rem 1.2rem 2.5rem;background:
+        radial-gradient(700px 420px at 12% -10%, rgba(11,122,85,.28), transparent 60%),
+        radial-gradient(640px 420px at 105% 110%, rgba(232,134,46,.22), transparent 60%), var(--bg)}
+      .login-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);width:100%;max-width:460px;padding:2rem 1.8rem}
+      .logo-row{display:flex;align-items:center;gap:.7rem;margin-bottom:1.4rem}
+      .logo-mark{width:46px;height:46px;border-radius:13px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-family:"Sora";font-weight:800;font-size:1.25rem;box-shadow:0 8px 18px rgba(11,122,85,.35)}
+      .logo-row .name{font-family:"Sora";font-weight:800;font-size:1.3rem;line-height:1.1}
+      .logo-row .sub{font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+      .login-card h1{font-size:1.45rem;margin:.2rem 0 .3rem}
+      .login-card p.lead{color:var(--muted);margin:0 0 1.3rem;font-size:.93rem}
+      .pass-wrap{position:relative}
+      .pass-wrap input{padding-right:4.4rem}
+      .pass-toggle{position:absolute;right:.35rem;top:50%;transform:translateY(-50%);border:0;background:transparent;color:var(--brand);font-weight:700;font-size:.82rem;padding:.3rem .55rem;min-height:2rem;border-radius:7px}
+      .pass-toggle:hover{background:var(--brand-soft)}
+      .tabs{display:flex;background:var(--surface2);border-radius:11px;padding:4px;margin-bottom:1.3rem}
+      .tabs button{flex:1;border:0;background:transparent;border-radius:8px;font-weight:700;padding:.45rem;color:var(--muted)}
+      .tabs button.on{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.08)}
+      .auth-note{background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:.8rem 1rem;font-size:.86rem;color:var(--muted);margin-top:1.1rem}
+      .auth-note b{color:var(--ink)}
+
+      /* ---------- Pending approval ---------- */
+      #pendingView{min-height:100dvh;display:flex;align-items:flex-start;justify-content:center;padding:1.6rem 1.2rem 2.5rem;background:
+        radial-gradient(700px 420px at 12% -10%, rgba(11,122,85,.28), transparent 60%),
+        radial-gradient(640px 420px at 105% 110%, rgba(232,134,46,.22), transparent 60%), var(--bg)}
+      .pending-card{background:var(--surface);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);width:100%;max-width:560px;padding:2rem 1.8rem}
+      .pending-card h1{font-size:1.4rem;margin:.2rem 0 .3rem}
+      .pending-card p.lead{color:var(--muted);margin:0 0 1.2rem;font-size:.93rem}
+      .status-pill{display:inline-flex;align-items:center;gap:.4rem;background:var(--amber-soft);color:#b25f10;font-weight:800;font-size:.8rem;padding:.3rem .8rem;border-radius:99px}
+      .status-pill::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor}
+      @media (prefers-color-scheme: dark){.status-pill{color:var(--amber)}}
+      .lock-list{list-style:none;margin:.6rem 0 0;padding:0;font-size:.9rem}
+      .lock-list li{display:flex;gap:.55rem;align-items:center;padding:.32rem 0;color:var(--muted)}
+      .lock-list li svg{flex:none;color:var(--amber)}
+
+      /* ---------- App shell ---------- */
+      #appView{display:grid;grid-template-columns:248px 1fr;min-height:100dvh}
+      aside{background:var(--surface);border-right:1px solid var(--line);padding:1.1rem .9rem;display:flex;flex-direction:column;gap:.25rem;position:sticky;top:0;height:100dvh;z-index:40}
+      aside .logo-row{margin-bottom:1.1rem;padding:0 .3rem}
+      .shop-chip{display:flex;gap:.65rem;align-items:center;background:var(--surface2);border:1px solid var(--line);border-radius:12px;padding:.6rem .7rem;margin-bottom:1rem}
+      .shop-avatar{width:40px;height:40px;border-radius:10px;background:var(--amber);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:"Sora";flex:none}
+      .shop-chip .sname{font-weight:800;font-size:.92rem;line-height:1.15}
+      .shop-chip .smeta{font-size:.74rem;color:var(--muted)}
+      .badge-verified{display:inline-block;background:var(--brand-soft);color:var(--brand-dark);font-size:.66rem;font-weight:800;padding:.08rem .45rem;border-radius:99px;vertical-align:middle;margin-left:.3rem}
+      @media (prefers-color-scheme: dark){.badge-verified{color:var(--brand)}}
+      nav.side{display:flex;flex-direction:column;gap:.2rem}
+      nav.side button{display:flex;align-items:center;gap:.65rem;border:0;background:transparent;text-align:left;padding:.6rem .7rem;border-radius:10px;font-weight:600;font-size:.93rem;color:var(--muted);width:100%}
+      nav.side button svg{flex:none}
+      nav.side button:hover{background:var(--surface2);color:var(--ink)}
+      nav.side button.on{background:var(--brand-soft);color:var(--brand-dark)}
+      @media (prefers-color-scheme: dark){nav.side button.on{color:var(--brand)}}
+      nav.side button .pill{margin-left:auto;background:var(--amber);color:#fff;font-size:.7rem;font-weight:800;border-radius:99px;padding:.05rem .5rem}
+      .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:.8rem}
+      .side-foot button{display:flex;align-items:center;gap:.6rem;width:100%;border:0;background:transparent;padding:.55rem .7rem;border-radius:10px;font-weight:600;color:var(--muted)}
+      .side-foot button:hover{background:var(--red-soft);color:var(--red)}
+
+      main{padding:1.4rem 1.6rem 3rem;min-width:0}
+      .topbar{display:flex;align-items:center;gap:1rem;margin-bottom:1.4rem;flex-wrap:wrap}
+      .topbar h1{font-size:1.5rem;margin:0}
+      .topbar .sub{color:var(--muted);font-size:.9rem}
+      .topbar .spacer{flex:1}
+      .icon-btn{width:42px;height:42px;border-radius:11px;border:1px solid var(--line);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;color:var(--muted);position:relative}
+      .icon-btn:hover{color:var(--brand);border-color:var(--brand)}
+      .icon-btn .dot{position:absolute;top:9px;right:10px;width:8px;height:8px;border-radius:50%;background:var(--amber)}
+      #menuBtn{display:none}
+      .search-box{display:flex;align-items:center;gap:.5rem;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:0 .8rem;min-height:42px;flex:0 1 320px}
+      .search-box input{border:0;outline:0;background:transparent;width:100%;min-height:40px}
+      .search-box svg{color:var(--muted);flex:none}
+
+      /* ---------- Cards & stats ---------- */
+      .grid-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.2rem}
+      .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.05rem 1.1rem}
+      .stat .lbl{font-size:.8rem;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:.5rem}
+      .stat .val{font-family:"Sora";font-size:1.55rem;font-weight:800;margin:.3rem 0 .15rem}
+      .stat .delta{font-size:.8rem;font-weight:700}
+      .up{color:var(--brand)} .down{color:var(--red)}
+      .stat .ic{width:34px;height:34px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center}
+      .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.15rem 1.2rem}
+      .card h3{margin:0 0 .2rem;font-size:1.02rem}
+      .card .csub{color:var(--muted);font-size:.85rem;margin-bottom:.9rem}
+      .cols-2{display:grid;grid-template-columns:1.9fr 1fr;gap:1rem;margin-bottom:1.2rem}
+      .cols-2b{display:grid;grid-template-columns:1fr 1.9fr;gap:1rem;margin-bottom:1.2rem}
+      .onboard-steps{list-style:none;margin:.4rem 0 0;padding:0}
+      .onboard-steps li{display:flex;gap:.8rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px dashed var(--line)}
+      .onboard-steps li:last-child{border-bottom:0}
+      .onboard-steps .n{width:28px;height:28px;border-radius:50%;background:var(--brand-soft);color:var(--brand-dark);font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;font-size:.85rem}
+      @media (prefers-color-scheme: dark){.onboard-steps .n{color:var(--brand)}}
+      .onboard-steps .ot{font-weight:800;font-size:.93rem}
+      .onboard-steps .os{font-size:.84rem;color:var(--muted)}
+
+      /* chart */
+      .chart-wrap{display:flex;align-items:flex-end;gap:.6rem;height:170px;padding-top:.6rem}
+      .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:.45rem;height:100%;justify-content:flex-end}
+      .bar{width:100%;max-width:44px;border-radius:7px 7px 3px 3px;background:var(--brand);position:relative;transition:height .5s}
+      .bar.amber{background:var(--amber)}
+      .bar:hover{opacity:.85}
+      .bar-col .d{font-size:.74rem;color:var(--muted);font-weight:700}
+      .bar-col .v{font-size:.72rem;font-weight:800}
+
+      /* tables */
+      .tbl-wrap{overflow-x:auto}
+      table{width:100%;border-collapse:collapse;font-size:.9rem;min-width:560px}
+      th{text-align:left;font-size:.74rem;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:.55rem .6rem;border-bottom:1.5px solid var(--line)}
+      td{padding:.65rem .6rem;border-bottom:1px solid var(--line);vertical-align:middle}
+      tr:last-child td{border-bottom:0}
+      .prod-cell{display:flex;align-items:center;gap:.7rem;min-width:200px}
+      .thumb{width:44px;height:44px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff}
+      .thumb svg{width:22px;height:22px}
+      .pname{font-weight:700;line-height:1.25}
+      .psku{font-size:.76rem;color:var(--muted)}
+      .status{display:inline-flex;align-items:center;gap:.35rem;font-size:.76rem;font-weight:800;padding:.22rem .6rem;border-radius:99px;white-space:nowrap}
+      .status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+      .st-pending{background:var(--amber-soft);color:#b25f10}
+      .st-confirmed{background:var(--blue-soft);color:var(--blue)}
+      .st-shipped{background:var(--violet-soft);color:var(--violet)}
+      .st-delivered{background:var(--brand-soft);color:var(--brand-dark)}
+      .st-cancelled{background:var(--red-soft);color:var(--red)}
+      .st-active{background:var(--brand-soft);color:var(--brand-dark)}
+      .st-paused{background:var(--amber-soft);color:#b25f10}
+      .st-processing{background:var(--blue-soft);color:var(--blue)}
+      .st-paid{background:var(--brand-soft);color:var(--brand-dark)}
+      @media (prefers-color-scheme: dark){.st-pending,.st-paused{color:var(--amber)} .st-delivered,.st-active,.st-paid{color:var(--brand)}}
+      .stockbar{height:7px;border-radius:99px;background:var(--surface2);overflow:hidden;width:90px;margin-top:.3rem;border:1px solid var(--line)}
+      .stockbar i{display:block;height:100%;background:var(--brand)}
+      .stockbar i.low{background:var(--red)} .stockbar i.mid{background:var(--amber)}
+      .row-actions{display:flex;gap:.35rem;flex-wrap:wrap}
+      .mini-btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:.28rem .6rem;font-size:.8rem;font-weight:700;min-height:2rem}
+      .mini-btn:hover{border-color:var(--brand);color:var(--brand)}
+      .mini-btn.red:hover{border-color:var(--red);color:var(--red)}
+
+      .filter-row{display:flex;gap:.6rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+      .chip-row{display:flex;gap:.45rem;flex-wrap:wrap}
+      .fchip{border:1.5px solid var(--line);background:var(--surface);border-radius:99px;padding:.35rem .9rem;font-weight:700;font-size:.84rem;min-height:2.25rem}
+      .fchip.on{background:var(--brand);border-color:var(--brand);color:#fff}
+      .filter-row select{border:1.5px solid var(--line);border-radius:10px;padding:.45rem .6rem;background:var(--surface)}
+
+      /* payout */
+      .payout-hero{background:var(--brand);color:#fff;border-radius:var(--radius);padding:1.3rem 1.4rem;display:flex;flex-wrap:wrap;gap:1.2rem;align-items:center;margin-bottom:1.2rem}
+      .payout-hero .amt{font-family:"Sora";font-size:2rem;font-weight:800;line-height:1.1}
+      .payout-hero .lbl{opacity:.85;font-size:.85rem;font-weight:600}
+      .payout-hero .btn{background:#fff;color:var(--brand-dark)}
+      .comm-row{display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px dashed var(--line);font-size:.92rem}
+      .comm-row:last-child{border-bottom:0}
+
+      /* staff */
+      .staff-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem}
+      .staff-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.1rem}
+      .staff-head{display:flex;gap:.75rem;align-items:center;margin-bottom:.7rem}
+      .avatar{width:46px;height:46px;border-radius:50%;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-family:"Sora";flex:none}
+      .role-tag{font-size:.72rem;font-weight:800;padding:.15rem .55rem;border-radius:99px;background:var(--violet-soft);color:var(--violet)}
+      .perm-list{list-style:none;margin:.6rem 0;padding:0;font-size:.83rem;color:var(--muted)}
+      .perm-list li{display:flex;gap:.45rem;align-items:center;padding:.14rem 0}
+      .perm-list li svg{color:var(--brand);flex:none}
+      .perm-list li.no{opacity:.45}.perm-list li.no svg{color:var(--muted)}
+      .perm-matrix{font-size:.85rem}
+      .perm-matrix td,.perm-matrix th{text-align:center}
+      .perm-matrix td:first-child,.perm-matrix th:first-child{text-align:left}
+      .yes{color:var(--brand);font-weight:800}.nope{color:var(--muted)}
+
+      /* modal & drawer */
+      .overlay{position:fixed;inset:0;background:rgba(8,20,14,.55);z-index:80;display:flex;align-items:flex-end;justify-content:center;padding:0}
+      .modal{background:var(--surface);width:100%;max-width:520px;max-height:92dvh;overflow-y:auto;border-radius:20px 20px 0 0;padding:1.5rem;animation:up .25s ease}
+      @media(min-width:640px){.overlay{align-items:center;padding:1rem}.modal{border-radius:20px}}
+      @keyframes up{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
+      .modal h2{margin:0 0 .3rem;font-size:1.25rem}
+      .modal .msub{color:var(--muted);font-size:.9rem;margin-bottom:1.1rem}
+      .modal-x{float:right}
+      .drawer-wrap{position:fixed;inset:0;background:rgba(8,20,14,.55);z-index:80}
+      .drawer{position:absolute;top:0;right:0;height:100%;width:min(440px,94vw);background:var(--surface);overflow-y:auto;padding:1.4rem;animation:slidein .25s ease}
+      @keyframes slidein{from{transform:translateX(40px);opacity:0}to{transform:none;opacity:1}}
+      .timeline{list-style:none;margin:1rem 0;padding:0}
+      .timeline li{display:flex;gap:.8rem;padding-bottom:1.1rem;position:relative}
+      .timeline li::before{content:"";position:absolute;left:10px;top:24px;bottom:0;width:2px;background:var(--line)}
+      .timeline li:last-child::before{display:none}
+      .timeline .tdot{width:22px;height:22px;border-radius:50%;background:var(--surface2);border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;z-index:1;font-size:.7rem}
+      .timeline li.done .tdot{background:var(--brand);border-color:var(--brand);color:#fff}
+      .timeline li.now .tdot{background:var(--amber);border-color:var(--amber);color:#fff}
+      .timeline .tt{font-weight:700;font-size:.92rem}
+      .timeline .ts{font-size:.78rem;color:var(--muted)}
+      .kv{display:flex;justify-content:space-between;gap:1rem;padding:.45rem 0;border-bottom:1px dashed var(--line);font-size:.92rem}
+      .kv:last-child{border:0}
+      .kv b{text-align:right}
+
+      /* toast */
+      #toast{position:fixed;bottom:1.2rem;left:50%;transform:translate(-50%,80px);background:var(--ink);color:var(--bg);padding:.8rem 1.2rem;border-radius:12px;font-weight:700;font-size:.9rem;z-index:200;transition:transform .3s;box-shadow:var(--shadow);max-width:92vw;text-align:center}
+      #toast.show{transform:translate(-50%,0)}
+
+      /* ---------- order pipeline / coupons / campaigns ---------- */
+      .st-awaitingadmin{background:var(--amber-soft);color:#b25f10}
+      .st-adminconfirmed{background:#e0f2fe;color:#0369a1}
+      .st-readytoship{background:var(--blue-soft);color:var(--blue)}
+      .st-packed{background:var(--violet-soft);color:var(--violet)}
+      .st-returnrequested{background:var(--amber-soft);color:#b25f10}
+      .st-returnaccepted{background:var(--brand-soft);color:var(--brand-dark)}
+      .st-returnrejected{background:var(--red-soft);color:var(--red)}
+      @media (prefers-color-scheme: dark){.st-adminconfirmed{background:#082f49;color:#7dd3fc}}
+      .st-approved,.st-live{background:var(--brand-soft);color:var(--brand-dark)}
+      .st-pendingapproval{background:var(--amber-soft);color:#b25f10}
+      .st-rejected{background:var(--red-soft);color:var(--red)}
+      @media (prefers-color-scheme: dark){.st-awaitingadmin,.st-pendingapproval{color:var(--amber)} .st-approved,.st-live{color:var(--brand)}}
+      .flow-strip{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:1.2rem}
+      .flow-step{flex:1;min-width:130px;display:flex;gap:.6rem;align-items:flex-start}
+      .flow-step .n{width:30px;height:30px;border-radius:50%;background:var(--brand);color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;flex:none;font-size:.85rem}
+      .flow-step.lock .n{background:var(--amber)}
+      .flow-step .ft{font-weight:800;font-size:.9rem;line-height:1.25}
+      .flow-step .fs{font-size:.78rem;color:var(--muted)}
+      .flow-arrow{align-self:center;color:var(--muted);font-weight:800;padding:0 .4rem}
+      .locked-note{background:var(--amber-soft);border:1px dashed var(--amber);border-radius:10px;padding:.7rem .9rem;font-size:.88rem;margin-top:.9rem}
+      .coupon-grid,.camp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:1rem;margin-bottom:1.2rem}
+      .coupon-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.05rem 1.1rem}
+      .coupon-code{font-family:"Sora";font-weight:800;font-size:1.15rem;letter-spacing:.03em}
+      .ticket{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);color:#fff;border-radius:12px;padding:.95rem 1.05rem;position:relative;overflow:hidden}
+      .ticket::before,.ticket::after{content:"";position:absolute;width:22px;height:22px;border-radius:50%;background:var(--surface);top:50%;transform:translateY(-50%)}
+      .ticket::before{left:-11px}.ticket::after{right:-11px}
+      .ticket .tcode{font-family:"Sora";font-weight:800;font-size:1.05rem;letter-spacing:.04em}
+      .ticket .tval{font-family:"Sora";font-weight:800;font-size:1.5rem;line-height:1.1}
+      .usebar{height:7px;border-radius:99px;background:var(--surface2);border:1px solid var(--line);overflow:hidden;margin-top:.35rem}
+      .usebar i{display:block;height:100%;background:var(--amber)}
+      .camp-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.15rem 1.2rem}
+      .camp-banner{border-radius:10px;padding:.8rem .95rem;color:#fff;margin-bottom:.8rem}
+      .camp-banner .ct{font-family:"Sora";font-weight:800;font-size:1.05rem}
+      .sub-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:.8rem}
+      .todo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin-bottom:1.2rem}
+      .todo{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem;text-align:left;width:100%;font:inherit;color:inherit}
+      .todo:hover{border-color:var(--brand)}
+      .todo .tv{font-family:"Sora";font-size:1.4rem;font-weight:800}
+      .todo .tl{font-size:.84rem;color:var(--muted);font-weight:600}
+      .empty{padding:2.2rem 1rem;text-align:center;color:var(--muted)}
+      .empty .et{font-family:"Sora";font-weight:800;color:var(--ink);font-size:1.02rem;margin-bottom:.3rem}
+      .alert-strip{display:flex;gap:.7rem;align-items:flex-start;background:var(--amber-soft);border:1px solid var(--amber);border-radius:12px;padding:.8rem 1rem;font-size:.9rem;margin-bottom:1rem}
+      .alert-strip svg{flex:none;margin-top:.1rem;color:#b25f10}
+      @media (prefers-color-scheme: dark){.alert-strip svg{color:var(--amber)}}
+
+      /* responsive */
+      @media(max-width:1020px){.grid-stats{grid-template-columns:repeat(2,1fr)}.cols-2,.cols-2b{grid-template-columns:1fr}}
+      @media(max-width:760px){
+        #appView{grid-template-columns:1fr}
+        aside{position:fixed;left:0;top:0;width:264px;transform:translateX(-105%);transition:transform .25s;box-shadow:var(--shadow)}
+        aside.open{transform:none}
+        #menuBtn{display:inline-flex}
+        main{padding:1rem .9rem 3rem}
+        .grid-stats{grid-template-columns:1fr 1fr}
+        .stat .val{font-size:1.25rem}
+        .topbar h1{font-size:1.25rem}
+        .topbar .spacer{display:none}
+        #bellBtn{margin-left:auto}
+        .search-box{flex:1 1 100%;order:3}
+        .login-card,.pending-card{padding:1.5rem 1.15rem}
+        .tbl-wrap{overflow-x:visible}
+        table{min-width:0;font-size:.84rem}
+        th,td{padding:.55rem .45rem}
+        .prod-cell{min-width:150px}
+        .tbl-recent th:nth-child(3),.tbl-recent td:nth-child(3),
+        .tbl-products th:nth-child(4),.tbl-products td:nth-child(4),
+        .tbl-products th:nth-child(5),.tbl-products td:nth-child(5),
+        .tbl-orders th:nth-child(4),.tbl-orders td:nth-child(4),
+        .tbl-earnings th:nth-child(2),.tbl-earnings td:nth-child(2){display:none}
+      }
+      @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+    </style>
+  </head>
+  <body>
+
+  <!-- ============ LOGIN / REGISTER ============ -->
+  <section id="loginView">
+    <div class="login-card">
+      <div class="logo-row">
+        <div class="logo-mark">A</div>
+        <div>
+          <div class="name">AnboBD</div>
+          <div class="sub">Seller Center</div>
+        </div>
+      </div>
+      <div class="tabs" role="tablist">
+        <button id="tabLogin" class="on" type="button">Seller Login</button>
+        <button id="tabRegister" type="button">Open a Shop</button>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <h1>Welcome back, seller</h1>
+        <p class="lead">Sign in with the email and password you registered with. You will see only your own shop — your products, your sub-orders, your coupons and your wallet.</p>
+        <div class="field">
+          <label for="loginEmail">Email</label>
+          <input id="loginEmail" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@yourshop.com" />
+        </div>
+        <div class="field">
+          <label for="loginPass">Password</label>
+          <div class="pass-wrap">
+            <input id="loginPass" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Your password" />
+            <button class="pass-toggle" id="togglePass" type="button" aria-label="Show password">Show</button>
+          </div>
+        </div>
+        <p class="err" id="loginErr"></p>
+        <button class="btn" id="loginBtn" type="submit" style="width:100%">Login to Seller Center</button>
+        <div class="auth-note"><b>New to AnboBD?</b> Tap <b>Open a Shop</b> above, create your seller account and register your shop. Your shop goes live after AnboBD Admin verifies your KYC and approves the application — there is no instant access.</div>
+      </form>
+
+      <form id="registerForm" class="hidden" novalidate>
+        <h1>Open your shop on AnboBD</h1>
+        <p class="lead">Create your seller account, register your shop and submit your KYC. AnboBD Admin reviews every application — product listing unlocks only after approval.</p>
+
+        <div class="form-section">1 · Your account</div>
+        <div class="field">
+          <label for="regName">Your full name</label>
+          <input id="regName" type="text" autocomplete="name" placeholder="Full name (as on NID)" />
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="regEmail">Email (login)</label>
+            <input id="regEmail" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@yourshop.com" />
+          </div>
+          <div class="field">
+            <label for="regMobile">Mobile number</label>
+            <input id="regMobile" type="tel" autocomplete="tel" placeholder="01XXXXXXXXX" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="regPass">Password</label>
+            <input id="regPass" type="password" autocomplete="new-password" placeholder="Minimum 6 characters" />
+          </div>
+          <div class="field">
+            <label for="regPass2">Confirm password</label>
+            <input id="regPass2" type="password" autocomplete="new-password" placeholder="Repeat the password" />
+          </div>
+        </div>
+
+        <div class="form-section">2 · Your shop</div>
+        <div class="field">
+          <label for="regShop">Shop name</label>
+          <input id="regShop" type="text" placeholder="e.g. Dhaka Fashion House" />
+          <div class="hint">This is the name customers will see on the AnboBD website.</div>
+        </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="regCat">Main category</label>
+            <select id="regCat">
+              <option>Fashion</option><option>Electronics</option><option>Home &amp; Living</option>
+              <option>Beauty</option><option>Grocery</option><option>Sports</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="regDistrict">District</label>
+            <select id="regDistrict">
+              <option>Dhaka</option><option>Gazipur</option><option>Narayanganj</option><option>Chattogram</option>
+              <option>Cox's Bazar</option><option>Cumilla</option><option>Sylhet</option><option>Khulna</option>
+              <option>Jashore</option><option>Rajshahi</option><option>Bogura</option><option>Rangpur</option>
+              <option>Barishal</option><option>Mymensingh</option><option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="regAddress">Pickup address</label>
+          <textarea id="regAddress" rows="2" placeholder="House / road / area — courier will pick up parcels from here"></textarea>
+        </div>
+
+        <div class="form-section">3 · Payout method</div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="regPayMethod">Method</label>
+            <select id="regPayMethod"><option>bKash</option><option>Nagad</option><option>Bank Transfer</option></select>
+          </div>
+          <div class="field">
+            <label for="regPayName">Account holder name</label>
+            <input id="regPayName" type="text" placeholder="Name on the account" />
+          </div>
+        </div>
+        <div class="field">
+          <label for="regPayAccount">Account number</label>
+          <input id="regPayAccount" type="text" placeholder="bKash / Nagad number or bank account number" />
+          <div class="hint">Your earnings will be paid to this account after Admin releases each payout.</div>
+        </div>
+
+        <div class="form-section">4 · KYC verification</div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="regNid">NID number</label>
+            <input id="regNid" type="text" inputmode="numeric" placeholder="NID number (digits only)" />
+          </div>
+          <div class="field">
+            <label for="regTrade">Trade license number</label>
+            <input id="regTrade" type="text" placeholder="Trade license number" />
+          </div>
+        </div>
+        <p style="font-size:.85rem;color:var(--muted);margin:.2rem 0 .9rem">Admin will verify your NID and trade license against these numbers before approving your shop. Submitting false information will get the application rejected.</p>
+
+        <p class="err" id="regErr"></p>
+        <button class="btn" type="submit" style="width:100%">Submit Application for Admin Approval</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ PENDING APPROVAL ============ -->
+  <section id="pendingView" class="hidden">
+    <div class="pending-card">
+      <div class="logo-row">
+        <div class="logo-mark">A</div>
+        <div>
+          <div class="name">AnboBD</div>
+          <div class="sub">Seller Center</div>
+        </div>
+      </div>
+      <span class="status-pill">Application Under Review</span>
+      <h1 id="pendShopName">Your shop</h1>
+      <p class="lead">Your application has been received. The AnboBD Admin team will verify your KYC (NID + trade license) and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.</p>
+      <ul class="timeline" id="pendTimeline">
+        <li class="done"><span class="tdot">✓</span><div><div class="tt">Application submitted</div><div class="ts" id="pendSubmittedAt">Received</div></div></li>
+        <li class="now"><span class="tdot">2</span><div><div class="tt">KYC verification</div><div class="ts">Admin is checking your NID and trade license numbers</div></div></li>
+        <li><span class="tdot">3</span><div><div class="tt">Admin approval</div><div class="ts">An Admin approves or rejects the shop from the Admin panel</div></div></li>
+        <li><span class="tdot">4</span><div><div class="tt">Shop goes live</div><div class="ts">After approval, sign in again to add products and start selling</div></div></li>
+      </ul>
+      <h3 style="font-size:.98rem;margin:1.1rem 0 .3rem">Application details</h3>
+      <div id="pendSummary"></div>
+      <h3 style="font-size:.98rem;margin:1.2rem 0 .2rem">Locked until approval</h3>
+      <ul class="lock-list">
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Adding products and setting prices</li>
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Receiving orders and shipping</li>
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Shop coupons and Mega Sale submissions</li>
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Wallet, payouts and team members</li>
+      </ul>
+      <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.4rem">
+        <button class="btn" id="checkStatusBtn" type="button">Check Approval Status</button>
+        <button class="btn ghost" id="pendLogoutBtn" type="button">Logout</button>
+      </div>
+      <p style="font-size:.84rem;color:var(--muted);margin:1rem 0 0">Application reference: <b id="pendRef" style="color:var(--ink)">—</b> · Keep this reference for any support query about your application.</p>
+    </div>
+  </section>
+
+  <!-- ============ APP (approved sellers only) ============ -->
+  <div id="appView" class="hidden">
+    <aside id="sidebar">
+      <div class="logo-row">
+        <div class="logo-mark">A</div>
+        <div>
+          <div class="name" style="font-family:Sora;font-weight:800;font-size:1.1rem;line-height:1.1">AnboBD</div>
+          <div class="sub" style="font-size:.7rem;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase">Seller Center</div>
+        </div>
+      </div>
+      <div class="shop-chip">
+        <div class="shop-avatar" id="shopAvatar">S</div>
+        <div>
+          <div class="sname"><span id="shopNameLbl">My Shop</span><span class="badge-verified">KYC Verified</span></div>
+          <div class="smeta" id="shopMetaLbl"></div>
+        </div>
+      </div>
+      <nav class="side" id="sideNav">
+        <button data-view="dashboard" class="on" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+        <button data-view="products" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>My Products</button>
+        <button data-view="orders" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 5H5L6 3z"/><path d="M5 8h14v13H5z"/><path d="M9 12h6"/></svg>My Orders<span class="pill hidden" id="pendingPill">0</span></button>
+        <button data-view="coupons" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V5a2 2 0 0 1 2-2h4l10 10v4a2 2 0 0 1-2 2H7L3 15V9z" transform="rotate(90 12 12)"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M13 13l3 3M16 13l-3 3"/></svg>Shop Coupons<span class="pill hidden" id="couponPill" style="background:var(--brand)">0 Live</span></button>
+        <button data-view="campaigns" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-6v14L3 13v-2z"/><path d="M7 13v5a2 2 0 0 0 4 0v-4M17 8a4 4 0 0 1 0 8"/></svg>Mega Sale &amp; Campaigns<span class="pill hidden" id="campPill">0</span></button>
+        <button data-view="returns" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Returns &amp; Refunds<span class="pill hidden" id="returnPill">0</span></button>
+        <button data-view="payouts" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.01M18 12h.01"/></svg>My Wallet &amp; Payouts</button>
+        <button data-view="team" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M16 15.2c2.6.3 4.6 1.9 5.3 4.8"/></svg>Team &amp; Staff</button>
+        <button data-view="settings" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.14-1.4l2.1-1.63-2-3.46-2.49 1a7 7 0 0 0-2.42-1.4L13.66 2.6h-3.32l-.39 2.51a7 7 0 0 0-2.42 1.4l-2.49-1-2 3.46L5.14 10.6A7 7 0 0 0 5 12c0 .48.05.94.14 1.4L3.04 15.03l2 3.46 2.49-1a7 7 0 0 0 2.42 1.4l.39 2.51h3.32l.39-2.51a7 7 0 0 0 2.42-1.4l2.49 1 2-3.46-2.1-1.63c.09-.46.14-.92.14-1.4z"/></svg>Shop Settings</button>
+      </nav>
+      <div class="side-foot">
+        <button id="logoutBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+      </div>
+    </aside>
+
+    <main>
+      <div class="topbar">
+        <button class="icon-btn" id="menuBtn" type="button" aria-label="Menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+        <div>
+          <h1 id="viewTitle">Dashboard</h1>
+          <div class="sub" id="viewSub">Apnar shop er ajker obostha ek nojore</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="search-box">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input id="globalSearch" type="search" placeholder="Product ba order khujun…" />
+        </div>
+        <button class="icon-btn" id="bellBtn" type="button" aria-label="Notifications"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg><span class="dot hidden" id="bellDot"></span></button>
+      </div>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard">
+        <div id="lowStockStrip"></div>
+        <div id="onboardCard"></div>
+        <div class="grid-stats" id="statGrid"></div>
+        <h3 style="margin:.2rem 0 .7rem;font-size:1.02rem">Ajker kaj — Action Center</h3>
+        <div class="todo-grid" id="todoGrid"></div>
+        <div class="cols-2">
+          <div class="card">
+            <h3>Sales by day</h3>
+            <div class="csub">Shudhu apnar shop er bikri (৳) — order er date onujayi</div>
+            <div id="salesChartWrap"></div>
+          </div>
+          <div class="card">
+            <h3>Commission summary</h3>
+            <div class="csub">AnboBD category onujayi commission kate</div>
+            <div id="commSummary"></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Recent orders</h3>
+          <div class="csub">Sesh 5 ta order — bistarito dekhte order e click korun</div>
+          <div class="tbl-wrap"><table class="tbl-recent">
+            <thead><tr><th>Order</th><th>Customer</th><th>Product</th><th>Total</th><th>Your earning</th><th>Status</th></tr></thead>
+            <tbody id="recentOrdersBody"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- PRODUCTS -->
+      <section id="view-products" class="hidden">
+        <div class="filter-row">
+          <div class="search-box" style="flex:0 1 280px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="prodSearch" type="search" placeholder="Product khujun…" />
+          </div>
+          <select id="prodCatFilter" aria-label="Category filter">
+            <option value="">All categories</option>
+          </select>
+          <select id="prodStatusFilter" aria-label="Status filter">
+            <option value="">All status</option><option>Active</option><option>Paused</option><option>Pending Approval</option>
+          </select>
+          <div class="spacer" style="flex:1"></div>
+          <button class="btn" id="addProductBtn" type="button">+ Add Product</button>
+        </div>
+        <div class="card" style="padding:.4rem 1rem">
+          <div class="tbl-wrap"><table class="tbl-products">
+            <thead><tr><th>Product</th><th>Price</th><th>Stock</th><th>Sold</th><th>Commission</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="productsBody"></tbody>
+          </table></div>
+          <div class="empty hidden" id="productsEmpty">
+            <div class="et">No products yet</div>
+            <div>Apnar shop ekhono khali. Prothom product add korun — submit korlei seta ekhane dekhabe, ar Admin moderation approve korle storefront e live hobe.</div>
+            <button class="btn" id="productsEmptyCta" type="button" style="margin-top:1rem">+ Add Your First Product</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ORDERS -->
+      <section id="view-orders" class="hidden">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:.7rem 1rem;font-size:.85rem;margin-bottom:1rem"><b>Sub-order view:</b> Customer ekta master order dile seta seller-wise vag hoy. Apni sudhu <b>apnar shop-er sub-order</b> dekhben — onno seller-er item, tar dam ba tar earning ekhane asbe na. Customer-er payment method-er bistarito (bKash/Card number) apnake dekhano hoy na — sudhu ship korar jonno dorkari address, phone ar COD hole collect korar amount dekhano hoy.</div>
+        <div class="flow-strip" role="note">
+          <div class="flow-step"><span class="n">1</span><div><div class="ft">Awaiting Admin</div><div class="fs">Master order Admin er kache — apni ekhono kichu korte parben na</div></div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step lock"><span class="n">2</span><div><div class="ft">Admin Confirmed</div><div class="fs">Admin confirm kore apnar sub-order pathiyeche</div></div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><span class="n">3</span><div><div class="ft">Ready to Ship → Packed</div><div class="fs">Item pack korun, label print korun</div></div></div>
+          <div class="flow-arrow">→</div>
+          <div class="flow-step"><span class="n">4</span><div><div class="ft">Shipped → Delivered</div><div class="fs">Tracking ID diye dispatch, delivery hole earning return window e jay</div></div></div>
+        </div>
+        <div class="alert-strip">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+          <div><b>Order confirm apni koren na — Admin kore.</b> Notun order prothome “Awaiting Admin” thakbe. Admin confirm korlei seta “Ready to Ship” hoye apnar kache asbe, tokhon e apni ship korte parben. Awaiting order e ship button thakbe na.</div>
+        </div>
+        <div class="filter-row">
+          <div class="chip-row" id="orderChips">
+            <button class="fchip on" data-f="All" type="button">All My Sub-Orders</button>
+            <button class="fchip" data-f="Awaiting Admin" type="button">Awaiting Admin</button>
+            <button class="fchip" data-f="Admin Confirmed" type="button">Admin Confirmed</button>
+            <button class="fchip" data-f="Ready to Ship" type="button">Ready to Ship</button>
+            <button class="fchip" data-f="Packed" type="button">Packed</button>
+            <button class="fchip" data-f="Shipped" type="button">Shipped</button>
+            <button class="fchip" data-f="Delivered" type="button">Delivered</button>
+            <button class="fchip" data-f="Cancelled" type="button">Cancelled</button>
+          </div>
+          <div class="spacer" style="flex:1"></div>
+          <button class="btn ghost" id="exportOrdersBtn" type="button">Export CSV</button>
+        </div>
+        <div class="card" style="padding:.4rem 1rem">
+          <div class="tbl-wrap"><table class="tbl-orders">
+            <thead><tr><th>Order ID</th><th>Date</th><th>Customer</th><th>Items</th><th>Total</th><th>Your earning</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="ordersBody"></tbody>
+          </table></div>
+          <div class="empty hidden" id="ordersEmpty">
+            <div class="et">No orders yet</div>
+            <div>Customer order kore Admin confirm korle apnar sub-order ekhane asbe. Notun shop e order aste kichu somoy lagte pare — product live ache kina check korun.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- COUPONS -->
+      <section id="view-coupons" class="hidden">
+        <div class="alert-strip" style="background:var(--brand-soft);border-color:var(--brand)">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h.01"/></svg>
+          <div><b>Shop coupon ekhane banalei AnboBD website e live show hobe</b> — apnar shop page e “Shop Vouchers” section e ar checkout er somoy customer coupon ta use korte parbe. Discount er taka apnar sale theke adjust hobe, AnboBD commission ager motoi thakbe.</div>
+        </div>
+        <div class="grid-stats" id="couponStats" style="grid-template-columns:repeat(3,1fr)"></div>
+        <div class="filter-row">
+          <h3 style="margin:0;font-size:1.05rem">Amar shop coupons</h3>
+          <div class="spacer" style="flex:1"></div>
+          <button class="btn" id="addCouponBtn" type="button">+ Create Coupon</button>
+        </div>
+        <div class="coupon-grid" id="couponGrid"></div>
+        <div class="card">
+          <h3>Website e customer jemon dekhbe — Shop Vouchers preview</h3>
+          <div class="csub">AnboBD website · Amar shop page · Shudhu <b>Live</b> coupon gulai ekhane show hoy</div>
+          <div id="websiteCouponPreview" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem"></div>
+          <p style="font-size:.85rem;color:var(--muted);margin:.9rem 0 0">Coupon pause korle website theke sathe sathe sore jabe. Expire hoye gele customer ar use korte parbe na.</p>
+        </div>
+      </section>
+
+      <!-- CAMPAIGNS / MEGA SALE -->
+      <section id="view-campaigns" class="hidden">
+        <div class="alert-strip">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-6v14L3 13v-2z"/><path d="M7 13v5a2 2 0 0 0 4 0v-4"/></svg>
+          <div><b>Mega Sale / Mega Discount e product dite Admin approval lagbe.</b> Approved product ar campaign price submit korun — Admin check kore approve korlei campaign er din product ta campaign price e website e live hobe. Approve na hole product normal price ei thakbe.</div>
+        </div>
+        <div class="camp-grid" id="campGrid"></div>
+        <div class="filter-row">
+          <h3 style="margin:0;font-size:1.05rem">Amar campaign submissions</h3>
+          <div class="spacer" style="flex:1"></div>
+          <button class="btn" id="addCampBtn" type="button">+ Submit Product for Mega Sale</button>
+        </div>
+        <div id="campSubs"></div>
+      </section>
+
+      <!-- RETURNS -->
+      <section id="view-returns" class="hidden">
+        <div class="alert-strip" style="background:var(--brand-soft);border-color:var(--brand)">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h.01"/></svg>
+          <div><b>Sudhu apnar shop-er return:</b> Customer return chaile request ekhane asbe. Accept korle refund amount <b>apnar wallet theke</b> adjust hobe ar Admin ke auto notify kora hobe. Reject korle karon soho Admin review te jabe. Onno seller-er return ekhane dekhabe na.</div>
+        </div>
+        <div class="grid-stats" id="returnStats" style="grid-template-columns:repeat(3,1fr)"></div>
+        <div id="returnList"></div>
+      </section>
+
+      <!-- PAYOUTS -->
+      <section id="view-payouts" class="hidden">
+        <div style="background:var(--amber-soft);border:1px dashed var(--amber);border-radius:12px;padding:.75rem 1rem;font-size:.88rem;margin-bottom:1rem"><b>Settlement niyom:</b> Order Delivered howar por <b>7 diner return window</b> sesh holei taka Available Balance e ashe. Commission prottek order-e <b>sale-er somoyer rate snapshot</b> diye kata hoy — pore Admin rate bodlaleo purono order-er hisab bodlabe na. Apni sudhu payout <b>request</b> korte parben, nijer payout nije approve korte parben na — seta Admin Finance theke release hoy.</div>
+        <div class="payout-hero">
+          <div style="flex:1;min-width:220px">
+            <div class="lbl">Available balance (payout er jonno prostut)</div>
+            <div class="amt" id="payoutBalance">৳0</div>
+            <div class="lbl" id="payoutNote"></div>
+          </div>
+          <div>
+            <div class="lbl">Pending clearance</div>
+            <div style="font-family:Sora;font-weight:800;font-size:1.3rem" id="payoutPending">৳0</div>
+            <div class="lbl">Delivered + 7 din return window sesh hole settle hoy</div>
+          </div>
+          <button class="btn" id="withdrawBtn" type="button">Request Payout</button>
+        </div>
+        <div class="cols-2b">
+          <div class="card">
+            <h3>How your earning works</h3>
+            <div class="csub">Proti order e hisab alada kore dekhano hoy</div>
+            <div class="comm-row"><span>Order total</span><b>100%</b></div>
+            <div class="comm-row"><span>AnboBD commission (category onujayi)</span><b>5% – 12%</b></div>
+            <div class="comm-row"><span>Payment processing (bKash/Card)</span><b>1.5%</b></div>
+            <div class="comm-row"><span style="font-weight:800">Apnar earning</span><b style="color:var(--brand)">baki ongsho</b></div>
+            <p style="font-size:.85rem;color:var(--muted);margin:.8rem 0 0">COD order e delivery charge customer dey, tai apnar earning theke kata hoy na. Return hole sei order er earning balance theke adjust hoy.</p>
+          </div>
+          <div class="card">
+            <h3>Payout history</h3>
+            <div class="csub">bKash / Nagad / Bank e pathano taka</div>
+            <div class="tbl-wrap"><table>
+              <thead><tr><th>Date</th><th>Method</th><th>Account</th><th>Amount</th><th>Status</th></tr></thead>
+              <tbody id="payoutHistoryBody"></tbody>
+            </table></div>
+          </div>
+        </div>
+        <div class="card">
+          <h3>Recent earnings</h3>
+          <div class="csub">Delivered order theke apnar earning er hisab</div>
+          <div class="tbl-wrap"><table class="tbl-earnings">
+            <thead><tr><th>Order</th><th>Product</th><th>Order total</th><th>Commission</th><th>Your earning</th><th>Clearance</th></tr></thead>
+            <tbody id="earningsBody"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- TEAM -->
+      <section id="view-team" class="hidden">
+        <div class="alert-strip">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5h.01"/></svg>
+          <div><b>Shop staff:</b> apnar shop er kajer jonno worker add korun. Prottek staff sudhu tar role er permission onujayi kaj korte parbe — keu chaileo taka ba settings bodlate parbe na. Staff sudhu apnar shop ei thakbe, platform staff ekhane asbe na.</div>
+        </div>
+        <div class="filter-row">
+          <h3 style="margin:0;font-size:1.05rem">My team (<span id="staffCount">0</span>)</h3>
+          <div class="spacer" style="flex:1"></div>
+          <button class="btn" id="addStaffBtn" type="button">+ Add Staff</button>
+        </div>
+        <div class="staff-grid" id="staffGrid"></div>
+        <div class="card" style="margin-top:1.2rem">
+          <h3>Role permission matrix</h3>
+          <div class="csub">Kon role ki korte parbe — staff add korar somoy role select korlei permission set hoye jay</div>
+          <div class="tbl-wrap"><table class="perm-matrix">
+            <thead><tr><th>Permission</th><th>Shop Manager</th><th>Order Staff</th><th>Support</th><th>Warehouse</th></tr></thead>
+            <tbody id="permMatrixBody"></tbody>
+          </table></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section id="view-settings" class="hidden">
+        <div class="cols-2b" style="grid-template-columns:1fr 1fr">
+          <form class="card" id="shopForm">
+            <h3>Shop information</h3>
+            <div class="csub">Customer ra apnar shop page e egulo dekhbe</div>
+            <div class="field"><label>Shop avatar</label><div style="display:flex;gap:.8rem;align-items:center"><div class="shop-avatar" id="logoPreview" style="width:52px;height:52px;font-size:1.1rem">S</div><div style="flex:1"><input id="setLogoText" maxlength="2" placeholder="Avatar initials, e.g. DF" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:var(--surface)" /><div class="hint">Shop name er prothom akkhor gulo avatar hisebe show hoy. Platform-er kono setting ekhane nei — sudhu apnar shop.</div></div></div></div>
+            <div class="field"><label for="setShopName">Shop name</label><input id="setShopName" /></div>
+            <div class="field"><label for="setOwner">Owner name</label><input id="setOwner" /></div>
+            <div class="field"><label for="setPhone">Contact mobile</label><input id="setPhone" /></div>
+            <div class="field"><label for="setAddress">Pickup address</label><textarea id="setAddress" rows="2"></textarea></div>
+            <div class="field"><label for="setDesc">Shop description</label><textarea id="setDesc" rows="3" placeholder="Apnar shop somporke 2-3 line likhun — customer ra shop page e dekhbe"></textarea></div>
+            <button class="btn" type="submit">Save Shop Info</button>
+          </form>
+          <form class="card" id="payoutForm">
+            <h3>Payout method</h3>
+            <div class="csub">Payout request dile ei account ei taka jabe</div>
+            <div class="field"><label for="payMethod">Method</label>
+              <select id="payMethod"><option>bKash</option><option>Nagad</option><option>Bank Transfer</option></select></div>
+            <div class="field"><label for="payAccount">Account number</label><input id="payAccount" /></div>
+            <div class="field"><label for="payName">Account holder name</label><input id="payName" /></div>
+            <button class="btn" type="submit">Save Payout Method</button>
+            <hr style="border:0;border-top:1px solid var(--line);margin:1.3rem 0" />
+            <h3>Vacation mode</h3>
+            <div class="csub">On thakle shop er sob product samoyik hide thakbe, notun order asbe na</div>
+            <button class="btn ghost" id="vacationBtn" type="button">Vacation mode: Off</button>
+          </form>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- modal / drawer / toast roots -->
+  <div id="modalRoot"></div>
+  <div id="drawerRoot"></div>
+  <div id="toast" role="status"></div>
+
+  <script>
+  "use strict";
+  /* =====================================================================
+     AnboBD Seller Center — data layer (Supabase-ready)
+
+     Production wiring (Supabase project: AnboBD):
+       - Auth:        Supabase Auth (signUp / signInWithPassword).
+                      The seller's auth user id links 1-to-1 to a row in
+                      public.sellers. There is NO built-in or fallback
+                      account of any kind — nobody can sign in without
+                      registering here first.
+       - public.sellers        id, owner_name, email, mobile, shop_name,
+                               category, district, pickup_address,
+                               payout_method, payout_account, payout_name,
+                               nid_number, trade_license, status
+                               ('pending' | 'approved' | 'suspended'),
+                               applied_on
+       - public.products       seller_id -> sellers.id (RLS: seller_id
+                               must equal the signed-in seller's id)
+       - public.sub_orders     seller_id, master_order_id, status flow
+                               Awaiting Admin -> Admin Confirmed ->
+                               Ready to Ship -> Packed -> Shipped ->
+                               Delivered, commission_rate snapshot
+       - public.shop_coupons   seller_id (own shop only)
+       - public.campaign_submissions  seller_id, Admin approval required
+       - public.returns        seller_id (own shop only)
+       - public.payout_requests seller_id, seller requests only —
+                               Admin Finance approves / releases
+       - public.shop_staff     seller_id (own shop team only)
+     Row Level Security on every table restricts each seller to rows
+     where seller_id matches their own sellers.id, so one seller can
+     never read another seller's products, orders or money.
+
+     SUPABASE_CONFIG stays empty until the project's real URL and anon
+     key are provided through the secure connection flow — no URL or
+     key is invented here. Until then, the same shapes below run as an
+     in-page data store for this session only: DB.sellers starts EMPTY,
+     and every record a seller sees is created by that seller after
+     registration (and, for selling features, after Admin approval).
+     ===================================================================== */
+  <!-- Supabase config: keep blank in the repo. Set url + anonKey from Vercel env vars at deploy time. -->
+var SUPABASE_CONFIG = { url: "", anonKey: "" };
+
+  var COMMISSION = { "Electronics": 8, "Fashion": 10, "Home & Living": 7, "Beauty": 12, "Grocery": 5, "Sports": 9 };
+  var CAT_COLORS = { "Electronics":"#2563eb", "Fashion":"#db2777", "Home & Living":"#0b7a55", "Beauty":"#7c4dff", "Grocery":"#e8862e", "Sports":"#0891b2" };
+  var CAMPAIGN_TYPES = [
+    { name:"Mega Sale", minDisc:20, color:"#d64545", note:"Homepage hero, push notification ar Flash Sale slot soho sobcheye boro campaign format." },
+    { name:"Mega Discount", minDisc:15, color:"#e8862e", note:"Category page er top banner ar “Mega Discount” badge pabe approved product." },
+    { name:"Daily Flash Sale", minDisc:25, color:"#7c4dff", note:"Limited-time flash slot — stock limited, price sobcheye kom hote hobe." }
+  ];
+  var PERMS = {
+    "Shop Manager": ["Product add / edit","Order manage","Customer support","Payout request","Shop settings"],
+    "Order Staff":  ["Order manage"],
+    "Support":      ["Customer support"],
+    "Warehouse":    ["Stock update"]
+  };
+  var ALL_PERMS = ["Product add / edit","Order manage","Customer support","Stock update","Payout request","Shop settings"];
+  var ROLE_COLORS = { "Shop Manager":"#0b7a55", "Order Staff":"#2563eb", "Support":"#7c4dff", "Warehouse":"#e8862e" };
+  /* Seller sudhu Admin-confirmed order ship kore — confirm er kaj Admin er.
+     Tai seller er advance map e "Confirm" nei. */
+  var NEXT_STATUS = { "Admin Confirmed":"Ready to Ship", "Ready to Ship":"Packed", "Packed":"Shipped", "Shipped":"Delivered" };
+  var NEXT_LABEL = { "Admin Confirmed":"Prepare — Ready to Ship", "Ready to Ship":"Mark Packed", "Packed":"Ship — Tracking ID din", "Shipped":"Mark Delivered" };
+
+  /* The store. Starts completely empty — no pre-made seller, shop,
+     product, order, coupon, balance or staff exists until a real
+     registration creates it. */
+  var DB = { sellers: [] };
+  var session = { sellerId: null };
+  var orderFilter = "All", currentView = "dashboard";
+
+  function sellerById(id){ for (var i=0;i<DB.sellers.length;i++) if (DB.sellers[i].id===id) return DB.sellers[i]; return null; }
+  function sellerByEmail(em){ em = String(em||"").toLowerCase(); for (var i=0;i<DB.sellers.length;i++) if (DB.sellers[i].email===em) return DB.sellers[i]; return null; }
+  function me(){ return session.sellerId ? sellerById(session.sellerId) : null; }
+
+  /* Admin-side operations. In production these run from the AnboBD Admin
+     panel as an UPDATE on public.sellers / public.products, protected by
+     RLS and the Admin role — a seller cannot call them, and no button in
+     this Seller Center triggers them. They exist here so the data layer
+     has exactly one place where approval state changes. */
+  var AnboBDData = {
+    config: SUPABASE_CONFIG,
+    sellers: DB.sellers,
+    setSellerStatus: function(id, status){
+      var s = sellerById(id); if (!s) return false;
+      s.status = status;
+      if (status === "approved" && !s.approvedOn) s.approvedOn = new Date().toISOString();
+      return true;
+    },
+    setProductApproval: function(sellerId, productId, approval){
+      var s = sellerById(sellerId); if (!s) return false;
+      for (var i=0;i<s.products.length;i++) if (s.products[i].id===productId) { s.products[i].approval = approval; return true; }
+      return false;
+    }
+  };
+  window.AnboBDData = AnboBDData;
+
+  /* ================= HELPERS ================= */
+  function $(id){ return document.getElementById(id); }
+  function fmt(n){ return "৳" + Math.round(n || 0).toLocaleString("en-IN"); }
+  function ownProducts(){ var s = me(); return s ? s.products : []; }
+  function ownOrders(){ var s = me(); return s ? s.orders : []; }
+  function ownCoupons(){ var s = me(); return s ? s.coupons : []; }
+  function ownSubs(){ var s = me(); return s ? s.campSubs : []; }
+  function ownReturns(){ var s = me(); return s ? s.returns : []; }
+  function ownStaff(){ var s = me(); return s ? s.staff : []; }
+  function prodById(id){ var l = ownProducts(); for (var i=0;i<l.length;i++) if (l[i].id===id) return l[i]; return null; }
+  function orderTotal(o){ var t=0; o.items.forEach(function(it){ var p=prodById(it.pid); if(p) t += p.price*it.qty; }); return t; }
+  function orderEarning(o){ var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100 - tot*0.015); } var e=0; o.items.forEach(function(it){ var p=prodById(it.pid); if(p){ var gross=p.price*it.qty; e += gross - gross*(COMMISSION[p.cat]||8)/100 - gross*0.015; } }); return Math.round(e); }
+  function orderItemsText(o){ return o.items.map(function(it){ var p=prodById(it.pid); return p ? (p.name+" × "+it.qty) : ""; }).filter(Boolean).join(", "); }
+  function initials(name){ return String(name||"S").trim().split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("").toUpperCase(); }
+  function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){ t.classList.remove("show"); }, 3000); }
+  function esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+  function statusClass(s){ return "st-" + String(s).toLowerCase().replace(/\s/g,""); }
+  function cleanText(v){ return String(v == null ? "" : v).replace(/[\u200B-\u200D\uFEFF]/g, "").trim(); }
+  function maskAccount(acc){
+    acc = String(acc || "");
+    if (acc.length <= 6) return acc;
+    return acc.slice(0, 5) + "•••" + acc.slice(-3);
+  }
+  function maskNid(nid){
+    nid = String(nid || "");
+    if (nid.length <= 4) return nid;
+    return "••••••" + nid.slice(-4);
+  }
+  function fmtDate(iso){
+    try { return new Date(iso).toLocaleDateString("en-GB", { day:"numeric", month:"short", year:"numeric" }); }
+    catch (e) { return ""; }
+  }
+  function monthYear(iso){
+    try { return new Date(iso).toLocaleDateString("en-GB", { month:"short", year:"numeric" }); }
+    catch (e) { return ""; }
+  }
+  function catIcon(cat){
+    var paths = {
+      "Electronics":'<path d="M4 17l6-6-6-6M12 19h8"/>',
+      "Fashion":'<path d="M9 3L4 7l2 3 2-1v12h8V9l2 1 2-3-5-4a3 3 0 0 1-6 0z"/>',
+      "Home & Living":'<path d="M3 11l9-8 9 8M5 9.5V21h14V9.5"/>',
+      "Beauty":'<circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/>',
+      "Grocery":'<circle cx="9" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 3h2l2.4 12h10.4l2-8H6"/>',
+      "Sports":'<circle cx="12" cy="12" r="9"/><path d="M5.5 5.5c3 2 4 4 4.5 6.5M18.5 5.5c-3 2-4 4-4.5 6.5M8 20.5c2.5-1.5 5.5-1.5 8 0"/>'
+    };
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'+(paths[cat]||paths["Electronics"])+'</svg>';
+  }
+  function downloadCSV(filename, rows){
+    var csv = rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(","); }).join("\n");
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
+    a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  }
+  /* Session-only password hashing stand-in. In production, passwords are
+     hashed and verified by Supabase Auth — never stored by this page. */
+  function hashPw(s){ var h = 5381; s = String(s || ""); for (var i=0;i<s.length;i++){ h = ((h<<5) + h + s.charCodeAt(i)) >>> 0; } return "h" + h.toString(16); }
+
+  /* ================= VIEW ROUTING ================= */
+  function showLogin(){
+    $("loginView").classList.remove("hidden");
+    $("pendingView").classList.add("hidden");
+    $("appView").classList.add("hidden");
+    window.scrollTo(0,0);
+  }
+  function showPending(){
+    var s = me(); if (!s) { showLogin(); return; }
+    $("loginView").classList.add("hidden");
+    $("appView").classList.add("hidden");
+    $("pendingView").classList.remove("hidden");
+    $("pendShopName").textContent = s.shop;
+    $("pendRef").textContent = s.id.replace("SEL-", "APP-");
+    $("pendSubmittedAt").textContent = "Received · " + fmtDate(s.appliedOn);
+    $("pendSummary").innerHTML =
+      '<div class="kv"><span>Owner</span><b>'+esc(s.owner)+'</b></div>'
+      + '<div class="kv"><span>Email</span><b>'+esc(s.email)+'</b></div>'
+      + '<div class="kv"><span>Mobile</span><b>'+esc(s.phone)+'</b></div>'
+      + '<div class="kv"><span>Shop</span><b>'+esc(s.shop)+' · '+esc(s.category)+'</b></div>'
+      + '<div class="kv"><span>District</span><b>'+esc(s.district)+'</b></div>'
+      + '<div class="kv"><span>Pickup address</span><b>'+esc(s.address)+'</b></div>'
+      + '<div class="kv"><span>Payout</span><b>'+esc(s.payMethod)+' · '+esc(maskAccount(s.payAccount))+'</b></div>'
+      + '<div class="kv"><span>NID</span><b>'+esc(maskNid(s.nid))+'</b></div>'
+      + '<div class="kv"><span>Trade license</span><b>'+esc(s.tradeLicense)+'</b></div>'
+      + '<div class="kv"><span>Status</span><b style="color:var(--amber)">Pending — awaiting Admin approval</b></div>';
+    window.scrollTo(0,0);
+  }
+  function enterApp(){
+    var s = me(); if (!s) { showLogin(); return; }
+    $("loginView").classList.add("hidden");
+    $("pendingView").classList.add("hidden");
+    $("appView").classList.remove("hidden");
+    syncShopUI();
+    try { renderAll(); } catch (err) { /* render e somossa holeo panel khola thakbe */ }
+    window.scrollTo(0,0);
+  }
+  function routeAfterAuth(){
+    var s = me(); if (!s) { showLogin(); return; }
+    if (s.status === "approved") enterApp(); else showPending();
+  }
+  function doLogout(){
+    session.sellerId = null;
+    $("sidebar").classList.remove("open");
+    closeDrawer(); closeModal();
+    showLogin();
+  }
+
+  /* ================= AUTH ================= */
+  $("tabLogin").addEventListener("click", function(){ switchTab(true); });
+  $("tabRegister").addEventListener("click", function(){ switchTab(false); });
+  function switchTab(login){
+    $("tabLogin").classList.toggle("on", login); $("tabRegister").classList.toggle("on", !login);
+    $("loginForm").classList.toggle("hidden", !login); $("registerForm").classList.toggle("hidden", login);
+  }
+  function tryLogin(){
+    var em = cleanText($("loginEmail").value).replace(/\s+/g, "").toLowerCase();
+    var pw = cleanText($("loginPass").value).replace(/\s+/g, "");
+    if (!em || !pw) { $("loginErr").textContent = "Email ar password din."; return; }
+    var s = sellerByEmail(em);
+    if (!s) { $("loginErr").textContent = "Ei email diye kono seller account nei. Notun hole upore “Open a Shop” theke age registration korun — registration chara login hobe na."; return; }
+    if (s.passHash !== hashPw(pw)) { $("loginErr").textContent = "Email ba password vul hoyeche. Thik kore abar chesta korun."; return; }
+    if (s.status === "suspended") { $("loginErr").textContent = "Ei shop ti Admin suspend koreche. Bistaritir jonno AnboBD seller support e jogajog korun."; return; }
+    session.sellerId = s.id;
+    $("loginErr").textContent = "";
+    routeAfterAuth();
+    toast(s.status === "approved" ? ("Welcome back, " + s.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
+  }
+  $("loginForm").addEventListener("submit", function(e){ e.preventDefault(); tryLogin(); });
+  $("togglePass").addEventListener("click", function(){
+    var inp = $("loginPass"), show = inp.type === "password";
+    inp.type = show ? "text" : "password";
+    this.textContent = show ? "Hide" : "Show";
+    this.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    inp.focus();
+  });
+  ["loginEmail","loginPass"].forEach(function(id){
+    $(id).addEventListener("input", function(){ $("loginErr").textContent = ""; });
+  });
+
+  $("registerForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var owner = cleanText($("regName").value),
+        em = cleanText($("regEmail").value).replace(/\s+/g, "").toLowerCase(),
+        ph = cleanText($("regMobile").value).replace(/[-\s]/g, ""),
+        pw = cleanText($("regPass").value).replace(/\s+/g, ""),
+        pw2 = cleanText($("regPass2").value).replace(/\s+/g, ""),
+        shop = cleanText($("regShop").value),
+        cat = $("regCat").value,
+        district = $("regDistrict").value,
+        address = cleanText($("regAddress").value),
+        payMethod = $("regPayMethod").value,
+        payAccount = cleanText($("regPayAccount").value),
+        payName = cleanText($("regPayName").value),
+        nid = cleanText($("regNid").value).replace(/[-\s]/g, ""),
+        trade = cleanText($("regTrade").value);
+    function fail(msg){ $("regErr").textContent = msg; }
+    if (!owner || !em || !ph || !shop) { fail("Account ar shop er sob tothyo puron korun."); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { fail("Sothik email address din."); return; }
+    if (!/^01\d{9}$/.test(ph)) { fail("Sothik 11 digit er mobile number din (01 diye shuru)."); return; }
+    if (pw.length < 6) { fail("Password kompokkhe 6 character hote hobe."); return; }
+    if (pw !== pw2) { fail("Password ar confirm password mile ni."); return; }
+    if (address.length < 8) { fail("Pickup address bistarito likhun — courier ekhan thekei parcel nibe."); return; }
+    if (!payAccount || !payName) { fail("Payout method er account number ar account holder er nam din."); return; }
+    if ((payMethod === "bKash" || payMethod === "Nagad") && !/^01\d{9}$/.test(payAccount.replace(/[-\s]/g, ""))) { fail(payMethod + " account er jonno sothik 11 digit er number din."); return; }
+    if (!/^\d{10,17}$/.test(nid)) { fail("Sothik NID number din (10–17 digit)."); return; }
+    if (trade.length < 5) { fail("Trade license number din — KYC er jonno lagbe."); return; }
+    if (sellerByEmail(em)) { fail("Ei email diye agei ekta seller account ache. Login korun, ba onno email use korun."); return; }
+
+    var now = new Date();
+    var seller = {
+      id: "SEL-" + String(now.getTime()).slice(-8),
+      owner: owner, email: em, phone: ph, passHash: hashPw(pw),
+      shop: shop, category: cat, district: district, address: address,
+      desc: "",
+      payMethod: payMethod, payAccount: payAccount, payName: payName,
+      nid: nid, tradeLicense: trade,
+      status: "pending", appliedOn: now.toISOString(), approvedOn: null,
+      vacation: false,
+      balance: 0, pendingClearance: 0,
+      products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: []
+    };
+    DB.sellers.push(seller);
+    session.sellerId = seller.id;
+    $("regErr").textContent = "";
+    showPending();
+    toast("Application submit hoyeche — ekhon Admin KYC verify kore approve korle shop live hobe");
+  });
+
+  $("checkStatusBtn").addEventListener("click", function(){
+    var s = me(); if (!s) { showLogin(); return; }
+    if (s.status === "approved") { enterApp(); toast("Congratulation! Apnar shop approve hoyeche — Seller Center khule geche"); }
+    else if (s.status === "suspended") { toast("Apnar application ti Admin reject / suspend koreche — seller support e jogajog korun"); }
+    else toast("Ekhono under review ache — Admin approval ekhono aseni. Approve hole ei account diyei login kore shop chalate parben");
+  });
+  $("pendLogoutBtn").addEventListener("click", doLogout);
+  $("logoutBtn").addEventListener("click", doLogout);
+
+  function syncShopUI(){
+    var s = me(); if (!s) return;
+    $("shopNameLbl").textContent = s.shop;
+    $("shopAvatar").textContent = initials(s.shop);
+    $("shopMetaLbl").textContent = "Seller since " + monthYear(s.approvedOn || s.appliedOn) + " · " + s.district;
+    $("setShopName").value = s.shop; $("setOwner").value = s.owner;
+    $("setPhone").value = s.phone; $("setAddress").value = s.address;
+    $("setDesc").value = s.desc || "";
+    $("payMethod").value = s.payMethod; $("payAccount").value = s.payAccount; $("payName").value = s.payName;
+    var lp = $("logoPreview"); if (lp) lp.textContent = initials(s.shop);
+    var lt = $("setLogoText"); if (lt) lt.value = initials(s.shop);
+    var vb = $("vacationBtn"); if (vb) { vb.textContent = "Vacation mode: " + (s.vacation ? "On" : "Off"); vb.classList.toggle("amber", !!s.vacation); }
+  }
+
+  /* ================= NAV ================= */
+  var VIEW_META = {
+    dashboard: ["Dashboard","Sudhu amar shop — platform total ekhane nei"],
+    products: ["My Products","Product add, edit, stock ar price manage korun"],
+    orders: ["My Orders","Admin confirm korar por order apnar kache ashe — apni sudhu ship koren"],
+    coupons: ["Shop Coupons","Nijer shop er coupon banan — website e live show hobe"],
+    campaigns: ["Mega Sale & Campaigns","Mega Sale / Mega Discount e product din — Admin approval sapekkhe"],
+    returns: ["Returns & Refunds","Sudhu apnar shop-er return request — wallet theke refund adjust hoy"],
+    payouts: ["My Wallet & Payouts","Sudhu apnar shop-er earning — onno seller ba platform-er hisab ekhane nei"],
+    team: ["Team & Staff","Shop er worker add korun, role ar permission din"],
+    settings: ["Shop Settings","Shop er tothyo ar payout method"]
+  };
+  $("sideNav").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-view]"); if (!b) return;
+    showView(b.getAttribute("data-view"));
+  });
+  function showView(v){
+    currentView = v;
+    document.querySelectorAll("#sideNav button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-view")===v); });
+    ["dashboard","products","orders","coupons","campaigns","returns","payouts","team","settings"].forEach(function(x){ $("view-"+x).classList.toggle("hidden", x!==v); });
+    $("viewTitle").textContent = VIEW_META[v][0]; $("viewSub").textContent = VIEW_META[v][1];
+    $("sidebar").classList.remove("open");
+    window.scrollTo(0,0);
+  }
+  $("menuBtn").addEventListener("click", function(){ $("sidebar").classList.toggle("open"); });
+  $("bellBtn").addEventListener("click", function(){
+    var r = ownOrders().filter(function(o){return o.status==="Ready to Ship"||o.status==="Packed";}).length;
+    var w = ownOrders().filter(function(o){return o.status==="Awaiting Admin";}).length;
+    var low = ownProducts().filter(function(x){return x.stock>0 && x.stock<10;}).length;
+    if (!r && !w && !low) { toast("Notun kono notification nei"); return; }
+    toast(r + " ta order ship korte hobe · " + w + " ta Admin confirmation er opekkhay · " + low + " ta product er stock kom");
+  });
+  $("globalSearch").addEventListener("input", function(){
+    var q = this.value.trim().toLowerCase(); if (!q) return;
+    var o = ownOrders().filter(function(x){ return x.id.toLowerCase().indexOf(q)>-1 || (x.subId||"").toLowerCase().indexOf(q)>-1 || x.customer.toLowerCase().indexOf(q)>-1; })[0];
+    if (o) { showView("orders"); openOrderDrawer(o.id); this.value=""; return; }
+    var p = ownProducts().filter(function(x){ return x.name.toLowerCase().indexOf(q)>-1; })[0];
+    if (p) { showView("products"); $("prodSearch").value = p.name; renderProducts(); this.value=""; }
+  });
+
+  /* ================= DASHBOARD ================= */
+  function renderDashboard(){
+    var s = me(); if (!s) return;
+    var orders = ownOrders(), products = ownProducts();
+    var liveOrders = orders.filter(function(o){ return o.status !== "Cancelled"; });
+    var totalSales = liveOrders.reduce(function(sum,o){ return sum + orderTotal(o); }, 0);
+    var ready = orders.filter(function(o){ return o.status==="Ready to Ship" || o.status==="Packed" || o.status==="Admin Confirmed"; }).length;
+    var awaiting = orders.filter(function(o){ return o.status==="Awaiting Admin"; }).length;
+    var totalSold = products.reduce(function(sum,p){ return sum + (p.sold || 0); }, 0);
+
+    function setPill(id, n, suffix){
+      var el = $(id); if (!el) return;
+      el.textContent = suffix ? (n + suffix) : String(n);
+      el.classList.toggle("hidden", !n);
+    }
+    setPill("pendingPill", ready, "");
+    var liveCoupons = ownCoupons().filter(function(c){ return c.status==="Live"; }).length;
+    var cp = $("couponPill"); if (cp) { cp.textContent = liveCoupons + " Live"; cp.classList.toggle("hidden", !liveCoupons); }
+    var campPending = ownSubs().filter(function(x){ return x.status==="Pending Approval"; }).length;
+    setPill("campPill", campPending, "");
+    var retPending = ownReturns().filter(function(r){ return r.status==="Return Requested"; }).length;
+    setPill("returnPill", retPending, "");
+    var bd = $("bellDot"); if (bd) bd.classList.toggle("hidden", !(ready || awaiting || retPending));
+
+    /* Onboarding — a brand-new approved shop starts empty */
+    if (!products.length && !orders.length) {
+      $("onboardCard").innerHTML = '<div class="card" style="margin-bottom:1.2rem;border-color:var(--brand)">'
+        + '<h3>Welcome to Seller Center, ' + esc(s.shop) + '</h3>'
+        + '<div class="csub">Apnar shop approve hoyeche ar ekdom prostut. Nicher step gulo diye selling shuru korun — kono kichu age theke add kora nei, sob apnar nijer.</div>'
+        + '<ul class="onboard-steps">'
+        + '<li><span class="n">1</span><div style="flex:1"><div class="ot">Prothom product add korun</div><div class="os">Product submit hole Admin moderation er por storefront e live hobe</div></div><button class="btn sm" type="button" data-goto="products">Add Product</button></li>'
+        + '<li><span class="n">2</span><div style="flex:1"><div class="ot">Shop coupon banan</div><div class="os">Coupon live hole website e apnar shop page e “Shop Vouchers” e show hobe</div></div><button class="btn sm ghost" type="button" data-goto="coupons">Create Coupon</button></li>'
+        + '<li><span class="n">3</span><div style="flex:1"><div class="ot">Payout method check korun</div><div class="os">' + esc(s.payMethod) + ' · ' + esc(maskAccount(s.payAccount)) + ' — bodlate chaile Shop Settings e jan</div></div><button class="btn sm ghost" type="button" data-goto="settings">Settings</button></li>'
+        + '</ul></div>';
+      $("onboardCard").querySelectorAll("[data-goto]").forEach(function(b){
+        b.addEventListener("click", function(){ showView(b.getAttribute("data-goto")); });
+      });
+    } else {
+      $("onboardCard").innerHTML = "";
+    }
+
+    var stats = [
+      { lbl:"Total sales (amar shop)", val:fmt(totalSales), delta:'<span style="color:var(--muted)">Mot order: </span><b>' + liveOrders.length + '</b><span style="color:var(--muted)"> · items sold: </span><b>' + totalSold.toLocaleString("en-IN") + '</b>', bg:"var(--brand-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>' },
+      { lbl:"Total sub-orders", val: liveOrders.length, delta:'<span style="color:var(--muted)">Sudhu amar shop-er sub-order — onno seller-er order ekhane nei</span>', bg:"var(--blue-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M6 3h12l1 5H5L6 3z"/><path d="M5 8h14v13H5z"/></svg>' },
+      { lbl:"Ready to Ship (Admin confirmed)", val: ready, delta:'<span style="color:var(--amber);font-weight:800">Pack kore dispatch korun</span> <span style="color:var(--muted)">· ' + awaiting + ' ta Admin confirmation er opekkhay</span>', bg:"var(--amber-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
+      { lbl:"Wallet balance", val: fmt(s.balance), delta:'<span style="color:var(--muted)">Pending clearance: </span><b>' + fmt(s.pendingClearance) + '</b>', bg:"var(--violet-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg>' }
+    ];
+    $("statGrid").innerHTML = stats.map(function(x){
+      return '<div class="stat"><div class="lbl"><span class="ic" style="background:' + x.bg + '">' + x.ic + '</span>' + x.lbl + '</div><div class="val">' + x.val + '</div><div class="delta">' + x.delta + '</div></div>';
+    }).join("");
+
+    var lowCount = products.filter(function(p){ return p.stock < 10; }).length;
+    var todos = [
+      { v: ready, l:"ta order Ready to Ship — Admin confirm koreche, ekhon ship korun", view:"orders" },
+      { v: awaiting, l:"ta order Awaiting Admin — Admin confirm korlei apnar kache asbe", view:"orders" },
+      { v: campPending, l:"ta Mega Sale submission Admin approval er opekkhay", view:"campaigns" },
+      { v: liveCoupons, l:"ta shop coupon website e Live ache", view:"coupons" },
+      { v: lowCount, l:"ta product er stock kom (10 er niche)", view:"products" },
+      { v: retPending, l:"ta return request — accept/reject korun, refund apnar wallet theke adjust hobe", view:"returns" }
+    ];
+    $("todoGrid").innerHTML = todos.map(function(t){
+      return '<button class="todo" type="button" data-goto="' + t.view + '"><div class="tv">' + t.v + '</div><div class="tl">' + t.l + '</div></button>';
+    }).join("");
+    $("todoGrid").querySelectorAll("[data-goto]").forEach(function(b){
+      b.addEventListener("click", function(){ showView(b.getAttribute("data-goto")); });
+    });
+
+    /* Sales chart — built only from this seller's real orders, grouped by order date */
+    if (!liveOrders.length) {
+      $("salesChartWrap").innerHTML = '<div class="empty" style="padding:1.6rem 1rem"><div class="et">No sales yet</div><div>Order asha shuru hole din onujayi bikrir chart ekhane dekhabe.</div></div>';
+    } else {
+      var byDate = {}, labels = [];
+      liveOrders.forEach(function(o){
+        if (!byDate[o.date]) { byDate[o.date] = 0; labels.push(o.date); }
+        byDate[o.date] += orderTotal(o);
+      });
+      labels = labels.slice(-7);
+      var max = Math.max.apply(null, labels.map(function(d){ return byDate[d]; }));
+      $("salesChartWrap").innerHTML = '<div class="chart-wrap">' + labels.map(function(d, i){
+        var v = byDate[d], h = Math.max(10, Math.round(v / max * 120));
+        return '<div class="bar-col"><div class="v">' + (v/1000).toFixed(1) + 'k</div><div class="bar' + (i===labels.length-1 ? " amber" : "") + '" style="height:' + h + 'px" title="' + esc(d) + ': ' + fmt(v) + '"></div><div class="d">' + esc(d) + '</div></div>';
+      }).join("") + '</div>';
+    }
+
+    var low = products.filter(function(p){ return p.stock < 10; });
+    $("lowStockStrip").innerHTML = low.length ? '<div class="alert-strip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17.5h.01"/></svg><div><b>Low stock alert:</b> ' + low.map(function(p){ return esc(p.name) + ' (matro ' + p.stock + ' ta baki)'; }).join(" · ") + '. Products page theke restock korun.</div></div>' : "";
+
+    var cats = {};
+    products.forEach(function(p){ cats[p.cat] = true; });
+    if (!Object.keys(cats).length) cats[s.category] = true;
+    $("commSummary").innerHTML = Object.keys(cats).map(function(c){
+      return '<div class="comm-row"><span>' + esc(c) + '</span><b>' + COMMISSION[c] + '% commission</b></div>';
+    }).join("") + '<div class="comm-row"><span>Payment processing</span><b>1.5%</b></div><div class="comm-row"><span style="font-weight:800">Baki ongsho</span><b style="color:var(--brand)">apnar earning</b></div>';
+
+    $("recentOrdersBody").innerHTML = orders.length ? orders.slice(0,5).map(function(o){
+      return '<tr style="cursor:pointer" data-order="' + o.id + '"><td><b>' + esc(o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td>' + esc(o.customer) + '</td><td>' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b></td><td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td><td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span></td></tr>';
+    }).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.4rem">Ekhono kono order aseni — Admin confirm kora sub-order ekhane dekhabe.</td></tr>';
+    $("recentOrdersBody").querySelectorAll("tr[data-order]").forEach(function(tr){
+      tr.addEventListener("click", function(){ openOrderDrawer(tr.getAttribute("data-order")); });
+    });
+  }
+
+  /* ================= PRODUCTS ================= */
+  function renderProducts(){
+    var q = $("prodSearch").value.trim().toLowerCase();
+    var cat = $("prodCatFilter").value, st = $("prodStatusFilter").value;
+    /* The list renders from the signed-in seller's OWN products array —
+       a product this seller adds is in that array immediately, so it
+       always shows in My Products. No other seller's product can appear. */
+    var list = ownProducts().filter(function(p){
+      return (!q || p.name.toLowerCase().indexOf(q)>-1 || p.sku.toLowerCase().indexOf(q)>-1)
+        && (!cat || p.cat===cat) && (!st || p.status===st || (st==="Pending Approval" && p.approval==="Pending Approval"));
+    });
+    $("productsEmpty").classList.toggle("hidden", ownProducts().length > 0);
+    $("productsBody").innerHTML = list.map(function(p){
+      var pct = Math.min(100, Math.round(p.stock/150*100));
+      var cls = p.stock===0 || p.stock<5 ? "low" : (p.stock<25 ? "mid" : "");
+      return '<tr><td><div class="prod-cell"><div class="thumb" style="background:' + (CAT_COLORS[p.cat]||"#666") + '">' + catIcon(p.cat) + '</div><div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div></div></div></td>'
+        + '<td><b>' + fmt(p.price) + '</b>' + (p.oldPrice ? '<div class="psku"><s>' + fmt(p.oldPrice) + '</s></div>' : '') + '</td>'
+        + '<td><b>' + p.stock + '</b><div class="stockbar"><i class="' + cls + '" style="width:' + pct + '%"></i></div></td>'
+        + '<td>' + (p.sold || 0).toLocaleString("en-IN") + '</td>'
+        + '<td>' + COMMISSION[p.cat] + '%</td>'
+        + '<td><span class="status ' + statusClass(p.status) + '">' + p.status + '</span>' + (p.approval==="Pending Approval" ? '<div style="margin-top:.3rem"><span class="status st-pendingapproval">Pending Approval — Admin moderation</span><div class="psku">Live na, Admin approve korle storefront e jabe</div></div>' : '') + (p.approval==="Rejected" ? '<div style="margin-top:.3rem"><span class="status st-rejected">Rejected by Admin</span><div class="psku">Edit kore abar moderation e pathan</div></div>' : '') + '</td>'
+        + '<td><div class="row-actions">'
+        + '<button class="mini-btn" data-act="stock" data-id="' + p.id + '" type="button">+ Stock</button>'
+        + '<button class="mini-btn" data-act="edit" data-id="' + p.id + '" type="button">Edit</button>'
+        + '<button class="mini-btn" data-act="toggle" data-id="' + p.id + '" type="button">' + (p.status==="Active" ? "Pause" : "Activate") + '</button>'
+        + '<button class="mini-btn red" data-act="del" data-id="' + p.id + '" type="button">Delete</button>'
+        + '</div></td></tr>';
+    }).join("");
+    if (ownProducts().length && !list.length) {
+      $("productsBody").innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1.4rem">Ei filter e kono product mile ni — search ba filter bodle dekhun.</td></tr>';
+    }
+    $("productsBody").querySelectorAll("button[data-act]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = +b.getAttribute("data-id"), act = b.getAttribute("data-act"), p = prodById(id);
+        if (!p) return;
+        if (act==="stock"){ p.stock += 20; toast(p.name + " — 20 ta stock add holo. Ekhon total " + p.stock); renderAll(); }
+        if (act==="toggle"){ p.status = p.status==="Active" ? "Paused" : "Active"; toast(p.name + " ekhon " + p.status); renderAll(); }
+        if (act==="del"){ openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', function(){ var s = me(); s.products = s.products.filter(function(x){ return x.id!==id; }); toast("Product delete hoyeche"); renderAll(); }); }
+        if (act==="edit"){ openProductModal(p); }
+      });
+    });
+  }
+  $("prodSearch").addEventListener("input", renderProducts);
+  $("prodCatFilter").addEventListener("change", renderProducts);
+  $("prodStatusFilter").addEventListener("change", renderProducts);
+  $("addProductBtn").addEventListener("click", function(){ openProductModal(null); });
+  $("productsEmptyCta").addEventListener("click", function(){ openProductModal(null); });
+
+  function openProductModal(p){
+    var s = me(); if (!s) return;
+    var isEdit = !!p; p = p || { name:"", sku:"", cat:s.category || "Electronics", price:"", oldPrice:"", stock:"" };
+    var catOpts = Object.keys(COMMISSION).map(function(c){ return '<option ' + (p.cat===c ? "selected" : "") + '>' + c + '</option>'; }).join("");
+    openModal(
+      '<h2>' + (isEdit ? "Edit Product" : "Add New Product") + '</h2><div class="msub">' + (isEdit ? "Product er tothyo update korun" : "Submit korle product ta sathe sathe My Products e dekhabe, ar Admin moderation e Pending Approval thakbe — Admin approve na kora porjonto storefront e live hobe na") + '</div>'
+      + '<div class="field"><label>Product name</label><input id="mName" aria-label="Product name" value="' + esc(p.name) + '" placeholder="e.g. Wireless Bluetooth Headphone" /></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Category</label><select id="mCat" aria-label="Category">' + catOpts + '</select></div>'
+      + '<div class="field"><label>SKU</label><input id="mSku" aria-label="SKU" value="' + esc(p.sku) + '" placeholder="Khali rakhle auto toiri hobe" /></div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem"><div class="field"><label>Price (৳)</label><input id="mPrice" aria-label="Price" type="number" min="1" value="' + p.price + '" /></div>'
+      + '<div class="field"><label>Old price (৳)</label><input id="mOld" aria-label="Old price" type="number" min="0" value="' + (p.oldPrice || "") + '" /></div>'
+      + '<div class="field"><label>Stock</label><input id="mStock" aria-label="Stock" type="number" min="0" value="' + p.stock + '" /></div></div>'
+      + '<p class="err" id="mErr"></p>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="mCancel" type="button">Cancel</button><button class="btn" id="mSave" type="button">' + (isEdit ? "Save Changes" : "Add Product") + '</button></div>',
+      function(){
+        $("mCancel").addEventListener("click", closeModal);
+        $("mSave").addEventListener("click", function(){
+          var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value;
+          if (!name || !(price>0) || isNaN(stock) || stock<0) { $("mErr").textContent = "Name, sothik price ar stock din."; return; }
+          if (isEdit){
+            p.name = name; p.cat = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
+            p.oldPrice = +$("mOld").value || null; p.stock = stock;
+            if (p.approval === "Rejected") p.approval = "Pending Approval";
+            toast("Product update hoyeche");
+          } else {
+            var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
+            s.products.unshift({ id: Date.now(), sellerId: s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, sold:0, status:"Active" });
+            toast("Product add hoyeche — My Products e dekhun. Admin moderation approve korle live hobe: " + name);
+          }
+          closeModal(); renderAll(); showView("products");
+        });
+      });
+  }
+
+  /* ================= ORDERS ================= */
+  $("orderChips").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-f]"); if (!b) return;
+    orderFilter = b.getAttribute("data-f");
+    document.querySelectorAll("#orderChips .fchip").forEach(function(c){ c.classList.toggle("on", c===b); });
+    renderOrders();
+  });
+  function renderOrders(){
+    var list = ownOrders().filter(function(o){ return orderFilter==="All" || o.status===orderFilter; });
+    $("ordersEmpty").classList.toggle("hidden", ownOrders().length > 0);
+    $("ordersBody").innerHTML = list.map(function(o){
+      var next = NEXT_STATUS[o.status];
+      var src = o.status==="Awaiting Admin" ? '<div class="psku">Admin confirmation er opekkhay</div>' : (o.adminBy ? '<div class="psku">✓ ' + esc(o.adminBy) + '</div>' : '');
+      return '<tr><td><b>' + esc(o.subId || o.id) + '</b><div class="psku">Master: ' + esc(o.id) + '</div></td><td>' + esc(o.date) + '<div class="psku">' + esc(o.time) + '</div></td><td>' + esc(o.customer) + '<div class="psku">' + esc(o.district) + ' · ' + esc(o.shipAddress || "") + '</div></td>'
+        + '<td style="max-width:240px">' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b><div class="psku">' + esc(o.payVisibility || "Prepaid — Admin verified") + (o.codCollect ? '<br>COD collect: <b>' + fmt(o.codCollect) + '</b>' : '') + (o.trackingId ? '<br>Tracking: <b>' + esc(o.trackingId) + '</b>' : '') + '</div></td>'
+        + '<td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td>'
+        + '<td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span>' + src + '</td>'
+        + '<td><div class="row-actions"><button class="mini-btn" data-view-order="' + o.id + '" type="button">View</button><button class="mini-btn" data-label="' + o.id + '" type="button">Print Label</button>'
+        + (next ? '<button class="mini-btn" data-advance="' + o.id + '" type="button">' + NEXT_LABEL[o.status] + '</button>' : '')
+        + (o.status==="Awaiting Admin" ? '<span style="font-size:.78rem;color:var(--muted);font-weight:600">Admin confirm korle ship korte parben</span>' : '')
+        + '</div></td></tr>';
+    }).join("");
+    if (ownOrders().length && !list.length) {
+      $("ordersBody").innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:1.4rem">Ei status e kono order nei.</td></tr>';
+    }
+    $("ordersBody").querySelectorAll("[data-view-order]").forEach(function(b){
+      b.addEventListener("click", function(){ openOrderDrawer(b.getAttribute("data-view-order")); });
+    });
+    $("ordersBody").querySelectorAll("[data-advance]").forEach(function(b){
+      b.addEventListener("click", function(){ advanceOrder(b.getAttribute("data-advance")); });
+    });
+    $("ordersBody").querySelectorAll("[data-label]").forEach(function(b){
+      b.addEventListener("click", function(){ openLabelModal(b.getAttribute("data-label")); });
+    });
+  }
+  function openLabelModal(id){
+    var s = me(); if (!s) return;
+    var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
+    openModal('<h2>Shipping Label — ' + esc(o.subId || o.id) + '</h2><div class="msub">Print kore parcel er gaye lagan. Sudhu apnar sub-order er item ache.</div>'
+      + '<div style="border:2px dashed var(--line);border-radius:12px;padding:1rem"><div style="font-family:Sora;font-weight:800;font-size:1.1rem">AnboBD · ' + esc(s.shop) + '</div>'
+      + '<div style="font-size:.9rem;margin-top:.5rem"><b>To:</b> ' + esc(o.customer) + ' · ' + esc(o.phone) + '<br>' + esc(o.shipAddress || o.district) + ', ' + esc(o.district) + '<br><b>Items:</b> ' + esc(orderItemsText(o)) + '<br><b>Master Order:</b> ' + esc(o.id) + ' · <b>Sub-Order:</b> ' + esc(o.subId || o.id) + (o.codCollect ? '<br><b>COD Collect:</b> ' + fmt(o.codCollect) : '<br><b>Prepaid</b> — kichu collect korte hobe na') + (o.trackingId ? '<br><b>Tracking:</b> ' + esc(o.trackingId) : '') + '</div></div>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn ghost" id="lbClose" type="button">Close</button><button class="btn" id="lbPrint" type="button">Print / Save Label</button></div>',
+      function(){ $("lbClose").addEventListener("click", closeModal); $("lbPrint").addEventListener("click", function(){ toast("Label ready — browser er print option theke print korun"); }); });
+  }
+  function advanceOrder(id){
+    var s = me(); if (!s) return;
+    var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
+    if (o.status==="Awaiting Admin") { toast("Seller order confirm korte pare na — Admin confirm korlei apni ship korte parben"); return; }
+    if (!NEXT_STATUS[o.status]) { toast("Ei order ekhon agano jabe na"); return; }
+    if (o.status==="Packed" && !o.trackingId) {
+      openModal('<h2>Ship — Tracking ID din</h2><div class="msub">' + esc(o.subId || id) + ' courier e diye tracking ID ta likhun</div><div class="field"><label>Courier tracking ID</label><input id="trkId" placeholder="e.g. PTH-882910" /></div><p class="err" id="trkErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="trkCancel" type="button">Cancel</button><button class="btn" id="trkGo" type="button">Confirm Shipped</button></div>', function(){
+        $("trkCancel").addEventListener("click", closeModal);
+        $("trkGo").addEventListener("click", function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; closeModal(); closeDrawer(); renderAll(); toast(id + " shipped — Tracking: " + v); });
+      });
+      return;
+    }
+    o.status = NEXT_STATUS[o.status];
+    if (o.status === "Packed") toast(id + " packed — ekhon tracking ID diye ship korun");
+    else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
+    else if (o.status === "Delivered") { s.pendingClearance += orderEarning(o); toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
+    else toast(id + " ekhon " + o.status);
+    renderAll();
+    closeDrawer();
+  }
+  function openOrderDrawer(id){
+    var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
+    var steps = [
+      { t:"Order placed (Master Order)", s:"Customer website theke order koreche · " + esc(o.date) + ", " + esc(o.time) + " · Sub-Order: " + esc(o.subId || o.id) },
+      { t:"Admin Confirmed", s: o.adminBy ? esc(o.adminBy) + " · " + esc(o.adminAt) : "Admin ekhono confirm koreni — seller confirm korte pare na" },
+      { t:"Ready to Ship", s:"Admin confirm er por apnar sub-order ship er jonno prostut" },
+      { t:"Packed", s:"Item pack kore label lagale complete hobe" },
+      { t:"Shipped", s: o.trackingId ? "Tracking ID: " + esc(o.trackingId) : "Tracking ID diye dispatch korle complete hobe" },
+      { t:"Delivered", s:"Delivery hole earning 7 diner return window e jabe, tarpor wallet e settle hobe" }
+    ];
+    var stageIdx = { "Awaiting Admin":0, "Admin Confirmed":1, "Ready to Ship":2, "Packed":3, "Shipped":4, "Delivered":5 };
+    var idx = o.status==="Cancelled" ? -1 : stageIdx[o.status];
+    var tl = o.status==="Cancelled"
+      ? '<li class="done"><span class="tdot">!</span><div><div class="tt">Order cancelled</div><div class="ts">' + esc(o.adminBy || "Admin / customer cancel koreche") + '</div></div></li>'
+      : steps.map(function(st, i){
+          return '<li class="' + (i<=idx ? "done" : "") + '"><span class="tdot">' + (i<=idx ? "✓" : "") + '</span><div><div class="tt">' + st.t + '</div><div class="ts">' + (i<idx ? "Complete" : (i===idx ? st.s + " · Ekhon ei stage e ache" : st.s)) + '</div></div></li>';
+        }).join("");
+    var items = o.items.map(function(it){ var p = prodById(it.pid); if (!p) return ""; return '<div class="kv"><span>' + esc(p.name) + ' × ' + it.qty + '</span><b>' + fmt(p.price * it.qty) + '</b></div>'; }).join("");
+    var next = NEXT_STATUS[o.status];
+    $("drawerRoot").innerHTML = '<div class="drawer-wrap" id="drawerWrap"><div class="drawer">'
+      + '<button class="icon-btn modal-x" id="drawerX" type="button" aria-label="Close">✕</button>'
+      + '<h2 style="margin:.2rem 0 .2rem;font-size:1.3rem">' + esc(o.id) + '</h2>'
+      + '<div style="color:var(--muted);font-size:.88rem">' + esc(o.date) + ' · ' + esc(o.time) + '</div>'
+      + '<div style="margin:.8rem 0"><span class="status ' + statusClass(o.status) + '">' + o.status + '</span></div>'
+      + '<h3 style="font-size:.95rem;margin:1rem 0 .3rem">Customer</h3>'
+      + '<div class="kv"><span>Name</span><b>' + esc(o.customer) + '</b></div>'
+      + '<div class="kv"><span>Mobile</span><b>' + esc(o.phone) + '</b></div>'
+      + '<div class="kv"><span>District</span><b>' + esc(o.district) + '</b></div>'
+      + '<div class="kv"><span>Payment (ship er jonno)</span><b>' + esc(o.payVisibility || "Prepaid — Admin verified") + '</b></div><div class="kv"><span>Ship to</span><b>' + esc(o.shipAddress || o.district) + '</b></div>' + (o.trackingId ? '<div class="kv"><span>Tracking ID</span><b>' + esc(o.trackingId) + '</b></div>' : '')
+      + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Items</h3>' + items
+      + '<div class="kv"><span>Order total</span><b>' + fmt(orderTotal(o)) + '</b></div>'
+      + '<div class="kv"><span>Commission (snapshot ' + (typeof o.commissionRate==="number" ? o.commissionRate + "%" : "category rate") + ') + processing 1.5%</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
+      + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
+      + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Tracking — Admin → Seller → Customer</h3><ul class="timeline">' + tl + '</ul><button class="btn ghost" id="drawerLabel" type="button" style="width:100%;margin-bottom:.6rem">Print Shipping Label</button>'
+      + (o.status==="Awaiting Admin" ? '<div class="locked-note"><b>Waiting for Admin confirmation.</b> Admin panel theke confirm hole order ta “Ready to Ship” hoye asbe — tokhon e ship korte parben. Seller hisebe apni order confirm ba cancel korte parben na.</div>' : '')
+      + (next ? '<button class="btn" id="drawerAdvance" type="button" style="width:100%">' + NEXT_LABEL[o.status] + '</button>' : '')
+      + (o.status==="Ready to Ship" || o.status==="Shipped" ? '<p style="font-size:.82rem;color:var(--muted);margin:.7rem 0 0">Kono somossa hole (stock nei, address vul) Admin support e janaben — order cancel sudhu Admin korte pare.</p>' : '')
+      + '</div></div>';
+    $("drawerX").addEventListener("click", closeDrawer);
+    var lb = $("drawerLabel"); if (lb) lb.addEventListener("click", function(){ openLabelModal(o.id); });
+    $("drawerWrap").addEventListener("click", function(e){ if (e.target===this) closeDrawer(); });
+    var adv = $("drawerAdvance");
+    if (adv) adv.addEventListener("click", function(){ advanceOrder(o.id); });
+  }
+  function closeDrawer(){ $("drawerRoot").innerHTML = ""; }
+  $("exportOrdersBtn").addEventListener("click", function(){
+    var rows = [["Order ID","Date","Customer","District","Items","Total (BDT)","Your Earning (BDT)","Payment","Status"]];
+    ownOrders().forEach(function(o){ rows.push([o.subId || o.id, o.date, o.customer, o.district, orderItemsText(o), orderTotal(o), orderEarning(o), o.payment, o.status]); });
+    downloadCSV("anbobd-my-orders.csv", rows);
+    toast(ownOrders().length ? "Orders CSV download hocche" : "Export korar moto kono order ekhono nei");
+  });
+
+  /* ================= COUPONS ================= */
+  function couponValueText(c){ return c.type==="Percent" ? c.value + "% OFF" : fmt(c.value) + " OFF"; }
+  function renderCoupons(){
+    var s = me(); if (!s) return;
+    var coupons = ownCoupons();
+    var live = coupons.filter(function(c){ return c.status==="Live"; });
+    var usedTotal = coupons.reduce(function(sum,c){ return sum + (c.used || 0); }, 0);
+    var stats = [
+      { lbl:"Live coupons (website e show hocche)", val: live.length },
+      { lbl:"Mot coupon (sudhu amar shop)", val: coupons.length },
+      { lbl:"Mot bar use hoyeche", val: usedTotal.toLocaleString("en-IN") }
+    ];
+    $("couponStats").innerHTML = stats.map(function(x){
+      return '<div class="stat"><div class="lbl">' + x.lbl + '</div><div class="val">' + x.val + '</div></div>';
+    }).join("");
+    $("couponGrid").innerHTML = coupons.length ? coupons.map(function(c){
+      var pct = c.limit ? Math.min(100, Math.round(c.used / c.limit * 100)) : 0;
+      return '<div class="coupon-card"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.6rem">'
+        + '<div><div class="coupon-code">' + esc(c.code) + '</div><div style="color:var(--brand);font-weight:800">' + couponValueText(c) + '</div></div>'
+        + '<span class="status ' + statusClass(c.status) + '">' + (c.status==="Live" ? "Live on website" : c.status) + '</span></div>'
+        + '<div class="comm-row"><span>Minimum order</span><b>' + fmt(c.min) + '</b></div><div class="comm-row"><span>Max discount cap</span><b>' + (c.cap ? fmt(c.cap) : "Cap nei") + '</b></div><div class="comm-row"><span>Projojjo</span><b>Sudhu amar shop-er item e</b></div>'
+        + '<div class="comm-row"><span>Scope</span><b style="text-align:right">' + esc(c.scope) + '</b></div>'
+        + '<div class="comm-row"><span>Expiry</span><b>' + esc(c.expiry) + '</b></div>'
+        + '<div style="font-size:.83rem;color:var(--muted);margin-top:.55rem">Used ' + c.used + ' / ' + c.limit + ' bar</div><div class="usebar"><i style="width:' + pct + '%"></i></div>'
+        + '<div class="row-actions" style="margin-top:.8rem">'
+        + '<button class="mini-btn" data-coupon-copy="' + c.id + '" type="button">Copy Code</button>'
+        + '<button class="mini-btn" data-coupon-toggle="' + c.id + '" type="button">' + (c.status==="Live" ? "Pause (website theke soran)" : "Make Live") + '</button>'
+        + '<button class="mini-btn red" data-coupon-del="' + c.id + '" type="button">Delete</button>'
+        + '</div></div>';
+    }).join("") : '<div class="empty" style="grid-column:1/-1"><div class="et">No coupons yet</div><div>Notun coupon banan — live korlei website e apnar shop page e show hobe.</div></div>';
+    $("websiteCouponPreview").innerHTML = live.length ? live.map(function(c){
+      return '<div class="ticket"><div class="tval">' + couponValueText(c) + '</div><div class="tcode">' + esc(c.code) + '</div>'
+        + '<div style="font-size:.83rem;opacity:.92">' + esc(s.shop) + ' · Min. order ' + fmt(c.min) + ' · ' + esc(c.scope) + '</div>'
+        + '<div style="font-size:.78rem;opacity:.8">Valid till ' + esc(c.expiry) + ' · AnboBD checkout e apply hobe</div></div>';
+    }).join("") : '<div class="empty" style="grid-column:1/-1">Ekhon website e kono live coupon nei.</div>';
+    $("couponGrid").querySelectorAll("[data-coupon-copy]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var c = ownCoupons().filter(function(x){ return x.id===+b.getAttribute("data-coupon-copy"); })[0]; if (!c) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(c.code).then(function(){ toast("Coupon code copy hoyeche: " + c.code); }, function(){ toast("Coupon code: " + c.code); }); }
+        else toast("Coupon code: " + c.code);
+      });
+    });
+    $("couponGrid").querySelectorAll("[data-coupon-toggle]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var c = ownCoupons().filter(function(x){ return x.id===+b.getAttribute("data-coupon-toggle"); })[0]; if (!c) return;
+        c.status = c.status==="Live" ? "Paused" : "Live";
+        toast(c.code + (c.status==="Live" ? " ekhon website e LIVE" : " pause hoyeche — website theke sore geche"));
+        renderAll();
+      });
+    });
+    $("couponGrid").querySelectorAll("[data-coupon-del]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var c = ownCoupons().filter(function(x){ return x.id===+b.getAttribute("data-coupon-del"); })[0]; if (!c) return;
+        openConfirm("Coupon delete korben?", '"' + c.code + '" delete hole website theke sore jabe ar customer ar use korte parbe na.', function(){
+          var ss = me(); ss.coupons = ss.coupons.filter(function(x){ return x.id!==c.id; }); toast("Coupon delete hoyeche"); renderAll();
+        });
+      });
+    });
+  }
+  $("addCouponBtn").addEventListener("click", function(){
+    var s = me(); if (!s) return;
+    openModal(
+      '<h2>Create Shop Coupon</h2><div class="msub">Save korlei coupon ta AnboBD website e apnar shop page e live show hobe. Coupon sudhu apnar shop-er item ei kaj korbe — platform coupon apni banate parben na.</div>'
+      + '<div class="field"><label>Coupon code</label><input id="cCode" aria-label="Coupon code" placeholder="e.g. FEST20" style="text-transform:uppercase" /><div class="hint">Customer checkout e ei code ta likhbe — space chara, boro hater akkhor e auto hobe</div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Discount type</label><select id="cType" aria-label="Discount type"><option>Percent</option><option>Flat</option></select></div>'
+      + '<div class="field"><label>Discount value</label><input id="cVal" aria-label="Discount value" type="number" min="1" placeholder="Percent hole %, Flat hole ৳" /></div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Minimum order (৳)</label><input id="cMin" aria-label="Minimum order" type="number" min="0" value="0" /></div>'
+      + '<div class="field"><label>Usage limit (mot koybar)</label><input id="cLimit" aria-label="Usage limit" type="number" min="1" value="200" /></div></div>'
+      + '<div class="field"><label>Max discount cap (৳) — ek order e sorbochcho chhar</label><input id="cCap" aria-label="Max discount cap" type="number" min="0" value="500" /><div class="hint">Percent coupon eo ei cap er beshi chhar hobe na.</div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Scope</label><select id="cScope" aria-label="Scope"><option>Shop-wide (sob product)</option><option>Electronics only</option><option>Fashion only</option><option>Beauty only</option><option>Home &amp; Living only</option></select></div>'
+      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="text" placeholder="e.g. 31 Dec 2026" /></div></div>'
+      + '<p class="err" id="cErr"></p>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cCancel" type="button">Cancel</button><button class="btn" id="cSave" type="button">Create &amp; Publish on Website</button></div>',
+      function(){
+        $("cCancel").addEventListener("click", closeModal);
+        $("cSave").addEventListener("click", function(){
+          var code = $("cCode").value.trim().toUpperCase().replace(/\s+/g, "");
+          var type = $("cType").value, val = +$("cVal").value, min = +$("cMin").value || 0, limit = +$("cLimit").value;
+          if (!code || code.length < 4) { $("cErr").textContent = "Kom pokkhe 4 character er coupon code din."; return; }
+          if (ownCoupons().some(function(x){ return x.code===code; })) { $("cErr").textContent = "Ei code diye agei coupon ache — onno code din."; return; }
+          if (!(val>0)) { $("cErr").textContent = "Discount value din."; return; }
+          if (type==="Percent" && val>70) { $("cErr").textContent = "Percent discount sorbochcho 70% hote pare."; return; }
+          if (!(limit>0)) { $("cErr").textContent = "Usage limit din."; return; }
+          var exp = $("cExp").value.trim();
+          if (!exp) { $("cErr").textContent = "Expiry date din."; return; }
+          s.coupons.unshift({ id: Date.now(), sellerId: s.id, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Live" });
+          closeModal(); renderAll(); showView("coupons");
+          toast(code + " toiri — ekhon AnboBD website e LIVE show hocche");
+        });
+      });
+  });
+
+  /* ================= CAMPAIGNS / MEGA SALE ================= */
+  function campTypeByName(n){ for (var i=0;i<CAMPAIGN_TYPES.length;i++) if (CAMPAIGN_TYPES[i].name===n) return CAMPAIGN_TYPES[i]; return null; }
+  function renderCampaigns(){
+    $("campGrid").innerHTML = CAMPAIGN_TYPES.map(function(cp){
+      return '<div class="camp-card"><div class="camp-banner" style="background:' + cp.color + '"><div class="ct">' + esc(cp.name) + '</div><div style="font-size:.85rem;opacity:.92">Admin jokhon campaign khulbe, tar date ekhane dekhabe</div></div>'
+        + '<div class="comm-row"><span>Minimum discount</span><b>' + cp.minDisc + '%</b></div>'
+        + '<div class="comm-row"><span>Product lagbe</span><b>Admin-approved product</b></div>'
+        + '<div class="comm-row"><span>Approval</span><b>Admin approval lagbe</b></div>'
+        + '<p style="font-size:.87rem;color:var(--muted)">' + esc(cp.note) + '</p>'
+        + '<button class="btn" data-join-camp="' + esc(cp.name) + '" type="button" style="width:100%">Submit Product — ' + esc(cp.name) + '</button></div>';
+    }).join("");
+    $("campGrid").querySelectorAll("[data-join-camp]").forEach(function(b){
+      b.addEventListener("click", function(){ openCampModal(b.getAttribute("data-join-camp"), null); });
+    });
+    var subs = ownSubs();
+    $("campSubs").innerHTML = subs.length ? subs.map(function(x){
+      var p = prodById(x.pid); if (!p) return "";
+      var disc = Math.round((1 - x.campPrice / p.price) * 100);
+      var stTxt = x.status==="Approved" ? "Approved — Campaign e Live hobe" : x.status;
+      return '<div class="sub-card"><div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-start">'
+        + '<div class="thumb" style="background:' + (CAT_COLORS[p.cat]||"#666") + '">' + catIcon(p.cat) + '</div>'
+        + '<div style="flex:1;min-width:200px"><div style="font-weight:800">' + esc(p.name) + '</div>'
+        + '<div style="font-size:.84rem;color:var(--muted)">' + esc(x.camp) + ' · Normal ' + fmt(p.price) + ' → Campaign <b style="color:var(--red)">' + fmt(x.campPrice) + '</b> (' + disc + '% OFF) · Allocated stock: ' + x.alloc + ' ta</div>'
+        + '<div style="font-size:.84rem;margin-top:.3rem">' + esc(x.adminNote) + '</div></div>'
+        + '<span class="status ' + statusClass(x.status) + '">' + stTxt + '</span></div>'
+        + (x.status==="Rejected" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-resubmit="' + x.id + '" type="button">Price bodle abar submit korun</button><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Remove</button></div>' : '')
+        + (x.status==="Pending Approval" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Submission withdraw korun</button></div>' : '')
+        + '</div>';
+    }).join("") : '<div class="empty"><div class="et">No campaign submissions yet</div><div>Admin-approved product thakle ekhane submit kore Mega Sale / Mega Discount er jonno pathate parben.</div></div>';
+    $("campSubs").querySelectorAll("[data-resubmit]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var x = ownSubs().filter(function(y){ return y.id===+b.getAttribute("data-resubmit"); })[0];
+        if (x) openCampModal(x.camp, x);
+      });
+    });
+    $("campSubs").querySelectorAll("[data-sub-del]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var id = +b.getAttribute("data-sub-del"), s = me();
+        s.campSubs = s.campSubs.filter(function(x){ return x.id!==id; });
+        toast("Submission sorano hoyeche"); renderAll();
+      });
+    });
+  }
+  function openCampModal(campName, existing){
+    var s = me(); if (!s) return;
+    var approved = ownProducts().filter(function(p){ return p.status==="Active" && p.approval==="Approved"; });
+    if (!approved.length) {
+      openModal('<h2>Mega Sale te Product Submit</h2><div class="msub">Campaign e sudhu <b>Admin-approved</b> product submit kora jay.</div>'
+        + '<div class="locked-note" style="margin-top:0">Apnar ekhono kono approved product nei. Product add korle seta prothome Admin moderation e Pending Approval thakbe — Admin approve korar por ekhane submit korte parben.</div>'
+        + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn ghost" id="cpNoneClose" type="button">Close</button><button class="btn" id="cpNoneGo" type="button">My Products e Jan</button></div>',
+        function(){
+          $("cpNoneClose").addEventListener("click", closeModal);
+          $("cpNoneGo").addEventListener("click", function(){ closeModal(); showView("products"); });
+        });
+      return;
+    }
+    var campOpts = CAMPAIGN_TYPES.map(function(c){ return '<option ' + ((existing ? existing.camp : campName)===c.name ? "selected" : "") + '>' + esc(c.name) + '</option>'; }).join("");
+    var prodOpts = approved.map(function(p){ return '<option value="' + p.id + '" ' + ((existing && existing.pid===p.id) ? "selected" : "") + '>' + esc(p.name) + ' — ' + fmt(p.price) + '</option>'; }).join("");
+    openModal(
+      '<h2>Mega Sale te Product Submit</h2><div class="msub">Submit korle Admin er kache approval er jonno jabe. Approve holei campaign price e website e live hobe.</div>'
+      + '<div class="field"><label>Campaign type</label><select id="cpCamp" aria-label="Campaign type">' + campOpts + '</select><div class="hint" id="cpHint"></div></div>'
+      + '<div class="field"><label>Product (sudhu approved)</label><select id="cpProd" aria-label="Product">' + prodOpts + '</select></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Campaign price (৳)</label><input id="cpPrice" aria-label="Campaign price" type="number" min="1" value="' + (existing ? existing.campPrice : "") + '" placeholder="Discount price" /></div>'
+      + '<div class="field"><label>Allocated stock</label><input id="cpAlloc" aria-label="Allocated stock" type="number" min="1" value="' + (existing ? existing.alloc : 20) + '" /></div></div>'
+      + '<div id="cpCalc" style="font-size:.9rem;font-weight:700;margin-bottom:.6rem"></div>'
+      + '<p class="err" id="cpErr"></p>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cpCancel" type="button">Cancel</button><button class="btn amber" id="cpSave" type="button">Submit for Admin Approval</button></div>',
+      function(){
+        function calc(){
+          var cp = campTypeByName($("cpCamp").value), p = prodById(+$("cpProd").value), price = +$("cpPrice").value;
+          $("cpHint").textContent = cp ? ("Minimum discount " + cp.minDisc + "% · Admin approval lagbe") : "";
+          if (p && price>0 && price<p.price) { var d = Math.round((1 - price/p.price) * 100); $("cpCalc").innerHTML = "Discount hobe: <span style='color:var(--red)'>" + d + "% OFF</span> · Normal " + fmt(p.price) + " → " + fmt(price) + (cp && d<cp.minDisc ? " · <span style='color:var(--red)'>Ei campaign e kompokkhe " + cp.minDisc + "% lagbe</span>" : " · <span style='color:var(--brand)'>Minimum puron hoyeche</span>"); }
+          else $("cpCalc").textContent = p ? "Normal price: " + fmt(p.price) + " — er cheye kom campaign price din" : "";
+        }
+        calc();
+        ["cpCamp","cpProd"].forEach(function(id){ $(id).addEventListener("change", calc); });
+        $("cpPrice").addEventListener("input", calc);
+        $("cpCancel").addEventListener("click", closeModal);
+        $("cpSave").addEventListener("click", function(){
+          var cp = campTypeByName($("cpCamp").value), p = prodById(+$("cpProd").value), price = +$("cpPrice").value, alloc = +$("cpAlloc").value;
+          if (!p || !(price>0) || price>=p.price) { $("cpErr").textContent = "Campaign price normal price er cheye kom hote hobe."; return; }
+          var d = Math.round((1 - price/p.price) * 100);
+          if (cp && d < cp.minDisc) { $("cpErr").textContent = cp.name + " er jonno kompokkhe " + cp.minDisc + "% discount lagbe (apni diyechen " + d + "%)."; return; }
+          if (!(alloc>0) || alloc>p.stock) { $("cpErr").textContent = "Allocated stock 1 theke apnar stock (" + (p ? p.stock : 0) + ") er moddhe hote hobe."; return; }
+          if (existing) { existing.campPrice = price; existing.alloc = alloc; existing.camp = cp.name; existing.status = "Pending Approval"; existing.adminNote = "Abar submit kora hoyeche — Admin er review er opekkhay ache."; }
+          else s.campSubs.unshift({ id: Date.now(), sellerId: s.id, pid: p.id, camp: cp.name, campPrice: price, alloc: alloc, status: "Pending Approval", adminNote: "Admin er review er opekkhay ache." });
+          closeModal(); renderAll(); showView("campaigns");
+          toast("Submit hoyeche — Admin approval er jonno pathano hoyeche");
+        });
+      });
+  }
+  $("addCampBtn").addEventListener("click", function(){ openCampModal(CAMPAIGN_TYPES[0].name, null); });
+
+  /* ================= RETURNS (own shop only) ================= */
+  function renderReturns(){
+    var s = me(); if (!s) return;
+    var list = ownReturns();
+    var pending = list.filter(function(r){ return r.status==="Return Requested"; }).length;
+    var acceptedAmt = list.filter(function(r){ return r.status==="Return Accepted"; }).reduce(function(sum,r){ return sum + r.amount; }, 0);
+    var stats = [
+      { lbl:"Pending return request", val: pending },
+      { lbl:"Mot return (amar shop)", val: list.length },
+      { lbl:"Wallet theke refund adjust hoyeche", val: fmt(acceptedAmt) }
+    ];
+    $("returnStats").innerHTML = stats.map(function(x){ return '<div class="stat"><div class="lbl">' + x.lbl + '</div><div class="val">' + x.val + '</div></div>'; }).join("");
+    $("returnList").innerHTML = list.length ? list.map(function(r){
+      var pr = prodById(r.pid);
+      return '<div class="sub-card"><div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-start">'
+        + '<div class="thumb" style="background:' + (pr ? (CAT_COLORS[pr.cat]||"#666") : "#666") + '">' + (pr ? catIcon(pr.cat) : "") + '</div>'
+        + '<div style="flex:1;min-width:200px"><div style="font-weight:800">' + esc(r.id) + ' · Order ' + esc(r.orderId) + ' — ' + (pr ? esc(pr.name) : "Product") + ' × ' + r.qty + '</div>'
+        + '<div style="font-size:.85rem;color:var(--muted)">Customer: ' + esc(r.customer) + ' · ' + esc(r.date) + '</div>'
+        + '<div style="font-size:.88rem;margin-top:.3rem"><b>Karon:</b> ' + esc(r.reason) + '</div>'
+        + '<div style="font-size:.88rem"><b>Refund amount:</b> <span style="color:var(--red);font-weight:800">' + fmt(r.amount) + '</span> <span style="color:var(--muted)">(accept korle apnar wallet theke kata hobe, Admin notify hobe)</span></div></div>'
+        + '<span class="status ' + statusClass(r.status) + '">' + r.status + '</span></div>'
+        + (r.status==="Return Requested" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-ret-accept="' + r.id + '" type="button">Accept — Wallet theke Refund</button><button class="mini-btn red" data-ret-reject="' + r.id + '" type="button">Reject — Admin Review te Pathan</button></div>' : '')
+        + '</div>';
+    }).join("") : '<div class="empty"><div class="et">No return requests</div><div>Apnar shop e customer return chaile request ekhane asbe.</div></div>';
+    $("returnList").querySelectorAll("[data-ret-accept]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var r = ownReturns().filter(function(x){ return x.id===b.getAttribute("data-ret-accept"); })[0]; if (!r) return;
+        openConfirm("Return accept korben?", r.id + " — " + fmt(r.amount) + " apnar wallet balance theke adjust hobe ar Admin ke notify kora hobe.", function(){
+          r.status = "Return Accepted"; s.balance = Math.max(0, s.balance - r.amount); renderAll(); toast("Return accept hoyeche — " + fmt(r.amount) + " wallet theke adjust, Admin notified");
+        });
+      });
+    });
+    $("returnList").querySelectorAll("[data-ret-reject]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var r = ownReturns().filter(function(x){ return x.id===b.getAttribute("data-ret-reject"); })[0]; if (!r) return;
+        r.status = "Return Rejected"; renderAll(); toast("Return reject hoyeche — Admin review er jonno pathano hoyeche");
+      });
+    });
+  }
+
+  /* ================= PAYOUTS ================= */
+  function renderPayouts(){
+    var s = me(); if (!s) return;
+    $("payoutBalance").textContent = fmt(s.balance);
+    $("payoutPending").textContent = fmt(s.pendingClearance);
+    $("payoutNote").textContent = "Payout method: " + s.payMethod + " · " + maskAccount(s.payAccount) + " · Next payout cycle: Sunday";
+    $("payoutHistoryBody").innerHTML = s.payouts.length ? s.payouts.map(function(p){
+      return '<tr><td>' + esc(p.date) + '</td><td>' + esc(p.method) + '</td><td>' + esc(p.account) + '</td><td><b>' + fmt(p.amount) + '</b></td><td><span class="status ' + statusClass(p.status) + '">' + p.status + '</span></td></tr>';
+    }).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.3rem">Ekhono kono payout hoy ni — prothom payout request ekhane dekhabe.</td></tr>';
+    var delivered = ownOrders().filter(function(o){ return o.status==="Delivered"; });
+    $("earningsBody").innerHTML = delivered.length ? delivered.map(function(o){
+      return '<tr><td><b>' + esc(o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td style="max-width:220px">' + esc(orderItemsText(o)) + '</td><td>' + fmt(orderTotal(o)) + '</td><td style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</td><td style="color:var(--brand);font-weight:800">' + fmt(orderEarning(o)) + '</td><td><span class="status st-processing">Return window e ache</span></td></tr>';
+    }).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.3rem">Delivered order hole earning er hisab ekhane asbe.</td></tr>';
+  }
+  $("withdrawBtn").addEventListener("click", function(){
+    var s = me(); if (!s) return;
+    if (s.balance <= 0) { toast("Available balance e ekhono taka nei — delivered order settle hole ekhane taka asbe"); return; }
+    openModal(
+      '<h2>Request Payout</h2><div class="msub">Available balance: <b>' + fmt(s.balance) + '</b> · Minimum payout ৳500 · Request Admin Finance approve korle taka release hobe</div>'
+      + '<div class="field"><label>Amount (৳)</label><input id="wAmt" aria-label="Payout amount" type="number" min="500" max="' + s.balance + '" value="' + s.balance + '" /></div>'
+      + '<div class="field"><label>Method</label><select id="wMethod" aria-label="Payout method"><option ' + (s.payMethod==="bKash" ? "selected" : "") + '>bKash</option><option ' + (s.payMethod==="Nagad" ? "selected" : "") + '>Nagad</option><option ' + (s.payMethod==="Bank Transfer" ? "selected" : "") + '>Bank Transfer</option></select></div>'
+      + '<div class="field"><label>Account</label><input id="wAcc" aria-label="Payout account" value="' + esc(s.payAccount) + '" /></div>'
+      + '<p class="err" id="wErr"></p>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="wCancel" type="button">Cancel</button><button class="btn" id="wGo" type="button">Confirm Payout Request</button></div>',
+      function(){
+        $("wCancel").addEventListener("click", closeModal);
+        $("wGo").addEventListener("click", function(){
+          var amt = +$("wAmt").value;
+          if (!(amt>=500) || amt>s.balance) { $("wErr").textContent = "Amount ৳500 theke " + fmt(s.balance) + " er moddhe hote hobe."; return; }
+          var method = $("wMethod").value, acc = $("wAcc").value;
+          s.balance -= amt;
+          s.payouts.unshift({ date: fmtDate(new Date().toISOString()), method: method, account: maskAccount(acc), amount: amt, status: "Processing" });
+          closeModal(); renderAll();
+          toast("Payout request pathano hoyeche — Admin Finance approve korle " + fmt(amt) + " " + method + " e jabe. Nijer payout nije approve kora jay na.");
+        });
+      });
+  });
+
+  /* ================= TEAM / STAFF ================= */
+  function renderTeam(){
+    var staff = ownStaff();
+    $("staffCount").textContent = staff.length;
+    $("staffGrid").innerHTML = staff.length ? staff.map(function(x){
+      var perms = PERMS[x.role] || [];
+      var permHtml = ALL_PERMS.map(function(p){
+        var has = perms.indexOf(p) > -1;
+        return '<li class="' + (has ? "" : "no") + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">' + (has ? '<path d="M20 6L9 17l-5-5"/>' : '<path d="M18 6L6 18M6 6l12 12"/>') + '</svg>' + esc(p) + '</li>';
+      }).join("");
+      return '<div class="staff-card"><div class="staff-head"><div class="avatar" style="background:' + x.color + '">' + initials(x.name) + '</div>'
+        + '<div style="min-width:0"><div style="font-weight:800;line-height:1.2">' + esc(x.name) + '</div><div style="font-size:.78rem;color:var(--muted)">' + esc(x.email) + '</div>'
+        + '<span class="role-tag">' + esc(x.role) + '</span></div></div>'
+        + '<div style="font-size:.83rem;color:var(--muted)">' + esc(x.phone) + ' · Joined ' + esc(x.joined) + '</div>'
+        + '<ul class="perm-list">' + permHtml + '</ul>'
+        + '<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.6rem">'
+        + '<span class="status ' + (x.active ? "st-active" : "st-paused") + '">' + (x.active ? "Active" : "Deactivated") + '</span>'
+        + '<span style="flex:1"></span>'
+        + '<button class="mini-btn" data-staff-toggle="' + x.id + '" type="button">' + (x.active ? "Deactivate" : "Activate") + '</button>'
+        + '<button class="mini-btn" data-staff-role="' + x.id + '" type="button">Change Role</button>'
+        + '<button class="mini-btn red" data-staff-del="' + x.id + '" type="button">Remove</button>'
+        + '</div></div>';
+    }).join("") : '<div class="empty" style="grid-column:1/-1"><div class="et">No team members yet</div><div>Apnar shop er jonno prothom staff add korun — se sudhu tar role er kaj guloi korte parbe.</div></div>';
+    $("staffGrid").querySelectorAll("[data-staff-toggle]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var x = ownStaff().filter(function(y){ return y.id===+b.getAttribute("data-staff-toggle"); })[0]; if (!x) return;
+        x.active = !x.active; toast(x.name + " ekhon " + (x.active ? "Active" : "Deactivated")); renderTeam();
+      });
+    });
+    $("staffGrid").querySelectorAll("[data-staff-del]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var x = ownStaff().filter(function(y){ return y.id===+b.getAttribute("data-staff-del"); })[0]; if (!x) return;
+        openConfirm("Staff remove korben?", x.name + " ar shop panel e login korte parbe na.", function(){
+          var s = me(); s.staff = s.staff.filter(function(y){ return y.id!==x.id; }); toast(x.name + " remove hoyeche"); renderTeam(); renderDashboard();
+        });
+      });
+    });
+    $("staffGrid").querySelectorAll("[data-staff-role]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var x = ownStaff().filter(function(y){ return y.id===+b.getAttribute("data-staff-role"); })[0];
+        if (x) openStaffRoleModal(x);
+      });
+    });
+    $("permMatrixBody").innerHTML = ALL_PERMS.map(function(p){
+      var cells = Object.keys(PERMS).map(function(r){
+        return PERMS[r].indexOf(p) > -1 ? '<td class="yes">✓</td>' : '<td class="nope">—</td>';
+      }).join("");
+      return '<tr><td style="font-weight:600">' + esc(p) + '</td>' + cells + '</tr>';
+    }).join("");
+  }
+  function roleOptions(sel){
+    return Object.keys(PERMS).map(function(r){ return '<option ' + (r===sel ? "selected" : "") + '>' + r + '</option>'; }).join("");
+  }
+  function openStaffRoleModal(x){
+    openModal(
+      '<h2>Change Role</h2><div class="msub">' + esc(x.name) + ' er role bodlale permission o sathe sathe bodle jabe</div>'
+      + '<div class="field"><label>Role</label><select id="srRole" aria-label="Role">' + roleOptions(x.role) + '</select></div>'
+      + '<div id="srPerms" style="margin-bottom:1rem"></div>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="srCancel" type="button">Cancel</button><button class="btn" id="srSave" type="button">Save Role</button></div>',
+      function(){
+        function showPerms(){
+          var r = $("srRole").value;
+          $("srPerms").innerHTML = '<div style="font-size:.85rem;color:var(--muted)">Ei role ja korte parbe:</div><ul class="perm-list">' + (PERMS[r] || []).map(function(p){
+            return '<li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M20 6L9 17l-5-5"/></svg>' + esc(p) + '</li>';
+          }).join("") + '</ul>';
+        }
+        showPerms();
+        $("srRole").addEventListener("change", showPerms);
+        $("srCancel").addEventListener("click", closeModal);
+        $("srSave").addEventListener("click", function(){
+          x.role = $("srRole").value; x.color = ROLE_COLORS[x.role];
+          closeModal(); renderTeam(); toast(x.name + " er role ekhon " + x.role);
+        });
+      });
+  }
+  $("addStaffBtn").addEventListener("click", function(){
+    var s = me(); if (!s) return;
+    openModal(
+      '<h2>Add Staff Member</h2><div class="msub">Notun worker sudhu apnar shop er panel ei kaj korbe, sudhu tar role er permission onujayi</div>'
+      + '<div class="field"><label>Full name</label><input id="nsName" aria-label="Full name" placeholder="e.g. Md. Sumon Ali" /></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Email (login)</label><input id="nsEmail" aria-label="Staff email" type="email" placeholder="name@shop.com" /></div>'
+      + '<div class="field"><label>Mobile</label><input id="nsPhone" aria-label="Staff mobile" placeholder="01XXXXXXXXX" /></div></div>'
+      + '<div class="field"><label>Role</label><select id="nsRole" aria-label="Staff role">' + roleOptions("Order Staff") + '</select><div class="hint" id="nsRoleHint"></div></div>'
+      + '<div class="field"><label>Temporary password</label><input id="nsPass" aria-label="Temporary password" type="text" placeholder="Staff prothom login e bodle nibe" /></div>'
+      + '<p class="err" id="nsErr"></p>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="nsCancel" type="button">Cancel</button><button class="btn" id="nsSave" type="button">Add Staff</button></div>',
+      function(){
+        function hint(){ $("nsRoleHint").textContent = "Permission: " + (PERMS[$("nsRole").value] || []).join(", "); }
+        hint();
+        $("nsRole").addEventListener("change", hint);
+        $("nsCancel").addEventListener("click", closeModal);
+        $("nsSave").addEventListener("click", function(){
+          var name = $("nsName").value.trim(), em = $("nsEmail").value.trim(), ph = $("nsPhone").value.trim(), pw = $("nsPass").value;
+          if (!name || !em || em.indexOf("@") < 1) { $("nsErr").textContent = "Name ar sothik email din."; return; }
+          if (!/^01\d{9}$/.test(ph.replace(/[-\s]/g, ""))) { $("nsErr").textContent = "Sothik 11 digit er mobile number din."; return; }
+          if (pw.length < 6) { $("nsErr").textContent = "Temporary password kompokkhe 6 character din."; return; }
+          if (ownStaff().some(function(y){ return y.email.toLowerCase()===em.toLowerCase(); })) { $("nsErr").textContent = "Ei email diye agei ekjon staff ache."; return; }
+          var role = $("nsRole").value;
+          s.staff.unshift({ id: Date.now(), sellerId: s.id, name: name, email: em, phone: ph, role: role, active: true, joined: monthYear(new Date().toISOString()), color: ROLE_COLORS[role] });
+          closeModal(); renderTeam();
+          toast(name + " staff hisebe add hoyeche — login: " + em);
+        });
+      });
+  });
+
+  /* ================= SETTINGS ================= */
+  $("shopForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var s = me(); if (!s) return;
+    s.shop = $("setShopName").value.trim() || s.shop;
+    s.owner = $("setOwner").value.trim();
+    s.phone = $("setPhone").value.trim();
+    s.address = $("setAddress").value.trim();
+    s.desc = $("setDesc").value.trim();
+    syncShopUI(); toast("Shop information save hoyeche");
+  });
+  $("payoutForm").addEventListener("submit", function(e){
+    e.preventDefault();
+    var s = me(); if (!s) return;
+    s.payMethod = $("payMethod").value;
+    s.payAccount = $("payAccount").value.trim();
+    s.payName = $("payName").value.trim();
+    renderPayouts(); toast("Payout method save hoyeche");
+  });
+  $("vacationBtn").addEventListener("click", function(){
+    var s = me(); if (!s) return;
+    s.vacation = !s.vacation;
+    this.textContent = "Vacation mode: " + (s.vacation ? "On" : "Off");
+    this.classList.toggle("amber", s.vacation);
+    toast(s.vacation ? "Vacation mode on — product gulo samoyik hide" : "Vacation mode off — shop abar live");
+  });
+  (function(){ var lt = $("setLogoText"); if (lt) lt.addEventListener("input", function(){ var v = lt.value.trim().toUpperCase().slice(0,2); var lp = $("logoPreview"); if (lp) lp.textContent = v || initials(me() ? me().shop : "S"); var av = $("shopAvatar"); if (av && v) av.textContent = v; }); })();
+
+  /* ================= MODAL PLUMBING ================= */
+  function openModal(html, wire){
+    $("modalRoot").innerHTML = '<div class="overlay" id="overlay"><div class="modal" role="dialog" aria-modal="true">' + html + '</div></div>';
+    $("overlay").addEventListener("click", function(e){ if (e.target===this) closeModal(); });
+    if (wire) wire();
+  }
+  function closeModal(){ $("modalRoot").innerHTML = ""; }
+  function openConfirm(title, body, onYes){
+    openModal('<h2>' + esc(title) + '</h2><div class="msub">' + esc(body) + '</div>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cfNo" type="button">Na, thak</button><button class="btn amber" id="cfYes" type="button">Ha, korun</button></div>',
+      function(){
+        $("cfNo").addEventListener("click", closeModal);
+        $("cfYes").addEventListener("click", function(){ closeModal(); onYes(); });
+      });
+  }
+
+  /* ================= INIT ================= */
+  function renderAll(){ renderDashboard(); renderProducts(); renderOrders(); renderCoupons(); renderCampaigns(); renderReturns(); renderPayouts(); renderTeam(); }
+  (function init(){
+    var sel = $("prodCatFilter");
+    Object.keys(COMMISSION).forEach(function(c){ var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
+    showLogin();
+  })();
+  </script>
+  </body>
+</html>
