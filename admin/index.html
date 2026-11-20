@@ -263,6 +263,20 @@ select.status-sel{border:1.5px solid var(--line);border-radius:8px;padding:5px 8
 .set-row:last-child{border-bottom:none}
 .set-row .t b{display:block;font-size:14.5px}
 .set-row .t span{font-size:13px;color:var(--muted)}
+.wp-item{display:flex;align-items:center;gap:14px;width:100%;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px 18px;cursor:pointer;font:inherit;color:var(--ink)}
+.wp-item:hover{border-color:var(--teal)}
+.wp-item .wp-ic{width:42px;height:42px;border-radius:10px;background:var(--surface2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--teal);flex:none}
+.wp-item .wp-main{flex:1;min-width:0}
+.wp-item .wp-name{font-weight:800;font-size:15.5px;line-height:1.3}
+.wp-item .wp-bn{color:var(--muted);font-size:13px;margin-top:1px}
+.wp-item .wp-meta{text-align:right;flex:none}
+.wp-item .wp-upd{font-size:12.5px;color:var(--muted);display:block;margin-top:3px}
+.wp-item .wp-upd.edited{color:var(--ok);font-weight:700}
+.wp-slug{font-size:11.5px;font-weight:700;background:var(--surface2);border:1px solid var(--line);border-radius:99px;padding:2px 8px;color:var(--muted);white-space:nowrap}
+.wp-editor textarea{width:100%;padding:12px 14px;border:1.5px solid var(--line);border-radius:10px;background:var(--surface);font-size:14.5px;line-height:1.65;min-height:340px;resize:vertical;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.wp-editor textarea:focus{border-color:var(--teal);outline:none;box-shadow:0 0 0 3px rgba(14,124,111,.18)}
+.wp-note{border-radius:12px;padding:11px 14px;font-size:13.5px;line-height:1.55;background:var(--warn-bg);color:var(--warn-ink);border:1.5px solid var(--amber);margin-top:14px}
+@media (max-width:860px){.wp-item{flex-wrap:wrap}.wp-item .wp-meta{text-align:left;width:100%}}
 .coupon-card{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
 .coupon-code{font-size:19px;font-weight:800;letter-spacing:.6px;background:var(--surface2);border:1.5px dashed var(--teal);color:var(--teal);padding:8px 14px;border-radius:10px}
 .note{font-size:13px;color:var(--muted)}
@@ -441,6 +455,8 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
         <section class="view" id="view-activity"></section>
         <!-- REPORTS -->
         <section class="view" id="view-reports"></section>
+        <!-- WEBSITE PAGES -->
+        <section class="view" id="view-pages"></section>
         <!-- SETTINGS -->
         <section class="view" id="view-settings"></section>
       </main>
@@ -1341,6 +1357,7 @@ var NAV = [
  {id:"support", label:"Support & Reviews", badge:function(){ return supportTickets.filter(function(t){return t.status==="Open";}).length + reviewQueue.filter(function(r){return r.status==="Pending"||r.status==="Flagged";}).length; }, badgeClass:"lime", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>'},
  {id:"activity", label:"Activity Log", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'},
  {id:"reports", label:"Reports", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
+ {id:"pages", label:"Website Pages", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>'},
  {id:"settings", label:"Settings", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>'}
 ];
 var currentView = "dashboard";
@@ -1368,7 +1385,7 @@ function showView(id){
   window.scrollTo({top:0});
 }
 function renderCurrent(){
-  ({dashboard:renderDashboard, orders:renderOrders, products:renderProducts, inventory:renderInventory, customers:renderCustomers, staff:renderStaff, sellers:renderSellers, campaigns:renderCampaigns, coupons:renderCoupons, finance:renderFinance, returns:renderReturns, logistics:renderLogistics, support:renderSupport, activity:renderActivity, reports:renderReports, settings:renderSettings})[currentView]();
+  ({dashboard:renderDashboard, orders:renderOrders, products:renderProducts, inventory:renderInventory, customers:renderCustomers, staff:renderStaff, sellers:renderSellers, campaigns:renderCampaigns, coupons:renderCoupons, finance:renderFinance, returns:renderReturns, logistics:renderLogistics, support:renderSupport, activity:renderActivity, reports:renderReports, pages:renderWebsitePages, settings:renderSettings})[currentView]();
 }
 function renderAll(){ renderNav(); renderCurrent(); }
 
@@ -2687,6 +2704,135 @@ function renderActivity(){
   el.innerHTML = '<div class="card"><h3>🧾 Activity log — ke ki korlo</h3><p class="hint">Order confirm, payout, coupon, seller approval, commission change — sob boro kaj ekhane record thake. Notun kaj korlei ekhane entry jog hoy (upore).</p>'
     + activityLog.map(function(a){ return '<div class="kv"><span>'+a.time+' · <b>'+esc(a.who)+'</b></span><b style="text-align:right;max-width:55%">'+esc(a.what)+'</b></div>'; }).join("")
     + '<p class="note" style="margin-top:12px">Login, account toiri, order confirm, payout, approval — prottek entry te ke koreche tar account name shoho thake. Supabase connect hole ei log Postgres e permanent thakbe.</p></div>';
+}
+
+/* ==================== WEBSITE PAGES ====================
+   Storefront er tothyo page gulor lekha Admin ekhan theke edit kore —
+   notun deploy charai. Lekha Supabase `site_pages` table e thake
+   (slug primary key, title, content, updated_at); storefront oi table
+   theke pore dekhay, row na thakle page er ashol (built-in) lekha dekhay. */
+var SITE_PAGES = [
+  { slug: "return-refund", name: "Return & Refund Policy", bn: "রিটার্ন ও রিফান্ড পলিসি" },
+  { slug: "delivery", name: "Delivery Information", bn: "ডেলিভারি তথ্য" },
+  { slug: "warranty", name: "Warranty Policy", bn: "ওয়ারেন্টি পলিসি" },
+  { slug: "privacy", name: "Privacy Policy", bn: "প্রাইভেসি পলিসি" },
+  { slug: "contact", name: "Contact Us", bn: "যোগাযোগ করুন" },
+  { slug: "about", name: "About Us", bn: "আমাদের সম্পর্কে" },
+  { slug: "terms", name: "Terms & Conditions", bn: "শর্তাবলী" },
+  { slug: "career", name: "Career", bn: "ক্যারিয়ার" }
+];
+var sitePagesCache = {};       /* slug -> {slug, title, content, updated_at} */
+var sitePagesLoaded = false;
+var sitePagesLoading = false;
+var sitePagesLoadError = "";
+var editingPageSlug = null;
+function sitePageDef(slug){ for (var i = 0; i < SITE_PAGES.length; i++) if (SITE_PAGES[i].slug === slug) return SITE_PAGES[i]; return null; }
+function wpUpdatedLabel(row){
+  if (!row || !row.updated_at) return "এখনো এডিট হয়নি";
+  try{
+    var d = new Date(row.updated_at);
+    if (isNaN(d.getTime())) return "এখনো এডিট হয়নি";
+    return "Last updated: " + d.toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"}) + ", " + d.toLocaleTimeString("en-GB", {hour:"numeric", minute:"2-digit"});
+  }catch(e){ return "Last updated: " + row.updated_at; }
+}
+async function loadSitePages(){
+  if (sitePagesLoading) return;
+  if (!sbReady()){ sitePagesLoaded = true; return; }
+  sitePagesLoading = true;
+  try{
+    var r = await sb.from("site_pages").select("slug,title,content,updated_at");
+    if (r && !r.error && Array.isArray(r.data)){
+      r.data.forEach(function(row){ if (row && row.slug) sitePagesCache[row.slug] = row; });
+      sitePagesLoadError = "";
+    } else if (r && r.error){
+      sbWarn("site_pages", r.error);
+      sitePagesLoadError = r.error.message || String(r.error);
+    }
+  }catch(e){ sbWarn("site_pages", e); sitePagesLoadError = (e && e.message) || String(e); }
+  sitePagesLoading = false;
+  sitePagesLoaded = true;
+  if (currentView === "pages") renderWebsitePages();
+}
+function renderWebsitePages(){
+  var el = $("#view-pages");
+  if (!el) return;
+  if (!sitePagesLoaded && !sitePagesLoading) loadSitePages();
+  if (editingPageSlug) renderPageEditor(el); else renderPageList(el);
+}
+function renderPageList(el){
+  var edited = SITE_PAGES.filter(function(p){ return !!sitePagesCache[p.slug]; }).length;
+  var html = '<div class="card" style="margin-bottom:16px"><h3>Website Pages · ওয়েবসাইট পেজ</h3>'
+    + '<p class="hint" style="margin-bottom:0">Storefront er tothyo page gulor lekha ekhan theke bodlano jay — notun deploy lagbe na. Ekta page e click kore title ar content edit kore Save korlei lekha <b>site_pages</b> table e save hoye live site e dekhabe. Je page ekhono edit hoy ni, seta tar ashol lekha-i dekhachhe.</p></div>';
+  if (!sitePagesLoaded){
+    html += '<div class="card"><p class="note" style="margin:0">Page gulor tothyo load hochhe…</p></div>';
+  } else {
+    if (sitePagesLoadError) html += '<div class="sb-notice warn"><b>Page gulor save kora lekha load hoy ni</b> — ' + esc(sitePagesLoadError) + ' Nicher list theke edit shuru kora jabe, kintu age save kora lekha nao dekhate pare.</div>';
+    if (!sbReady()) html += '<div class="sb-notice warn"><b>Database connection nai</b> — ei copy te page save hobe na. Live Admin site theke edit koro.</div>';
+    html += '<div style="display:grid;gap:12px">'
+      + SITE_PAGES.map(function(p){
+          var row = sitePagesCache[p.slug];
+          return '<button type="button" class="wp-item" data-wp-open="' + p.slug + '">'
+            + '<span class="wp-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>'
+            + '<span class="wp-main"><span class="wp-name">' + esc(p.name) + '</span><span class="wp-bn" style="display:block">' + esc(p.bn) + '</span></span>'
+            + '<span class="wp-meta"><span class="wp-slug">/' + p.slug + '</span><span class="wp-upd' + (row ? ' edited' : '') + '">' + esc(wpUpdatedLabel(row)) + '</span></span>'
+            + '<span class="btn ghost sm" aria-hidden="true">Edit</span>'
+            + '</button>';
+        }).join("")
+      + '</div>'
+      + '<p class="note" style="margin-top:14px">' + edited + ' / ' + SITE_PAGES.length + ' page Admin theke edit kora hoyeche.</p>';
+  }
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.querySelectorAll("[data-wp-open]"), function(b){
+    b.addEventListener("click", function(){ editingPageSlug = b.getAttribute("data-wp-open"); renderWebsitePages(); window.scrollTo({top:0}); });
+  });
+}
+function renderPageEditor(el){
+  var def = sitePageDef(editingPageSlug);
+  if (!def){ editingPageSlug = null; renderPageList(el); return; }
+  var row = sitePagesCache[def.slug] || null;
+  var html = '<button class="btn ghost sm" type="button" id="wpBack" style="margin-bottom:14px">← Sob page er list</button>'
+    + '<div class="card wp-editor"><h3>' + esc(def.name) + ' · ' + esc(def.bn) + '</h3>'
+    + '<p class="hint">Page: <b>/' + def.slug + '</b>' + (row ? ' · ' + esc(wpUpdatedLabel(row)) : '') + '</p>'
+    + '<form id="wpForm">'
+    + '<div class="field"><label for="wpTitle">Page title</label><input id="wpTitle" value="' + esc(row ? (row.title || "") : "") + '" placeholder="' + esc(def.name) + '" /></div>'
+    + '<div class="field"><label for="wpContent">Content — HTML lekha jabe</label>'
+    + '<textarea id="wpContent" placeholder="&lt;h2&gt;Heading&lt;/h2&gt;&#10;&lt;p&gt;Paragraph lekha…&lt;/p&gt;&#10;&lt;ul&gt;&lt;li&gt;List item&lt;/li&gt;&lt;/ul&gt;">' + esc(row ? (row.content || "") : "") + '</textarea>'
+    + '<p class="note" style="margin:6px 0 0">Heading er jonno &lt;h2&gt;, paragraph er jonno &lt;p&gt;, list er jonno &lt;ul&gt;&lt;li&gt; babohar kora jabe. Save korle-i live site e ei lekha dekhabe.</p></div>'
+    + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px"><button class="btn" type="submit" id="wpSaveBtn">Save page</button><button class="btn ghost" type="button" id="wpCancel">Cancel</button></div>'
+    + '</form>'
+    + (row ? '' : '<div class="wp-note">এখনো Admin থেকে এডিট করা হয়নি — পেজটি তার আসল লেখা দেখাচ্ছে। এখানে title ar content likhe Save korlei live site e notun lekha dekhabe.</div>')
+    + '</div>';
+  el.innerHTML = html;
+  var back = function(){ editingPageSlug = null; renderWebsitePages(); };
+  $("#wpBack").addEventListener("click", back);
+  $("#wpCancel").addEventListener("click", back);
+  $("#wpForm").addEventListener("submit", function(e){ e.preventDefault(); saveWebsitePage(def.slug); });
+}
+function saveWebsitePage(slug){
+  var titleEl = $("#wpTitle"), contentEl = $("#wpContent"), btn = $("#wpSaveBtn");
+  var title = titleEl ? titleEl.value.trim() : "";
+  var content = contentEl ? contentEl.value : "";
+  if (!title){ toast("⚠ Title khali rakha jabe na — ekta title likho"); if (titleEl) titleEl.focus(); return; }
+  if (!content.trim()){ toast("⚠ Content khali — kichu lekha add koro"); if (contentEl) contentEl.focus(); return; }
+  if (!sbReady()){ toast("❌ সেভ হয়নি — Database connection nai. Live Admin site theke save koro; ei preview copy te save hobe na.", 6500); return; }
+  if (btn){ btn.disabled = true; btn.textContent = "Saving…"; }
+  var payload = { slug: slug, title: title, content: content, updated_at: new Date().toISOString() };
+  sb.from("site_pages").upsert(payload, { onConflict: "slug" }).then(function(r){
+    if (r && r.error){
+      toast("❌ সেভ হয়নি — " + esc(r.error.message || "Unknown error"), 6500);
+      if (btn){ btn.disabled = false; btn.textContent = "Save page"; }
+      return;
+    }
+    sitePagesCache[slug] = payload;
+    sitePagesLoaded = true;
+    try{ logActivity("Edited website page: " + slug); }catch(e){}
+    editingPageSlug = null;
+    toast("✅ পেজ আপডেট হয়েছে — লাইভ সাইটে দেখা যাবে", 4200);
+    renderWebsitePages();
+  }).catch(function(e){
+    toast("❌ সেভ হয়নি — " + esc((e && e.message) || String(e)), 6500);
+    if (btn){ btn.disabled = false; btn.textContent = "Save page"; }
+  });
 }
 </script>
 </body>
