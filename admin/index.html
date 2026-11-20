@@ -4,11 +4,11 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="light dark" />
-<link rel="icon" href="data:," />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23a8e10c'/%3E%3Ctext x='32' y='42' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23243b00' text-anchor='middle'%3EA%3C/text%3E%3C/svg%3E" />
 <title>AnboBD Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@800&family=Manrope:wght@400;500;600;700;800&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
@@ -50,8 +50,9 @@ a{color:var(--teal)}
 #loginView{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
 .login-brand{background:var(--teal-deep);color:#eaf5ee;padding:48px 44px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
 .login-brand::after{content:"";position:absolute;right:-90px;bottom:-90px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(168,225,12,.5),rgba(168,225,12,0) 65%)}
-.brand-logo{font-size:30px;font-weight:800;letter-spacing:-.5px}
-.brand-logo .an{color:#fff}.brand-logo .bo{color:var(--lime)}
+.brand-logo{font-family:"Bricolage Grotesque",sans-serif;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap}
+.brand-logo .an{color:#fff}.brand-logo .bo{color:#ff6b4a}
+.brand-logo .bd{display:inline-block;background:#a8e10c;color:#243b00;border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg)}
 .brand-tag{display:inline-block;margin-left:10px;font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;background:var(--lime);color:var(--lime-ink);padding:4px 9px;border-radius:99px;vertical-align:middle}
 .login-brand h1{font-size:clamp(28px,3.4vw,42px);line-height:1.15;margin:0 0 14px;font-weight:800;letter-spacing:-.5px}
 .login-brand p{color:#b9d4c6;max-width:44ch;margin:0}
@@ -97,8 +98,9 @@ a{color:var(--teal)}
 #appView{display:none}
 .app{display:grid;grid-template-columns:250px minmax(0,1fr);min-height:100vh}
 .sidebar{background:var(--side);color:var(--side-ink);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;z-index:40}
-.side-logo{font-size:22px;font-weight:800;padding:4px 10px 2px;color:#fff}
-.side-logo .bo{color:var(--lime)}
+.side-logo{font-family:"Bricolage Grotesque",sans-serif;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap;padding:4px 10px 2px;color:#fff}
+.side-logo .an{color:#fff}.side-logo .bo{color:#ff6b4a}
+.side-logo .bd{display:inline-block;background:#a8e10c;color:#243b00;border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg)}
 .side-sub{font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:var(--side-muted);padding:0 10px 16px;font-weight:700}
 .nav-item{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:none;border:none;color:var(--side-ink);padding:11px 12px;border-radius:10px;font-weight:600;font-size:14.5px;min-height:44px}
 .nav-item svg{flex:none;opacity:.85}
@@ -351,7 +353,7 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
 <section id="loginView" aria-label="Admin sign in">
   <div class="login-brand">
     <div>
-      <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span>BD<span class="brand-tag">Admin</span></div>
+      <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span><span class="brand-tag">Admin</span></div>
     </div>
     <div>
       <h1>Run the whole store from one place.</h1>
@@ -394,7 +396,7 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
 <div id="appView">
   <div class="app">
     <aside class="sidebar" id="sidebar" aria-label="Admin navigation">
-      <div class="side-logo">An<span class="bo">bo</span>BD</div>
+      <div class="side-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></div>
       <div class="side-sub">Admin Panel</div>
       <nav id="mainNav"></nav>
       <div class="side-foot">
