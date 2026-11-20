@@ -1034,6 +1034,7 @@ section{ padding-top:56px }
     <h3 style="margin:8px 0 6px">অর্ডার হয়ে গেছে!</h3>
     <p style="color:var(--muted);line-height:1.6;margin:0">ধন্যবাদ! অর্ডারটি এখন <b style="color:var(--ink)">Admin-এর যাচাইয়ে</b> আছে — Admin কনফার্ম করলেই Seller-এর কাছে পাঠানো হবে, Seller প্যাক করে কুরিয়ারে দিয়ে দেবে।</p>
     <div class="sumbox" id="orderSummary"></div>
+    <div class="paystatus" id="orderSyncStatus" style="display:none;text-align:left"></div>
     <div class="timeline">
       <div class="done"><span class="tdot">✓</span><div><b>অর্ডার গৃহীত — Admin যাচাইয়ে আছে</b><span>AnboBD Admin অর্ডারটি যাচাই করছে</span></div></div>
       <div><span class="tdot">2</span><div><b>Admin কনফার্ম → Seller-এর কাছে পাঠানো হবে</b><span>কনফার্ম হলেই Seller অর্ডারটি পেয়ে যাবে</span></div></div>
@@ -1882,12 +1883,36 @@ function checkoutSubmit(e){
     userEmail: (window.__anboCurrentUser ? window.__anboCurrentUser.email : null)
   };
   ANBOBD_STORE.orders.push(order);
-  if(window.ANBOBD_DB && ANBOBD_DB.configured()){
-    ANBOBD_DB.saveOrder(order).then(function(saved){
-      if(!saved){ toast("⚠️ অর্ডারটি এই ডিভাইসে রাখা হয়েছে, কিন্তু অনলাইনে সেভ হয়নি — সংযোগ ঠিক হলে আবার অর্ডার করুন বা সাপোর্টে জানান।"); }
-      else if(window.renderAccount && window.__anboCurrentUser) renderAccount();
-    }).catch(function(err){ console.warn("Order save failed, order kept locally:", err); toast("⚠️ অর্ডারটি অনলাইনে সেভ করা যায়নি — অর্ডারটি এই ডিভাইসেই রাখা হয়েছে।"); });
-  }
+  /* সাকসেস স্ক্রিন দেখানোর আগেই অনলাইনে সেভের চেষ্টা শেষ করা হয় এবং
+     ফলাফলটা সাকসেস স্ক্রিনেই সত্যি করে জানানো হয়। সেভ না হলে অর্ডারটি
+     এই ডিভাইসে সংরক্ষিত থাকে (localStorage), পেজ আবার খুললেই বা
+     Admin/Seller প্যানেল খুললেই retryPendingOrders আবার পাঠায়। */
+  var btn = document.getElementById("placeOrderBtn");
+  if(btn){ btn.disabled = true; btn.textContent = "⏳ অর্ডারটি পাঠানো হচ্ছে…"; }
+  var savePromise = (window.ANBOBD_DB && ANBOBD_DB.configured())
+    ? ANBOBD_DB.saveOrder(order).catch(function(err){ console.warn("Order save failed, order kept locally:", err); return null; })
+    : Promise.resolve(null);
+  savePromise.then(function(saved){
+    order.onlineSaved = !!saved;
+    if(window.__anboPersistState) window.__anboPersistState();
+    if(btn){ btn.disabled = false; btn.textContent = "✅ অর্ডার কনফার্ম করুন"; }
+    var syncEl = document.getElementById("orderSyncStatus");
+    if(syncEl){
+      if(saved){
+        syncEl.style.display = "block";
+        syncEl.innerHTML = "✅ <b>অর্ডারটি অনলাইনে সেভ হয়েছে</b> — Admin-এর প্যানেলে পৌঁছে গেছে। Admin কনফার্ম করলেই Seller-এর কাছে যাবে।";
+      } else {
+        syncEl.style.display = "block";
+        syncEl.style.background = "#fde8e2"; syncEl.style.color = "#8f1d08";
+        syncEl.innerHTML = "⚠️ <b>অর্ডারটি এখনো অনলাইনে সেভ হয়নি</b> — এটি এই ডিভাইসে সংরক্ষিত আছে এবং পেজ আবার খুললেই স্বয়ংক্রিয়ভাবে আবার পাঠানো হবে। অর্ডার নম্বরটি রেখে দিন: <b>"+escHtml(order.id)+"</b>। বেশি দেরি হলে এই নম্বরসহ হটলাইনে (09638-555555) জানান।";
+      }
+    }
+    if(saved && window.renderAccount && window.__anboCurrentUser) renderAccount();
+    finishCheckoutUI(name, phone, addr, dist, pay, isManual, trxId, paySender, t, order);
+  });
+  return;
+}
+function finishCheckoutUI(name, phone, addr, dist, pay, isManual, trxId, paySender, t, order){
   var cust = ANBOBD_STORE.customers.filter(function(c){return c.phone===phone;})[0];
   if(cust){ cust.totalOrders++; cust.totalSpent += t.total; }
   else ANBOBD_STORE.customers.push({ name:name, phone:phone, address:addr, district:dist, totalOrders:1, totalSpent:t.total });
@@ -2239,14 +2264,29 @@ function anboMapCouponRow(r){
     sellerId:r.shop_id||r.seller_id||null, used:(r.used_count!=null?r.used_count:(r.used||0)) };
 }
 function anboOrderFromRow(row, user){
-  return { id: row.id, supabaseId: row.id,
-    items: Array.isArray(row.items) ? row.items : [],
-    customer: { name:row.customer_name||"", phone:row.customer_phone||"", address:row.address||"", district:row.district||"", note:row.note||"" },
-    payment: { method:row.payment_method||"", status:row.payment_status||"", transactionId:row.transaction_id||null, senderNumber:row.sender_number||null },
-    amounts: { subtotal:row.subtotal||0, discount:row.discount||0, deliveryFee:row.delivery_fee||0, total:row.total||0 },
-    promoCode: row.promo_code||null, zone: row.zone||"", status: row.status||"AwaitingAdmin",
+  /* Live orders table-এর আসল column (যাচাইকৃত): id, customer_id, customer_name,
+     customer_phone, address, delivery_address, district, payment_method,
+     payment_status, transaction_id, total, promo_code, status, items, created_at।
+     subtotal/discount/delivery_fee/zone/note/sender_number/estimated_delivery/
+     user_id নামে কোনো column নেই — ওই তথ্য saveOrder items অ্যারের শেষে একটি
+     meta আইটেমে রাখে, এখানে সেটা খুলে আসল জায়গায় ফিরিয়ে দেওয়া হয়। */
+  var rawItems = Array.isArray(row.items) ? row.items : [];
+  var meta = null;
+  var items = rawItems.filter(function(it){
+    if(it && it.meta){ meta = it; return false; }
+    return true;
+  });
+  var subTotal = items.reduce(function(s,it){ return s + (Number(it.lineTotal)||0); }, 0);
+  var amounts = (meta && meta.amounts) ? meta.amounts
+    : { subtotal:subTotal, discount:0, deliveryFee:Math.max(0,(Number(row.total)||0)-subTotal), total:Number(row.total)||0 };
+  return { id: (meta && meta.localId) ? meta.localId : row.id, supabaseId: row.id,
+    items: items,
+    customer: { name:row.customer_name||"", phone:row.customer_phone||"", address:row.address||row.delivery_address||"", district:row.district||"", note:(meta&&meta.note)||"" },
+    payment: { method:row.payment_method||"", status:row.payment_status||"", transactionId:row.transaction_id||null, senderNumber:(meta&&meta.senderNumber)||null },
+    amounts: amounts,
+    promoCode: row.promo_code||null, zone: (meta&&meta.zone)||"", status: row.status||"AwaitingAdmin",
     statusHistory: [], placedAt: row.created_at||new Date().toISOString(),
-    estimatedDelivery: row.estimated_delivery||"", source:"supabase", userId: row.user_id||null, userEmail: user ? user.email : "" };
+    estimatedDelivery: (meta&&meta.estimatedDelivery)||"", source:"supabase", userId: row.customer_id||null, userEmail: user ? user.email : "" };
 }
 function anboDbErr(what, err){
   console.warn(what, err);
@@ -2315,29 +2355,53 @@ var ANBOBD_DB = {
   },
   saveOrder: async function(order){
     var sb = this.sb(); if(!sb) return null;
+    /* ⚠️ Payload-এ শুধুমাত্র live table-এ সত্যিই আছে এমন column যাবে।
+       আগের payload user_id, note, sender_number, subtotal, discount,
+       delivery_fee, zone, estimated_delivery পাঠাত — orders table-এ এই
+       column গুলোর একটাও নেই, তাই PostgREST প্রতিটি insert-ই PGRST204
+       ("Could not find the 'delivery_fee' column") দিয়ে reject করত এবং
+       কোনো অর্ডারই কখনো সেভ হত না (লাইভ API দিয়ে যাচাইকৃত)।
+       যেসব তথ্যের নিজস্ব column নেই (amounts-এর ভাগ, note, sender নম্বর,
+       zone, আনুমানিক ডেলিভারি, লোকাল অর্ডার নম্বর) সেগুলো items JSON-এর
+       শেষে একটি meta আইটেমে যায় — anboOrderFromRow সেটা ফিরিয়ে আনে। */
+    var metaItem = { meta:true, productId:null, sku:"", name:"", qty:0, unitPrice:0, lineTotal:0, sellerId:null,
+      localId: order.id, amounts: order.amounts, note: order.customer.note||"",
+      senderNumber: order.payment.senderNumber||null, zone: order.zone||"",
+      estimatedDelivery: order.estimatedDelivery||"" };
     var payload = {
-      user_id: anboIsUuid(order.userId) ? order.userId : null,
+      customer_id: anboIsUuid(order.userId) ? order.userId : null,
       customer_name: order.customer.name, customer_phone: order.customer.phone,
-      address: order.customer.address, district: order.customer.district, note: order.customer.note||"",
+      address: order.customer.address, district: order.customer.district,
       payment_method: order.payment.method, payment_status: order.payment.status,
-      transaction_id: order.payment.transactionId||null, sender_number: order.payment.senderNumber||null,
-      subtotal: order.amounts.subtotal, discount: order.amounts.discount, delivery_fee: order.amounts.deliveryFee, total: order.amounts.total,
-      promo_code: order.promoCode||null, zone: order.zone||"", status: order.status,
-      items: order.items, estimated_delivery: order.estimatedDelivery||""
+      transaction_id: order.payment.transactionId||null,
+      total: order.amounts.total,
+      promo_code: order.promoCode||null, status: order.status,
+      items: order.items.concat([metaItem])
     };
-    var res = await sb.from('orders').insert(payload).select();
-    if(res.error){ anboDbErr("অর্ডারটি অনলাইনে সেভ করা যায়নি", res.error); return null; }
+    var res;
+    try{ res = await sb.from('orders').insert(payload).select(); }
+    catch(e){ console.warn("Order insert failed:", e); order.syncError = String(e && e.message || e); return null; }
+    if(res.error){ console.warn("Order insert rejected:", res.error); order.syncError = res.error.message || res.error.code || "insert rejected"; return null; }
     var saved = (res.data && res.data[0]) ? res.data[0] : null;
     if(saved && saved.id) order.supabaseId = saved.id;
+    order.onlineSaved = true; order.syncError = null;
+    /* sub_orders-এর আসল column: id, order_id, shop_id, seller_id, subtotal,
+       status, created_at, delivered_at — আগের payload items/total/
+       payment_method, transaction_id, customer name/phone, district, address পাঠাত,
+       যার একটাও নেই (PGRST204)। shop_id/seller_id শুধুমাত্র আসল UUID
+       হলেই যাবে — ক্যাটালগের placeholder "s1" পাঠালে row reject হয়। */
     var bySeller = {};
     order.items.forEach(function(it){ (bySeller[it.sellerId] = bySeller[it.sellerId]||[]).push(it); });
     for(var sid in bySeller){
       var subItems = bySeller[sid];
       var subTotal = subItems.reduce(function(s,it){ return s+it.lineTotal; },0);
+      if(!saved || !saved.id) break;
+      var subPayload = { order_id: saved.id, subtotal: subTotal, status: order.status };
+      if(anboIsUuid(sid)){ subPayload.shop_id = sid; subPayload.seller_id = sid; }
       try{
-        var sr = await sb.from('sub_orders').insert({ order_id: (saved && saved.id) ? saved.id : order.id, shop_id: sid, items: subItems, subtotal: subTotal, total: subTotal, status: order.status, payment_method: order.payment.method, transaction_id: order.payment.transactionId||null, customer_name: order.customer.name, customer_phone: order.customer.phone, district: order.customer.district, address: order.customer.address });
-        if(sr.error) anboDbErr("অর্ডারের Seller-ভাগটি অনলাইনে সেভ করা যায়নি", sr.error);
-      }catch(e){ anboDbErr("অর্ডারের Seller-ভাগটি অনলাইনে সেভ করা যায়নি", e); }
+        var sr = await sb.from('sub_orders').insert(subPayload);
+        if(sr.error) console.warn("Sub-order insert rejected (main order saved):", sr.error);
+      }catch(e){ console.warn("Sub-order insert failed (main order saved):", e); }
     }
     if(saved && saved.id){
       try{
@@ -2352,13 +2416,29 @@ var ANBOBD_DB = {
   loadMyOrders: async function(user){
     var sb = this.sb(); if(!sb || !user || !anboIsUuid(user.id)) return;
     try{
-      var r = await sb.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending:false });
+      /* orders table-এ user_id column নেই — ক্রেতার column-এর নাম customer_id */
+      var r = await sb.from('orders').select('*').eq('customer_id', user.id).order('created_at', { ascending:false });
       if(r.error) throw r.error;
       (r.data||[]).forEach(function(row){
         if(ANBOBD_STORE.orders.some(function(o){ return String(o.supabaseId||"")===String(row.id) || String(o.id)===String(row.id); })) return;
         ANBOBD_STORE.orders.push(anboOrderFromRow(row, user));
       });
     }catch(e){ anboDbErr("আপনার অর্ডারগুলো অনলাইন থেকে লোড করা যায়নি", e); }
+  },
+  /* যেসব অর্ডার অনলাইনে সেভ হয়নি (onlineSaved নয়, supabaseId নেই) সেগুলো
+     আবার পাঠানোর চেষ্টা — পেজ লোডে, সাইন ইনে আর Admin/Seller প্যানেল
+     খুললেই ডাকা হয়, যাতে একবার ব্যর্থ হলেও অর্ডার Admin-এর কাছে পৌঁছায়। */
+  retryPendingOrders: async function(){
+    if(!this.configured()) return 0;
+    var pending = ANBOBD_STORE.orders.filter(function(o){ return !o.supabaseId && !o.onlineSaved; });
+    var savedCount = 0;
+    for(var i=0;i<pending.length;i++){
+      var saved = await this.saveOrder(pending[i]);
+      if(saved) savedCount++;
+      else break; /* প্রথম ব্যর্থতাতেই থামো — সার্ভার/অনুমতির সমস্যা থাকলে বাকিগুলোও ব্যর্থ হবে */
+    }
+    if(savedCount && window.__anboPersistState) window.__anboPersistState();
+    return savedCount;
   }
 };
 window.ANBOBD_DB = ANBOBD_DB;
@@ -2374,6 +2454,9 @@ ANBOBD_DB.syncOnce = function(key, ms){
 ANBOBD_DB.updateOrderStatus = async function(order, status){
   var sb = this.sb(); if(!sb || !order) return;
   var oid = order.supabaseId || order.id;
+  /* লোকাল অর্ডার নম্বর (#ANBO…) দিয়ে DB update হয় না — শুধু অনলাইনে সেভ
+     হওয়া (UUID) অর্ডারের স্ট্যাটাসই write-back হবে */
+  if(!anboIsUuid(oid) && typeof oid!=="number") return;
   try{
     var r1 = await sb.from('orders').update({ status: status }).eq('id', oid);
     if(r1.error) throw r1.error;
@@ -2406,16 +2489,28 @@ ANBOBD_DB.loadSellerOrders = async function(shopId){
       var oid = row.order_id || row.id;
       var ex = ANBOBD_STORE.orders.filter(function(o){ return String(o.supabaseId||"")===String(oid) || String(o.id)===String(oid); })[0];
       if(ex){ if(ex.source==="supabase-sub") ex.status = row.status || ex.status; return; }
-      ANBOBD_STORE.orders.push({
+      /* sub_orders table-এ items/customer/payment column নেই — সেগুলো শুধু
+         মূল orders row-তে থাকে। তাই প্রথমে খালি কাঠামো বসিয়ে মূল অর্ডারটা
+         এনে আইটেম/কাস্টমার/পেমেন্ট মিলিয়ে দেওয়া হয় (পড়া গেলে)। */
+      var subOrderObj = {
         id: oid, supabaseId: oid,
-        items: Array.isArray(row.items) ? row.items : [],
-        customer: { name:row.customer_name||"", phone:row.customer_phone||"", address:row.address||"", district:row.district||"", note:"" },
-        payment: { method:row.payment_method||"", status:"", transactionId:row.transaction_id||null, senderNumber:null },
-        amounts: { subtotal:row.subtotal||0, discount:0, deliveryFee:0, total:(row.total!=null?row.total:(row.subtotal||0)) },
+        items: [],
+        customer: { name:"", phone:"", address:"", district:"", note:"" },
+        payment: { method:"", status:"", transactionId:null, senderNumber:null },
+        amounts: { subtotal:row.subtotal||0, discount:0, deliveryFee:0, total:(row.subtotal||0) },
         promoCode: null, zone:"", status: row.status||"AwaitingAdmin",
         statusHistory: [], placedAt: row.created_at||new Date().toISOString(),
         estimatedDelivery:"", source:"supabase-sub", userId: null, userEmail:""
-      });
+      };
+      ANBOBD_STORE.orders.push(subOrderObj);
+      sb.from('orders').select('*').eq('id', oid).limit(1).then(function(pr){
+        if(pr.error || !pr.data || !pr.data.length) return;
+        var full = anboOrderFromRow(pr.data[0], null);
+        subOrderObj.id = full.id; subOrderObj.items = full.items;
+        subOrderObj.customer = full.customer; subOrderObj.payment = full.payment;
+        subOrderObj.promoCode = full.promoCode; subOrderObj.estimatedDelivery = full.estimatedDelivery;
+        if(window.svAuthed && typeof renderSellerAll==="function") renderSellerAll();
+      }).catch(function(){});
     });
     if(window.svAuthed && typeof renderSellerAll==="function") renderSellerAll();
   }catch(e){ anboDbErr("দোকানের অর্ডার অনলাইন থেকে লোড করা যায়নি", e); }
@@ -2772,6 +2867,13 @@ function refreshPanels(){
   /* Seller-join section: Seller Center login link sudhu seller role-e dekhabe — guest/customer dekhbe na */
   var slc = document.getElementById("sellerLoginCta"); if(slc) slc.style.display = (u && u.role==="seller") ? "" : "none";
   if(window.anboSupabaseNotice) anboSupabaseNotice();
+  /* অনলাইনে সেভ না-হওয়া অর্ডার থাকলে প্যানেল খোলার সময়ই আবার পাঠানোর
+     চেষ্টা — সফল হলে প্যানেল আবার রেন্ডার হয়ে অর্ডারটা দেখায় */
+  if(window.ANBOBD_DB && ANBOBD_DB.configured && ANBOBD_DB.configured() && typeof ANBOBD_DB.retryPendingOrders==="function"){
+    ANBOBD_DB.retryPendingOrders().then(function(n){
+      if(n>0){ if(svAuthed) renderSellerAll(); if(adAuthed) renderAdminAll(); }
+    }).catch(function(){});
+  }
   if(svAuthed) renderSellerAll();
   if(adAuthed) renderAdminAll();
 }
@@ -3028,7 +3130,7 @@ function orderCardAdmin(o){
   var items = o.items.map(function(it){ var sh = SL(it.sellerId); return "• "+esc(it.name)+" × "+it.qty+" — "+fmt(it.lineTotal)+" <span style='color:var(--muted)'>(🏪 "+(sh?esc(sh.name):"")+")</span>"; }).join("<br>");
   var acts = "";
   if(o.status==="AwaitingAdmin") acts = '<button class="btn-pri" data-ad-confirm="'+o.id+'">✅ কনফার্ম করে Seller-কে পাঠান</button><button class="btn-danger" data-ad-reject="'+o.id+'">✕ বাতিল করুন</button>';
-  return '<div class="ocard"><div class="ohead"><span class="oid">'+o.id+'</span>'+stBadge(o.status)+'<span style="margin-left:auto;font-weight:800">'+fmt(o.amounts.total)+'</span></div>' +
+  return '<div class="ocard"><div class="ohead"><span class="oid">'+o.id+'</span>'+stBadge(o.status)+(!o.supabaseId ? '<span class="st st-wait">এই ডিভাইসে আছে — অনলাইনে সেভ হয়নি</span>' : '')+'<span style="margin-left:auto;font-weight:800">'+fmt(o.amounts.total)+'</span></div>' +
     '<div class="oitems">'+items+'</div>' +
     '<div class="ocust">👤 '+esc(o.customer.name)+' • '+esc(o.customer.phone)+' • 📍 '+esc(o.customer.district)+' • 💵 '+o.payment.method+' • ডেলিভারি '+fmt(o.amounts.deliveryFee)+(o.amounts.discount?' • ছাড় −'+fmt(o.amounts.discount):"")+(o.payment.transactionId ? '<br>📱 ম্যানুয়াল পেমেন্ট — Transaction ID: <b>'+esc(o.payment.transactionId)+'</b>'+(o.payment.senderNumber?' • প্রেরক: '+esc(o.payment.senderNumber):'')+' — <b>Admin পেমেন্ট যাচাই করে তবেই কনফার্ম করবে</b>' : '')+'</div>' +
     (acts ? '<div class="oacts">'+acts+'</div>' : '') + '</div>';
@@ -3107,7 +3209,11 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.loadCatalog().catch(fu
   /* কার্ট/উইশলিস্ট/Save-for-Later/সংগৃহীত ভাউচার/শেষ অর্ডার localStorage-এ থাকে,
      যাতে reload-এ হারিয়ে না যায়। পাসওয়ার্ড কখনোই এখানে রাখা হয় না। */
   function snapshotState(){
-    STATE_STORE[stateKey] = { cart:cart, wishlist:wishlist, savedLater:savedLater, collected:collected, recent:recent, lastOrder:lastOrder };
+    /* অনলাইনে সেভ না-হওয়া অর্ডারগুলোও এই ডিভাইসে রাখা হয় — আগে অর্ডার
+       শুধু মেমরিতে থাকত, তাই reload বা নতুন সেশনে Admin 0 অর্ডার দেখত।
+       অনলাইনে সেভ হওয়া অর্ডার এখানে রাখা হয় না, সেগুলো DB থেকে আসে। */
+    var localOrders = (window.ANBOBD_STORE ? ANBOBD_STORE.orders : []).filter(function(o){ return !o.supabaseId; });
+    STATE_STORE[stateKey] = { cart:cart, wishlist:wishlist, savedLater:savedLater, collected:collected, recent:recent, lastOrder:lastOrder, orders:localOrders };
     try{ localStorage.setItem(LS_PREFIX + stateKey, JSON.stringify(STATE_STORE[stateKey])); }catch(e){}
   }
   window.__anboPersistState = snapshotState;
@@ -3120,6 +3226,14 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.loadCatalog().catch(fu
     st = st || { cart:{}, wishlist:{}, savedLater:{}, collected:{}, recent:[], lastOrder:null };
     STATE_STORE[key] = st;
     cart = st.cart || {}; wishlist = st.wishlist || {}; savedLater = st.savedLater || {}; collected = st.collected || {}; recent = st.recent || []; lastOrder = st.lastOrder || null;
+    /* এই ডিভাইসে রাখা (অনলাইনে সেভ না-হওয়া) অর্ডারগুলো ফিরিয়ে আনা —
+       যাতে Admin এই ব্রাউজারে সেগুলো দেখতে পায় এবং retry সেগুলোকে
+       আবার অনলাইনে পাঠাতে পারে */
+    if(window.ANBOBD_STORE && Array.isArray(st.orders)){
+      st.orders.forEach(function(o){
+        if(o && o.id && !ANBOBD_STORE.orders.some(function(x){ return x.id===o.id; })) ANBOBD_STORE.orders.push(o);
+      });
+    }
   }
   function rerenderStore(){
     if(window.__anboRender) window.__anboRender();
