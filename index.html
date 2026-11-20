@@ -2282,7 +2282,7 @@ function anboOrderFromRow(row, user){
   return { id: (meta && meta.localId) ? meta.localId : row.id, supabaseId: row.id,
     items: items,
     customer: { name:row.customer_name||"", phone:row.customer_phone||"", address:row.address||row.delivery_address||"", district:row.district||"", note:(meta&&meta.note)||"" },
-    payment: { method:row.payment_method||"", status:row.payment_status||"", transactionId:row.transaction_id||null, senderNumber:(meta&&meta.senderNumber)||null },
+    payment: { method:(row.payment_method==="COD" ? "ক্যাশ অন ডেলিভারি" : (row.payment_method||"")), status:row.payment_status||"", transactionId:row.transaction_id||null, senderNumber:(meta&&meta.senderNumber)||null },
     amounts: amounts,
     promoCode: row.promo_code||null, zone: (meta&&meta.zone)||"", status: row.status||"AwaitingAdmin",
     statusHistory: [], placedAt: row.created_at||new Date().toISOString(),
@@ -2389,12 +2389,19 @@ var ANBOBD_DB = {
       localId: order.id, amounts: order.amounts, note: order.customer.note||"",
       senderNumber: order.payment.senderNumber||null, zone: order.zone||"",
       estimatedDelivery: order.estimatedDelivery||"" };
+    /* DB check constraint orders_payment_method_check শুধুমাত্র 'COD', 'bKash',
+       'Nagad', 'Card' মানে — checkout-এর বাংলা লেবেল "ক্যাশ অন ডেলিভারি" সরাসরি
+       পাঠালে insert reject হয়। তাই payload-এর জন্য method normalize করা হয়;
+       লোকাল order object ও গ্রাহকের দেখা সবকিছু আগের মতোই বাংলায় থাকে। */
+    var dbPayMethod = (order.payment.method==="ক্যাশ অন ডেলিভারি") ? "COD"
+      : (order.payment.method==="bKash" || order.payment.method==="Nagad" || order.payment.method==="Card")
+        ? order.payment.method : "COD";
     var payload = {
       id: order.supabaseId,
       customer_id: anboIsUuid(order.userId) ? order.userId : null,
       customer_name: order.customer.name, customer_phone: order.customer.phone,
       address: order.customer.address, district: order.customer.district,
-      payment_method: order.payment.method, payment_status: order.payment.status,
+      payment_method: dbPayMethod, payment_status: order.payment.status,
       transaction_id: order.payment.transactionId||null,
       total: order.amounts.total,
       promo_code: order.promoCode||null, status: order.status,
