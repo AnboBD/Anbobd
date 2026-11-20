@@ -2161,7 +2161,7 @@ function anboMapProductRow(r){
     rating:Number(r.rating||0), reviewCount:Number(r.reviews!=null?r.reviews:(r.review_count!=null?r.review_count:(r.reviewCount||0)))||0,
     soldCount:Number(r.sold!=null?r.sold:(r.sold_count!=null?r.sold_count:0))||0,
     stockQty:Number(r.stock!=null?r.stock:(r.stock_qty!=null?r.stock_qty:0))||0,
-    status:r.status||"active", isNew:!!(r.is_new||r.isNew), flashClaim:Number(r.flash_claim||r.flashClaim||0)||0,
+    status:(String(r.status||"").toLowerCase()==="approved" ? "active" : (r.status||"active")), isNew:!!(r.is_new||r.isNew), flashClaim:Number(r.flash_claim||r.flashClaim||0)||0,
     warranty:r.warranty||"", img:(imgs.length?imgs[0]:""), images:imgs, desc:r.desc||r.description||"",
     specs:Array.isArray(r.specs)?r.specs:[], bundleWith:Array.isArray(r.bundle_with)?r.bundle_with:[],
     createdAt:typeof r.created_at==="number"?r.created_at:0, megaDeal:!!(r.mega_deal||r.megaDeal) };
