@@ -949,8 +949,8 @@
     var rawSt = String(r.status || "live").toLowerCase();
     var expMs = expStr ? Date.parse(expStr) : NaN;
     /* Meyad sesh coupon kokhono Live hobe na — past expiry hole Expired. */
-    var cStatus = rawSt === "paused" ? "Paused" : ((!isNaN(expMs) && expMs <= Date.now()) ? "Expired" : "Live");
-    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, code: r.code || "", type: (String(r.type || r.discount_type || "Percent").toLowerCase().indexOf("flat") > -1 ? "Flat" : "Percent"), value: Number(r.value != null ? r.value : (r.discount_value || 0)), min: Number(r.min_order != null ? r.min_order : (r.min || 0)), cap: Number(r.max_discount != null ? r.max_discount : (r.cap || 0)), scope: r.scope || "Shop-wide (sob product)", expiry: expStr, limit: Number(r.usage_limit || r.limit || 200), used: Number(r.used_count || r.used || 0), status: cStatus };
+    var cStatus = rawSt === "paused" ? "Paused" : (rawSt === "pending" ? "Pending Approval" : ((!isNaN(expMs) && expMs <= Date.now()) ? "Expired" : "Live"));
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, code: r.code || "", type: (String(r.type || r.discount_type || "Percent").toLowerCase().indexOf("flat") > -1 ? "Flat" : "Percent"), value: Number(r.value != null ? r.value : (r.discount_value || 0)), min: Number(r.min_order != null ? r.min_order : (r.min || 0)), cap: Number(r.max_cap != null ? r.max_cap : (r.max_discount != null ? r.max_discount : (r.cap || 0))), scope: r.scope || "Shop-wide (sob product)", expiry: expStr, limit: Number(r.usage_limit || r.limit || 200), used: Number(r.used_count || r.used || 0), status: cStatus };
   }
   function mapSubOrderRow(r){
     var items = Array.isArray(r.items) ? r.items : [];
@@ -1698,13 +1698,13 @@
           var expDate = Date.parse(exp);
           if (isNaN(expDate)) { $("cErr").textContent = "Expiry date bojha jay ni — jemon: 31 Dec 2026."; return; }
           if (expDate <= Date.now()) { $("cErr").textContent = "Expiry date obossoi agami din hote hobe — meyad sesh coupon live kora jabe na."; return; }
-          var newCoupon = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Live" };
+          var newCoupon = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Pending Approval" };
           if (supabaseConnected && supabase) {
-            try { var insC = await supabase.from('coupons').insert({ shop_id: s.shopId, code: code, type: type, discount_type: type, value: val, discount_value: val, min_order: min, max_discount: +$("cCap").value || 0, scope: $("cScope").value, expiry: exp, usage_limit: limit, status: "live" }).select().single(); if (insC.error) { $("cErr").textContent = insC.error.message; return; } if (insC.data) newCoupon = mapCouponRow(insC.data); } catch(e){ $("cErr").textContent = "Coupon save hoy ni — abar chesta korun."; return; }
+            try { var insC = await supabase.from('coupons').insert({ shop_id: s.shopId, code: code, discount_type: type, discount_value: val, min_order: min, max_cap: +$("cCap").value || 0, usage_limit: limit, expires_at: new Date(expDate).toISOString(), status: "pending", scope: $("cScope").value }).select().single(); if (insC.error) { $("cErr").textContent = insC.error.message; return; } if (insC.data) newCoupon = mapCouponRow(insC.data); } catch(e){ $("cErr").textContent = "Coupon save hoy ni — abar chesta korun."; return; }
           }
           s.coupons.unshift(newCoupon);
           closeModal(); renderAll(); showView("coupons");
-          toast(code + " toiri — ekhon AnboBD website e LIVE show hocche");
+          toast(code + " toiri — Admin approval er jonno pathano hoyeche");
         });
       });
   });
@@ -1887,7 +1887,7 @@
           if ((method === "bKash" || method === "Nagad") && !/^01\d{9}$/.test(acc.replace(/[-\s]/g, ""))) { $("wErr").textContent = method + " account er jonno sothik 11 digit er number din."; return; }
           if (method === "Bank Transfer" && acc.length < 8) { $("wErr").textContent = "Sothik bank account number din."; return; }
           if (supabaseConnected && supabase) {
-            try { var insP = await supabase.from('payouts').insert({ shop_id: s.shopId, amount: amt, method: method, account: acc, status: "requested" }).select().single(); if (insP.error) { $("wErr").textContent = insP.error.message; return; } } catch(e){ $("wErr").textContent = "Payout request save hoy ni — abar chesta korun."; return; }
+            try { var insP = await supabase.from('payouts').insert({ shop_id: s.shopId, amount: amt, method: method, status: "requested" }).select().single(); if (insP.error) { $("wErr").textContent = insP.error.message; return; } } catch(e){ $("wErr").textContent = "Payout request save hoy ni — abar chesta korun."; return; }
           }
           s.payouts.unshift({ date: fmtDate(new Date().toISOString()), method: method, account: maskAccount(acc), amount: amt, status: "Processing" });
           closeModal(); renderAll();
