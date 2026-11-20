@@ -1,12 +1,4 @@
 <!doctype html>
-<!--
-  AnboBD production build (static site).
-  Supabase: project AnboBD, https://qxkgbszrpcmuerrezupx.supabase.co
-  CONFIG NOTE: the Supabase anon key must be set as a Vercel environment
-  variable (NEXT_PUBLIC_SUPABASE_ANON_KEY) and injected into the blank
-  SUPABASE_CONFIG slot in this file at deploy time. Never commit a key
-  to Git. The service-role key must never be used in the browser.
--->
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -325,9 +317,14 @@
         .tbl-earnings th:nth-child(2),.tbl-earnings td:nth-child(2){display:none}
       }
       @media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+      .supabase-banner{background:#fdf0e1;border-bottom:2px solid var(--amber);color:#7c3f06;padding:.75rem 1rem;font-size:.9rem;font-weight:600;text-align:center}
+      @media (prefers-color-scheme: dark){.supabase-banner{background:#33240f;color:#f0c98a}}
+      .supabase-ok{font-size:.8rem;color:var(--brand);font-weight:700;margin-top:.6rem}
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
+  <div id="supabaseBanner" class="supabase-banner hidden" role="alert">Not connected to Supabase yet — SUPABASE_CONFIG is empty, so this Seller Center is running in session-only fallback. Accounts, products and orders will not be saved to the database until the project URL and anon key are injected at build time.</div>
 
   <!-- ============ LOGIN / REGISTER ============ -->
   <section id="loginView">
@@ -794,46 +791,38 @@
 
   <script>
   "use strict";
+  var supabaseLib = window.supabase || null;
   /* =====================================================================
-     AnboBD Seller Center — data layer (Supabase-ready)
-
-     Production wiring (Supabase project: AnboBD):
-       - Auth:        Supabase Auth (signUp / signInWithPassword).
-                      The seller's auth user id links 1-to-1 to a row in
-                      public.sellers. There is NO built-in or fallback
-                      account of any kind — nobody can sign in without
-                      registering here first.
-       - public.sellers        id, owner_name, email, mobile, shop_name,
-                               category, district, pickup_address,
-                               payout_method, payout_account, payout_name,
-                               nid_number, trade_license, status
-                               ('pending' | 'approved' | 'suspended'),
-                               applied_on
-       - public.products       seller_id -> sellers.id (RLS: seller_id
-                               must equal the signed-in seller's id)
-       - public.sub_orders     seller_id, master_order_id, status flow
-                               Awaiting Admin -> Admin Confirmed ->
-                               Ready to Ship -> Packed -> Shipped ->
-                               Delivered, commission_rate snapshot
-       - public.shop_coupons   seller_id (own shop only)
-       - public.campaign_submissions  seller_id, Admin approval required
-       - public.returns        seller_id (own shop only)
-       - public.payout_requests seller_id, seller requests only —
-                               Admin Finance approves / releases
-       - public.shop_staff     seller_id (own shop team only)
-     Row Level Security on every table restricts each seller to rows
-     where seller_id matches their own sellers.id, so one seller can
-     never read another seller's products, orders or money.
-
-     SUPABASE_CONFIG stays empty until the project's real URL and anon
-     key are provided through the secure connection flow — no URL or
-     key is invented here. Until then, the same shapes below run as an
-     in-page data store for this session only: DB.sellers starts EMPTY,
-     and every record a seller sees is created by that seller after
-     registration (and, for selling features, after Admin approval).
+     AnboBD Seller Center — Supabase data layer
+     Project: https://qxkgbszrpcmuerrezupx.supabase.co (RLS enabled)
+     Tables used: profiles, shops, products, orders, sub_orders,
+       coupons, mega_submissions, payouts, returns, staff
+     Auth: supabase.auth.signUp / signInWithPassword / getSession / signOut
+     SUPABASE_CONFIG is injected at build/deploy time (Vercel injects
+     NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY). No URL
+     or key is invented or committed here, and no privileged key is
+     ever used — only the anon key. When url/anonKey are non-empty a
+     real Supabase client is created and all reads/writes below go to
+     Postgres, filtered by the seller's own shop_id. Only when config
+     is missing does the in-memory fallback run, with a
+     "Not connected to Supabase yet" notice shown. DB starts EMPTY —
+     no built-in login and no pre-seeded shop.
      ===================================================================== */
-  <!-- Supabase config: keep blank in the repo. Set url + anonKey from Vercel env vars at deploy time. -->
-var SUPABASE_CONFIG = { url: "", anonKey: "" };
+  var SUPABASE_CONFIG = { url: "", anonKey: "" };
+  var supabase = null;
+  var supabaseConnected = false;
+  function initSupabase(){
+    supabase = null; supabaseConnected = false;
+    try {
+      if (SUPABASE_CONFIG && SUPABASE_CONFIG.url && SUPABASE_CONFIG.anonKey && supabaseLib && supabaseLib.createClient) {
+        supabase = supabaseLib.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey);
+        supabaseConnected = !!supabase;
+      }
+    } catch (e) { supabase = null; supabaseConnected = false; }
+    var b = document.getElementById("supabaseBanner");
+    if (b) b.classList.toggle("hidden", supabaseConnected);
+    return supabaseConnected;
+  }
 
   var COMMISSION = { "Electronics": 8, "Fashion": 10, "Home & Living": 7, "Beauty": 12, "Grocery": 5, "Sports": 9 };
   var CAT_COLORS = { "Electronics":"#2563eb", "Fashion":"#db2777", "Home & Living":"#0b7a55", "Beauty":"#7c4dff", "Grocery":"#e8862e", "Sports":"#0891b2" };
@@ -862,7 +851,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
   var session = { sellerId: null };
   var orderFilter = "All", currentView = "dashboard";
 
-  function sellerById(id){ for (var i=0;i<DB.sellers.length;i++) if (DB.sellers[i].id===id) return DB.sellers[i]; return null; }
+  function sellerById(id){ for (var i=0;i<DB.sellers.length;i++) if (String(DB.sellers[i].id)===String(id)) return DB.sellers[i]; return null; }
   function sellerByEmail(em){ em = String(em||"").toLowerCase(); for (var i=0;i<DB.sellers.length;i++) if (DB.sellers[i].email===em) return DB.sellers[i]; return null; }
   function me(){ return session.sellerId ? sellerById(session.sellerId) : null; }
 
@@ -897,10 +886,10 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
   function ownSubs(){ var s = me(); return s ? s.campSubs : []; }
   function ownReturns(){ var s = me(); return s ? s.returns : []; }
   function ownStaff(){ var s = me(); return s ? s.staff : []; }
-  function prodById(id){ var l = ownProducts(); for (var i=0;i<l.length;i++) if (l[i].id===id) return l[i]; return null; }
-  function orderTotal(o){ var t=0; o.items.forEach(function(it){ var p=prodById(it.pid); if(p) t += p.price*it.qty; }); return t; }
-  function orderEarning(o){ var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100 - tot*0.015); } var e=0; o.items.forEach(function(it){ var p=prodById(it.pid); if(p){ var gross=p.price*it.qty; e += gross - gross*(COMMISSION[p.cat]||8)/100 - gross*0.015; } }); return Math.round(e); }
-  function orderItemsText(o){ return o.items.map(function(it){ var p=prodById(it.pid); return p ? (p.name+" × "+it.qty) : ""; }).filter(Boolean).join(", "); }
+  function prodById(id){ var l = ownProducts(); for (var i=0;i<l.length;i++) if (String(l[i].id)===String(id)) return l[i]; return null; }
+  function orderTotal(o){ if (o && typeof o._total === "number" && o._total) return o._total; var t=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p) t += p.price*(it.qty||1); else if (it.price) t += Number(it.price)*(it.qty||1); }); return t; }
+  function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100 - tot*0.015); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*(COMMISSION[p.cat]||8)/100 - gross*0.015; } }); return Math.round(e); }
+  function orderItemsText(o){ return (o.items||[]).map(function(it){ var p=prodById(it.pid || it.product_id); return p ? (p.name+" × "+(it.qty||1)) : (it.name ? (it.name+" × "+(it.qty||1)) : ""); }).filter(Boolean).join(", "); }
   function initials(name){ return String(name||"S").trim().split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("").toUpperCase(); }
   function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){ t.classList.remove("show"); }, 3000); }
   function esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -941,9 +930,57 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
     a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
-  /* Session-only password hashing stand-in. In production, passwords are
-     hashed and verified by Supabase Auth — never stored by this page. */
+  /* Fallback-only password hashing stand-in, used ONLY when Supabase is
+     not connected. When connected, passwords are handled exclusively by
+     Supabase Auth and are never stored by this page. */
   function hashPw(s){ var h = 5381; s = String(s || ""); for (var i=0;i<s.length;i++){ h = ((h<<5) + h + s.charCodeAt(i)) >>> 0; } return "h" + h.toString(16); }
+
+  /* ================= SUPABASE MAPPERS & LOADERS ================= */
+  function mapProductRow(r){
+    var st = String(r.status || "pending").toLowerCase();
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved") };
+  }
+  function mapCouponRow(r){
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, code: r.code || "", type: (String(r.type || r.discount_type || "Percent").toLowerCase().indexOf("flat") > -1 ? "Flat" : "Percent"), value: Number(r.value != null ? r.value : (r.discount_value || 0)), min: Number(r.min_order != null ? r.min_order : (r.min || 0)), cap: Number(r.max_discount != null ? r.max_discount : (r.cap || 0)), scope: r.scope || "Shop-wide (sob product)", expiry: r.expiry || (r.expires_at ? fmtDate(r.expires_at) : ""), limit: Number(r.usage_limit || r.limit || 200), used: Number(r.used_count || r.used || 0), status: (String(r.status || "live").toLowerCase() === "paused" ? "Paused" : "Live") };
+  }
+  function mapSubOrderRow(r){
+    var items = Array.isArray(r.items) ? r.items : [];
+    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: r.customer_name || r.customer || "", phone: r.customer_phone || r.phone || "", district: r.district || "", shipAddress: r.ship_address || r.address || "", items: items, status: r.status_label || r.seller_status || "Awaiting Admin", commissionRate: (typeof r.commission_rate === "number" ? r.commission_rate : undefined), trackingId: r.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: r.pay_visibility || "Prepaid — Admin verified", payment: r.payment_method || "", _total: (r.total != null ? Number(r.total) : null), _earning: (r.earning != null ? Number(r.earning) : null) };
+  }
+  function mapMegaRow(r){
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : "Pending Approval")), adminNote: r.admin_note || "Admin er review er opekkhay ache." };
+  }
+  function mapReturnRow(r){
+    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", amount: Number(r.amount || r.refund_amount || 0), status: r.status_label || (String(r.status || "pending").toLowerCase() === "accepted" ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
+  }
+  async function loadSellerDataFromSupabase(sellerObj){
+    if (!supabaseConnected || !supabase || !sellerObj || !sellerObj.shopId) return;
+    var shopId = sellerObj.shopId;
+    try { var pr = await supabase.from('products').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!pr.error && pr.data) sellerObj.products = pr.data.map(mapProductRow); } catch(e){}
+    try { var so = await supabase.from('sub_orders').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!so.error && so.data) sellerObj.orders = so.data.map(mapSubOrderRow); } catch(e){}
+    try { var oo = await supabase.from('orders').select('*').eq('shop_id', shopId); if (oo && oo.error) { /* orders may be master-only; sub_orders is the seller view */ } } catch(e){}
+    try { var cp = await supabase.from('coupons').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!cp.error && cp.data) sellerObj.coupons = cp.data.map(mapCouponRow); } catch(e){}
+    try { var ms = await supabase.from('mega_submissions').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!ms.error && ms.data) sellerObj.campSubs = ms.data.map(mapMegaRow); } catch(e){}
+    try { var po = await supabase.from('payouts').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!po.error && po.data) sellerObj.payouts = po.data.map(function(r){ return { date: r.created_at ? fmtDate(r.created_at) : "", method: r.method || sellerObj.payMethod, account: maskAccount(r.account || sellerObj.payAccount), amount: Number(r.amount || 0), status: (String(r.status || "pending").toLowerCase() === "paid" ? "Paid" : (String(r.status || "").toLowerCase() === "approved" ? "Paid" : "Processing")) }; }); } catch(e){}
+    try { var rt = await supabase.from('returns').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!rt.error && rt.data) sellerObj.returns = rt.data.map(mapReturnRow); } catch(e){}
+    try { var stf = await supabase.from('staff').select('*').eq('shop_id', shopId); if (!stf.error && stf.data) sellerObj.staff = stf.data.map(function(r){ return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || "", email: r.email || "", phone: r.phone || "", role: r.role || "Order Staff", active: r.active !== false, joined: r.created_at ? monthYear(r.created_at) : "", color: ROLE_COLORS[r.role] || "#0b7a55" }; }); } catch(e){}
+  }
+  function sellerFromShopRow(profile, shop, authUser){
+    var status = String(shop.status || "pending").toLowerCase();
+    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_license || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, vacation: !!shop.vacation, balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [] };
+  }
+  async function loadCurrentSellerFromSupabase(authUser){
+    if (!supabaseConnected || !supabase || !authUser) return null;
+    var profile = null, shop = null;
+    try { var p = await supabase.from('profiles').select('*').eq('id', authUser.id).single(); if (!p.error) profile = p.data; } catch(e){}
+    try { var s1 = await supabase.from('shops').select('*').eq('owner_id', authUser.id).single(); if (!s1.error) shop = s1.data; } catch(e){}
+    if (!shop) return null;
+    var seller = sellerFromShopRow(profile, shop, authUser);
+    var existing = sellerById(seller.id);
+    if (existing) { var idx = DB.sellers.indexOf(existing); DB.sellers[idx] = seller; } else DB.sellers.push(seller);
+    await loadSellerDataFromSupabase(seller);
+    return seller;
+  }
 
   /* ================= VIEW ROUTING ================= */
   function showLogin(){
@@ -958,7 +995,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     $("appView").classList.add("hidden");
     $("pendingView").classList.remove("hidden");
     $("pendShopName").textContent = s.shop;
-    $("pendRef").textContent = s.id.replace("SEL-", "APP-");
+    $("pendRef").textContent = String(s.shopId || s.id).replace("SEL-", "APP-");
     $("pendSubmittedAt").textContent = "Received · " + fmtDate(s.appliedOn);
     $("pendSummary").innerHTML =
       '<div class="kv"><span>Owner</span><b>'+esc(s.owner)+'</b></div>'
@@ -986,7 +1023,8 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     var s = me(); if (!s) { showLogin(); return; }
     if (s.status === "approved") enterApp(); else showPending();
   }
-  function doLogout(){
+  async function doLogout(){
+    if (supabaseConnected && supabase) { try { await supabase.auth.signOut(); } catch(e){} }
     session.sellerId = null;
     $("sidebar").classList.remove("open");
     closeDrawer(); closeModal();
@@ -1000,10 +1038,29 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     $("tabLogin").classList.toggle("on", login); $("tabRegister").classList.toggle("on", !login);
     $("loginForm").classList.toggle("hidden", !login); $("registerForm").classList.toggle("hidden", login);
   }
-  function tryLogin(){
+  async function tryLogin(){
     var em = cleanText($("loginEmail").value).replace(/\s+/g, "").toLowerCase();
-    var pw = cleanText($("loginPass").value).replace(/\s+/g, "");
+    var pw = $("loginPass").value;
     if (!em || !pw) { $("loginErr").textContent = "Email ar password din."; return; }
+    if (supabaseConnected && supabase) {
+      $("loginBtn").disabled = true;
+      try {
+        var res = await supabase.auth.signInWithPassword({ email: em, password: pw });
+        if (res.error) { $("loginErr").textContent = res.error.message || "Email ba password vul hoyeche."; return; }
+        var user = res.data && res.data.user;
+        if (!user) { $("loginErr").textContent = "Login hoy ni — abar chesta korun."; return; }
+        var seller = await loadCurrentSellerFromSupabase(user);
+        if (!seller) { $("loginErr").textContent = "Ei account er kono shop pawa jay ni. Age Open a Shop theke shop registration korun."; return; }
+        if (seller.status === "suspended") { $("loginErr").textContent = "Ei shop ti Admin suspend koreche. Bistaritir jonno AnboBD seller support e jogajog korun."; return; }
+        session.sellerId = seller.id;
+        $("loginErr").textContent = "";
+        routeAfterAuth();
+        toast(seller.status === "approved" ? ("Welcome back, " + seller.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
+      } catch(e) { $("loginErr").textContent = "Supabase login e somossa hoyeche — abar chesta korun."; }
+      finally { $("loginBtn").disabled = false; }
+      return;
+    }
+    pw = cleanText(pw).replace(/\s+/g, "");
     var s = sellerByEmail(em);
     if (!s) { $("loginErr").textContent = "Ei email diye kono seller account nei. Notun hole upore “Open a Shop” theke age registration korun — registration chara login hobe na."; return; }
     if (s.passHash !== hashPw(pw)) { $("loginErr").textContent = "Email ba password vul hoyeche. Thik kore abar chesta korun."; return; }
@@ -1025,13 +1082,13 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     $(id).addEventListener("input", function(){ $("loginErr").textContent = ""; });
   });
 
-  $("registerForm").addEventListener("submit", function(e){
+  $("registerForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var owner = cleanText($("regName").value),
         em = cleanText($("regEmail").value).replace(/\s+/g, "").toLowerCase(),
         ph = cleanText($("regMobile").value).replace(/[-\s]/g, ""),
-        pw = cleanText($("regPass").value).replace(/\s+/g, ""),
-        pw2 = cleanText($("regPass2").value).replace(/\s+/g, ""),
+        pw = $("regPass").value,
+        pw2 = $("regPass2").value,
         shop = cleanText($("regShop").value),
         cat = $("regCat").value,
         district = $("regDistrict").value,
@@ -1052,11 +1109,34 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     if ((payMethod === "bKash" || payMethod === "Nagad") && !/^01\d{9}$/.test(payAccount.replace(/[-\s]/g, ""))) { fail(payMethod + " account er jonno sothik 11 digit er number din."); return; }
     if (!/^\d{10,17}$/.test(nid)) { fail("Sothik NID number din (10–17 digit)."); return; }
     if (trade.length < 5) { fail("Trade license number din — KYC er jonno lagbe."); return; }
-    if (sellerByEmail(em)) { fail("Ei email diye agei ekta seller account ache. Login korun, ba onno email use korun."); return; }
+    if (!supabaseConnected && sellerByEmail(em)) { fail("Ei email diye agei ekta seller account ache. Login korun, ba onno email use korun."); return; }
+
+    if (supabaseConnected && supabase) {
+      try {
+        var signUpRes = await supabase.auth.signUp({ email: em, password: pw, options: { data: { full_name: owner, role: "seller" } } });
+        if (signUpRes.error) { fail(signUpRes.error.message || "Sign up hoy ni — abar chesta korun."); return; }
+        var newUser = signUpRes.data && signUpRes.data.user;
+        if (!newUser) { fail("Account toiri hoyeche kintu email confirmation lagte pare. Email check kore login korun."); return; }
+        var profileRes = await supabase.from('profiles').insert({ id: newUser.id, email: em, full_name: owner, role: "seller", phone: ph });
+        if (profileRes.error) { fail("Profile save hoy ni: " + profileRes.error.message); return; }
+        var shopPayload = { owner_id: newUser.id, name: shop, category: cat, district: district, pickup_address: address, payout_method: payMethod, payout_account: payAccount, payout_name: payName, nid_number: nid, trade_license: trade, status: "pending" };
+        var shopRes = await supabase.from('shops').insert(shopPayload).select().single();
+        if (shopRes.error) { fail("Shop save hoy ni: " + shopRes.error.message); return; }
+        var shopRow = shopRes.data;
+        var sellerSb = sellerFromShopRow({ full_name: owner, email: em, phone: ph }, shopRow, newUser);
+        DB.sellers.push(sellerSb);
+        session.sellerId = sellerSb.id;
+        $("regErr").textContent = "";
+        showPending();
+        toast("Application submit hoyeche — shop Under Review ache, Admin Supabase theke approve korle live hobe");
+      } catch(err) { fail("Supabase registration e somossa hoyeche — abar chesta korun."); }
+      return;
+    }
 
     var now = new Date();
     var seller = {
       id: "SEL-" + String(now.getTime()).slice(-8),
+      shopId: "SEL-" + String(now.getTime()).slice(-8),
       owner: owner, email: em, phone: ph, passHash: hashPw(pw),
       shop: shop, category: cat, district: district, address: address,
       desc: "",
@@ -1067,6 +1147,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       balance: 0, pendingClearance: 0,
       products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: []
     };
+    seller.shopId = seller.id;
     DB.sellers.push(seller);
     session.sellerId = seller.id;
     $("regErr").textContent = "";
@@ -1074,8 +1155,11 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     toast("Application submit hoyeche — ekhon Admin KYC verify kore approve korle shop live hobe");
   });
 
-  $("checkStatusBtn").addEventListener("click", function(){
+  $("checkStatusBtn").addEventListener("click", async function(){
     var s = me(); if (!s) { showLogin(); return; }
+    if (supabaseConnected && supabase && s.shopId) {
+      try { var chk = await supabase.from('shops').select('*').eq('id', s.shopId).single(); if (!chk.error && chk.data) { var fresh = sellerFromShopRow({ full_name: s.owner, email: s.email, phone: s.phone }, chk.data, { id: s.id, email: s.email }); fresh.products = s.products; fresh.orders = s.orders; fresh.coupons = s.coupons; fresh.campSubs = s.campSubs; fresh.returns = s.returns; fresh.payouts = s.payouts; fresh.staff = s.staff; var ix = DB.sellers.indexOf(s); if (ix > -1) DB.sellers[ix] = fresh; s = fresh; if (s.status === "approved") await loadSellerDataFromSupabase(s); } } catch(e){}
+    }
     if (s.status === "approved") { enterApp(); toast("Congratulation! Apnar shop approve hoyeche — Seller Center khule geche"); }
     else if (s.status === "suspended") { toast("Apnar application ti Admin reject / suspend koreche — seller support e jogajog korun"); }
     else toast("Ekhono under review ache — Admin approval ekhono aseni. Approve hole ei account diyei login kore shop chalate parben");
@@ -1271,12 +1355,12 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       $("productsBody").innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1.4rem">Ei filter e kono product mile ni — search ba filter bodle dekhun.</td></tr>';
     }
     $("productsBody").querySelectorAll("button[data-act]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var id = +b.getAttribute("data-id"), act = b.getAttribute("data-act"), p = prodById(id);
+      b.addEventListener("click", async function(){
+        var id = b.getAttribute("data-id"), act = b.getAttribute("data-act"), p = prodById(id);
         if (!p) return;
-        if (act==="stock"){ p.stock += 20; toast(p.name + " — 20 ta stock add holo. Ekhon total " + p.stock); renderAll(); }
-        if (act==="toggle"){ p.status = p.status==="Active" ? "Paused" : "Active"; toast(p.name + " ekhon " + p.status); renderAll(); }
-        if (act==="del"){ openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', function(){ var s = me(); s.products = s.products.filter(function(x){ return x.id!==id; }); toast("Product delete hoyeche"); renderAll(); }); }
+        if (act==="stock"){ p.stock += 20; if (supabaseConnected && supabase) { try { await supabase.from('products').update({ stock: p.stock }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " — 20 ta stock add holo. Ekhon total " + p.stock); renderAll(); }
+        if (act==="toggle"){ p.status = p.status==="Active" ? "Paused" : "Active"; if (supabaseConnected && supabase) { try { await supabase.from('products').update({ status: p.status === "Paused" ? "paused" : "active" }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " ekhon " + p.status); renderAll(); }
+        if (act==="del"){ openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', async function(){ var s = me(); if (supabaseConnected && supabase) { try { await supabase.from('products').delete().eq('id', p.id).eq('shop_id', s.shopId); } catch(e){} } s.products = s.products.filter(function(x){ return String(x.id)!==String(id); }); toast("Product delete hoyeche"); renderAll(); }); }
         if (act==="edit"){ openProductModal(p); }
       });
     });
@@ -1303,17 +1387,22 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="mCancel" type="button">Cancel</button><button class="btn" id="mSave" type="button">' + (isEdit ? "Save Changes" : "Add Product") + '</button></div>',
       function(){
         $("mCancel").addEventListener("click", closeModal);
-        $("mSave").addEventListener("click", function(){
+        $("mSave").addEventListener("click", async function(){
           var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value;
           if (!name || !(price>0) || isNaN(stock) || stock<0) { $("mErr").textContent = "Name, sothik price ar stock din."; return; }
           if (isEdit){
-            p.name = name; p.cat = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
+            p.name = name; p.cat = $("mCat").value; p.category = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
             p.oldPrice = +$("mOld").value || null; p.stock = stock;
             if (p.approval === "Rejected") p.approval = "Pending Approval";
+            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, status: p.approval === "Pending Approval" ? "pending" : "active" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Supabase update e somossa hoyeche."; return; } }
             toast("Product update hoyeche");
           } else {
             var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
-            s.products.unshift({ id: Date.now(), sellerId: s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, sold:0, status:"Active" });
+            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, sold:0, status:"Active" };
+            if (supabaseConnected && supabase) {
+              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Supabase e product save hoy ni."; return; }
+            }
+            s.products.unshift(newProd);
             toast("Product add hoyeche — My Products e dekhun. Admin moderation approve korle live hobe: " + name);
           }
           closeModal(); renderAll(); showView("products");
@@ -1365,19 +1454,24 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn ghost" id="lbClose" type="button">Close</button><button class="btn" id="lbPrint" type="button">Print / Save Label</button></div>',
       function(){ $("lbClose").addEventListener("click", closeModal); $("lbPrint").addEventListener("click", function(){ toast("Label ready — browser er print option theke print korun"); }); });
   }
-  function advanceOrder(id){
+  async function sbUpdateSubOrder(o, extra){
+    if (!supabaseConnected || !supabase || !o) return;
+    try { var payload = { status: String(o.status).toLowerCase().replace(/\s+/g, "_"), seller_status: o.status }; if (extra) for (var k in extra) payload[k] = extra[k]; await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId); } catch(e){}
+  }
+  async function advanceOrder(id){
     var s = me(); if (!s) return;
-    var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
+    var o = ownOrders().filter(function(x){ return String(x.id)===String(id) || String(x.subId)===String(id); })[0]; if (!o) return;
     if (o.status==="Awaiting Admin") { toast("Seller order confirm korte pare na — Admin confirm korlei apni ship korte parben"); return; }
     if (!NEXT_STATUS[o.status]) { toast("Ei order ekhon agano jabe na"); return; }
     if (o.status==="Packed" && !o.trackingId) {
       openModal('<h2>Ship — Tracking ID din</h2><div class="msub">' + esc(o.subId || id) + ' courier e diye tracking ID ta likhun</div><div class="field"><label>Courier tracking ID</label><input id="trkId" placeholder="e.g. PTH-882910" /></div><p class="err" id="trkErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="trkCancel" type="button">Cancel</button><button class="btn" id="trkGo" type="button">Confirm Shipped</button></div>', function(){
         $("trkCancel").addEventListener("click", closeModal);
-        $("trkGo").addEventListener("click", function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; closeModal(); closeDrawer(); renderAll(); toast(id + " shipped — Tracking: " + v); });
+        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); toast(id + " shipped — Tracking: " + v); });
       });
       return;
     }
     o.status = NEXT_STATUS[o.status];
+    await sbUpdateSubOrder(o, o.trackingId ? { tracking_id: o.trackingId } : null);
     if (o.status === "Packed") toast(id + " packed — ekhon tracking ID diye ship korun");
     else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
     else if (o.status === "Delivered") { s.pendingClearance += orderEarning(o); toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
@@ -1386,7 +1480,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     closeDrawer();
   }
   function openOrderDrawer(id){
-    var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
+    var o = ownOrders().filter(function(x){ return String(x.id)===String(id) || String(x.subId)===String(id); })[0]; if (!o) return;
     var steps = [
       { t:"Order placed (Master Order)", s:"Customer website theke order koreche · " + esc(o.date) + ", " + esc(o.time) + " · Sub-Order: " + esc(o.subId || o.id) },
       { t:"Admin Confirmed", s: o.adminBy ? esc(o.adminBy) + " · " + esc(o.adminAt) : "Admin ekhono confirm koreni — seller confirm korte pare na" },
@@ -1402,7 +1496,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       : steps.map(function(st, i){
           return '<li class="' + (i<=idx ? "done" : "") + '"><span class="tdot">' + (i<=idx ? "✓" : "") + '</span><div><div class="tt">' + st.t + '</div><div class="ts">' + (i<idx ? "Complete" : (i===idx ? st.s + " · Ekhon ei stage e ache" : st.s)) + '</div></div></li>';
         }).join("");
-    var items = o.items.map(function(it){ var p = prodById(it.pid); if (!p) return ""; return '<div class="kv"><span>' + esc(p.name) + ' × ' + it.qty + '</span><b>' + fmt(p.price * it.qty) + '</b></div>'; }).join("");
+    var items = (o.items||[]).map(function(it){ var p = prodById(it.pid || it.product_id); var nm = p ? p.name : (it.name || "Item"); var pr = p ? p.price : Number(it.price || 0); return '<div class="kv"><span>' + esc(nm) + ' × ' + (it.qty || 1) + '</span><b>' + fmt(pr * (it.qty || 1)) + '</b></div>'; }).join("");
     var next = NEXT_STATUS[o.status];
     $("drawerRoot").innerHTML = '<div class="drawer-wrap" id="drawerWrap"><div class="drawer">'
       + '<button class="icon-btn modal-x" id="drawerX" type="button" aria-label="Close">✕</button>'
@@ -1474,24 +1568,25 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     }).join("") : '<div class="empty" style="grid-column:1/-1">Ekhon website e kono live coupon nei.</div>';
     $("couponGrid").querySelectorAll("[data-coupon-copy]").forEach(function(b){
       b.addEventListener("click", function(){
-        var c = ownCoupons().filter(function(x){ return x.id===+b.getAttribute("data-coupon-copy"); })[0]; if (!c) return;
+        var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-copy")); })[0]; if (!c) return;
         if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(c.code).then(function(){ toast("Coupon code copy hoyeche: " + c.code); }, function(){ toast("Coupon code: " + c.code); }); }
         else toast("Coupon code: " + c.code);
       });
     });
     $("couponGrid").querySelectorAll("[data-coupon-toggle]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var c = ownCoupons().filter(function(x){ return x.id===+b.getAttribute("data-coupon-toggle"); })[0]; if (!c) return;
+      b.addEventListener("click", async function(){
+        var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-toggle")); })[0]; if (!c) return;
         c.status = c.status==="Live" ? "Paused" : "Live";
+        if (supabaseConnected && supabase) { try { await supabase.from('coupons').update({ status: c.status === "Live" ? "live" : "paused" }).eq('id', c.id).eq('shop_id', me().shopId); } catch(e){} }
         toast(c.code + (c.status==="Live" ? " ekhon website e LIVE" : " pause hoyeche — website theke sore geche"));
         renderAll();
       });
     });
     $("couponGrid").querySelectorAll("[data-coupon-del]").forEach(function(b){
       b.addEventListener("click", function(){
-        var c = ownCoupons().filter(function(x){ return x.id===+b.getAttribute("data-coupon-del"); })[0]; if (!c) return;
-        openConfirm("Coupon delete korben?", '"' + c.code + '" delete hole website theke sore jabe ar customer ar use korte parbe na.', function(){
-          var ss = me(); ss.coupons = ss.coupons.filter(function(x){ return x.id!==c.id; }); toast("Coupon delete hoyeche"); renderAll();
+        var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-del")); })[0]; if (!c) return;
+        openConfirm("Coupon delete korben?", '"' + c.code + '" delete hole website theke sore jabe ar customer ar use korte parbe na.', async function(){
+          var ss = me(); if (supabaseConnected && supabase) { try { await supabase.from('coupons').delete().eq('id', c.id).eq('shop_id', ss.shopId); } catch(e){} } ss.coupons = ss.coupons.filter(function(x){ return String(x.id)!==String(c.id); }); toast("Coupon delete hoyeche"); renderAll();
         });
       });
     });
@@ -1512,7 +1607,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cCancel" type="button">Cancel</button><button class="btn" id="cSave" type="button">Create &amp; Publish on Website</button></div>',
       function(){
         $("cCancel").addEventListener("click", closeModal);
-        $("cSave").addEventListener("click", function(){
+        $("cSave").addEventListener("click", async function(){
           var code = $("cCode").value.trim().toUpperCase().replace(/\s+/g, "");
           var type = $("cType").value, val = +$("cVal").value, min = +$("cMin").value || 0, limit = +$("cLimit").value;
           if (!code || code.length < 4) { $("cErr").textContent = "Kom pokkhe 4 character er coupon code din."; return; }
@@ -1522,7 +1617,11 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
           if (!(limit>0)) { $("cErr").textContent = "Usage limit din."; return; }
           var exp = $("cExp").value.trim();
           if (!exp) { $("cErr").textContent = "Expiry date din."; return; }
-          s.coupons.unshift({ id: Date.now(), sellerId: s.id, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Live" });
+          var newCoupon = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Live" };
+          if (supabaseConnected && supabase) {
+            try { var insC = await supabase.from('coupons').insert({ shop_id: s.shopId, code: code, type: type, discount_type: type, value: val, discount_value: val, min_order: min, max_discount: +$("cCap").value || 0, scope: $("cScope").value, expiry: exp, usage_limit: limit, status: "live" }).select().single(); if (insC.error) { $("cErr").textContent = insC.error.message; return; } if (insC.data) newCoupon = mapCouponRow(insC.data); } catch(e){ $("cErr").textContent = "Supabase e coupon save hoy ni."; return; }
+          }
+          s.coupons.unshift(newCoupon);
           closeModal(); renderAll(); showView("coupons");
           toast(code + " toiri — ekhon AnboBD website e LIVE show hocche");
         });
@@ -1560,14 +1659,15 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     }).join("") : '<div class="empty"><div class="et">No campaign submissions yet</div><div>Admin-approved product thakle ekhane submit kore Mega Sale / Mega Discount er jonno pathate parben.</div></div>';
     $("campSubs").querySelectorAll("[data-resubmit]").forEach(function(b){
       b.addEventListener("click", function(){
-        var x = ownSubs().filter(function(y){ return y.id===+b.getAttribute("data-resubmit"); })[0];
+        var x = ownSubs().filter(function(y){ return String(y.id)===String(b.getAttribute("data-resubmit")); })[0];
         if (x) openCampModal(x.camp, x);
       });
     });
     $("campSubs").querySelectorAll("[data-sub-del]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var id = +b.getAttribute("data-sub-del"), s = me();
-        s.campSubs = s.campSubs.filter(function(x){ return x.id!==id; });
+      b.addEventListener("click", async function(){
+        var id = b.getAttribute("data-sub-del"), s = me();
+        if (supabaseConnected && supabase) { try { await supabase.from('mega_submissions').delete().eq('id', id).eq('shop_id', s.shopId); } catch(e){} }
+        s.campSubs = s.campSubs.filter(function(x){ return String(x.id)!==String(id); });
         toast("Submission sorano hoyeche"); renderAll();
       });
     });
@@ -1586,7 +1686,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       return;
     }
     var campOpts = CAMPAIGN_TYPES.map(function(c){ return '<option ' + ((existing ? existing.camp : campName)===c.name ? "selected" : "") + '>' + esc(c.name) + '</option>'; }).join("");
-    var prodOpts = approved.map(function(p){ return '<option value="' + p.id + '" ' + ((existing && existing.pid===p.id) ? "selected" : "") + '>' + esc(p.name) + ' — ' + fmt(p.price) + '</option>'; }).join("");
+    var prodOpts = approved.map(function(p){ return '<option value="' + p.id + '" ' + ((existing && String(existing.pid)===String(p.id)) ? "selected" : "") + '>' + esc(p.name) + ' — ' + fmt(p.price) + '</option>'; }).join("");
     openModal(
       '<h2>Mega Sale te Product Submit</h2><div class="msub">Submit korle Admin er kache approval er jonno jabe. Approve holei campaign price e website e live hobe.</div>'
       + '<div class="field"><label>Campaign type</label><select id="cpCamp" aria-label="Campaign type">' + campOpts + '</select><div class="hint" id="cpHint"></div></div>'
@@ -1598,7 +1698,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cpCancel" type="button">Cancel</button><button class="btn amber" id="cpSave" type="button">Submit for Admin Approval</button></div>',
       function(){
         function calc(){
-          var cp = campTypeByName($("cpCamp").value), p = prodById(+$("cpProd").value), price = +$("cpPrice").value;
+          var cp = campTypeByName($("cpCamp").value), p = prodById($("cpProd").value), price = +$("cpPrice").value;
           $("cpHint").textContent = cp ? ("Minimum discount " + cp.minDisc + "% · Admin approval lagbe") : "";
           if (p && price>0 && price<p.price) { var d = Math.round((1 - price/p.price) * 100); $("cpCalc").innerHTML = "Discount hobe: <span style='color:var(--red)'>" + d + "% OFF</span> · Normal " + fmt(p.price) + " → " + fmt(price) + (cp && d<cp.minDisc ? " · <span style='color:var(--red)'>Ei campaign e kompokkhe " + cp.minDisc + "% lagbe</span>" : " · <span style='color:var(--brand)'>Minimum puron hoyeche</span>"); }
           else $("cpCalc").textContent = p ? "Normal price: " + fmt(p.price) + " — er cheye kom campaign price din" : "";
@@ -1607,14 +1707,20 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
         ["cpCamp","cpProd"].forEach(function(id){ $(id).addEventListener("change", calc); });
         $("cpPrice").addEventListener("input", calc);
         $("cpCancel").addEventListener("click", closeModal);
-        $("cpSave").addEventListener("click", function(){
-          var cp = campTypeByName($("cpCamp").value), p = prodById(+$("cpProd").value), price = +$("cpPrice").value, alloc = +$("cpAlloc").value;
+        $("cpSave").addEventListener("click", async function(){
+          var cp = campTypeByName($("cpCamp").value), p = prodById($("cpProd").value), price = +$("cpPrice").value, alloc = +$("cpAlloc").value;
           if (!p || !(price>0) || price>=p.price) { $("cpErr").textContent = "Campaign price normal price er cheye kom hote hobe."; return; }
           var d = Math.round((1 - price/p.price) * 100);
           if (cp && d < cp.minDisc) { $("cpErr").textContent = cp.name + " er jonno kompokkhe " + cp.minDisc + "% discount lagbe (apni diyechen " + d + "%)."; return; }
           if (!(alloc>0) || alloc>p.stock) { $("cpErr").textContent = "Allocated stock 1 theke apnar stock (" + (p ? p.stock : 0) + ") er moddhe hote hobe."; return; }
+          if (supabaseConnected && supabase) {
+            try {
+              if (existing && existing.id) { var upM = await supabase.from('mega_submissions').update({ campaign: cp.name, campaign_price: price, allocated_stock: alloc, status: "pending" }).eq('id', existing.id).eq('shop_id', s.shopId); if (upM.error) { $("cpErr").textContent = upM.error.message; return; } }
+              else { var insM = await supabase.from('mega_submissions').insert({ shop_id: s.shopId, product_id: p.id, campaign: cp.name, campaign_price: price, allocated_stock: alloc, status: "pending" }).select().single(); if (insM.error) { $("cpErr").textContent = insM.error.message; return; } if (insM.data) { s.campSubs.unshift(mapMegaRow(insM.data)); closeModal(); renderAll(); showView("campaigns"); toast("Submit hoyeche — Admin approval er jonno pathano hoyeche"); return; } }
+            } catch(e){ $("cpErr").textContent = "Supabase e submission save hoy ni."; return; }
+          }
           if (existing) { existing.campPrice = price; existing.alloc = alloc; existing.camp = cp.name; existing.status = "Pending Approval"; existing.adminNote = "Abar submit kora hoyeche — Admin er review er opekkhay ache."; }
-          else s.campSubs.unshift({ id: Date.now(), sellerId: s.id, pid: p.id, camp: cp.name, campPrice: price, alloc: alloc, status: "Pending Approval", adminNote: "Admin er review er opekkhay ache." });
+          else s.campSubs.unshift({ id: Date.now(), sellerId: s.shopId || s.id, pid: p.id, camp: cp.name, campPrice: price, alloc: alloc, status: "Pending Approval", adminNote: "Admin er review er opekkhay ache." });
           closeModal(); renderAll(); showView("campaigns");
           toast("Submit hoyeche — Admin approval er jonno pathano hoyeche");
         });
@@ -1648,16 +1754,16 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     }).join("") : '<div class="empty"><div class="et">No return requests</div><div>Apnar shop e customer return chaile request ekhane asbe.</div></div>';
     $("returnList").querySelectorAll("[data-ret-accept]").forEach(function(b){
       b.addEventListener("click", function(){
-        var r = ownReturns().filter(function(x){ return x.id===b.getAttribute("data-ret-accept"); })[0]; if (!r) return;
-        openConfirm("Return accept korben?", r.id + " — " + fmt(r.amount) + " apnar wallet balance theke adjust hobe ar Admin ke notify kora hobe.", function(){
-          r.status = "Return Accepted"; s.balance = Math.max(0, s.balance - r.amount); renderAll(); toast("Return accept hoyeche — " + fmt(r.amount) + " wallet theke adjust, Admin notified");
+        var r = ownReturns().filter(function(x){ return String(x.id)===String(b.getAttribute("data-ret-accept")); })[0]; if (!r) return;
+        openConfirm("Return accept korben?", r.id + " — " + fmt(r.amount) + " apnar wallet balance theke adjust hobe ar Admin ke notify kora hobe.", async function(){
+          r.status = "Return Accepted"; s.balance = Math.max(0, s.balance - r.amount); if (supabaseConnected && supabase) { try { await supabase.from('returns').update({ status: "accepted" }).eq('id', r.id).eq('shop_id', s.shopId); } catch(e){} } renderAll(); toast("Return accept hoyeche — " + fmt(r.amount) + " wallet theke adjust, Admin notified");
         });
       });
     });
     $("returnList").querySelectorAll("[data-ret-reject]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var r = ownReturns().filter(function(x){ return x.id===b.getAttribute("data-ret-reject"); })[0]; if (!r) return;
-        r.status = "Return Rejected"; renderAll(); toast("Return reject hoyeche — Admin review er jonno pathano hoyeche");
+      b.addEventListener("click", async function(){
+        var r = ownReturns().filter(function(x){ return String(x.id)===String(b.getAttribute("data-ret-reject")); })[0]; if (!r) return;
+        r.status = "Return Rejected"; if (supabaseConnected && supabase) { try { await supabase.from('returns').update({ status: "rejected" }).eq('id', r.id).eq('shop_id', s.shopId); } catch(e){} } renderAll(); toast("Return reject hoyeche — Admin review er jonno pathano hoyeche");
       });
     });
   }
@@ -1688,10 +1794,13 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="wCancel" type="button">Cancel</button><button class="btn" id="wGo" type="button">Confirm Payout Request</button></div>',
       function(){
         $("wCancel").addEventListener("click", closeModal);
-        $("wGo").addEventListener("click", function(){
+        $("wGo").addEventListener("click", async function(){
           var amt = +$("wAmt").value;
           if (!(amt>=500) || amt>s.balance) { $("wErr").textContent = "Amount ৳500 theke " + fmt(s.balance) + " er moddhe hote hobe."; return; }
           var method = $("wMethod").value, acc = $("wAcc").value;
+          if (supabaseConnected && supabase) {
+            try { var insP = await supabase.from('payouts').insert({ shop_id: s.shopId, amount: amt, method: method, account: acc, status: "pending" }).select().single(); if (insP.error) { $("wErr").textContent = insP.error.message; return; } } catch(e){ $("wErr").textContent = "Supabase e payout request save hoy ni."; return; }
+          }
           s.balance -= amt;
           s.payouts.unshift({ date: fmtDate(new Date().toISOString()), method: method, account: maskAccount(acc), amount: amt, status: "Processing" });
           closeModal(); renderAll();
@@ -1724,22 +1833,22 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
         + '</div></div>';
     }).join("") : '<div class="empty" style="grid-column:1/-1"><div class="et">No team members yet</div><div>Apnar shop er jonno prothom staff add korun — se sudhu tar role er kaj guloi korte parbe.</div></div>';
     $("staffGrid").querySelectorAll("[data-staff-toggle]").forEach(function(b){
-      b.addEventListener("click", function(){
-        var x = ownStaff().filter(function(y){ return y.id===+b.getAttribute("data-staff-toggle"); })[0]; if (!x) return;
-        x.active = !x.active; toast(x.name + " ekhon " + (x.active ? "Active" : "Deactivated")); renderTeam();
+      b.addEventListener("click", async function(){
+        var x = ownStaff().filter(function(y){ return String(y.id)===String(b.getAttribute("data-staff-toggle")); })[0]; if (!x) return;
+        x.active = !x.active; if (supabaseConnected && supabase) { try { await supabase.from('staff').update({ active: x.active }).eq('id', x.id).eq('shop_id', me().shopId); } catch(e){} } toast(x.name + " ekhon " + (x.active ? "Active" : "Deactivated")); renderTeam();
       });
     });
     $("staffGrid").querySelectorAll("[data-staff-del]").forEach(function(b){
       b.addEventListener("click", function(){
-        var x = ownStaff().filter(function(y){ return y.id===+b.getAttribute("data-staff-del"); })[0]; if (!x) return;
-        openConfirm("Staff remove korben?", x.name + " ar shop panel e login korte parbe na.", function(){
-          var s = me(); s.staff = s.staff.filter(function(y){ return y.id!==x.id; }); toast(x.name + " remove hoyeche"); renderTeam(); renderDashboard();
+        var x = ownStaff().filter(function(y){ return String(y.id)===String(b.getAttribute("data-staff-del")); })[0]; if (!x) return;
+        openConfirm("Staff remove korben?", x.name + " ar shop panel e login korte parbe na.", async function(){
+          var s = me(); if (supabaseConnected && supabase) { try { await supabase.from('staff').delete().eq('id', x.id).eq('shop_id', s.shopId); } catch(e){} } s.staff = s.staff.filter(function(y){ return String(y.id)!==String(x.id); }); toast(x.name + " remove hoyeche"); renderTeam(); renderDashboard();
         });
       });
     });
     $("staffGrid").querySelectorAll("[data-staff-role]").forEach(function(b){
       b.addEventListener("click", function(){
-        var x = ownStaff().filter(function(y){ return y.id===+b.getAttribute("data-staff-role"); })[0];
+        var x = ownStaff().filter(function(y){ return String(y.id)===String(b.getAttribute("data-staff-role")); })[0];
         if (x) openStaffRoleModal(x);
       });
     });
@@ -1769,8 +1878,9 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
         showPerms();
         $("srRole").addEventListener("change", showPerms);
         $("srCancel").addEventListener("click", closeModal);
-        $("srSave").addEventListener("click", function(){
+        $("srSave").addEventListener("click", async function(){
           x.role = $("srRole").value; x.color = ROLE_COLORS[x.role];
+          if (supabaseConnected && supabase) { try { await supabase.from('staff').update({ role: x.role }).eq('id', x.id).eq('shop_id', me().shopId); } catch(e){} }
           closeModal(); renderTeam(); toast(x.name + " er role ekhon " + x.role);
         });
       });
@@ -1791,14 +1901,18 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
         hint();
         $("nsRole").addEventListener("change", hint);
         $("nsCancel").addEventListener("click", closeModal);
-        $("nsSave").addEventListener("click", function(){
+        $("nsSave").addEventListener("click", async function(){
           var name = $("nsName").value.trim(), em = $("nsEmail").value.trim(), ph = $("nsPhone").value.trim(), pw = $("nsPass").value;
           if (!name || !em || em.indexOf("@") < 1) { $("nsErr").textContent = "Name ar sothik email din."; return; }
           if (!/^01\d{9}$/.test(ph.replace(/[-\s]/g, ""))) { $("nsErr").textContent = "Sothik 11 digit er mobile number din."; return; }
           if (pw.length < 6) { $("nsErr").textContent = "Temporary password kompokkhe 6 character din."; return; }
           if (ownStaff().some(function(y){ return y.email.toLowerCase()===em.toLowerCase(); })) { $("nsErr").textContent = "Ei email diye agei ekjon staff ache."; return; }
           var role = $("nsRole").value;
-          s.staff.unshift({ id: Date.now(), sellerId: s.id, name: name, email: em, phone: ph, role: role, active: true, joined: monthYear(new Date().toISOString()), color: ROLE_COLORS[role] });
+          var newStaff = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true, joined: monthYear(new Date().toISOString()), color: ROLE_COLORS[role] };
+          if (supabaseConnected && supabase) {
+            try { var insS = await supabase.from('staff').insert({ shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true }).select().single(); if (insS.error) { $("nsErr").textContent = insS.error.message; return; } if (insS.data) { newStaff.id = insS.data.id; } } catch(e){ $("nsErr").textContent = "Supabase e staff save hoy ni."; return; }
+          }
+          s.staff.unshift(newStaff);
           closeModal(); renderTeam();
           toast(name + " staff hisebe add hoyeche — login: " + em);
         });
@@ -1806,7 +1920,7 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
   });
 
   /* ================= SETTINGS ================= */
-  $("shopForm").addEventListener("submit", function(e){
+  $("shopForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var s = me(); if (!s) return;
     s.shop = $("setShopName").value.trim() || s.shop;
@@ -1814,21 +1928,24 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
     s.phone = $("setPhone").value.trim();
     s.address = $("setAddress").value.trim();
     s.desc = $("setDesc").value.trim();
+    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ name: s.shop, pickup_address: s.address, description: s.desc }).eq('id', s.shopId); await supabase.from('profiles').update({ full_name: s.owner, phone: s.phone }).eq('id', s.id); } catch(err){} }
     syncShopUI(); toast("Shop information save hoyeche");
   });
-  $("payoutForm").addEventListener("submit", function(e){
+  $("payoutForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var s = me(); if (!s) return;
     s.payMethod = $("payMethod").value;
     s.payAccount = $("payAccount").value.trim();
     s.payName = $("payName").value.trim();
+    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ payout_method: s.payMethod, payout_account: s.payAccount, payout_name: s.payName }).eq('id', s.shopId); } catch(err){} }
     renderPayouts(); toast("Payout method save hoyeche");
   });
-  $("vacationBtn").addEventListener("click", function(){
+  $("vacationBtn").addEventListener("click", async function(){
     var s = me(); if (!s) return;
     s.vacation = !s.vacation;
     this.textContent = "Vacation mode: " + (s.vacation ? "On" : "Off");
     this.classList.toggle("amber", s.vacation);
+    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ vacation: s.vacation }).eq('id', s.shopId); } catch(err){} }
     toast(s.vacation ? "Vacation mode on — product gulo samoyik hide" : "Vacation mode off — shop abar live");
   });
   (function(){ var lt = $("setLogoText"); if (lt) lt.addEventListener("input", function(){ var v = lt.value.trim().toUpperCase().slice(0,2); var lp = $("logoPreview"); if (lp) lp.textContent = v || initials(me() ? me().shop : "S"); var av = $("shopAvatar"); if (av && v) av.textContent = v; }); })();
@@ -1854,7 +1971,21 @@ var SUPABASE_CONFIG = { url: "", anonKey: "" };
   (function init(){
     var sel = $("prodCatFilter");
     Object.keys(COMMISSION).forEach(function(c){ var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
-    showLogin();
+    initSupabase();
+    if (supabaseConnected && supabase) {
+      supabase.auth.getSession().then(async function(res){
+        try {
+          var sess = res && res.data && res.data.session;
+          if (sess && sess.user) {
+            var seller = await loadCurrentSellerFromSupabase(sess.user);
+            if (seller) { session.sellerId = seller.id; routeAfterAuth(); return; }
+          }
+        } catch(e){}
+        showLogin();
+      });
+    } else {
+      showLogin();
+    }
   })();
   </script>
   </body>

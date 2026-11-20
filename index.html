@@ -13,7 +13,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23a8e10c'/%3E%3Ctext x='32' y='42' font-size='26' font-weight='800' text-anchor='middle' font-family='sans-serif' fill='%23243b00'%3EA%3C/text%3E%3C/svg%3E" />
 <title>AnboBD — সবকিছু, এক ঠিকানায় | 3D Online Shopping in Bangladesh</title>
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"OnlineStore","name":"AnboBD","description":"বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — ইলেকট্রনিক্স, ফ্যাশন, হোম, বিউটি ও গ্রোসারি।","areaServed":"BD","currenciesAccepted":"BDT","paymentAccepted":"Cash on Delivery, bKash, Nagad, Card"}
+{"@context":"https://schema.org","@type":"OnlineStore","name":"AnboBD","description":"বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — ইলেকট্রনিক্স, ফ্যাশন, হোম, বিউটি ও গ্রোসারি।","areaServed":"BD","currenciesAccepted":"BDT","paymentAccepted":"Cash on Delivery, bKash (manual), Nagad (manual)"}
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -303,6 +303,14 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 .payopts label{border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font-weight:600;cursor:pointer;display:flex;gap:9px;align-items:center;font-size:.93rem}
 .payopts label:has(input:checked){border-color:var(--teal);background:var(--surface2)}
 .payopts small{display:block;color:var(--muted);font-weight:400}
+.payopts label.disabled{opacity:.55;cursor:not-allowed}
+.supanotice{background:#fff3c4;color:#7a5b00;text-align:center;padding:9px 14px;font-weight:700;font-size:.88rem;line-height:1.55;border-bottom:1.5px dashed #b07d10}
+@media (prefers-color-scheme: dark){.supanotice{background:#2a230d;color:#ffd97a}}
+.manualpay{display:grid;gap:12px}
+.manualnote{background:#fff3c4;color:#7a5b00;border-radius:12px;padding:10px 13px;font-size:.85rem;font-weight:600;line-height:1.6}
+@media (prefers-color-scheme: dark){.manualnote{background:#2a230d;color:#ffd97a}}
+.paystatus{background:#fff3c4;color:#7a5b00;border-radius:12px;padding:10px 13px;font-size:.86rem;font-weight:600;line-height:1.6;margin-top:10px}
+@media (prefers-color-scheme: dark){.paystatus{background:#2a230d;color:#ffd97a}}
 .success{display:none;text-align:center;padding:26px 18px;overflow-y:auto}
 .success .big{font-size:3.2rem}
 .success.show{display:block}
@@ -645,9 +653,11 @@ section{ padding-top:56px }
 .services .stx{ background:none; border:0; border-radius:0; box-shadow:none; padding:0; display:block }
 .services .sic{ font-size:1rem; color:#fff }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 <div class="topstrip">🚚 ঢাকায় ডেলিভারি <b>৳60</b> • সারা দেশে <b>৳120</b> &nbsp;•&nbsp; ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b> &nbsp;•&nbsp; প্রোমো কোড <b>ANBO10</b> = 10% ছাড়</div>
+<div class="supanotice" id="supabaseNotice" style="display:none">⚠️ Not connected to Supabase yet — অ্যাকাউন্ট ও অর্ডার এখন শুধু এই ব্রাউজার সেশনে থাকছে। প্রোডাকশনে Vercel-এ <b>NEXT_PUBLIC_SUPABASE_URL</b> ও <b>NEXT_PUBLIC_SUPABASE_ANON_KEY</b> সেট হলেই আসল Supabase Auth ও ডাটাবেস চালু হবে।</div>
 
 <header class="site">
   <div class="wrap">
@@ -698,7 +708,7 @@ section{ padding-top:56px }
         <div><b>4.8 ★</b><span>কাস্টমার রেটিং</span></div>
         <div><b>1 লাখ+</b><span>হ্যাপি কাস্টমার</span></div>
       </div>
-      <div class="hero-pay"><span>💵 ক্যাশ অন ডেলিভারি</span><span>bKash</span><span>Nagad</span><span>কার্ড</span><span>0% EMI (৳5,000+)</span></div>
+      <div class="hero-pay"><span>💵 ক্যাশ অন ডেলিভারি</span><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span></div>
     </div>
     <div class="stage" id="stage">
       <div class="stage-inner" id="stageInner">
@@ -874,12 +884,12 @@ section{ padding-top:56px }
     <div class="sec-head"><div><h2>কীভাবে অর্ডার করবেন?</h2><p>মাত্র 3টি সহজ ধাপে</p></div></div>
     <div class="steps">
       <div><div class="n">1</div><b>পণ্য বেছে কার্টে যোগ করুন</b><p>পছন্দের পণ্য খুঁজুন, ছবিতে ক্লিক করে বিস্তারিত দেখুন, তারপর “কার্টে যোগ করুন” বা “এখনই কিনুন” চাপুন।</p></div>
-      <div><div class="n">2</div><b>নাম, মোবাইল ও ঠিকানা দিন</b><p>চেকআউটে আপনার নাম, সচল মোবাইল নম্বর আর পুরো ঠিকানা দিন। পেমেন্ট বেছে নিন — ক্যাশ অন ডেলিভারি, bKash, Nagad বা কার্ড।</p></div>
+      <div><div class="n">2</div><b>নাম, মোবাইল ও ঠিকানা দিন</b><p>চেকআউটে আপনার নাম, সচল মোবাইল নম্বর আর পুরো ঠিকানা দিন। পেমেন্ট বেছে নিন — ক্যাশ অন ডেলিভারি, অথবা bKash/Nagad ম্যানুয়াল পেমেন্ট (টাকা পাঠিয়ে Transaction ID দিতে হবে, Admin যাচাই করে কনফার্ম করবে)।</p></div>
       <div><div class="n">3</div><b>Admin কনফার্মের পর Seller পাঠিয়ে দেবে</b><p>প্রতিটি অর্ডার আগে AnboBD Admin যাচাই করে কনফার্ম করে, তারপর Seller-এর কাছে পাঠানো হয়। Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি শুরু — ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা।</p></div>
     </div>
     <div class="sec-head" style="margin-top:34px"><div><h2>কেন AnboBD?</h2><p>কেনাকাটা হোক নিশ্চিন্তে</p></div></div>
     <div class="trust">
-      <div><div class="ic">💵</div><b>ক্যাশ অন ডেলিভারি</b><p>পণ্য হাতে পেয়ে তারপর টাকা দিন। bKash, Nagad ও কার্ড পেমেন্টও চালু আছে, ৳5,000+ অর্ডারে 0% EMI সুবিধা।</p></div>
+      <div><div class="ic">💵</div><b>ক্যাশ অন ডেলিভারি</b><p>পণ্য হাতে পেয়ে তারপর টাকা দিন। আগাম দিতে চাইলে bKash/Nagad ম্যানুয়াল পেমেন্ট আছে — টাকা পাঠিয়ে Transaction ID দিলে Admin যাচাই করে অর্ডার কনফার্ম করে।</p></div>
       <div><div class="ic">↩️</div><b>7 দিনের সহজ রিটার্ন</b><p>পণ্যে সমস্যা থাকলে বা ভুল পণ্য এলে 7 দিনের মধ্যে সহজে রিটার্ন/রিপ্লেস — রিফান্ড 3–5 কর্মদিবসে।</p></div>
       <div><div class="ic">✅</div><b>100% অরিজিনাল পণ্য</b><p>প্রতিটি পণ্য যাচাই করা বিক্রেতার কাছ থেকে — নকল পণ্যে সম্পূর্ণ মানি-ব্যাক গ্যারান্টি।</p></div>
       <div><div class="ic">🎧</div><b>সকাল 9টা – রাত 11টা সাপোর্ট</b><p>বাংলায় কথা বলুন — কল, চ্যাট বা মেসেঞ্জারে আমাদের টিম পাশে আছে, সপ্তাহে 7 দিনই।</p></div>
@@ -901,7 +911,7 @@ section{ padding-top:56px }
     <div class="sec-head"><div><h2>সাধারণ জিজ্ঞাসা</h2><p>কেনাকাটার আগে জেনে নিন</p></div></div>
     <div class="faq">
       <details><summary>ডেলিভারি চার্জ কত আর কতদিনে পাব?</summary><p>ঢাকার ভিতরে ডেলিভারি চার্জ ৳60 (24 ঘণ্টা), ঢাকার বাইরে ৳120 (48–72 ঘণ্টা)। ৳2,000 বা তার বেশি অর্ডারে সারা দেশে ডেলিভারি সম্পূর্ণ FREE। অর্ডারের পর AnboBD Admin যাচাই করে কনফার্ম করে Seller-এর কাছে পাঠায় — Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি প্রক্রিয়া শুরু হয়।</p></details>
-      <details><summary>কীভাবে পেমেন্ট করব?</summary><p>ক্যাশ অন ডেলিভারি (পণ্য হাতে পেয়ে নগদ), bKash, Nagad, Rocket এবং ডেবিট/ক্রেডিট কার্ড — সব মাধ্যমেই পেমেন্ট করা যায়। ৳5,000+ অর্ডারে নির্বাচিত কার্ডে 0% EMI সুবিধা আছে। অগ্রিম পেমেন্টে অতিরিক্ত সুবিধা পেতে চেকআউটে প্রোমো কোড ব্যবহার করুন।</p></details>
+      <details><summary>কীভাবে পেমেন্ট করব?</summary><p>দুটি উপায় আছে: (1) <b>ক্যাশ অন ডেলিভারি</b> — পণ্য হাতে পেয়ে নগদ টাকা দিন। (2) <b>bKash / Nagad ম্যানুয়াল পেমেন্ট</b> — চেকআউটে মাধ্যমটি বেছে নিন, অর্ডারের পর আমাদের টিম অফিসিয়াল নম্বর জানিয়ে দেবে; সেই নম্বরে Send Money করে আপনার নম্বর ও Transaction ID দিন। Admin ট্রান্সাকশন যাচাই করে কনফার্ম করলেই অর্ডারটি এগিয়ে যাবে — যাচাইয়ের আগে অর্ডার AwaitingAdmin অবস্থায় থাকে। অনলাইন কার্ড গেটওয়ে এখনো চালু হয়নি।</p></details>
       <details><summary>পণ্যে সমস্যা থাকলে রিটার্ন/রিপ্লেস কীভাবে হবে?</summary><p>ডেলিভারির 7 দিনের মধ্যে পণ্যে ত্রুটি থাকলে, ভুল/ভাঙা পণ্য এলে বা ছবির সঙ্গে না মিললে রিটার্ন বা রিপ্লেস পাবেন। সাপোর্টে কল করে রিকোয়েস্ট দিলেই আমাদের কুরিয়ার পণ্য সংগ্রহ করবে। রিফান্ড 3–5 কর্মদিবসের মধ্যে একই মাধ্যমে ফেরত যাবে।</p></details>
       <details><summary>আমার অর্ডার কোথায় আছে, কীভাবে জানব?</summary><p>অর্ডার কনফার্ম হলে আপনি একটি অর্ডার নম্বর পাবেন (যেমন #ANBO123456)। উপরের 📦 “অর্ডার ট্র্যাক” বোতামে ক্লিক করে নম্বরটি দিলেই বর্তমান অবস্থা দেখতে পাবেন। ডেলিভারির দিন কুরিয়ার ফোন করে জানিয়ে দেবে।</p></details>
       <details><summary>পণ্যে ওয়ারেন্টি আছে কি?</summary><p>ইলেকট্রনিক্স পণ্যে ব্র্যান্ডভেদে 6 মাস থেকে 1 বছরের অফিসিয়াল/সার্ভিস ওয়ারেন্টি থাকে — প্রতিটি পণ্যের বিবরণে ওয়ারেন্টির মেয়াদ উল্লেখ করা আছে। ওয়ারেন্টি ক্লেইমে ইনভয়েসটি সংরক্ষণ করুন।</p></details>
@@ -929,7 +939,7 @@ section{ padding-top:56px }
         <ul><li>✔ কোনো মাসিক ফি নেই — শুধু বিক্রিতে কমিশন</li><li>✔ 64 জেলায় আমাদের ডেলিভারি নেটওয়ার্ক</li><li>✔ সাপ্তাহিক পেমেন্ট সেটেলমেন্ট (bKash/ব্যাংক)</li><li>✔ নিজের দোকানের কুপন দিন — ওয়েবসাইটে লাইভ দেখাবে</li><li>✔ Mega Sale-এ পণ্য দিন (Admin অনুমোদন সাপেক্ষে)</li></ul>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
           <button class="btn btn-lime" id="sellerBtn">বিক্রেতা হিসেবে আবেদন করুন →</button>
-          <button class="btn btn-ghost" id="sellerLoginCta">🏪 Seller Center-এ লগইন</button>
+          <button class="btn btn-ghost" id="sellerLoginCta" style="display:none">🏪 Seller Center-এ লগইন</button>
         </div>
       </div>
       <div class="cube3d" aria-hidden="true">📦</div>
@@ -943,11 +953,11 @@ section{ padding-top:56px }
       <a class="logo" href="#" style="font-size:1.5rem"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
       <p>বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — সব ধরনের পণ্য, সেরা দামে, আপনার দরজায়।</p>
       <p>📍 বনানী, ঢাকা 1213, বাংলাদেশ<br>📞 হটলাইন: <b style="display:inline;color:var(--ink)">09638-555555</b> (সকাল 9টা – রাত 11টা)<br>✉️ support@anbobd.com</p>
-      <div class="payrow"><span>bKash</span><span>Nagad</span><span>Rocket</span><span>VISA</span><span>Mastercard</span><span>COD</span></div>
+      <div class="payrow"><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>COD</span></div>
     </div>
     <div><b>কেনাকাটা</b><a href="#flash">ফ্ল্যাশ সেল</a><a href="#products">সব পণ্য</a><a href="#categories">ক্যাটাগরি</a><a href="#faq">সাধারণ জিজ্ঞাসা</a><button class="flink" data-policy="track">অর্ডার ট্র্যাক করুন</button></div>
     <div><b>কাস্টমার কেয়ার</b><button class="flink" data-policy="return">রিটার্ন ও রিফান্ড পলিসি</button><button class="flink" data-policy="delivery">ডেলিভারি তথ্য</button><button class="flink" data-policy="warranty">ওয়ারেন্টি পলিসি</button><button class="flink" data-policy="privacy">প্রাইভেসি পলিসি</button><button class="flink" data-policy="contact">যোগাযোগ করুন</button></div>
-    <div><b>AnboBD</b><button class="flink" data-policy="about">আমাদের সম্পর্কে</button><button class="flink" data-policy="seller">বিক্রেতা হোন</button><button class="flink" id="footSellerBtn">🏪 Seller Center</button><button class="flink" id="footAdminBtn">🛡️ Admin Panel</button><button class="flink" data-policy="terms">শর্তাবলী</button><a href="#faq">ক্যারিয়ার — support@anbobd.com এ CV পাঠান</a></div>
+    <div><b>AnboBD</b><button class="flink" data-policy="about">আমাদের সম্পর্কে</button><button class="flink" data-policy="seller">বিক্রেতা হোন</button><button class="flink" id="footSellerBtn" style="display:none">🏪 Seller Center</button><button class="flink" id="footAdminBtn" style="display:none">🛡️ Admin Panel</button><button class="flink" data-policy="terms">শর্তাবলী</button><a href="#faq">ক্যারিয়ার — support@anbobd.com এ CV পাঠান</a></div>
   </div>
   <div class="wrap" style="margin-top:26px;font-size:.85rem">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩</div>
 </footer>
@@ -1001,11 +1011,16 @@ section{ padding-top:56px }
       <span class="err">জেলা বেছে নিন।</span></div>
     <div class="fld"><label>পেমেন্ট মাধ্যম *</label>
       <div class="payopts">
-        <label><input type="radio" name="pay" value="ক্যাশ অন ডেলিভারি" checked><span>💵 ক্যাশ অন ডেলিভারি<small>পণ্য হাতে পেয়ে নগদ টাকা দিন</small></span></label>
-        <label><input type="radio" name="pay" value="bKash"><span>📱 bKash<small>অর্ডারের পর পেমেন্ট লিংক/নম্বর পাঠানো হবে</small></span></label>
-        <label><input type="radio" name="pay" value="Nagad"><span>📱 Nagad<small>অর্ডারের পর পেমেন্ট লিংক/নম্বর পাঠানো হবে</small></span></label>
-        <label><input type="radio" name="pay" value="কার্ড"><span>💳 ডেবিট/ক্রেডিট কার্ড<small>নিরাপদ অনলাইন পেমেন্ট গেটওয়ে</small></span></label>
+        <label><input type="radio" name="pay" value="ক্যাশ অন ডেলিভারি" checked><span>💵 ক্যাশ অন ডেলিভারি<small>পণ্য হাতে পেয়ে নগদ টাকা দিন — এটাই এখনকার মূল পেমেন্ট মাধ্যম</small></span></label>
+        <label><input type="radio" name="pay" value="bKash"><span>📱 bKash — ম্যানুয়াল পেমেন্ট<small>টাকা পাঠিয়ে Transaction ID দিন — Admin যাচাই করে কনফার্ম করবে</small></span></label>
+        <label><input type="radio" name="pay" value="Nagad"><span>📱 Nagad — ম্যানুয়াল পেমেন্ট<small>টাকা পাঠিয়ে Transaction ID দিন — Admin যাচাই করে কনফার্ম করবে</small></span></label>
+        <label class="disabled"><input type="radio" name="pay" value="কার্ড" disabled><span>💳 ডেবিট/ক্রেডিট কার্ড<small>অনলাইন কার্ড গেটওয়ে এখনো চালু হয়নি — এই মাধ্যমটি এখন ব্যবহার করা যাবে না</small></span></label>
       </div>
+    </div>
+    <div class="manualpay" id="manualPayBox" style="display:none">
+      <div class="manualnote">📱 <b>ম্যানুয়াল পেমেন্টের ধাপ:</b> (1) অর্ডারটি করুন — আমাদের টিম কল/SMS-এ অফিসিয়াল পেমেন্ট নম্বর জানিয়ে দেবে। (2) সেই নম্বরে মোট টাকা <b>Send Money</b> করুন। (3) নিচে যে নম্বর থেকে টাকা পাঠিয়েছেন তা ও <b>Transaction ID</b> দিন। Admin ট্রান্সাকশন যাচাই করে কনফার্ম না করা পর্যন্ত অর্ডারটি <b>AwaitingAdmin</b> অবস্থায় থাকবে।</div>
+      <div class="fld" id="fPaySender"><label for="coPaySender">যে নম্বর থেকে টাকা পাঠিয়েছেন *</label><input id="coPaySender" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /><span class="err">সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।</span></div>
+      <div class="fld" id="fTrx"><label for="coTrxId">Transaction ID *</label><input id="coTrxId" placeholder="যেমন: 9H7XXXXXXX" style="text-transform:uppercase" /><span class="err">পেমেন্টের Transaction ID দিন (কমপক্ষে 6 অক্ষর) — Admin এটি মিলিয়ে যাচাই করবে।</span></div>
     </div>
     <div class="fld"><label for="coNote">বিশেষ নির্দেশনা (ঐচ্ছিক)</label><input id="coNote" placeholder="যেমন: বিকেলে ডেলিভারি দিলে ভালো হয়" /></div>
     <div class="trow grand" style="border:0"><span>সর্বমোট (ডেলিভারিসহ)</span><span id="coTotal">৳0</span></div>
@@ -1055,7 +1070,7 @@ section{ padding-top:56px }
       <div class="price"><b id="mPrice"></b><s id="mOld"></s><span class="bolt" id="mOff" style="font-size:.8rem"></span></div>
       <p id="mStock" style="font-size:.88rem;font-weight:700;margin:8px 0 0"></p>
       <p class="deldate" id="mDelivery" style="margin:6px 0 0"></p>
-      <p style="font-size:.88rem;color:var(--muted);margin:6px 0 0">💵 ক্যাশ অন ডেলিভারি • bKash / Nagad / কার্ড • ↩️ 7 দিনের সহজ রিটার্ন</p>
+      <p style="font-size:.88rem;color:var(--muted);margin:6px 0 0">💵 ক্যাশ অন ডেলিভারি • bKash / Nagad ম্যানুয়াল পেমেন্ট • ↩️ 7 দিনের সহজ রিটার্ন</p>
       <p id="mSeller" style="font-size:.88rem;margin:6px 0 0"></p>
       <div class="mqty"><span style="font-weight:700">পরিমাণ:</span><span class="qty"><button id="mDec" aria-label="কমান">−</button><b id="mQty">1</b><button id="mInc" aria-label="বাড়ান">+</button></span>
       <button class="wishbtn" id="mWish" style="position:static" aria-label="উইশলিস্টে যোগ করুন">🤍</button></div>
@@ -1139,6 +1154,7 @@ section{ padding-top:56px }
       <div id="auForms">
         <h3 style="font-size:1.4rem;margin:0 0 4px">👤 AnboBD অ্যাকাউন্ট</h3>
         <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।</p>
+        <div class="notice" id="auSupabaseNotice" style="display:none;margin-bottom:14px">⚠️ <b>Not connected to Supabase yet</b> — অ্যাকাউন্ট এখন শুধু এই ব্রাউজার সেশনে থাকছে। Supabase কনফিগ (Vercel env: NEXT_PUBLIC_SUPABASE_URL + NEXT_PUBLIC_SUPABASE_ANON_KEY) সেট হলেই আসল সাইন আপ/সাইন ইন ও ডাটাবেস সেভ চালু হবে।</div>
         <div class="authtabs" role="tablist" aria-label="সাইন ইন / সাইন আপ">
           <button type="button" id="auTabIn" class="on">সাইন ইন</button>
           <button type="button" id="auTabUp">সাইন আপ (নতুন অ্যাকাউন্ট)</button>
@@ -1546,7 +1562,7 @@ function cardHTML(p, flash){
     '<div class="pbody"><div class="pcat">'+CAT(p.categoryId).label+' • '+escHtml(b.name)+'</div><h3 class="pname">'+escHtml(p.name)+'</h3>' +
     '<div>'+vfdBadge(p)+(p.isNew?' <span class="vfd-badge" style="background:#fff3c4;color:#7a5b00">NEW</span>':'')+'</div>' +
     '<div class="stars">'+stars(p.rating)+' <span>• '+p.reviewCount+' রিভিউ</span></div>' +
-    '<div class="pmeta">'+(p.price>=2000?'<span>🚚 ফ্রি ডেলিভারি যোগ্য</span>':'')+(p.price>=5000?'<span class="emi">0% EMI</span>':'')+'<span>💵 COD</span></div>' +
+    '<div class="pmeta">'+(p.price>=2000?'<span>🚚 ফ্রি ডেলিভারি যোগ্য</span>':'')+'<span>💵 COD</span></div>' +
     stockLine(p) +
     '<div class="deldate">🚚 '+etaText("dhaka")+'</div>' +
     '<div class="price"><b>'+fmt(p.price)+'</b><s>'+fmt(p.oldPrice)+'</s></div>';
@@ -1815,6 +1831,13 @@ function fillCheckoutSummary(){
   document.getElementById("coTotal").textContent = fmt(t.total);
 }
 function fldBad(id, bad){ document.getElementById(id).classList.toggle("bad", bad); return !bad; }
+function syncManualPay(){
+  var payEl = document.querySelector('input[name="pay"]:checked');
+  var box = document.getElementById("manualPayBox");
+  if(!box) return;
+  var manual = payEl && (payEl.value==="bKash" || payEl.value==="Nagad");
+  box.style.display = manual ? "grid" : "none";
+}
 function checkoutSubmit(e){
   e.preventDefault();
   var name = document.getElementById("coName").value.trim();
@@ -1828,6 +1851,16 @@ function checkoutSubmit(e){
   ok = fldBad("fDist", !dist) && ok;
   if(!ok){ toast("⚠️ লাল দাগ দেওয়া ঘরগুলো ঠিক করে দিন"); return; }
   var pay = document.querySelector('input[name="pay"]:checked').value;
+  var isManual = (pay==="bKash" || pay==="Nagad");
+  var paySender = "", trxId = "";
+  if(isManual){
+    var psEl = document.getElementById("coPaySender"), txEl = document.getElementById("coTrxId");
+    paySender = psEl ? psEl.value.trim() : "";
+    trxId = txEl ? txEl.value.trim().toUpperCase() : "";
+    ok = fldBad("fPaySender", !/^01[3-9]\d{8}$/.test(paySender)) && ok;
+    ok = fldBad("fTrx", trxId.length<6) && ok;
+    if(!ok){ toast("📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে"); return; }
+  }
   var note = document.getElementById("coNote").value.trim();
   var t = totals();
   var orderId = "#ANBO" + Math.floor(100000 + Math.random()*900000);
@@ -1835,7 +1868,7 @@ function checkoutSubmit(e){
     id: orderId,
     items: Object.keys(cart).map(function(k){ var p=P(+k); return { productId:p.id, sku:p.sku, name:p.name, qty:cart[k], unitPrice:p.price, lineTotal:p.price*cart[k], sellerId:p.sellerId }; }),
     customer: { name:name, phone:phone, address:addr, district:dist, note:note },
-    payment: { method:pay, status: pay==="ক্যাশ অন ডেলিভারি" ? "Pay on delivery" : "Pending" },
+    payment: { method:pay, status: pay==="ক্যাশ অন ডেলিভারি" ? "Pay on delivery" : (isManual ? "Manual payment submitted — AwaitingAdmin verification" : "Pending"), transactionId: isManual ? trxId : null, senderNumber: isManual ? paySender : null },
     amounts: { subtotal:t.sub, discount:t.discount, deliveryFee:t.ship, total:t.total },
     promoCode: promoCode, zone: zone, status: "AwaitingAdmin",
     statusHistory: [{ status:"AwaitingAdmin", at:new Date().toISOString(), note:"অর্ডার গৃহীত — Admin যাচাইয়ে পাঠানো হয়েছে" }],
@@ -1846,13 +1879,18 @@ function checkoutSubmit(e){
     userEmail: (window.__anboCurrentUser ? window.__anboCurrentUser.email : null)
   };
   ANBOBD_STORE.orders.push(order);
+  if(window.ANBOBD_DB && ANBOBD_DB.configured()){
+    ANBOBD_DB.saveOrder(order).then(function(saved){
+      if(saved && window.renderAccount && window.__anboCurrentUser) renderAccount();
+    }).catch(function(err){ console.warn("Supabase order save failed, order kept locally:", err); });
+  }
   var cust = ANBOBD_STORE.customers.filter(function(c){return c.phone===phone;})[0];
   if(cust){ cust.totalOrders++; cust.totalSpent += t.total; }
   else ANBOBD_STORE.customers.push({ name:name, phone:phone, address:addr, district:dist, totalOrders:1, totalSpent:t.total });
   order.items.forEach(function(it){ var p=P(it.productId); if(p){ p.stockQty = Math.max(0, p.stockQty - it.qty); p.soldCount += it.qty; } });
   lastOrder = order;
   document.getElementById("orderSummary").innerHTML =
-    "অর্ডার নম্বর: <b>"+order.id+"</b><br>নাম: "+escHtml(name)+" • "+escHtml(phone)+"<br>ঠিকানা: "+escHtml(addr)+", "+escHtml(dist)+"<br>আইটেম: "+order.items.map(function(i){return escHtml(i.name)+" × "+i.qty;}).join(", ")+"<br>পেমেন্ট: <b>"+pay+"</b><br>সর্বমোট: <b>"+fmt(t.total)+"</b>"+(t.discount>0?" (ছাড় "+fmt(t.discount)+" সহ)":"")+"<br>📅 আনুমানিক ডেলিভারি: <b>"+order.estimatedDelivery+"</b>";
+    "অর্ডার নম্বর: <b>"+order.id+"</b><br>নাম: "+escHtml(name)+" • "+escHtml(phone)+"<br>ঠিকানা: "+escHtml(addr)+", "+escHtml(dist)+"<br>আইটেম: "+order.items.map(function(i){return escHtml(i.name)+" × "+i.qty;}).join(", ")+"<br>পেমেন্ট: <b>"+pay+"</b>"+(isManual ? "<br>Transaction ID: <b>"+escHtml(trxId)+"</b> (প্রেরকের নম্বর: "+escHtml(paySender)+")<br>⏳ <b>পেমেন্ট যাচাইয়ের অপেক্ষায়:</b> Admin ট্রান্সাকশন ID মিলিয়ে যাচাই করে কনফার্ম করলেই অর্ডারটি Seller-এর কাছে যাবে — ততক্ষণ অর্ডার AwaitingAdmin অবস্থায় থাকবে।" : "")+"<br>সর্বমোট: <b>"+fmt(t.total)+"</b>"+(t.discount>0?" (ছাড় "+fmt(t.discount)+" সহ)":"")+"<br>📅 আনুমানিক ডেলিভারি: <b>"+order.estimatedDelivery+"</b>";
   document.getElementById("etaTxt").textContent = "আনুমানিক ডেলিভারি: " + order.estimatedDelivery;
   cart = {}; promoCode = null; document.getElementById("promoInput").value = "";
   document.getElementById("checkoutForm").classList.remove("open");
@@ -1867,6 +1905,11 @@ function renderTracking(order){
   var labels = { AwaitingAdmin:"অর্ডার গৃহীত — Admin যাচাইয়ে আছে", AdminConfirmed:"Admin কনফার্ম করেছে — Seller-এর কাছে পাঠানো হয়েছে", Packed:"Seller প্যাক করেছে", Shipped:"Seller পাঠিয়ে দিয়েছে — কুরিয়ারের পথে", Delivered:"Delivered — ডেলিভারি সম্পন্ন" };
   var subs = { AwaitingAdmin:"AnboBD Admin অর্ডারটি যাচাই করছে", AdminConfirmed:"Seller অর্ডারটি পেয়ে গেছে", Packed:"Seller পণ্য প্যাক করে প্রস্তুত করেছে", Shipped:"কুরিয়ার ফোন করবে", Delivered:"পণ্য হাতে পেয়েছেন" };
   var html = '<div class="sumbox" style="background:var(--surface2);border-radius:14px;padding:13px 15px;font-size:.92rem">অর্ডার: <b>'+order.id+'</b> • '+order.customer.district+' • সর্বমোট <b>'+fmt(order.amounts.total)+'</b><br>📅 আনুমানিক ডেলিভারি: <b>'+order.estimatedDelivery+'</b> • পেমেন্ট: '+order.payment.method+'</div>';
+  if(order.payment && order.payment.transactionId){
+    html += '<div class="paystatus">📱 <b>ম্যানুয়াল পেমেন্ট ('+escHtml(order.payment.method)+')</b> — Transaction ID: <b>'+escHtml(order.payment.transactionId)+'</b>'+(order.payment.senderNumber ? ' • প্রেরকের নম্বর: '+escHtml(order.payment.senderNumber) : '')+'<br>'+(order.status==="AwaitingAdmin" ? '⏳ <b>পেমেন্ট যাচাইয়ের অপেক্ষায় আছে</b> — Admin ট্রান্সাকশন ID মিলিয়ে যাচাই করে কনফার্ম করলেই অর্ডারটি Seller-এর কাছে যাবে।' : '✅ Admin পেমেন্ট যাচাই করে অর্ডারটি কনফার্ম করেছে।')+'</div>';
+  } else if(order.payment && order.payment.method==="ক্যাশ অন ডেলিভারি"){
+    html += '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">💵 ক্যাশ অন ডেলিভারি — পণ্য হাতে পেয়ে কুরিয়ারকে <b>'+fmt(order.amounts.total)+'</b> পরিশোধ করুন।</div>';
+  }
   if(order.status==="Cancelled"){ html += '<p style="color:var(--danger);font-weight:800">❌ এই অর্ডারটি Cancelled (বাতিল) হয়েছে। সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>'; }
   else html += '<div class="timeline">' + flow.map(function(st,i){
     return '<div class="'+(i<=idx?'done':'')+'"><span class="tdot">'+(i<=idx?'✓':(i+1))+'</span><div><b>'+labels[st]+'</b><span>'+subs[st]+'</span></div></div>';
@@ -1879,7 +1922,7 @@ var POLICIES = {
   return:{t:"↩️ রিটার্ন ও রিফান্ড পলিসি", b:"<p>ডেলিভারির <b>7 দিনের</b> মধ্যে পণ্যে ত্রুটি থাকলে, ভুল বা ভাঙা পণ্য এলে, কিংবা ছবির সঙ্গে না মিললে রিটার্ন/রিপ্লেস পাবেন।</p><p>• সাপোর্টে (09638-555555) কল করে রিকোয়েস্ট দিন<br>• আমাদের কুরিয়ার পণ্য সংগ্রহ করবে (রিটার্ন চার্জ ফ্রি, ত্রুটিজনিত ক্ষেত্রে)<br>• রিফান্ড 3–5 কর্মদিবসে একই মাধ্যমে (bKash/Nagad/ব্যাংক/COD ক্ষেত্রে bKash)</p><p>ব্যবহৃত, ওয়াশ করা বা ট্যাগ ছেঁড়া পণ্য রিটার্নযোগ্য নয়।</p>"},
   delivery:{t:"🚚 ডেলিভারি তথ্য", b:"<p>• <b>ঢাকার ভিতরে:</b> ৳60, 24 ঘণ্টায় ডেলিভারি<br>• <b>ঢাকার বাইরে (চট্টগ্রাম, সিলেটসহ 64 জেলা):</b> ৳120, 48–72 ঘণ্টা<br>• <b>৳2,000+ অর্ডারে সারা দেশে FREE ডেলিভারি</b></p><p>অর্ডারের পর আমাদের টিম ফোনে কনফার্ম করে। ক্যাশ অন ডেলিভারিতে পণ্য হাতে পেয়ে টাকা পরিশোধ করুন। অর্ডার করার সময়ই আনুমানিক ডেলিভারির তারিখ দেখিয়ে দেওয়া হয়।</p>"},
   warranty:{t:"🛡️ ওয়ারেন্টি পলিসি", b:"<p>ইলেকট্রনিক্স পণ্যে ব্র্যান্ডভেদে <b>6 মাস – 1 বছরের</b> ওয়ারেন্টি থাকে; প্রতিটি পণ্যের পেজে মেয়াদ উল্লেখ আছে। Anbo Verified ব্র্যান্ডের পণ্যে অফিসিয়াল ওয়ারেন্টি প্রযোজ্য।</p><p>ওয়ারেন্টি ক্লেইমে অর্ডার নম্বর/ইনভয়েস লাগবে। পানি-ক্ষতি, ভাঙা বা অননুমোদিত মেরামতে ওয়ারেন্টি বাতিল হবে।</p>"},
-  privacy:{t:"🔒 প্রাইভেসি পলিসি", b:"<p>আপনার নাম, মোবাইল নম্বর ও ঠিকানা শুধু অর্ডার ডেলিভারি ও সাপোর্টের জন্য ব্যবহার হয়। আমরা আপনার তথ্য তৃতীয় পক্ষের কাছে বিক্রি করি না।</p><p>পেমেন্ট তথ্য (bKash/কার্ড) সংশ্লিষ্ট পেমেন্ট গেটওয়ের মাধ্যমে নিরাপদে প্রসেস হয় — আমরা কার্ড নম্বর সংরক্ষণ করি না। তথ্য মুছে ফেলতে চাইলে support@anbobd.com এ লিখুন।</p>"},
+  privacy:{t:"🔒 প্রাইভেসি পলিসি", b:"<p>আপনার নাম, মোবাইল নম্বর ও ঠিকানা শুধু অর্ডার ডেলিভারি ও সাপোর্টের জন্য ব্যবহার হয়। আমরা আপনার তথ্য তৃতীয় পক্ষের কাছে বিক্রি করি না।</p><p>ম্যানুয়াল পেমেন্টের ক্ষেত্রে আপনার দেওয়া Transaction ID ও প্রেরকের নম্বর শুধু পেমেন্ট যাচাইয়ের জন্য ব্যবহার হয়। আমরা কোনো কার্ড নম্বর সংগ্রহ বা সংরক্ষণ করি না। তথ্য মুছে ফেলতে চাইলে support@anbobd.com এ লিখুন।</p>"},
   about:{t:"🏢 আমাদের সম্পর্কে", b:"<p><b>AnboBD</b> বাংলাদেশের 3D-স্টাইল অনলাইন মার্কেটপ্লেস — ইলেকট্রনিক্স, ফ্যাশন, হোম, বিউটি ও গ্রোসারি এক ঠিকানায়। ঢাকার বনানী থেকে আমরা 64 জেলায় ডেলিভারি দিই।</p><p>আমাদের প্রতিশ্রুতি: অরিজিনাল পণ্য, স্বচ্ছ দাম, দ্রুত ডেলিভারি আর বাংলায় আন্তরিক সাপোর্ট।</p>"},
   terms:{t:"📜 শর্তাবলী", b:"<p>• সব মূল্য বাংলাদেশি টাকায় (BDT), ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)।<br>• ফ্ল্যাশ সেলের দাম স্টক থাকা পর্যন্ত প্রযোজ্য।<br>• ভুল মূল্য/তথ্যের ক্ষেত্রে AnboBD অর্ডার বাতিল করে রিফান্ডের অধিকার সংরক্ষণ করে।<br>• প্রোমো কোড অন্য অফারের সঙ্গে একত্রিত নাও হতে পারে; প্রতিটি কোডের শর্ত প্রযোজ্য।</p>"},
   contact:{t:"📞 যোগাযোগ করুন", b:"<p>📞 হটলাইন: <b>09638-555555</b> (সকাল 9টা – রাত 11টা, সপ্তাহে 7 দিন)<br>✉️ ইমেইল: support@anbobd.com<br>📍 ঠিকানা: বনানী, ঢাকা 1213, বাংলাদেশ</p><p>অর্ডার সংক্রান্ত সাহায্যে অর্ডার নম্বরটি হাতের কাছে রাখুন।</p>"},
@@ -1957,12 +2000,15 @@ function ensureDrawers(){
   document.body.appendChild(document.getElementById("cartTpl").content.cloneNode(true));
   document.body.appendChild(document.getElementById("wishTpl").content.cloneNode(true));
   document.querySelectorAll('input[name="zone"]').forEach(function(r){ r.addEventListener("change", function(){ zone = r.value; renderCart(); }); });
+  document.querySelectorAll('input[name="pay"]').forEach(function(r){ r.addEventListener("change", syncManualPay); });
+  syncManualPay();
   document.getElementById("promoBtn").addEventListener("click", applyPromo);
   document.getElementById("toCheckoutBtn").addEventListener("click", function(){
     if(cartCount()===0){ toast("🛒 কার্ট খালি — আগে পণ্য যোগ করুন!"); return; }
     document.getElementById("cartMain").style.display="none";
     document.getElementById("checkoutForm").classList.add("open");
     fillCheckoutSummary();
+    syncManualPay();
   });
   document.getElementById("backToCart").addEventListener("click", function(){ document.getElementById("checkoutForm").classList.remove("open"); document.getElementById("cartMain").style.display="flex"; });
   document.getElementById("checkoutForm").addEventListener("submit", checkoutSubmit);
@@ -2052,51 +2098,264 @@ window.__anboRender();
    Mega Sale → ANBOBD_STORE.megaRequests (Admin Approve হলেই লাইভ)
    ===================================================================== */
 /* =====================================================================
-   AUTH + DATA LAYER — Supabase-ready, কোনো hardcoded অ্যাকাউন্ট নেই
+   AUTH + DATA LAYER — real Supabase when configured, in-memory fallback
    ---------------------------------------------------------------------
-   প্রোডাকশনে Supabase project তৈরি হলে এই লেয়ারটি এভাবেই বসবে:
-   • সাইন আপ / সাইন ইন  → supabase.auth.signUp() / signInWithPassword()
-     (পাসওয়ার্ড Supabase Auth-এ হ্যাশ হয়ে থাকে — এখানে কখনো plain রাখা হয় না)
-   • প্রোফাইল            → Postgres table: profiles (id uuid PK → auth.users,
-     name, email, mobile, role: customer|seller|admin, shop_id)
-   • ক্যাটালগ/অর্ডার     → tables: products, orders (user_id → profiles.id),
-     order_items, coupons, shop_coupons, mega_requests, payouts
-   • Row Level Security  → প্রতিটি Seller শুধু নিজের shop_id-র ডেটা,
-     Customer শুধু নিজের user_id-র অর্ডার দেখতে/বদলাতে পারবে
-   • window.ANBOBD_SUPABASE = { url, anonKey } সেট হলেই (configured:true)
-     নিচের in-memory fallback-এর বদলে Supabase client ব্যবহার হবে।
-   এই static সংস্করণে অ্যাকাউন্ট শুধু এই সেশনের মেমোরিতে থাকে —
-   কোনো প্রিসেট অ্যাকাউন্ট বা fallback credential নেই।
+   Supabase JS client লোড হয় CDN থেকে (head-এ @supabase/supabase-js@2)।
+   কনফিগ আসে ANBOBD_SUPABASE থেকে — Vercel build-এ
+   NEXT_PUBLIC_SUPABASE_URL ও NEXT_PUBLIC_SUPABASE_ANON_KEY inject হলে
+   (url + anonKey দুটোই non-empty হলেই) configured:true ধরা হয়।
+   শুধু anon (public) key ব্যবহার হয় — service-role key কখনো নয়,
+   কোনো key এই ফাইলে hardcoded নয়, কোনো demo login / preset
+   credential নেই।
+   Configured থাকলে:
+   • সাইন আপ / সাইন ইন / সেশন / সাইন আউট → supabase.auth.signUp() /
+     signInWithPassword() / getSession() / signOut()
+     (পাসওয়ার্ড Supabase Auth-এ হ্যাশ হয়ে থাকে — এখানে plain থাকে না)
+   • সাইন আপে profiles table-এ row তৈরি হয়:
+     { id = auth user id, email, full_name, phone, role }
+   • ক্যাটালগ/কুপন → Postgres tables: products, coupons থেকে পড়া হয়
+   • অর্ডার → orders table-এ insert হয়, Seller অনুযায়ী ভাগ হয়ে
+     sub_orders table-এ insert হয়, তারপর আবার পড়ে (read back) নেওয়া হয়
+   • Row Level Security (RLS) Supabase project-এ enabled আছে —
+     প্রতিটি ব্যবহারকারী শুধু নিজের ডেটাই দেখতে/বদলাতে পারে।
+   Configured না থাকলে শুধুমাত্র তখনই in-memory fallback চলে এবং
+   পেজে স্পষ্ট “Not connected to Supabase yet” নোটিস দেখায়।
    ===================================================================== */
-var ANBOBD_SUPABASE = { url:"", anonKey:"", configured:false };
+var ANBOBD_SUPABASE = (function(){
+  /* Vercel build-time inject (scripts/inject-supabase-config.mjs) window.ANBOBD_SUPABASE
+     আগে সেট করে দিলে সেটাই ব্যবহৃত হয়; না হলে খালি কনফিগ = not configured। */
+  var injected = (typeof window!=="undefined" && window.ANBOBD_SUPABASE) ? window.ANBOBD_SUPABASE : null;
+  var cfg = injected || { url:"", anonKey:"", configured:false };
+  cfg.url = String(cfg.url||"").trim();
+  cfg.anonKey = String(cfg.anonKey||"").trim();
+  cfg.configured = !!(cfg.url && cfg.anonKey);
+  return cfg;
+})();
+window.ANBOBD_SUPABASE = ANBOBD_SUPABASE;
+
+function anboIsUuid(v){ return typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v); }
+function anboSupabaseNotice(){
+  var off = !(window.ANBOBD_DB && ANBOBD_DB.configured());
+  ["supabaseNotice","auSupabaseNotice"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.style.display = off ? "block" : "none";
+  });
+}
+window.anboSupabaseNotice = anboSupabaseNotice;
+
+var ANBOBD_DB = {
+  client: null,
+  configured: function(){
+    return !!(ANBOBD_SUPABASE.configured && ANBOBD_SUPABASE.url && ANBOBD_SUPABASE.anonKey && window.supabase && typeof window.supabase.createClient==="function");
+  },
+  sb: function(){
+    if(!this.configured()) return null;
+    if(!this.client){ this.client = window.supabase.createClient(ANBOBD_SUPABASE.url, ANBOBD_SUPABASE.anonKey); }
+    return this.client;
+  },
+  fetchProfile: async function(uid){
+    var sb = this.sb(); if(!sb || !uid) return null;
+    try{
+      var r = await sb.from('profiles').select('*').eq('id', uid).single();
+      return r.error ? null : r.data;
+    }catch(e){ return null; }
+  },
+  loadCatalog: async function(){
+    var sb = this.sb(); if(!sb) return;
+    try{
+      var pr = await sb.from('products').select('*');
+      if(!pr.error && pr.data && pr.data.length){
+        pr.data.forEach(function(r){
+          if(typeof r.id!=="number" || r.name==null || r.price==null) return;
+          var mapped = { id:r.id, sku:r.sku||("SB-"+r.id), name:r.name, bn:r.bn||r.name, brandId:r.brand_id||r.brandId||"aerotech", sellerId:r.seller_id||r.sellerId||"s1", categoryId:r.category_id||r.categoryId||"electronics", price:Number(r.price)||0, oldPrice:Number(r.old_price||r.oldPrice||r.price)||0, rating:Number(r.rating||0), reviewCount:r.review_count||r.reviewCount||0, soldCount:r.sold_count||r.soldCount||0, stockQty:(r.stock_qty!=null?r.stock_qty:(r.stockQty!=null?r.stockQty:0)), status:r.status||"active", isNew:!!(r.is_new||r.isNew), flashClaim:r.flash_claim||r.flashClaim||0, warranty:r.warranty||"", img:r.img||r.image_url||"", desc:r.desc||r.description||"", specs:Array.isArray(r.specs)?r.specs:[], bundleWith:Array.isArray(r.bundle_with)?r.bundle_with:[], createdAt:typeof r.created_at==="number"?r.created_at:0 };
+          var ex = P(mapped.id);
+          if(ex){ for(var k in mapped) ex[k]=mapped[k]; } else PRODUCTS.push(mapped);
+        });
+      }
+    }catch(e){ console.warn("Supabase products load failed:", e); }
+    try{
+      var cp = await sb.from('coupons').select('*');
+      if(!cp.error && cp.data && cp.data.length){
+        cp.data.forEach(function(r){
+          if(!r.code) return;
+          var c = { code:String(r.code).toUpperCase(), type:r.type||"flat", value:Number(r.value||0), maxDiscount:Number(r.max_discount||r.maxDiscount||0), minSpend:Number(r.min_spend||r.minSpend||0), label:r.label||"", desc:r.description||r.desc||"", expires:r.expires||r.expires_at||"", active:r.active!==false, sellerId:r.seller_id||r.sellerId||null, used:r.used||0 };
+          var target = c.sellerId ? ANBOBD_STORE.shopCoupons : ANBOBD_STORE.coupons;
+          var ex2 = target.filter(function(x){ return x.code===c.code; })[0];
+          if(ex2){ for(var k2 in c) ex2[k2]=c[k2]; } else target.push(c);
+        });
+      }
+    }catch(e){ console.warn("Supabase coupons load failed:", e); }
+    if(window.__anboRender) window.__anboRender();
+    if(window.renderShopCoupons) window.renderShopCoupons();
+  },
+  saveOrder: async function(order){
+    var sb = this.sb(); if(!sb) return null;
+    var payload = {
+      user_id: anboIsUuid(order.userId) ? order.userId : null,
+      customer_name: order.customer.name, customer_phone: order.customer.phone,
+      address: order.customer.address, district: order.customer.district, note: order.customer.note||"",
+      payment_method: order.payment.method, payment_status: order.payment.status,
+      transaction_id: order.payment.transactionId||null, sender_number: order.payment.senderNumber||null,
+      subtotal: order.amounts.subtotal, discount: order.amounts.discount, delivery_fee: order.amounts.deliveryFee, total: order.amounts.total,
+      promo_code: order.promoCode||null, zone: order.zone||"", status: order.status,
+      items: order.items, estimated_delivery: order.estimatedDelivery||""
+    };
+    var res = await sb.from('orders').insert(payload).select();
+    if(res.error){ console.warn("Supabase orders insert:", res.error.message); return null; }
+    var saved = (res.data && res.data[0]) ? res.data[0] : null;
+    if(saved && saved.id) order.supabaseId = saved.id;
+    var bySeller = {};
+    order.items.forEach(function(it){ (bySeller[it.sellerId] = bySeller[it.sellerId]||[]).push(it); });
+    for(var sid in bySeller){
+      var subItems = bySeller[sid];
+      var subTotal = subItems.reduce(function(s,it){ return s+it.lineTotal; },0);
+      try{
+        var sr = await sb.from('sub_orders').insert({ order_id: (saved && saved.id) ? saved.id : order.id, seller_id: sid, items: subItems, subtotal: subTotal, status: order.status, payment_method: order.payment.method, transaction_id: order.payment.transactionId||null });
+        if(sr.error) console.warn("Supabase sub_orders insert:", sr.error.message);
+      }catch(e){ console.warn("Supabase sub_orders insert failed:", e); }
+    }
+    if(saved && saved.id){
+      try{
+        var back = await sb.from('orders').select('*').eq('id', saved.id).single();
+        if(!back.error && back.data) order.supabaseRow = back.data;
+        var subs = await sb.from('sub_orders').select('*').eq('order_id', saved.id);
+        if(!subs.error && subs.data) order.subOrders = subs.data;
+      }catch(e){ console.warn("Supabase order read-back failed:", e); }
+    }
+    return saved;
+  },
+  loadMyOrders: async function(user){
+    var sb = this.sb(); if(!sb || !user || !anboIsUuid(user.id)) return;
+    try{
+      var r = await sb.from('orders').select('*').eq('user_id', user.id).order('created_at', { ascending:false });
+      if(r.error || !r.data) return;
+      r.data.forEach(function(row){
+        if(ANBOBD_STORE.orders.some(function(o){ return o.supabaseId===row.id || o.id===row.id; })) return;
+        ANBOBD_STORE.orders.push({
+          id: row.id, supabaseId: row.id,
+          items: Array.isArray(row.items) ? row.items : [],
+          customer: { name:row.customer_name||"", phone:row.customer_phone||"", address:row.address||"", district:row.district||"", note:row.note||"" },
+          payment: { method:row.payment_method||"", status:row.payment_status||"", transactionId:row.transaction_id||null, senderNumber:row.sender_number||null },
+          amounts: { subtotal:row.subtotal||0, discount:row.discount||0, deliveryFee:row.delivery_fee||0, total:row.total||0 },
+          promoCode: row.promo_code||null, zone: row.zone||"", status: row.status||"AwaitingAdmin",
+          statusHistory: [], placedAt: row.created_at||new Date().toISOString(),
+          estimatedDelivery: row.estimated_delivery||"", source:"supabase", userId: row.user_id, userEmail: user.email
+        });
+      });
+    }catch(e){ console.warn("Supabase orders load failed:", e); }
+  }
+};
+window.ANBOBD_DB = ANBOBD_DB;
+
+function anboCreateLocalShop(user, shopName, email, mobile){
+  var shopId = "shop-"+user.id;
+  user.sellerId = shopId;
+  if(!ANBOBD_STORE.sellers.some(function(s){ return s.id===shopId; })){
+    ANBOBD_STORE.sellers.push({ id:shopId, name:(shopName||"").trim()||"আমার দোকান", area:"বাংলাদেশ", rating:0, email:email, phone:mobile,
+      payoutMethod:"bKash", payoutNo:mobile, commissionRate:8, status:"Approved", ownerId:user.id });
+  }
+  return shopId;
+}
+function anboUserFromProfile(authUser, prof){
+  var meta = (authUser && authUser.user_metadata) || {};
+  var user = {
+    id: authUser.id,
+    name: (prof && prof.full_name) || meta.full_name || (authUser.email||"").split("@")[0],
+    email: authUser.email || (prof && prof.email) || "",
+    mobile: (prof && prof.phone) || meta.phone || "",
+    role: (prof && prof.role) || meta.role || "customer",
+    sellerId: null,
+    createdAt: authUser.created_at || new Date().toISOString()
+  };
+  if(user.role==="seller"){
+    var existing = ANBOBD_STORE.sellers.filter(function(s){ return s.ownerId===user.id; })[0];
+    if(existing) user.sellerId = existing.id;
+    else anboCreateLocalShop(user, meta.shop_name || "", user.email, user.mobile);
+  }
+  return user;
+}
 var ANBOBD_AUTH = {
-  users: [],        /* { id, name, email, mobile, pass, role, sellerId, createdAt } */
+  users: [],        /* শুধু in-memory fallback-এর জন্য { id, name, email, mobile, pass, role, sellerId, createdAt } */
   session: null,    /* বর্তমান লগইন করা user বা null */
   register: function(d){
+    if(ANBOBD_DB.configured()) return this._registerSupabase(d);
+    return Promise.resolve(this._registerLocal(d));
+  },
+  _registerLocal: function(d){
     var email = (d.email||"").trim().toLowerCase();
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok:false, error:"সঠিক ইমেইল ঠিকানা দিন (যেমন: name@example.com)।" };
     if(this.users.some(function(u){ return u.email===email; })) return { ok:false, error:"এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট আছে — সাইন ইন করুন।" };
     if(d.role==="admin" && this.users.some(function(u){ return u.role==="admin"; })) return { ok:false, error:"Admin / Owner অ্যাকাউন্ট ইতিমধ্যে তৈরি হয়ে গেছে — শুধু প্রথম অ্যাকাউন্টটিই Admin হতে পারে।" };
     var user = { id:"u"+Date.now().toString(36)+Math.floor(Math.random()*999), name:d.name.trim(), email:email,
       mobile:d.mobile.trim(), pass:d.pass, role:d.role, sellerId:null, createdAt:new Date().toISOString() };
-    if(d.role==="seller"){
-      var shopId = "shop-"+user.id;
-      user.sellerId = shopId;
-      ANBOBD_STORE.sellers.push({ id:shopId, name:d.shopName.trim(), area:"বাংলাদেশ", rating:0, email:email, phone:d.mobile.trim(),
-        payoutMethod:"bKash", payoutNo:d.mobile.trim(), commissionRate:8, status:"Approved", ownerId:user.id });
-    }
+    if(d.role==="seller") anboCreateLocalShop(user, d.shopName, email, d.mobile);
     this.users.push(user);
     this.session = user; window.__anboCurrentUser = user;
     return { ok:true, user:user };
   },
+  _registerSupabase: async function(d){
+    var sb = ANBOBD_DB.sb();
+    var email = (d.email||"").trim().toLowerCase();
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok:false, error:"সঠিক ইমেইল ঠিকানা দিন (যেমন: name@example.com)।" };
+    if(d.role==="admin"){
+      try{
+        var ex = await sb.from('profiles').select('id').eq('role','admin').limit(1);
+        if(!ex.error && ex.data && ex.data.length) return { ok:false, error:"Admin / Owner অ্যাকাউন্ট ইতিমধ্যে তৈরি হয়ে গেছে — শুধু প্রথম অ্যাকাউন্টটিই Admin হতে পারে।" };
+      }catch(e){}
+    }
+    var res = await sb.auth.signUp({ email:email, password:d.pass, options:{ data:{ full_name:d.name.trim(), phone:d.mobile.trim(), role:d.role, shop_name:(d.shopName||"").trim() } } });
+    if(res.error) return { ok:false, error: res.error.message || "সাইন আপ করা যায়নি — আবার চেষ্টা করুন।" };
+    var au = res.data ? res.data.user : null;
+    if(!au) return { ok:false, error:"সাইন আপ সম্পূর্ণ হয়নি — ইমেইলে পাঠানো কনফার্মেশন লিংকটি যাচাই করে তারপর সাইন ইন করুন।" };
+    try{
+      var pr = await sb.from('profiles').insert({ id:au.id, email:email, full_name:d.name.trim(), phone:d.mobile.trim(), role:d.role });
+      if(pr.error) console.warn("profiles insert:", pr.error.message);
+    }catch(e){ console.warn("profiles insert failed:", e); }
+    var user = { id:au.id, name:d.name.trim(), email:email, mobile:d.mobile.trim(), role:d.role, sellerId:null, createdAt:new Date().toISOString() };
+    if(d.role==="seller") anboCreateLocalShop(user, d.shopName, email, d.mobile);
+    this.session = user; window.__anboCurrentUser = user;
+    return { ok:true, user:user };
+  },
   login: function(emailRaw, passRaw){
+    if(ANBOBD_DB.configured()) return this._loginSupabase(emailRaw, passRaw);
+    return Promise.resolve(this._loginLocal(emailRaw, passRaw));
+  },
+  _loginLocal: function(emailRaw, passRaw){
     var email = (emailRaw||"").trim().toLowerCase(), pass = (passRaw||"");
     var u = this.users.filter(function(x){ return x.email===email; })[0];
     if(!u || u.pass !== pass) return { ok:false, error:"ইমেইল বা পাসওয়ার্ড মেলেনি। অ্যাকাউন্ট না থাকলে আগে সাইন আপ করুন।" };
     this.session = u; window.__anboCurrentUser = u;
     return { ok:true, user:u };
   },
-  logout: function(){ this.session = null; window.__anboCurrentUser = null; }
+  _loginSupabase: async function(emailRaw, passRaw){
+    var sb = ANBOBD_DB.sb();
+    var email = (emailRaw||"").trim().toLowerCase();
+    var res = await sb.auth.signInWithPassword({ email:email, password:(passRaw||"") });
+    if(res.error || !res.data || !res.data.user) return { ok:false, error:"ইমেইল বা পাসওয়ার্ড মেলেনি। অ্যাকাউন্ট না থাকলে আগে সাইন আপ করুন।" };
+    var prof = await ANBOBD_DB.fetchProfile(res.data.user.id);
+    var user = anboUserFromProfile(res.data.user, prof);
+    this.session = user; window.__anboCurrentUser = user;
+    ANBOBD_DB.loadMyOrders(user).then(function(){ if(window.renderAccount) renderAccount(); }).catch(function(){});
+    return { ok:true, user:user };
+  },
+  logout: function(){
+    var sb = ANBOBD_DB.sb();
+    if(sb){ sb.auth.signOut().catch(function(){}); }
+    this.session = null; window.__anboCurrentUser = null;
+  },
+  restoreSession: async function(){
+    var sb = ANBOBD_DB.sb(); if(!sb) return null;
+    try{
+      var res = await sb.auth.getSession();
+      var sess = res && res.data ? res.data.session : null;
+      if(!sess || !sess.user) return null;
+      var prof = await ANBOBD_DB.fetchProfile(sess.user.id);
+      var user = anboUserFromProfile(sess.user, prof);
+      this.session = user; window.__anboCurrentUser = user;
+      ANBOBD_DB.loadMyOrders(user).catch(function(){});
+      return user;
+    }catch(e){ return null; }
+  }
 };
 window.__anboCurrentUser = null;
 function currentUser(){ return ANBOBD_AUTH.session; }
@@ -2176,6 +2435,12 @@ function refreshPanels(){
   /* Header: Seller Center / Admin sudhu sei role-e login thaklei dekhabe — guest/customer dekhbe na */
   var sb = document.getElementById("openSellerBtn"); if(sb) sb.style.display = (u && u.role==="seller") ? "" : "none";
   var adb = document.getElementById("openAdminBtn"); if(adb) adb.style.display = (u && u.role==="admin") ? "" : "none";
+  /* Footer: Seller Center / Admin Panel button sudhu matching logged-in role dekhbe — guest/customer-r jonno hidden */
+  var fsb = document.getElementById("footSellerBtn"); if(fsb) fsb.style.display = (u && u.role==="seller") ? "" : "none";
+  var fab = document.getElementById("footAdminBtn"); if(fab) fab.style.display = (u && u.role==="admin") ? "" : "none";
+  /* Seller-join section: Seller Center login link sudhu seller role-e dekhabe — guest/customer dekhbe na */
+  var slc = document.getElementById("sellerLoginCta"); if(slc) slc.style.display = (u && u.role==="seller") ? "" : "none";
+  if(window.anboSupabaseNotice) anboSupabaseNotice();
   if(svAuthed) renderSellerAll();
   if(adAuthed) renderAdminAll();
 }
@@ -2418,7 +2683,7 @@ function orderCardAdmin(o){
   if(o.status==="AwaitingAdmin") acts = '<button class="btn-pri" data-ad-confirm="'+o.id+'">✅ কনফার্ম করে Seller-কে পাঠান</button><button class="btn-danger" data-ad-reject="'+o.id+'">✕ বাতিল করুন</button>';
   return '<div class="ocard"><div class="ohead"><span class="oid">'+o.id+'</span>'+stBadge(o.status)+'<span style="margin-left:auto;font-weight:800">'+fmt(o.amounts.total)+'</span></div>' +
     '<div class="oitems">'+items+'</div>' +
-    '<div class="ocust">👤 '+esc(o.customer.name)+' • '+esc(o.customer.phone)+' • 📍 '+esc(o.customer.district)+' • 💵 '+o.payment.method+' • ডেলিভারি '+fmt(o.amounts.deliveryFee)+(o.amounts.discount?' • ছাড় −'+fmt(o.amounts.discount):"")+'</div>' +
+    '<div class="ocust">👤 '+esc(o.customer.name)+' • '+esc(o.customer.phone)+' • 📍 '+esc(o.customer.district)+' • 💵 '+o.payment.method+' • ডেলিভারি '+fmt(o.amounts.deliveryFee)+(o.amounts.discount?' • ছাড় −'+fmt(o.amounts.discount):"")+(o.payment.transactionId ? '<br>📱 ম্যানুয়াল পেমেন্ট — Transaction ID: <b>'+esc(o.payment.transactionId)+'</b>'+(o.payment.senderNumber?' • প্রেরক: '+esc(o.payment.senderNumber):'')+' — <b>Admin পেমেন্ট যাচাই করে তবেই কনফার্ম করবে</b>' : '')+'</div>' +
     (acts ? '<div class="oacts">'+acts+'</div>' : '') + '</div>';
 }
 function renderAdminAll(){
@@ -2473,6 +2738,8 @@ document.addEventListener("click", function(e){
 
 /* ---------- init v4 ---------- */
 window.__anboRender();
+if(window.anboSupabaseNotice) anboSupabaseNotice();
+if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.loadCatalog().catch(function(){}); }
 </script>
 
 <script>
@@ -2535,7 +2802,7 @@ window.__anboRender();
       var fm = FLOW_META[o.status] || { label:o.status, cls:"st-wait" };
       return '<div class="ocard"><div class="ohead"><span class="oid">' + o.id + '</span><span class="st ' + fm.cls + '">' + fm.label + '</span><span style="margin-left:auto;font-weight:800">' + fmt(o.amounts.total) + '</span></div>' +
         '<div class="oitems">' + o.items.map(function(it){ return "• " + esc(it.name) + " × " + it.qty + " — " + fmt(it.lineTotal); }).join("<br>") + '</div>' +
-        '<div class="ocust">📅 আনুমানিক ডেলিভারি: ' + o.estimatedDelivery + ' • 💵 ' + o.payment.method + '</div>' +
+        '<div class="ocust">📅 আনুমানিক ডেলিভারি: ' + o.estimatedDelivery + ' • 💵 ' + o.payment.method + (o.payment.transactionId ? '<br>📱 Transaction ID: <b>' + esc(o.payment.transactionId) + '</b> — ' + (o.status === 'AwaitingAdmin' ? '⏳ Admin পেমেন্ট যাচাইয়ের অপেক্ষায়' : '✅ পেমেন্ট যাচাই হয়েছে') : '') + '</div>' +
         '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">📦 ট্র্যাক করুন</button></div></div>';
     }).join("") : '<p style="color:var(--muted);margin:0;line-height:1.6">এখনো কোনো অর্ডার নেই — কেনাকাটা করে অর্ডার করলেই তা এখানে দেখা যাবে।</p>';
   }
@@ -2611,17 +2878,21 @@ window.__anboRender();
     if(role === "seller" && shop.length < 3) return showErr("auUpErr", "দোকানের নাম লিখুন — Seller অ্যাকাউন্টের জন্য এটি আবশ্যক।");
     if(p1.length < 6) return showErr("auUpErr", "পাসওয়ার্ড কমপক্ষে 6 অক্ষরের হতে হবে।");
     if(p1 !== p2) return showErr("auUpErr", "দুটি পাসওয়ার্ড মেলেনি — আবার দেখে লিখুন।");
-    var res = ANBOBD_AUTH.register({ name:name, email:email, mobile:mobile, role:role, shopName:shop, pass:p1 });
-    if(!res.ok) return showErr("auUpErr", res.error);
-    this.reset(); syncShopField();
-    afterAuth(res.user, true);
+    var form = this;
+    Promise.resolve(ANBOBD_AUTH.register({ name:name, email:email, mobile:mobile, role:role, shopName:shop, pass:p1 })).then(function(res){
+      if(!res.ok) return showErr("auUpErr", res.error);
+      form.reset(); syncShopField();
+      afterAuth(res.user, true);
+    }).catch(function(err){ showErr("auUpErr", "সাইন আপ করা যায়নি — " + ((err && err.message) || "আবার চেষ্টা করুন।")); });
   });
   document.getElementById("auInForm").addEventListener("submit", function(e){
     e.preventDefault(); hideErr("auInErr");
-    var res = ANBOBD_AUTH.login(document.getElementById("auInEmail").value, document.getElementById("auInPass").value);
-    if(!res.ok) return showErr("auInErr", res.error);
-    this.reset();
-    afterAuth(res.user, false);
+    var form = this;
+    Promise.resolve(ANBOBD_AUTH.login(document.getElementById("auInEmail").value, document.getElementById("auInPass").value)).then(function(res){
+      if(!res.ok) return showErr("auInErr", res.error);
+      form.reset();
+      afterAuth(res.user, false);
+    }).catch(function(err){ showErr("auInErr", "সাইন ইন করা যায়নি — " + ((err && err.message) || "আবার চেষ্টা করুন।")); });
   });
   document.getElementById("auLogoutBtn").addEventListener("click", doLogout);
   document.getElementById("auGoSeller").addEventListener("click", function(){ closeAll(); openPanel("seller"); });
@@ -2639,6 +2910,13 @@ window.__anboRender();
   }, true);
 
   if(window.refreshPanels) refreshPanels();
+  if(window.anboSupabaseNotice) anboSupabaseNotice();
+  /* Supabase configured থাকলে আগের সেশন ফিরিয়ে আনা (supabase.auth.getSession) */
+  if(window.ANBOBD_AUTH && ANBOBD_AUTH.restoreSession){
+    ANBOBD_AUTH.restoreSession().then(function(u){
+      if(u){ snapshotState(); loadState(u.id); rerenderStore(); if(window.refreshPanels) refreshPanels(); }
+    }).catch(function(){});
+  }
 })();
 </script>
 </body>
