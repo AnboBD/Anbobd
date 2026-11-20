@@ -65,6 +65,18 @@ const targets = [
   },
 ];
 
+
+// Info/policy pages (pages/*.html): same SUPABASE_CONFIG slot, so an Admin
+// edit in site_pages can override each page's built-in text at load time.
+const pageSlugs = ["return-refund", "delivery", "warranty", "privacy", "contact", "about", "terms", "career"];
+for (const slug of pageSlugs) {
+  targets.push({
+    file: "pages/" + slug + ".html",
+    pattern: /var SUPABASE_CONFIG = \{[^}]*\};/,
+    replacement: `var SUPABASE_CONFIG = { url: ${JSON.stringify(url)}, anonKey: ${JSON.stringify(anonKey)} };`,
+  });
+}
+
 for (const { file, pattern, replacement, early } of targets) {
   const path = join(root, file);
   const before = readFileSync(path, "utf8");
@@ -91,4 +103,4 @@ for (const { file, pattern, replacement, early } of targets) {
   console.error(`[anbobd] ERROR: config slot not found in ${file} — refusing to deploy disconnected.`);
   process.exit(1);
 }
-console.log("[anbobd] Supabase config injected into all 3 panels.");
+console.log("[anbobd] Supabase config injected into all panels and pages.");
