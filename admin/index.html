@@ -352,14 +352,9 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
   </div>
   <div class="login-form-wrap">
     <div style="width:100%;max-width:420px">
-    <div id="sbNoticeLogin" aria-live="polite"></div>
-    <div class="auth-tabs" role="tablist" aria-label="Sign in or create owner account">
-      <button type="button" id="authTabLogin" class="on" role="tab" aria-selected="true" aria-controls="loginForm">Sign in</button>
-      <button type="button" id="authTabRegister" role="tab" aria-selected="false" aria-controls="registerForm">Create owner account</button>
-    </div>
     <form class="login-card" id="loginForm" novalidate style="max-width:none">
       <h2>Admin sign in</h2>
-      <p class="sub">Sign in with your admin account — for the owner, that's the email and password used when the owner account was created.</p>
+      <p class="sub">Sign in with your admin email and password. Access is restricted to authorized staff only.</p>
       <div class="login-err" id="loginErr" role="alert"></div>
       <div class="field">
         <label for="loginEmail">Email</label>
@@ -370,38 +365,10 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
         <input id="loginPass" type="password" autocomplete="current-password" placeholder="••••••••" />
       </div>
       <button class="btn block" type="submit" style="min-height:48px;font-size:15px">Sign in to dashboard</button>
-      <p class="auth-switch">First-time setup only? <button type="button" id="toRegisterBtn">Create owner account</button></p>
-      <p class="note" style="margin:10px 0 0">Staff accounts are created by the owner from the Staff page after sign-in. Forgot your password? The owner can set a new one for you there.</p>
-    </form>
-    <form class="login-card" id="registerForm" novalidate style="max-width:none;display:none">
-      <h2>Create the owner account</h2>
-      <p class="sub">First-time setup only — the first account created here becomes the owner (Super Admin). If this email is already registered in Supabase, enter the same password and you'll be signed in automatically instead of getting stuck on an error. There is no default password or shared login.</p>
-      <div class="login-err" id="regErr" role="alert"></div>
-      <div class="field">
-        <label for="regName">Your full name</label>
-        <input id="regName" type="text" autocomplete="name" placeholder="e.g. Sohel Rana" />
+      <div class="setup-box" style="margin:18px 0 0">
+        <b>Restricted access — no public sign-up.</b> There is no “create owner” or registration on this page, so visitors cannot make themselves an admin. The owner account already exists. New staff accounts are created only by the owner from the <b>Staff</b> page after signing in, each with their own email, password and role.
       </div>
-      <div class="field">
-        <label for="regEmail">Email — this will be your sign-in</label>
-        <input id="regEmail" type="email" autocomplete="email" placeholder="you@example.com" />
-      </div>
-      <div class="field">
-        <label for="regPhone">Phone</label>
-        <input id="regPhone" type="tel" autocomplete="tel" placeholder="01XXX-XXXXXX" />
-      </div>
-      <div class="field">
-        <label for="regPass">Password (minimum 8 characters)</label>
-        <input id="regPass" type="password" autocomplete="new-password" placeholder="••••••••" />
-      </div>
-      <div class="field">
-        <label for="regPass2">Repeat password</label>
-        <input id="regPass2" type="password" autocomplete="new-password" placeholder="••••••••" />
-      </div>
-      <button class="btn block" type="submit" style="min-height:48px;font-size:15px">Create owner account &amp; enter dashboard</button>
-      <p class="auth-switch">Already have an account? <button type="button" id="toLoginBtn">Back to sign in</button></p>
-      <div class="setup-box" style="margin-bottom:0">
-        <b>How access works from here:</b> once signed in, the owner adds each staff member from <b>Staff</b> with that person's own email, a password, and a role (Super Admin, Manager, Order Manager, Support, Warehouse). Each person only sees the pages their role allows.
-      </div>
+      <p class="note" style="margin:12px 0 0">Forgot your password? Ask the owner to reset it for you from the Staff page.</p>
     </form>
     </div>
   </div>
@@ -441,7 +408,6 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
         <a class="store-link" href="#" id="flashLink">⚡ Flash Sale: Live</a>
       </header>
 
-      <div id="sbNoticeApp" style="padding:16px 28px 0;max-width:1240px;margin:0 auto" aria-live="polite"></div>
       <main class="content">
         <!-- DASHBOARD -->
         <section class="view" id="view-dashboard"></section>
@@ -476,7 +442,7 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
         <!-- SETTINGS -->
         <section class="view" id="view-settings"></section>
       </main>
-      <footer class="foot">AnboBD Admin · Platform-owner panel for the AnboBD marketplace. Figures on every page are calculated from the orders, sellers and products actually recorded. When Supabase is connected, accounts, orders and approvals persist in Supabase (Auth + Postgres); manual bKash/Nagad payments are verified by transaction ID here before an order goes to the seller, and a live payment gateway is still needed for automatic card/wallet settlement.</footer>
+      <footer class="foot">AnboBD Admin · Platform-owner panel for the AnboBD marketplace. Figures on every page are calculated from the orders, sellers and products actually recorded. Manual bKash/Nagad payments are verified by transaction ID here before an order goes to the seller.</footer>
     </div>
   </div>
 </div>
@@ -639,12 +605,11 @@ function initSupabase(){
 }
 function sbReady(){ return !!sb; }
 function renderConnectionNotice(){
-  var connected = sbReady();
-  var html = connected
-    ? '<div class="sb-notice ok" role="status"><b>Connected to Supabase</b> — sign-in, orders, sellers, payouts and the activity log are read from and written to the live database.</div>'
-    : '<div class="sb-notice warn" role="alert"><b>Not connected to Supabase yet</b> — SUPABASE_CONFIG is empty, so this panel is running on its in-memory fallback only. Accounts and changes will not persist or sync until the Supabase URL and anon key are injected at build time (Vercel env: NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY).</div>';
-  var a = document.getElementById("sbNoticeLogin"); if (a) a.innerHTML = html;
-  var b = document.getElementById("sbNoticeApp"); if (b) b.innerHTML = connected ? "" : html;
+  /* Intentionally silent: backend/connection details are never shown on the
+     sign-in screen or inside the panel. The connection still works in the
+     background — this function only clears any legacy notice containers. */
+  var a = document.getElementById("sbNoticeLogin"); if (a) a.innerHTML = "";
+  var b = document.getElementById("sbNoticeApp"); if (b) b.innerHTML = "";
 }
 function sbWarn(table, err){ if (err) console.warn("[AnboBD Admin] Supabase " + table + ": " + (err.message || err)); }
 function sbUpdate(table, col, val, patch){
@@ -1724,12 +1689,10 @@ function renderSettings(){
     + '<div class="kv"><span>Admin access</span><b>'+staff.length+' staff accounts · 5 roles</b></div>'
     + '<div class="kv"><span>Sellers</span><b>'+sellers.length+' shops · '+pendingSellerCount()+' pending approval</b></div>'
     + '<div class="kv"><span>Currency</span><b>BDT (৳)</b></div>'
-    + '<h3 style="margin-top:28px">Database — Supabase</h3><p class="hint">Ekta shared Supabase project-i Storefront, Admin ar Seller Center — tintakei connect korbe (Auth + Postgres + Storage).</p>'
-    + '<div class="kv"><span>Connection status</span><b>'+(supabaseConnected() ? "Connected" : "Not connected yet")+'</b></div>'
-    + '<div class="kv"><span>Project URL</span><b>'+(SUPABASE_CONFIG.url ? esc(SUPABASE_CONFIG.url) : "— not set")+'</b></div>'
-    + '<div class="kv"><span>Auth</span><b>Supabase Auth — owner/staff accounts, role profiles table theke</b></div>'
-    + '<div class="kv"><span>Tables</span><b style="text-align:right;max-width:60%">profiles · sellers · products · orders + sub_orders · coupons · payouts · returns · activity_log</b></div>'
-    + '<p class="note" style="margin:10px 0 0">Project ready hole URL ar anon key code er SUPABASE_CONFIG e bosalei login ar data Postgres theke cholbe. Key kokhono onno karo sathe share koro na, ar service-role key browser e rakha jabe na.</p></div></div>';
+    + '<h3 style="margin-top:28px">System</h3><p class="hint">Visible only to signed-in admins. Nothing about the backend is shown on the public sign-in page.</p>'
+    + '<div class="kv"><span>Data status</span><b>'+(supabaseConnected() ? "Live" : "Setup pending")+'</b></div>'
+    + '<div class="kv"><span>Accounts</span><b>Owner + staff only · No public registration</b></div>'
+    + '<div class="kv"><span>Access rule</span><b style="text-align:right;max-width:60%">New accounts are created only from Staff by the owner</b></div></div></div>';
   $("#feeForm").addEventListener("submit", function(e){
     e.preventDefault();
     settings.dhakaFee = parseInt($("#sfDhaka").value,10)||0;
@@ -2041,43 +2004,29 @@ $("#sellerForm").addEventListener("submit", function(e){
 /* REMOVED: Seller Center preview deleted on purpose. Admin is PLATFORM-OWNER ONLY (Daraz Seller Central / Amazon separation). A seller's own shop — its products, orders, coupons, payout requests — lives ONLY in the separate Seller Center artifact. Nothing seller-owned is previewed, logged into, or edited inside Admin. */
 document.addEventListener("keydown", function(e){ if(e.key==="Escape"){ $("#staffModalWrap").classList.remove("show"); $("#sellerModalWrap").classList.remove("show"); $("#sellerDetailWrap").classList.remove("show"); } });
 
-/* ==================== AUTH — real accounts only, no demo fallback ====================
-   Flow: the sign-in form is ALWAYS shown first — we never guess whether an
-   owner account exists from a signed-out database read (RLS makes that read
-   fail/empty while signed out, which used to hide sign-in behind a bogus
-   "create the owner account" screen). Beside sign-in sits "Create owner
-   account" for first-time setup; if Supabase answers "User already
-   registered", the create form falls back to signInWithPassword with the
-   same credentials and enters the dashboard. Sign-in checks email + that
-   account's own password + active status. Staff accounts are created by the
-   owner from the Staff page. Suspended or not-yet-activated accounts cannot
-   sign in. With Supabase connected this flow runs on Supabase Auth and the
-   profiles table (see SUPABASE_CONFIG). No demo account, no hardcoded
-   password, no service-role key anywhere in this flow. */
+/* ==================== AUTH — sign-in only, no public registration ====================
+   Security: there is NO public sign-up on this page and NO "create owner
+   account" form. Anyone who opens /admin/ sees only the sign-in form, so a
+   visitor cannot register themselves as owner/admin. The owner account
+   already exists in Supabase Auth. New admin/staff accounts are created
+   ONLY by a signed-in owner from the Staff page inside the panel, each
+   with their own email, password and role. Sign-in checks email + that
+   account's own password + active status. Suspended accounts cannot sign
+   in. No demo account, no hardcoded password, no service-role key. */
 var currentUserId = null;
-/* Which auth form is showing. Default is ALWAYS sign-in. We deliberately do
-   NOT decide create-vs-sign-in from a signed-out read of profiles/staff:
-   under RLS that read fails or returns nothing while signed out, so an
-   existing owner (e.g. admin@anbobd.com in Supabase Auth) looked like
-   "no admin exists yet" and the sign-in form was hidden. Sign-in is always
-   available; creating the owner account is an always-present option next
-   to it, and a duplicate create falls back to sign-in (see sbRegisterOwner). */
 var authMode = "login";
 function setAuthMode(mode){
-  authMode = mode === "register" ? "register" : "login";
-  var rf = $("#registerForm"), lf = $("#loginForm");
-  if (lf) lf.style.display = authMode === "login" ? "" : "none";
-  if (rf) rf.style.display = authMode === "register" ? "" : "none";
-  var tl = $("#authTabLogin"), tr = $("#authTabRegister");
-  if (tl){ tl.classList.toggle("on", authMode === "login"); tl.setAttribute("aria-selected", authMode === "login" ? "true" : "false"); }
-  if (tr){ tr.classList.toggle("on", authMode === "register"); tr.setAttribute("aria-selected", authMode === "register" ? "true" : "false"); }
+  /* Registration is permanently disabled — always stay on sign-in. */
+  authMode = "login";
+  var lf = $("#loginForm");
+  if (lf) lf.style.display = "";
+  var rf = $("#registerForm");
+  if (rf) rf.style.display = "none";
 }
 function refreshAuthView(){
   renderConnectionNotice();
-  setAuthMode(authMode);
+  setAuthMode("login");
 }
-["authTabLogin","toLoginBtn"].forEach(function(id){ var b = document.getElementById(id); if (b) b.addEventListener("click", function(){ setAuthMode("login"); }); });
-["authTabRegister","toRegisterBtn"].forEach(function(id){ var b = document.getElementById(id); if (b) b.addEventListener("click", function(){ setAuthMode("register"); }); });
 function findAccount(email){
   var em = String(email||"").trim().toLowerCase(), found = null;
   staff.forEach(function(s){ if (s.email.toLowerCase() === em) found = s; });
@@ -2095,38 +2044,21 @@ function enterApp(member){
   showView("dashboard");
   toast("Welcome, <span class='lime'>"+esc(member.name)+"</span> — signed in as "+esc(member.role)+". Pages outside your role are not in your menu.");
 }
-$("#registerForm").addEventListener("submit", function(e){
-  e.preventDefault();
-  var err = $("#regErr");
-  function fail(msg){ err.textContent = msg; err.classList.add("show"); }
-  var name = $("#regName").value.trim(), email = $("#regEmail").value.trim(), phone = $("#regPhone").value.trim();
-  var pw = $("#regPass").value, pw2 = $("#regPass2").value;
-  if (!name || !email){ fail("Please fill in your name and email."); return; }
-  if (email.indexOf("@") < 1 || email.indexOf(".") < 0){ fail("That email does not look valid."); return; }
-  if (!pw || pw.length < 8){ fail("Password must be at least 8 characters."); return; }
-  if (pw !== pw2){ fail("The two passwords do not match."); return; }
-  err.classList.remove("show");
-  if (sbReady()){ sbRegisterOwner(name, email, phone, pw, fail); return; }
-  /* Offline fallback only: if this email already has a local account, don't
-     dead-end on "already exists" — sign in with that password instead. */
-  var existing = findAccount(email);
-  if (existing){
-    if (existing.status === "active" && existing.passwordHash && existing.passwordHash === hashPw(pw)){
-      activityLog.unshift({time:nowLabel()+", just now", who:existing.name+" ("+existing.role+")", what:"Signed in (account already existed — create form fell back to sign-in)"});
-      enterApp(existing);
-    } else {
-      fail("This email already has an account. Use Sign in with that account's password.");
-      var le = $("#loginEmail"); if (le) le.value = email;
+/* Public registration is DISABLED. No register form exists in the DOM.
+   If any legacy markup is injected, block it — visitors must never be able
+   to create an owner/admin account from the sign-in page. Accounts are
+   created only by a signed-in owner from the Staff page. */
+(function(){
+  var rf = document.querySelector("#registerForm");
+  if (rf){
+    rf.addEventListener("submit", function(e){
+      e.preventDefault();
+      var err = document.querySelector("#loginErr");
+      if (err){ err.textContent = "Registration is disabled. Only the owner can create accounts from the Staff page after signing in."; err.classList.add("show"); }
       setAuthMode("login");
-    }
-    return;
+    });
   }
-  var owner = {id:1, name:name, email:email, phone:phone || "—", role:"Super Admin", status:"active", passwordHash:hashPw(pw), last:"Now · signed in", joined:monthLabel()};
-  staff.push(owner);
-  activityLog.unshift({time:nowLabel()+", just now", who:name+" (Super Admin)", what:"Created the owner account and opened the admin panel"});
-  refreshAuthView();
-  enterApp(owner);
-});
+})();
 function sbIsAlreadyRegistered(msg){
   return /already\s+(registered|exists)|user\s+already|already\s+been\s+registered/i.test(String(msg || ""));
 }
@@ -2148,63 +2080,11 @@ async function sbEnterWithUser(user, fail){
   enterApp(member);
   return member;
 }
-/* The create form's safety net: the account already exists in Supabase Auth
-   (the exact admin@anbobd.com case), so sign in with the password just typed
-   instead of stranding the owner on a "User already registered" error. Only
-   a genuinely wrong password for that existing account shows an error, and
-   it points at the (always visible) sign-in form. */
-async function sbFallbackSignIn(email, pw, fail){
-  try{
-    var res = await sb.auth.signInWithPassword({ email: email, password: pw });
-    if (res.error || !res.data || !res.data.user){
-      fail("This email is already registered in Supabase, but that password didn't match its account. Sign in above with the account's correct password.");
-      var le = $("#loginEmail"); if (le) le.value = email;
-      setAuthMode("login");
-      return false;
-    }
-    var member = await sbEnterWithUser(res.data.user, fail);
-    if (member) toast("Account already existed — <span class='lime'>signed you in instead</span>");
-    return !!member;
-  }catch(e){
-    fail("This email is already registered in Supabase. Sign in above with that account's password.");
-    setAuthMode("login");
-    return false;
-  }
-}
-/* Owner sign-up on Supabase Auth: supabase.auth.signUp creates the auth user,
-   then the owner profile is written to profiles with role "admin" (the first
-   account is the Super Admin) and mirrored into the staff table.
-   If signUp says the user already exists — or returns the obfuscated
-   empty-identities user Supabase sends for a duplicate when email
-   confirmation is on — we fall back to password sign-in automatically. */
+/* sbRegisterOwner and sbFallbackSignIn were removed on purpose: public
+   owner sign-up (supabase.auth.signUp from the login page) let anyone who
+   opened /admin/ become Super Admin. That path no longer exists. */
 async function sbRegisterOwner(name, email, phone, pw, fail){
-  var btn = $("#registerForm button[type=submit]"); if (btn) btn.disabled = true;
-  try{
-    var res = await sb.auth.signUp({ email: email, password: pw, options: { data: { name: name, phone: phone || "", role: "admin" } } });
-    if (res.error){
-      if (sbIsAlreadyRegistered(res.error.message)){ await sbFallbackSignIn(email, pw, fail); return; }
-      fail(res.error.message || "Sign-up failed in Supabase."); return;
-    }
-    var user = res.data && res.data.user;
-    if (!user){ fail("Supabase did not return a user. Try signing in instead."); setAuthMode("login"); return; }
-    if (Array.isArray(user.identities) && user.identities.length === 0){
-      await sbFallbackSignIn(email, pw, fail); return;
-    }
-    if (!res.data.session){
-      fail("Account created in Supabase — email confirmation is on for this project, so confirm the email first, then sign in.");
-      var le2 = $("#loginEmail"); if (le2) le2.value = email;
-      setAuthMode("login");
-      return;
-    }
-    await sb.from("profiles").insert({ id: user.id, name: name, email: email, phone: phone || "", role: "admin", status: "active" }).then(function(r){ sbWarn("profiles", r && r.error); }).catch(function(e){ sbWarn("profiles", e); });
-    await sb.from("staff").insert({ name: name, email: email, phone: phone || "", role: "Super Admin", status: "active" }).then(function(r){ sbWarn("staff", r && r.error); }).catch(function(e){ sbWarn("staff", e); });
-    await sb.from("activity_log").insert({ actor: name + " (Super Admin)", action: "Created the owner account (Supabase Auth) and opened the admin panel" }).then(function(r){ sbWarn("activity_log", r && r.error); }).catch(function(e){ sbWarn("activity_log", e); });
-    var owner = { id: user.id, supabaseId: user.id, name: name, email: email, phone: phone || "—", role: "Super Admin", status: "active", last: "Now · signed in", joined: monthLabel() };
-    if (!staff.some(function(s){ return String(s.id) === String(owner.id); })) staff.push(owner);
-    await sbLoadAll();
-    enterApp(owner);
-  }catch(e){ fail("Supabase sign-up failed: " + (e && e.message ? e.message : e)); }
-  finally{ if (btn) btn.disabled = false; }
+  if (typeof fail === "function") fail("Registration is disabled. Accounts are created by the owner from the Staff page only.");
 }
 $("#loginForm").addEventListener("submit", function(e){
   e.preventDefault();
