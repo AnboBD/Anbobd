@@ -1904,7 +1904,7 @@ function checkoutSubmit(e){
       } else {
         syncEl.style.display = "block";
         syncEl.style.background = "#fde8e2"; syncEl.style.color = "#8f1d08";
-        syncEl.innerHTML = "⚠️ <b>অর্ডারটি এখনো অনলাইনে সেভ হয়নি</b> — এটি এই ডিভাইসে সংরক্ষিত আছে এবং পেজ আবার খুললেই স্বয়ংক্রিয়ভাবে আবার পাঠানো হবে। অর্ডার নম্বরটি রেখে দিন: <b>"+escHtml(order.id)+"</b>। বেশি দেরি হলে এই নম্বরসহ হটলাইনে (09638-555555) জানান।";
+        syncEl.innerHTML = "⚠️ <b>অর্ডারটি এখনো অনলাইনে সেভ হয়নি</b> — এটি এই ডিভাইসে সংরক্ষিত আছে এবং পেজ আবার খুললেই স্বয়ংক্রিয়ভাবে আবার পাঠানো হবে। অর্ডার নম্বরটি রেখে দিন: <b>"+escHtml(order.id)+"</b>। বেশি দেরি হলে এই নম্বরসহ হটলাইনে (09638-555555) জানান।" + "<br>কারণ: " + (order.syncError ? escHtml(order.syncError) : "অনলাইন সংযোগ বন্ধ (configured: " + (window.ANBOBD_DB && ANBOBD_DB.configured ? String(ANBOBD_DB.configured()) : "false") + ", supabase lib: " + (window.supabase ? "আছে" : "নেই") + ")");
       }
     }
     if(saved && window.renderAccount && window.__anboCurrentUser) renderAccount();
