@@ -984,7 +984,7 @@ async function sbLoadAll(){
        the item is identified by its order id until those columns exist. */
     returnRequests = returnRows.map(function(rw){
       var st = String(rw.status || "pending").toLowerCase();
-      var disp = st === "accepted" ? "Approved — refund pending" : st === "rejected" ? "Rejected" : st === "refunded" ? "Refunded" : "Requested";
+      var disp = (st === "accepted" || st === "approved") ? "Approved — refund pending" : st === "rejected" ? "Rejected" : st === "refunded" ? "Refunded" : "Requested";
       return { id: rw.id, supabaseId: rw.id, item: "Order " + (rw.order_id || ""), order: rw.order_id || "", customer: "—", seller: shopNameById[rw.shop_id] || "Shop", date: sbDateLabel(rw.created_at), reason: rw.reason || "", amount: rw.refund_amount || 0, status: disp };
     });
   }
