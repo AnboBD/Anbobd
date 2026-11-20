@@ -1033,7 +1033,7 @@
   function mapProductRow(r){
     var st = String(r.status || "pending").toLowerCase();
     var imgs = (Array.isArray(r.images) && r.images.length) ? r.images.filter(function(u){ return !!u; }).slice() : (r.image_url ? [r.image_url] : []);
-    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved"), images: imgs, imageUrl: imgs.length ? imgs[0] : (r.image_url || "") };
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", desc: r.description || r.desc || "", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved"), images: imgs, imageUrl: imgs.length ? imgs[0] : (r.image_url || "") };
   }
   function mapCouponRow(r){
     var expStr = r.expiry || (r.expires_at ? fmtDate(r.expires_at) : "");
@@ -1554,7 +1554,7 @@
 
   function openProductModal(p){
     var s = me(); if (!s) return;
-    var isEdit = !!p; p = p || { name:"", sku:"", cat:s.category || "Electronics", price:"", oldPrice:"", stock:"" };
+    var isEdit = !!p; p = p || { name:"", sku:"", cat:s.category || "Electronics", price:"", oldPrice:"", stock:"", desc:"" };
     var catOpts = Object.keys(COMMISSION).map(function(c){ return '<option ' + (p.cat===c ? "selected" : "") + '>' + c + '</option>'; }).join("");
     openModal(
       '<h2>' + (isEdit ? "Edit Product" : "Add New Product") + '</h2><div class="msub">' + (isEdit ? "Product er tothyo update korun" : "Submit korle product ta sathe sathe My Products e dekhabe, ar Admin moderation e Pending Approval thakbe — Admin approve na kora porjonto storefront e live hobe na") + '</div>'
@@ -1564,6 +1564,7 @@
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem"><div class="field"><label>Price (৳)</label><input id="mPrice" aria-label="Price" type="number" min="1" value="' + p.price + '" /></div>'
       + '<div class="field"><label>Old price (৳)</label><input id="mOld" aria-label="Old price" type="number" min="0" value="' + (p.oldPrice || "") + '" /></div>'
       + '<div class="field"><label>Stock</label><input id="mStock" aria-label="Stock" type="number" min="0" value="' + p.stock + '" /></div></div>'
+      + '<div class="field"><label>Product description</label><textarea id="mDesc" aria-label="Product description" rows="4" placeholder="Ponner biboron likhun — size, material, ki ki ache, warranty ityadi. Customer product page e eta dekhbe.">' + esc(p.desc || "") + '</textarea></div>'
       + '<div class="field"><label>Product images</label><input id="mImages" type="file" accept="image/*" multiple aria-label="Product images" /><div class="hint">Sorbochcho 5 ta chhobi, prottekta sorbochcho 2MB (JPG, PNG, WebP). Prothom chhobi tai primary hobe.</div><div class="img-grid" id="mImgGrid"></div></div>'
       + '<p class="err" id="mErr"></p>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="mCancel" type="button">Cancel</button><button class="btn" id="mSave" type="button">' + (isEdit ? "Save Changes" : "Add Product") + '</button></div>',
@@ -1601,7 +1602,7 @@
           renderImgGrid();
         });
         $("mSave").addEventListener("click", async function(){
-          var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value;
+          var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value, desc = $("mDesc").value.trim();
           if (!name || !(price>0) || isNaN(stock) || stock<0) { $("mErr").textContent = "Name, sothik price ar stock din."; return; }
           /* Notun file thakle age Storage e upload — upload cholakalin Save
              disabled thakbe, vul hole ashol error mErr e dekhabe. */
@@ -1627,16 +1628,16 @@
           }
           if (isEdit){
             p.name = name; p.cat = $("mCat").value; p.category = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
-            p.oldPrice = +$("mOld").value || null; p.stock = stock;
+            p.oldPrice = +$("mOld").value || null; p.stock = stock; p.desc = desc;
             p.images = finalImages; p.imageUrl = finalImages.length ? finalImages[0] : "";
             if (p.approval === "Rejected") p.approval = "Pending Approval";
-            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
+            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
             toast("Product update hoyeche");
           } else {
             var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
-            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, sold:0, status:"Active", images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "" };
+            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"Active", images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "" };
             if (supabaseConnected && supabase) {
-              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
+              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
             }
             s.products.unshift(newProd);
             toast("Product add hoyeche — My Products e dekhun. Admin moderation approve korle live hobe: " + name);
