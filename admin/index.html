@@ -814,7 +814,7 @@ async function sbLoadAll(){
       var nm = rw.shop_name || "Shop";
       if (rw.id){ shopNameById[rw.id] = nm; }
       var op = ownerProfileById[rw.owner_id] || {};
-      var s = { id: rw.id, supabaseId: rw.id, shop: nm, owner: op.full_name || op.name || "—", phone: op.phone || "—", email: op.email || "", district: "—", cat: "—", joined: sbDateLabel(rw.created_at), status: rw.status || "pending", products: 0, sold: 0, sales: 0, commissionRate: (rw.commission_rate != null ? rw.commission_rate : 10), payoutMethod: (rw.payout_method || "—") + (rw.payout_account ? " · " + rw.payout_account : ""), payoutAccount: rw.payout_account || "", rating: 0, license: "—", kycStatus: rw.kyc_status || "", color: "" };
+      var s = { id: rw.id, supabaseId: rw.id, shop: nm, owner: op.full_name || op.name || "—", phone: op.phone || "—", email: op.email || "", district: "—", cat: "—", joined: sbDateLabel(rw.created_at), status: rw.status || "pending", products: 0, sold: 0, sales: 0, commissionRate: (rw.commission_rate != null ? rw.commission_rate : 10), payoutMethod: (rw.payout_method || "—") + (rw.payout_account ? " · " + rw.payout_account : ""), payoutAccount: rw.payout_account || "", rating: 0, license: rw.trade_licence || rw.trade_license || "—", nidNumber: rw.nid_number || "", ownerId: rw.owner_id || "", nidDoc: kycDocPath(rw, ["nid_doc", "nid_doc_path", "nid_document", "nid_document_path", "nid_copy", "nid_copy_path", "nid_file", "nid_file_path", "nid_image", "nid_image_path"]), tradeDoc: kycDocPath(rw, ["trade_doc", "trade_doc_path", "trade_document", "trade_document_path", "trade_licence_doc", "trade_licence_path", "trade_license_doc", "trade_license_path", "licence_doc", "licence_copy", "trade_copy", "trade_file", "trade_file_path"]), kycStatus: rw.kyc_status || "", color: "" };
       shopById[rw.id] = s;
       return s;
     });
@@ -2304,6 +2304,76 @@ function bindSellerActions(root){
   Array.prototype.forEach.call(root.querySelectorAll("[data-seller-activate]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){ return String(x.id)===String(b.getAttribute("data-seller-activate")); })[0]; if(!s) return; s.status="approved"; delete s.note; sbUpdate("shops", "id", s.supabaseId || s.id, { status: "approved" }); logActivity("Reactivated seller " + s.shop); toast('<span class="lime">✓ Seller reactivated</span> — '+esc(s.shop)); renderAll(); if($("#sellerDetailWrap").classList.contains("show")) openSellerDetail(s.id); }); });
   Array.prototype.forEach.call(root.querySelectorAll("[data-seller-pay]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){ return String(x.id)===String(b.getAttribute("data-seller-pay")); })[0]; if(!s) return; var amt=derivedPayoutDue(s); askConfirm("Pay "+fmt(amt)+" to "+s.shop+"?", "Payout via "+maskPayoutMethod(s.payoutMethod)+", after "+s.commissionRate+"% commission. This marks the balance as settled.", function(){ payoutPaidAdjustments[s.id]=(payoutPaidAdjustments[s.id]||0)+amt; sellerPayoutHistory.unshift({seller:s.shop, amount:amt, method:(s.payoutMethod.split(" ")[0]||"bKash"), date:nowLabel(), status:"Paid"}); sbInsert("payouts", { shop_id: s.supabaseId || s.id, amount: amt, method: (s.payoutMethod.split(" ")[0]||"bKash"), status: "paid", paid_at: new Date().toISOString() }); logActivity("Paid out " + fmt(amt) + " to " + s.shop); toast('<span class="lime">✓ Paid</span> — '+fmt(amt)+" sent to "+esc(s.shop)); renderAll(); if($("#sellerDetailWrap").classList.contains("show")) openSellerDetail(s.id); }); }); });
 }
+/* ===== Seller KYC documents (seller detail only) =====
+   Sellers upload their NID copy and trade licence copy to the PRIVATE
+   Supabase Storage bucket "kyc-docs" at registration. A public URL will
+   not open them, so each document is shown through a 1-hour signed URL
+   (createSignedUrl). The storage path comes from the shops row when a
+   doc-path column is present; otherwise the seller's bucket folder
+   (owner_id, then shop id) is listed and the NID / trade licence file
+   matched by name. No document uploaded -> "Upload kora hoy ni".
+   These links are rendered ONLY inside the seller detail KYC section —
+   never in the seller list or any other page. */
+function kycDocPath(row, keys){
+  if (!row) return "";
+  for (var i = 0; i < keys.length; i++){ var v = row[keys[i]]; if (v) return String(v); }
+  return "";
+}
+function kycDocInitial(s, kind){
+  var p = kind === "nid" ? s.nidDoc : s.tradeDoc;
+  return (p || sbReady()) ? '<span class="note">Document load hochhe…</span>' : '<span class="note">Upload kora hoy ni</span>';
+}
+async function findKycDocInBucket(s, kind){
+  var folders = [];
+  if (s.ownerId) folders.push(String(s.ownerId));
+  if (s.supabaseId && String(s.supabaseId) !== String(s.ownerId || "")) folders.push(String(s.supabaseId));
+  for (var i = 0; i < folders.length; i++){
+    try{
+      var r = await sb.storage.from("kyc-docs").list(folders[i], { limit: 100 });
+      if (r && !r.error && r.data){
+        for (var j = 0; j < r.data.length; j++){
+          var f = r.data[j];
+          if (!f || !f.name || !f.id) continue; /* no id = subfolder, not a file */
+          var nm = f.name.toLowerCase();
+          var isNid = nm.indexOf("nid") !== -1;
+          var isTrade = nm.indexOf("trade") !== -1 || nm.indexOf("licence") !== -1 || nm.indexOf("license") !== -1;
+          if (kind === "nid" && isNid) return folders[i] + "/" + f.name;
+          if (kind === "trade" && isTrade && !isNid) return folders[i] + "/" + f.name;
+        }
+      }
+    }catch(e){ /* bucket/folder not readable -> treated as no document */ }
+  }
+  return "";
+}
+async function renderKycDocSlot(s, kind, path){
+  var slotId = kind === "nid" ? "kycDocNid" : "kycDocTrade";
+  function slot(){ var el = document.getElementById(slotId); return (el && el.getAttribute("data-shop") === String(s.id)) ? el : null; }
+  var el = slot(); if (!el) return;
+  if (!path){ el.innerHTML = '<span class="note">Upload kora hoy ni</span>'; return; }
+  var clean = String(path).replace(/^kyc-docs\//, "");
+  var url = "";
+  if (/^https?:\/\//i.test(clean)){ url = clean; }
+  else if (sbReady()){
+    try{
+      var r = await sb.storage.from("kyc-docs").createSignedUrl(clean, 3600);
+      if (r && !r.error && r.data && r.data.signedUrl) url = r.data.signedUrl;
+    }catch(e){ url = ""; }
+  }
+  el = slot(); if (!el) return;
+  if (!url){ el.innerHTML = '<span class="note">Document khola jachhe na</span>'; return; }
+  var isImg = /\.(jpe?g|png|webp|gif)$/i.test(clean);
+  el.innerHTML = (isImg ? '<a href="'+esc(url)+'" target="_blank" rel="noopener"><img src="'+esc(url)+'" alt="'+(kind === "nid" ? "NID copy" : "Trade licence copy")+' preview" style="width:76px;height:50px;object-fit:cover;border-radius:8px;border:1px solid var(--line);vertical-align:middle;margin-right:8px" /></a>' : "")
+    + '<a class="btn ghost sm" href="'+esc(url)+'" target="_blank" rel="noopener" download>Dekhun / Download</a>';
+}
+async function resolveKycDoc(s, kind){
+  var path = kind === "nid" ? s.nidDoc : s.tradeDoc;
+  if (!path && sbReady()){
+    path = await findKycDocInBucket(s, kind);
+    if (path){ if (kind === "nid") s.nidDoc = path; else s.tradeDoc = path; }
+  }
+  renderKycDocSlot(s, kind, path);
+}
+function loadKycDocs(s){ resolveKycDoc(s, "nid"); resolveKycDoc(s, "trade"); }
 function openSellerDetail(id){
   var s = sellers.filter(function(x){ return String(x.id)===String(id); })[0]; if(!s) return;
   var ownProducts = products.filter(function(p){ return PRODUCT_SELLER[p.id]===s.shop; });
@@ -2317,6 +2387,9 @@ function openSellerDetail(id){
     + '<div class="kv"><span>Owner</span><b>'+esc(s.owner)+'</b></div>'
     + '<div class="kv"><span>Contact</span><b class="num">'+esc(s.phone)+' · '+esc(s.email)+'</b></div>'
     + '<div class="kv"><span>KYC status</span><b>'+esc(s.kycStatus || "pending")+'</b></div>'
+    + '<h4 style="margin:16px 0 2px">KYC documents</h4>'
+    + '<div class="kv"><span>NID Copy <span class="note">(NID no. <span class="num">'+esc(s.nidNumber || "—")+'</span>)</span></span><b><span id="kycDocNid" data-shop="'+esc(s.id)+'">'+kycDocInitial(s, "nid")+'</span></b></div>'
+    + '<div class="kv"><span>Trade Licence Copy <span class="note">(Licence no. <span class="num">'+esc(s.license || "—")+'</span>)</span></span><b><span id="kycDocTrade" data-shop="'+esc(s.id)+'">'+kycDocInitial(s, "trade")+'</span></b></div>'
     + '<div class="kv"><span>Joined / Applied</span><b>'+(s.status==="pending" ? (s.applied||"—") : s.joined)+'</b></div>'
     + '<div class="kv"><span>Rating</span><b>'+(s.rating ? "★ "+s.rating : "New seller")+'</b></div>'
     + '<h4 style="margin:20px 0 6px">Sales &amp; money</h4>'
@@ -2327,7 +2400,7 @@ function openSellerDetail(id){
     + '<div class="kv"><span>Payout method</span><b>'+esc(maskPayoutMethod(s.payoutMethod))+'</b></div>'
     + '<h4 style="margin:20px 0 4px">Products on AnboBD ('+s.products+')</h4>'
     + '<div class="kv"><span>Ledger check — delivered orders theke hisab</span><b class="num">Sales '+fmt(ledgerSales)+' · Commission '+fmt(ledgerComm)+' · Net '+fmt(ledgerSales-ledgerComm)+'</b></div>'
-    + '<div class="kv"><span>KYC checklist</span><b>KYC status (database): '+esc(s.kycStatus || "pending")+' · Bank (masked): '+esc(maskPayoutMethod(s.payoutMethod))+' · Status: '+(s.status==="pending"?"Verification pending — approve er age KYC check koro":"Verified ✓")+'<br /><span class="note">Trade licence / NID document er kono column database e nai ekhono — KYC ekhane sudhu status diye track hoy.</span></b></div>'
+    + '<div class="kv"><span>KYC checklist</span><b>KYC status (database): '+esc(s.kycStatus || "pending")+' · Bank (masked): '+esc(maskPayoutMethod(s.payoutMethod))+' · Status: '+(s.status==="pending"?"Verification pending — approve er age KYC check koro":"Verified ✓")+'<br /><span class="note">Seller er upload kora NID Copy ar Trade Licence Copy upore KYC documents ongshe dekha jabe.</span></b></div>'
     + (ownProducts.length ? ownProducts.map(function(p){ return '<div class="alert-item"><img src="'+esc(safeImg(p.img))+'" alt="" style="width:42px;height:42px;border-radius:8px;object-fit:cover" /><div><div class="nm" style="font-size:13.5px">'+esc(p.name)+'</div><div class="meta">'+esc(p.sku)+' · Stock '+p.stock+'</div></div><b class="num" style="margin-left:auto">'+fmt(p.price)+'</b></div>'; }).join("") + '<p class="note">Ei '+ownProducts.length+' ta product-i storefront catalog e '+esc(s.shop)+' er name ache — seller onujayi filter kora, onno seller er product ekhane ashe na.</p>' : '<p class="note">Ei seller er storefront catalog e ekhono kono product map kora nai.</p>')
     + (s.status!=="pending" ? '<h4 style="margin:18px 0 4px">Ei seller er-i order ('+ownOrders.length+') — seller onujayi filter kora</h4>' + (ownOrders.length ? ownOrders.map(function(o){ return '<div class="kv"><span>'+esc(o.localId || o.id)+' · '+esc(o.customer)+' · '+esc(o.district)+'<br /><span class="note">Sub-order '+ (subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).id:(o.localId || o.id)) +' · Commission '+fmt(subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).commission:0)+' · Seller pabe '+fmt(subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).earning:0)+'</span></span><b class="num">'+fmt(orderTotal(o))+' · '+o.status+(o.sentToSeller?" · sent ✓":" · not sent")+'</b></div>'; }).join("") : '<p class="note">Ei seller er kono order ekhono nai.</p>') : "")
     + '<h4 style="margin:18px 0 4px">Shop coupons of this seller</h4>' + (sellerCoupons.filter(function(c){return c.shop===s.shop;}).length ? sellerCoupons.filter(function(c){return c.shop===s.shop;}).map(function(c){ return '<div class="kv"><span><b>'+esc(c.code)+'</b> · '+esc(c.desc)+'</span><b>'+c.status+(c.status==="live"?" · website e live":"")+' · '+c.used+' uses</b></div>'; }).join("") : '<p class="note">Ei seller ekhono kono shop coupon banayni.</p>')
@@ -2341,6 +2414,7 @@ function openSellerDetail(id){
     + '</div>';
   $("#sellerDetailWrap").classList.add("show");
   bindSellerActions($("#sellerDetailBody"));
+  loadKycDocs(s);
   var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", function(){ var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } s.commissionRate=v; sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); logActivity("Changed commission of "+s.shop+" to "+v+"%"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+v+"%"); renderAll(); openSellerDetail(s.id); });
 }
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller]"), function(b){ b.addEventListener("click", function(){ $("#sellerModalWrap").classList.remove("show"); }); });
