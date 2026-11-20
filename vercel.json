@@ -1,0 +1,42 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/inject-supabase-config.mjs",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "headers": [
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ],
+      "source": "/(.*)"
+    }
+  ],
+  "rewrites": [
+    {
+      "destination": "/admin/index.html",
+      "source": "/admin"
+    },
+    {
+      "destination": "/admin/index.html",
+      "source": "/admin/"
+    },
+    {
+      "destination": "/seller/index.html",
+      "source": "/seller"
+    },
+    {
+      "destination": "/seller/index.html",
+      "source": "/seller/"
+    }
+  ]
+}
