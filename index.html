@@ -2355,6 +2355,27 @@ var ANBOBD_DB = {
   },
   saveOrder: async function(order){
     var sb = this.sb(); if(!sb) return null;
+    /* Order-এর UUID ক্লায়েন্টেই বানানো হয় (crypto.randomUUID, না থাকলে
+       Math.random fallback) এবং insert-এর আগেই order.supabaseId-তে রাখা হয়,
+       payload-এ id হিসেবে পাঠানো হয়। কারণ: .select() (return=representation)
+       দিয়ে insert করলে PostgREST RETURNING row-গুলোতে anon SELECT policy
+       প্রয়োগ করে — orders-এ anon-এর কোনো SELECT policy নেই, তাই guest
+       insert সবসময় 42501 দিয়ে reject হয় (লাইভ API দিয়ে যাচাইকৃত)।
+       .select() ছাড়া plain insert সফল হয়। Insert ব্যর্থ হলে এই কল-এ বানানো
+       id মুছে দেওয়া হয়, যাতে অর্ডারটি আগের মতোই "এই ডিভাইসে আছে" হিসেবে
+       থাকে এবং retryPendingOrders সেটা আবার পাঠাতে পারে। */
+    var generatedId = false;
+    if(!anboIsUuid(order.supabaseId)){
+      var newOrderId = null;
+      try{ if(window.crypto && typeof window.crypto.randomUUID==="function") newOrderId = window.crypto.randomUUID(); }catch(e){ newOrderId = null; }
+      if(!newOrderId){
+        newOrderId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c){
+          var r = Math.floor(Math.random()*16), v = (c==="x") ? r : (r & 0x3 | 0x8);
+          return v.toString(16);
+        });
+      }
+      order.supabaseId = newOrderId; generatedId = true;
+    }
     /* ⚠️ Payload-এ শুধুমাত্র live table-এ সত্যিই আছে এমন column যাবে।
        আগের payload user_id, note, sender_number, subtotal, discount,
        delivery_fee, zone, estimated_delivery পাঠাত — orders table-এ এই
@@ -2369,6 +2390,7 @@ var ANBOBD_DB = {
       senderNumber: order.payment.senderNumber||null, zone: order.zone||"",
       estimatedDelivery: order.estimatedDelivery||"" };
     var payload = {
+      id: order.supabaseId,
       customer_id: anboIsUuid(order.userId) ? order.userId : null,
       customer_name: order.customer.name, customer_phone: order.customer.phone,
       address: order.customer.address, district: order.customer.district,
@@ -2379,11 +2401,15 @@ var ANBOBD_DB = {
       items: order.items.concat([metaItem])
     };
     var res;
-    try{ res = await sb.from('orders').insert(payload).select(); }
-    catch(e){ console.warn("Order insert failed:", e); order.syncError = String(e && e.message || e); return null; }
-    if(res.error){ console.warn("Order insert rejected:", res.error); order.syncError = res.error.message || res.error.code || "insert rejected"; return null; }
-    var saved = (res.data && res.data[0]) ? res.data[0] : null;
-    if(saved && saved.id) order.supabaseId = saved.id;
+    /* .select() ছাড়া plain insert — উপরের নোট দেখুন: .select() দিলে PostgREST
+       RETURNING row-তে anon SELECT policy প্রয়োগ করে guest insert 42501-এ
+       reject করে। Plain insert সফল হলে res.data খালি থাকে, তাই saved এখানেই
+       ক্লায়েন্ট-বানানো id দিয়ে তৈরি হয় — আগের কোড res.data[0] খুঁজত বলে
+       সেভ হলেও "সেভ হয়নি" দেখাত। */
+    try{ res = await sb.from('orders').insert(payload); }
+    catch(e){ console.warn("Order insert failed:", e); order.syncError = String(e && e.message || e); if(generatedId) order.supabaseId = null; return null; }
+    if(res.error){ console.warn("Order insert rejected:", res.error); order.syncError = res.error.message || res.error.code || "insert rejected"; if(generatedId) order.supabaseId = null; return null; }
+    var saved = { id: order.supabaseId };
     order.onlineSaved = true; order.syncError = null;
     /* sub_orders-এর আসল column: id, order_id, shop_id, seller_id, subtotal,
        status, created_at, delivered_at — আগের payload items/total/
@@ -2415,6 +2441,15 @@ var ANBOBD_DB = {
   },
   loadMyOrders: async function(user){
     var sb = this.sb(); if(!sb || !user || !anboIsUuid(user.id)) return;
+    /* আসল Supabase session না থাকলে (শুধু লোকাল identity-ওয়ালা guest) চুপচাপ
+       ফিরে যাও, কোনো toast নয় — guest-এর orders-এ anon SELECT permission
+       নেই, তাই query সবসময় 42501 দিয়ে fail করে "আপনার অর্ডারগুলো অনলাইন
+       থেকে লোড করা যায়নি" মিথ্যা সতর্কতা দেখাত, অথচ লোড করার কিছুই নেই।
+       Signed-in customer-এর session থাকলে আগের মতোই নিজের অর্ডার লোড হবে। */
+    try{
+      var sessRes = await sb.auth.getSession();
+      if(!sessRes || !sessRes.data || !sessRes.data.session) return;
+    }catch(e){ return; }
     try{
       /* orders table-এ user_id column নেই — ক্রেতার column-এর নাম customer_id */
       var r = await sb.from('orders').select('*').eq('customer_id', user.id).order('created_at', { ascending:false });
