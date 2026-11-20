@@ -960,7 +960,7 @@
     return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : "Pending Approval")), adminNote: r.admin_note || "Admin er review er opekkhay ache." };
   }
   function mapReturnRow(r){
-    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", amount: Number(r.amount || r.refund_amount || 0), status: r.status_label || (String(r.status || "pending").toLowerCase() === "accepted" ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
+    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", amount: Number(r.amount || r.refund_amount || 0), status: r.status_label || ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
   }
   async function loadSellerDataFromSupabase(sellerObj){
     if (!supabaseConnected || !supabase || !sellerObj || !sellerObj.shopId) return;
@@ -1407,7 +1407,7 @@
         var id = b.getAttribute("data-id"), act = b.getAttribute("data-act"), p = prodById(id);
         if (!p) return;
         if (act==="stock"){ p.stock += 20; if (supabaseConnected && supabase) { try { await supabase.from('products').update({ stock: p.stock }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " — 20 ta stock add holo. Ekhon total " + p.stock); renderAll(); }
-        if (act==="toggle"){ p.status = p.status==="Active" ? "Paused" : "Active"; if (supabaseConnected && supabase) { try { var dbSt = p.approval === "Pending Approval" ? "pending" : (p.approval === "Rejected" ? "rejected" : (p.status === "Paused" ? "paused" : "active")); await supabase.from('products').update({ status: dbSt }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " ekhon " + p.status); renderAll(); }
+        if (act==="toggle"){ p.status = p.status==="Active" ? "Paused" : "Active"; if (supabaseConnected && supabase) { try { var dbSt = p.approval === "Pending Approval" ? "pending" : (p.approval === "Rejected" ? "rejected" : (p.status === "Paused" ? "paused" : "approved")); await supabase.from('products').update({ status: dbSt }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " ekhon " + p.status); renderAll(); }
         if (act==="del"){ openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', async function(){ var s = me(); if (supabaseConnected && supabase) { try { await supabase.from('products').delete().eq('id', p.id).eq('shop_id', s.shopId); } catch(e){} } s.products = s.products.filter(function(x){ return String(x.id)!==String(id); }); toast("Product delete hoyeche"); renderAll(); }); }
         if (act==="edit"){ openProductModal(p); }
       });
@@ -1442,7 +1442,7 @@
             p.name = name; p.cat = $("mCat").value; p.category = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
             p.oldPrice = +$("mOld").value || null; p.stock = stock;
             if (p.approval === "Rejected") p.approval = "Pending Approval";
-            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, status: p.approval === "Pending Approval" ? "pending" : "active" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
+            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
             toast("Product update hoyeche");
           } else {
             var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
@@ -1887,7 +1887,7 @@
           if ((method === "bKash" || method === "Nagad") && !/^01\d{9}$/.test(acc.replace(/[-\s]/g, ""))) { $("wErr").textContent = method + " account er jonno sothik 11 digit er number din."; return; }
           if (method === "Bank Transfer" && acc.length < 8) { $("wErr").textContent = "Sothik bank account number din."; return; }
           if (supabaseConnected && supabase) {
-            try { var insP = await supabase.from('payouts').insert({ shop_id: s.shopId, amount: amt, method: method, account: acc, status: "pending" }).select().single(); if (insP.error) { $("wErr").textContent = insP.error.message; return; } } catch(e){ $("wErr").textContent = "Payout request save hoy ni — abar chesta korun."; return; }
+            try { var insP = await supabase.from('payouts').insert({ shop_id: s.shopId, amount: amt, method: method, account: acc, status: "requested" }).select().single(); if (insP.error) { $("wErr").textContent = insP.error.message; return; } } catch(e){ $("wErr").textContent = "Payout request save hoy ni — abar chesta korun."; return; }
           }
           s.payouts.unshift({ date: fmtDate(new Date().toISOString()), method: method, account: maskAccount(acc), amount: amt, status: "Processing" });
           closeModal(); renderAll();
