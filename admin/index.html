@@ -620,9 +620,18 @@ function renderConnectionNotice(){
   var b = document.getElementById("sbNoticeApp"); if (b) b.innerHTML = "";
 }
 function sbWarn(table, err){ if (err) console.warn("[AnboBD Admin] Supabase " + table + ": " + (err.message || err)); }
+/* A failed write must NEVER look like a success on screen: keep the console
+   warning AND show a visible toast with the real error, so the admin knows
+   the change was not saved to the database. */
+function sbSaveFailed(table, err){
+  sbWarn(table, err);
+  if (!err) return;
+  var msg = (err && err.message) ? err.message : String(err);
+  try{ toast("⚠ <b>Save failed!</b> Database e save hoy ni — " + esc(table) + ": " + esc(msg) + " Screen er change ta database e jay ni, reload korle ager obostha-i dekhabe.", 6500); }catch(e){}
+}
 function sbUpdate(table, col, val, patch){
   if (!sbReady()) return Promise.resolve(null);
-  return sb.from(table).update(patch).eq(col, val).then(function(r){ sbWarn(table, r && r.error); return r; }).catch(function(e){ sbWarn(table, e); return null; });
+  return sb.from(table).update(patch).eq(col, val).then(function(r){ if (r && r.error) sbSaveFailed(table, r.error); return r; }).catch(function(e){ sbSaveFailed(table, e); return null; });
 }
 function sbInsert(table, row){
   if (!sbReady()) return Promise.resolve(null);
@@ -657,6 +666,16 @@ function sbNormOrderStatus(s){
   var low = s.toLowerCase();
   if (["pending","confirmed","packed","shipped","delivered","cancelled"].indexOf(low) !== -1) return low;
   return "pending";
+}
+/* Panel display status (lowercase) -> database status. The orders table's
+   orders_status_check constraint ONLY accepts AwaitingAdmin, AdminConfirmed,
+   Packed, Shipped, Delivered, Cancelled — writing the lowercase display
+   status is rejected by the database, so EVERY order-status write to the
+   orders table must go through this mapper. (Reverse of sbNormOrderStatus.) */
+function sbDbOrderStatus(s){
+  var m = { pending: "AwaitingAdmin", confirmed: "AdminConfirmed", cancelled: "Cancelled", packed: "Packed", shipped: "Shipped", delivered: "Delivered" };
+  var low = String(s || "").toLowerCase();
+  return m[low] || s;
 }
 function sbParseItems(raw){
   var out = [];
@@ -958,12 +977,14 @@ async function sbLoadAll(){
     activityLog = actRows.map(function(rw){ return { time: sbDateLabel(rw.created_at) + ", from Supabase", who: rw.details || "Admin", what: rw.action || "" }; });
   }
 }
-/* Confirming a master order in Supabase: orders.status -> confirmed and every
+/* Confirming a master order in Supabase: orders.status -> AdminConfirmed
+   (the database value, via sbDbOrderStatus — NOT the lowercase display
+   status, which the orders_status_check constraint rejects) and every
    sub_orders row for it -> AdminConfirmed, so sellers only see it afterwards. */
 function sbConfirmOrder(o){
   if (!sbReady()) return;
-  sbUpdate("orders", "id", o.supabaseId || o.id, { status: "confirmed" });
-  sb.from("sub_orders").update({ status: "AdminConfirmed" }).eq("order_id", o.supabaseId || o.id).then(function(r){ sbWarn("sub_orders", r && r.error); }).catch(function(e){ sbWarn("sub_orders", e); });
+  sbUpdate("orders", "id", o.supabaseId || o.id, { status: sbDbOrderStatus("confirmed") });
+  sb.from("sub_orders").update({ status: "AdminConfirmed" }).eq("order_id", o.supabaseId || o.id).then(function(r){ if (r && r.error) sbSaveFailed("sub_orders", r.error); }).catch(function(e){ sbSaveFailed("sub_orders", e); });
 }
 initSupabase();
 
@@ -1282,7 +1303,7 @@ function statusBadge(s){ return '<span class="badge b-'+s+'">'+s.charAt(0).toUpp
 function lowStock(){ return products.filter(function(p){ return p.stock<=6; }); }
 function pendingCount(){ return orders.filter(function(o){ return o.status==="pending"; }).length; }
 var toastTimer=null;
-function toast(msg){ var t=$("#toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, 2800); }
+function toast(msg, ms){ var t=$("#toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, ms || 2800); }
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
 function safeImg(u){
   u = String(u == null ? "" : u).trim();
@@ -1576,7 +1597,7 @@ function setOrderStatus(id, status){
   var drawerWasOpen = $("#orderDrawer").classList.contains("show");
   o.status = status; logActivity("Order "+(o.localId || id)+" status → "+status+(status==="confirmed"?" (sent to "+sellerForOrder(o)+")":""));
   if (status === "confirmed") sbConfirmOrder(o);
-  else sbUpdate("orders", "id", o.supabaseId || o.id, { status: status });
+  else sbUpdate("orders", "id", o.supabaseId || o.id, { status: sbDbOrderStatus(status) });
   if(status==="confirmed"){ o.sentToSeller=true; o.sellerStatus="Sent to seller — waiting for seller to pack"; o.sentAt="Just now · by Admin"; toast("✓ Master <b>"+esc(o.localId || id)+"</b> confirmed — <span class='lime'>"+getSubOrders(o).length+" sub-order</span> prottek seller ke pathano hoyeche: "+esc(sellerShopsForOrder(o).join(", "))); }
   else if(status==="packed"){ o.sentToSeller=true; o.sellerStatus="Seller packed — ready for rider pickup"; toast("📦 Seller packed order <b>"+esc(o.localId || id)+"</b> — rider pickup er jonno ready"); }
   else if(status==="shipped"){ o.sellerStatus="Seller handed to rider — in transit"; toast("🚚 Order <b>"+esc(o.localId || id)+"</b> shipped — seller rider er hate diyeche"); }

@@ -1487,12 +1487,34 @@
     openModal('<h2>Shipping Label — ' + esc(o.subId || o.id) + '</h2><div class="msub">Print kore parcel er gaye lagan. Sudhu apnar sub-order er item ache.</div>'
       + '<div style="border:2px dashed var(--line);border-radius:12px;padding:1rem"><div style="font-family:Sora;font-weight:800;font-size:1.1rem">AnboBD · ' + esc(s.shop) + '</div>'
       + '<div style="font-size:.9rem;margin-top:.5rem"><b>To:</b> ' + esc(o.customer) + ' · ' + esc(o.phone) + '<br>' + esc(o.shipAddress || o.district) + ', ' + esc(o.district) + '<br><b>Items:</b> ' + esc(orderItemsText(o)) + '<br><b>Master Order:</b> ' + esc(o.id) + ' · <b>Sub-Order:</b> ' + esc(o.subId || o.id) + (o.codCollect ? '<br><b>COD Collect:</b> ' + fmt(o.codCollect) : '<br><b>Prepaid</b> — kichu collect korte hobe na') + (o.trackingId ? '<br><b>Tracking:</b> ' + esc(o.trackingId) : '') + '</div></div>'
-      + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn ghost" id="lbClose" type="button">Close</button><button class="btn" id="lbPrint" type="button">Print / Save Label</button></div>',
-      function(){ $("lbClose").addEventListener("click", closeModal); $("lbPrint").addEventListener("click", function(){ window.print(); }); });
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn" id="lbPrint" type="button">Print / Save Label</button><button class="btn ghost" id="lbClose" type="button">Close</button></div>',
+      function(){ $("lbPrint").addEventListener("click", function(){ window.print(); }); $("lbClose").addEventListener("click", closeModal); });
   }
   async function sbUpdateSubOrder(o, extra){
     if (!supabaseConnected || !supabase || !o) return;
-    try { var payload = { status: String(o.status).toLowerCase().replace(/\s+/g, "_"), seller_status: o.status }; if (extra) for (var k in extra) payload[k] = extra[k]; var res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId); if (res.error && payload.delivered_at) { delete payload.delivered_at; await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId); } } catch(e){}
+    /* sub_orders.status er check constraint sudhu ei format gulo mane:
+       AwaitingAdmin, AdminConfirmed, ReadyToShip, Packed, Shipped, Delivered.
+       Tai display status theke sudhu space sorano hoy — case bodlano hoy na
+       ("Ready to Ship" -> "ReadyToShip"). seller_status bole sub_orders table e
+       kono column nei, tai payload e seta pathano hoy na. */
+    var payload = { status: String(o.status).replace(/\s+/g, "") };
+    if (extra) for (var k in extra) payload[k] = extra[k];
+    try {
+      var res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId);
+      if (res.error && payload.delivered_at) {
+        /* delivered_at niye fail hole seta baad diye ekbar abar chesta */
+        delete payload.delivered_at;
+        res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId);
+      }
+      if (res.error) {
+        toast("Status online e save hoy ni — " + (res.error.message || "database error") + " · Screen er status database e jay ni, page reload kore abar chesta korun.");
+        return false;
+      }
+      return true;
+    } catch(e) {
+      toast("Status online e save hoy ni — " + (e && e.message ? e.message : "network error") + " · Screen er status database e jay ni, page reload kore abar chesta korun.");
+      return false;
+    }
   }
   async function advanceOrder(id){
     var s = me(); if (!s) return;
@@ -1502,18 +1524,20 @@
     if (o.status==="Packed" && !o.trackingId) {
       openModal('<h2>Ship — Tracking ID din</h2><div class="msub">' + esc(o.subId || id) + ' courier e diye tracking ID ta likhun</div><div class="field"><label>Courier tracking ID</label><input id="trkId" placeholder="e.g. PTH-882910" /></div><p class="err" id="trkErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="trkCancel" type="button">Cancel</button><button class="btn" id="trkGo" type="button">Confirm Shipped</button></div>', function(){
         $("trkCancel").addEventListener("click", closeModal);
-        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); toast(id + " shipped — Tracking: " + v); });
+        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; var saved = await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); if (saved !== false) toast(id + " shipped — Tracking: " + v); });
       });
       return;
     }
     o.status = NEXT_STATUS[o.status];
     var extra = o.trackingId ? { tracking_id: o.trackingId } : null;
     if (o.status === "Delivered") { o.deliveredAt = new Date().toISOString(); extra = extra || {}; extra.delivered_at = o.deliveredAt; }
-    await sbUpdateSubOrder(o, extra);
-    if (o.status === "Packed") toast(id + " packed — ekhon tracking ID diye ship korun");
-    else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
-    else if (o.status === "Delivered") { toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
-    else toast(id + " ekhon " + o.status);
+    var saved = await sbUpdateSubOrder(o, extra);
+    if (saved !== false) {
+      if (o.status === "Packed") toast(id + " packed — ekhon tracking ID diye ship korun");
+      else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
+      else if (o.status === "Delivered") { toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
+      else toast(id + " ekhon " + o.status);
+    }
     renderAll();
     closeDrawer();
   }
