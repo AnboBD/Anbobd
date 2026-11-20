@@ -1837,7 +1837,7 @@
       b.addEventListener("click", function(){
         var r = ownReturns().filter(function(x){ return String(x.id)===String(b.getAttribute("data-ret-accept")); })[0]; if (!r) return;
         openConfirm("Return accept korben?", r.id + " — " + fmt(r.amount) + " apnar wallet balance theke adjust hobe ar Admin ke notify kora hobe.", async function(){
-          r.status = "Return Accepted"; if (supabaseConnected && supabase) { try { await supabase.from('returns').update({ status: "accepted" }).eq('id', r.id).eq('shop_id', s.shopId); } catch(e){} } renderAll(); toast("Return accept hoyeche — " + fmt(r.amount) + " wallet theke adjust, Admin notified");
+          r.status = "Return Accepted"; if (supabaseConnected && supabase) { try { await supabase.from('returns').update({ status: "approved" }).eq('id', r.id).eq('shop_id', s.shopId); } catch(e){} } renderAll(); toast("Return accept hoyeche — " + fmt(r.amount) + " wallet theke adjust, Admin notified");
         });
       });
     });
