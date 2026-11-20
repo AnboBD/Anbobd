@@ -52,6 +52,16 @@
       .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:var(--surface);outline:none}
       .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand)}
       .field .hint{font-size:.78rem;color:var(--muted);margin-top:.25rem}
+      .img-grid{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.6rem}
+      .img-thumb{position:relative;width:72px;height:72px;flex:none}
+      .img-thumb img{width:72px;height:72px;object-fit:cover;border-radius:10px;border:1px solid var(--line);display:block}
+      .img-thumb .rm{position:absolute;top:-7px;right:-7px;width:20px;height:20px;min-height:0;border-radius:50%;background:var(--red);color:#fff;border:0;font-size:.7rem;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;z-index:2}
+      .img-thumb .primary-badge{position:absolute;left:4px;bottom:4px;background:var(--brand);color:#fff;font-size:.6rem;font-weight:800;padding:.1rem .35rem;border-radius:99px}
+      .doc-prev{display:flex;align-items:center;gap:.6rem;margin-top:.55rem}
+      .doc-prev img{width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid var(--line);flex:none;display:block}
+      .doc-name{font-size:.83rem;font-weight:600;word-break:break-all}
+      .doc-file-badge{background:var(--red-soft);color:var(--red);font-weight:800;font-size:.72rem;padding:.45rem .5rem;border-radius:8px;flex:none}
+      .doc-status{font-size:.83rem;margin-top:.35rem;min-height:1.1em}
       .err{color:var(--red);font-size:.83rem;font-weight:600;min-height:1.2em}
       .form-section{font-family:"Sora";font-weight:800;font-size:.95rem;margin:1.25rem 0 .7rem;padding-top:1.1rem;border-top:1px solid var(--line)}
       .form-section:first-of-type{border-top:0;padding-top:0;margin-top:.4rem}
@@ -447,10 +457,24 @@
             <input id="regTrade" type="text" placeholder="Trade license number" />
           </div>
         </div>
+        <div class="grid-2">
+          <div class="field">
+            <label for="regNidFile">NID er copy upload korun</label>
+            <input id="regNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" />
+            <div class="hint">JPG, PNG ba PDF — sorbochcho 5MB. Sudhu number e hobe na, document er copy-i lagbe.</div>
+            <div class="doc-prev hidden" id="regNidPrev"></div>
+          </div>
+          <div class="field">
+            <label for="regTradeFile">Trade licence er copy upload korun</label>
+            <input id="regTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" />
+            <div class="hint">JPG, PNG ba PDF — sorbochcho 5MB. Sudhu number e hobe na, document er copy-i lagbe.</div>
+            <div class="doc-prev hidden" id="regTradePrev"></div>
+          </div>
+        </div>
         <p style="font-size:.85rem;color:var(--muted);margin:.2rem 0 .9rem">Admin will verify your NID and trade license against these numbers before approving your shop. Submitting false information will get the application rejected.</p>
 
         <p class="err" id="regErr"></p>
-        <button class="btn" type="submit" style="width:100%">Submit Application for Admin Approval</button>
+        <button class="btn" id="regSubmitBtn" type="submit" style="width:100%">Submit Application for Admin Approval</button>
       </form>
     </div>
   </section>
@@ -753,6 +777,8 @@
             <h3>Shop information</h3>
             <div class="csub">Customer ra apnar shop page e egulo dekhbe</div>
             <div class="field"><label>Shop avatar</label><div style="display:flex;gap:.8rem;align-items:center"><div class="shop-avatar" id="logoPreview" style="width:52px;height:52px;font-size:1.1rem">S</div><div style="flex:1"><input id="setLogoText" maxlength="2" placeholder="Avatar initials, e.g. DF" style="width:100%;border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:var(--surface)" /><div class="hint">Shop name er prothom akkhor gulo avatar hisebe show hoy. Platform-er kono setting ekhane nei — sudhu apnar shop.</div></div></div></div>
+            <div class="field"><label for="setLogoFile">Shop logo</label><div style="display:flex;gap:.8rem;align-items:center"><img id="setLogoImg" alt="Shop logo preview" style="width:52px;height:52px;border-radius:10px;object-fit:cover;border:1px solid var(--line);display:none;flex:none" /><div style="flex:1"><input id="setLogoFile" type="file" accept="image/*" style="width:100%" /><div class="hint">JPG, PNG ba WebP — sorbochcho 2MB. Logo dashboard e dokan er naam er pasheo dekhabe.</div></div></div></div>
+            <div class="field"><label for="setBannerFile">Shop banner</label><img id="setBannerImg" alt="Shop banner preview" style="width:100%;height:90px;border-radius:10px;object-fit:cover;border:1px solid var(--line);display:none;margin-bottom:.5rem" /><input id="setBannerFile" type="file" accept="image/*" style="width:100%" /><div class="hint">JPG, PNG ba WebP — sorbochcho 2MB. Banner apnar shop page er upore dekhabe.</div></div>
             <div class="field"><label for="setShopName">Shop name</label><input id="setShopName" /></div>
             <div class="field"><label for="setOwner">Owner name</label><input id="setOwner" /></div>
             <div class="field"><label for="setPhone">Contact mobile</label><input id="setPhone" /></div>
@@ -773,6 +799,26 @@
             <div class="csub">On thakle shop er sob product samoyik hide thakbe, notun order asbe na</div>
             <button class="btn ghost" id="vacationBtn" type="button">Vacation mode: Off</button>
           </form>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>KYC Documents</h3>
+          <div class="csub">Registration er somoy deya NID ar trade licence er copy — Admin notun kore chaile ekhan thekei bodle / re-upload kore dite parben</div>
+          <div class="grid-2">
+            <div class="field" style="margin-bottom:0">
+              <label for="kycNidFile">NID er copy</label>
+              <div class="doc-prev" id="kycNidCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+              <input id="kycNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
+              <div class="hint">Notun file bachhle ager copy bodle jabe. JPG, PNG ba PDF — sorbochcho 5MB.</div>
+              <div class="doc-status" id="kycNidStatus"></div>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label for="kycTradeFile">Trade licence er copy</label>
+              <div class="doc-prev" id="kycTradeCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+              <input id="kycTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
+              <div class="hint">Notun file bachhle ager copy bodle jabe. JPG, PNG ba PDF — sorbochcho 5MB.</div>
+              <div class="doc-status" id="kycTradeStatus"></div>
+            </div>
+          </div>
         </div>
       </section>
     </main>
@@ -934,6 +980,50 @@
     a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
     a.download = filename; document.body.appendChild(a); a.click(); document.body.removeChild(a);
   }
+  /* Supabase Storage e chhobi upload — path nijer user id diye shuru hoy,
+     tarpor public URL ferot ase. Vul hole ashol error throw kore. */
+  async function uploadImageToBucket(bucket, file){
+    var s = me(); if (!s) throw new Error("Login nei — age login korun.");
+    var safeName = String(file.name || "image").replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    var path = String(s.userId || s.id) + "/" + Date.now() + "_" + safeName;
+    var up = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
+    if (up.error) throw up.error;
+    var pub = supabase.storage.from(bucket).getPublicUrl(path);
+    var url = pub && pub.data ? pub.data.publicUrl : "";
+    if (!url) throw new Error("Upload hoyeche kintu public URL pawa jay ni.");
+    return url;
+  }
+  /* KYC document (NID / trade licence er copy) — 'kyc-docs' PRIVATE bucket e
+     upload hoy, tai public URL na: sudhu storage path ta ferot ase, seta
+     shops table er nid_copy_url / trade_licence_copy_url column e save hoy.
+     Path nijer user id diye shuru hoy: userId/nid_<ts>_<name> ba
+     userId/trade_licence_<ts>_<name>. Vul hole ashol error throw kore. */
+  var KYC_MAX_BYTES = 5 * 1024 * 1024;
+  function kycFileError(f){
+    if (!f) return "File bachhai kora hoy ni.";
+    var okType = ["image/jpeg", "image/png", "application/pdf"].indexOf(f.type) > -1 || /\.(jpe?g|png|pdf)$/i.test(f.name || "");
+    if (!okType) return "Shudhu JPG, PNG ba PDF file din.";
+    if (f.size > KYC_MAX_BYTES) return "File 5MB er beshi boro — chhoto file din.";
+    return "";
+  }
+  function kycIsImageFile(f){ return !!f && (f.type === "image/jpeg" || f.type === "image/png" || /\.(jpe?g|png)$/i.test(f.name || "")); }
+  function kycDocName(path){
+    var seg = String(path || "").split("/").pop() || "";
+    return seg.replace(/^(nid|trade_licence)_\d+_/, "") || seg;
+  }
+  async function uploadKycDocToStorage(userId, kind, file){
+    var safeName = String(file.name || "document").replace(/[^a-zA-Z0-9.\-_]/g, "_");
+    var path = String(userId) + "/" + kind + "_" + Date.now() + "_" + safeName;
+    var up = await supabase.storage.from("kyc-docs").upload(path, file, { upsert: false });
+    if (up.error) throw up.error;
+    return path;
+  }
+  function renderDocPreview(el, file, objectUrl){
+    if (!el || !file) return;
+    el.classList.remove("hidden");
+    if (kycIsImageFile(file)) el.innerHTML = '<img src="' + objectUrl + '" alt="Document preview" /><div><div class="doc-name">' + esc(file.name) + '</div><div class="hint">Upload er jonno prostut</div></div>';
+    else el.innerHTML = '<div class="doc-file-badge">PDF</div><div><div class="doc-name">' + esc(file.name) + '</div><div class="hint">' + Math.max(1, Math.round(file.size / 1024)) + ' KB</div></div>';
+  }
   /* Fallback-only password hashing stand-in, used ONLY when Supabase is
      not connected. When connected, passwords are handled exclusively by
      Supabase Auth and are never stored by this page. */
@@ -942,7 +1032,8 @@
   /* ================= SUPABASE MAPPERS & LOADERS ================= */
   function mapProductRow(r){
     var st = String(r.status || "pending").toLowerCase();
-    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved") };
+    var imgs = (Array.isArray(r.images) && r.images.length) ? r.images.filter(function(u){ return !!u; }).slice() : (r.image_url ? [r.image_url] : []);
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved"), images: imgs, imageUrl: imgs.length ? imgs[0] : (r.image_url || "") };
   }
   function mapCouponRow(r){
     var expStr = r.expiry || (r.expires_at ? fmtDate(r.expires_at) : "");
@@ -976,7 +1067,7 @@
   }
   function sellerFromShopRow(profile, shop, authUser){
     var status = String(shop.status || "pending").toLowerCase();
-    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, vacation: !!shop.vacation, balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [] };
+    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", nidCopyUrl: shop.nid_copy_url || "", tradeCopyUrl: shop.trade_licence_copy_url || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, vacation: !!shop.vacation, logoUrl: shop.logo_url || "", bannerUrl: shop.banner_url || "", balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [] };
   }
   async function loadCurrentSellerFromSupabase(authUser){
     if (!supabaseConnected || !supabase || !authUser) return null;
@@ -1046,6 +1137,7 @@
     $("pendingView").classList.add("hidden");
     $("appView").classList.remove("hidden");
     syncShopUI();
+    refreshKycDocs();
     try { renderAll(); } catch (err) { /* render e somossa holeo panel khola thakbe */ }
     window.scrollTo(0,0);
   }
@@ -1112,6 +1204,28 @@
     $(id).addEventListener("input", function(){ $("loginErr").textContent = ""; });
   });
 
+  /* Registration er KYC file input — bachhai korlei preview, vul file hole
+     inline error. Submit er somoy ei duto File-i storage e upload hoy. */
+  var regNidDoc = null, regTradeDoc = null;
+  function wireRegDoc(inputId, prevId, isNid){
+    var inp = $(inputId); if (!inp) return;
+    inp.addEventListener("change", function(){
+      var f = inp.files && inp.files[0];
+      var prev = $(prevId);
+      if (!f) { if (isNid) regNidDoc = null; else regTradeDoc = null; if (prev) { prev.classList.add("hidden"); prev.innerHTML = ""; } return; }
+      var err = kycFileError(f);
+      if (err) {
+        if (isNid) regNidDoc = null; else regTradeDoc = null;
+        if (prev) { prev.classList.remove("hidden"); prev.innerHTML = '<span style="color:var(--red);font-weight:600;font-size:.85rem">' + esc(err) + '</span>'; }
+        return;
+      }
+      if (isNid) regNidDoc = f; else regTradeDoc = f;
+      renderDocPreview(prev, f, URL.createObjectURL(f));
+    });
+  }
+  wireRegDoc("regNidFile", "regNidPrev", true);
+  wireRegDoc("regTradeFile", "regTradePrev", false);
+
   $("registerForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var owner = cleanText($("regName").value),
@@ -1140,6 +1254,7 @@
     if (payMethod === "Bank Transfer" && payAccount.replace(/\s/g, "").length < 8) { fail("Sothik bank account number din (kompokkhe 8 character)."); return; }
     if (!/^\d{10,17}$/.test(nid)) { fail("Sothik NID number din (10–17 digit)."); return; }
     if (trade.length < 5) { fail("Trade license number din — KYC er jonno lagbe."); return; }
+    if (!regNidDoc || !regTradeDoc) { fail("NID copy ar trade licence copy upload korte hobe"); return; }
     if (!supabaseConnected && sellerByEmail(em)) { fail("Ei email diye agei ekta seller account ache. Login korun, ba onno email use korun."); return; }
 
     if (supabaseConnected && supabase) {
@@ -1156,10 +1271,22 @@
           newUser = signUpRes.data && signUpRes.data.user;
           if (!newUser) { fail("Account toiri hoyeche kintu email confirmation lagte pare. Email check kore login korun."); return; }
         }
+        var regBtn = $("regSubmitBtn");
+        var nidCopyPath = "", tradeCopyPath = "";
+        if (regBtn) { regBtn.disabled = true; regBtn.textContent = "Upload hochhe..."; }
+        try {
+          nidCopyPath = await uploadKycDocToStorage(newUser.id, "nid", regNidDoc);
+          tradeCopyPath = await uploadKycDocToStorage(newUser.id, "trade_licence", regTradeDoc);
+        } catch (upErr) {
+          if (regBtn) { regBtn.disabled = false; regBtn.textContent = "Submit Application for Admin Approval"; }
+          fail("Document upload hoy ni: " + (upErr && upErr.message ? upErr.message : "abar chesta korun"));
+          return;
+        }
+        if (regBtn) { regBtn.disabled = false; regBtn.textContent = "Submit Application for Admin Approval"; }
         var profileRes = await supabase.from('profiles').upsert({ id: newUser.id, email: em, full_name: owner, role: "seller", phone: ph }, { onConflict: "id" });
         if (profileRes.error) { fail("Profile save hoy ni: " + profileRes.error.message); return; }
         var slug = shop.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + String(newUser.id).slice(0, 6);
-        var shopPayload = { owner_id: newUser.id, shop_name: shop, slug: slug, category: cat, district: district, pickup_address: address, payout_method: payMethod, payout_account: payAccount, payout_name: payName, nid_number: nid, trade_licence: trade, owner_phone: ph, status: "pending" };
+        var shopPayload = { owner_id: newUser.id, shop_name: shop, slug: slug, category: cat, district: district, pickup_address: address, payout_method: payMethod, payout_account: payAccount, payout_name: payName, nid_number: nid, trade_licence: trade, nid_copy_url: nidCopyPath, trade_licence_copy_url: tradeCopyPath, owner_phone: ph, status: "pending" };
         var shopRow = null;
         var existingShop = await supabase.from('shops').select('*').eq('owner_id', newUser.id).maybeSingle();
         if (!existingShop.error && existingShop.data) {
@@ -1190,6 +1317,7 @@
       desc: "",
       payMethod: payMethod, payAccount: payAccount, payName: payName,
       nid: nid, tradeLicense: trade,
+      nidCopyUrl: regNidDoc ? regNidDoc.name : "", tradeCopyUrl: regTradeDoc ? regTradeDoc.name : "",
       status: "pending", appliedOn: now.toISOString(), approvedOn: null,
       vacation: false,
       balance: 0, pendingClearance: 0,
@@ -1218,7 +1346,11 @@
   function syncShopUI(){
     var s = me(); if (!s) return;
     $("shopNameLbl").textContent = s.shop;
-    $("shopAvatar").textContent = initials(s.shop);
+    var sav = $("shopAvatar");
+    if (s.logoUrl) { sav.innerHTML = '<img src="' + esc(s.logoUrl) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:block" />'; sav.style.background = "transparent"; sav.style.overflow = "hidden"; }
+    else { sav.textContent = initials(s.shop); sav.style.background = ""; sav.style.overflow = ""; }
+    var sli = $("setLogoImg"); if (sli) { if (s.logoUrl) { sli.src = s.logoUrl; sli.style.display = "block"; } else { sli.removeAttribute("src"); sli.style.display = "none"; } }
+    var sbi = $("setBannerImg"); if (sbi) { if (s.bannerUrl) { sbi.src = s.bannerUrl; sbi.style.display = "block"; } else { sbi.removeAttribute("src"); sbi.style.display = "none"; } }
     $("shopMetaLbl").textContent = "Seller since " + monthYear(s.approvedOn || s.appliedOn) + " · " + s.district;
     $("setShopName").value = s.shop; $("setOwner").value = s.owner;
     $("setPhone").value = s.phone; $("setAddress").value = s.address;
@@ -1386,7 +1518,8 @@
     $("productsBody").innerHTML = list.map(function(p){
       var pct = Math.min(100, Math.round(p.stock/150*100));
       var cls = p.stock===0 || p.stock<5 ? "low" : (p.stock<25 ? "mid" : "");
-      return '<tr><td><div class="prod-cell"><div class="thumb" style="background:' + (CAT_COLORS[p.cat]||"#666") + '">' + catIcon(p.cat) + '</div><div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div></div></div></td>'
+      var thumbHtml = (p.images && p.images.length) ? '<img class="thumb" src="' + esc(p.images[0]) + '" alt="' + esc(p.name) + '" style="object-fit:cover" />' : '<div class="thumb" style="background:' + (CAT_COLORS[p.cat]||"#666") + '">' + catIcon(p.cat) + '</div>';
+      return '<tr><td><div class="prod-cell">' + thumbHtml + '<div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div></div></div></td>'
         + '<td><b>' + fmt(p.price) + '</b>' + (p.oldPrice ? '<div class="psku"><s>' + fmt(p.oldPrice) + '</s></div>' : '') + '</td>'
         + '<td><b>' + p.stock + '</b><div class="stockbar"><i class="' + cls + '" style="width:' + pct + '%"></i></div></td>'
         + '<td>' + (p.sold || 0).toLocaleString("en-IN") + '</td>'
@@ -1431,24 +1564,79 @@
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem"><div class="field"><label>Price (৳)</label><input id="mPrice" aria-label="Price" type="number" min="1" value="' + p.price + '" /></div>'
       + '<div class="field"><label>Old price (৳)</label><input id="mOld" aria-label="Old price" type="number" min="0" value="' + (p.oldPrice || "") + '" /></div>'
       + '<div class="field"><label>Stock</label><input id="mStock" aria-label="Stock" type="number" min="0" value="' + p.stock + '" /></div></div>'
+      + '<div class="field"><label>Product images</label><input id="mImages" type="file" accept="image/*" multiple aria-label="Product images" /><div class="hint">Sorbochcho 5 ta chhobi, prottekta sorbochcho 2MB (JPG, PNG, WebP). Prothom chhobi tai primary hobe.</div><div class="img-grid" id="mImgGrid"></div></div>'
       + '<p class="err" id="mErr"></p>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="mCancel" type="button">Cancel</button><button class="btn" id="mSave" type="button">' + (isEdit ? "Save Changes" : "Add Product") + '</button></div>',
       function(){
         $("mCancel").addEventListener("click", closeModal);
+        /* Product images — age theke save kora URL ar notun bachhai kora file
+           ek list e thake; prothom ta primary. Save er somoy notun file gulo
+           'product-images' bucket e upload hoy. */
+        var imgItems = (p.images || []).map(function(u){ return { kind: "url", url: u }; });
+        function renderImgGrid(){
+          $("mImgGrid").innerHTML = imgItems.map(function(it, i){
+            var src = it.kind === "url" ? it.url : it.preview;
+            return '<div class="img-thumb"><img src="' + esc(src) + '" alt="Product image ' + (i + 1) + '" />'
+              + (i === 0 ? '<span class="primary-badge">Primary</span>' : '')
+              + '<button class="rm" type="button" data-rm="' + i + '" aria-label="Remove image">✕</button></div>';
+          }).join("");
+          $("mImgGrid").querySelectorAll("[data-rm]").forEach(function(b){
+            b.addEventListener("click", function(){
+              var ix = +b.getAttribute("data-rm"), it = imgItems[ix];
+              if (it && it.kind === "file" && it.preview) { try { URL.revokeObjectURL(it.preview); } catch(e){} }
+              imgItems.splice(ix, 1); renderImgGrid();
+            });
+          });
+        }
+        renderImgGrid();
+        $("mImages").addEventListener("change", function(){
+          var files = Array.prototype.slice.call(this.files || []);
+          this.value = "";
+          files.forEach(function(f){
+            if (imgItems.length >= 5) { $("mErr").textContent = "Sorbochcho 5 ta chhobi deya jabe."; return; }
+            if (["image/jpeg", "image/png", "image/webp"].indexOf(f.type) === -1) { $("mErr").textContent = (f.name || "File") + " — shudhu JPG, PNG ba WebP chhobi din."; return; }
+            if (f.size > 2 * 1024 * 1024) { $("mErr").textContent = (f.name || "File") + " — prottek chhobi sorbochcho 2MB hote parbe."; return; }
+            imgItems.push({ kind: "file", file: f, preview: URL.createObjectURL(f) });
+          });
+          renderImgGrid();
+        });
         $("mSave").addEventListener("click", async function(){
           var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value;
           if (!name || !(price>0) || isNaN(stock) || stock<0) { $("mErr").textContent = "Name, sothik price ar stock din."; return; }
+          /* Notun file thakle age Storage e upload — upload cholakalin Save
+             disabled thakbe, vul hole ashol error mErr e dekhabe. */
+          var finalImages = [];
+          var hasNewFiles = imgItems.some(function(it){ return it.kind === "file"; });
+          if (hasNewFiles && supabaseConnected && supabase) {
+            var saveBtn = $("mSave"), oldBtnTxt = saveBtn.textContent;
+            saveBtn.disabled = true; saveBtn.textContent = "Upload hochhe...";
+            try {
+              for (var ii = 0; ii < imgItems.length; ii++) {
+                var itm = imgItems[ii];
+                if (itm.kind === "url") finalImages.push(itm.url);
+                else finalImages.push(await uploadImageToBucket("product-images", itm.file));
+              }
+            } catch(upErr) {
+              saveBtn.disabled = false; saveBtn.textContent = oldBtnTxt;
+              $("mErr").textContent = "Image upload hoy ni: " + (upErr && upErr.message ? upErr.message : "abar chesta korun.");
+              return;
+            }
+            saveBtn.disabled = false; saveBtn.textContent = oldBtnTxt;
+          } else {
+            finalImages = imgItems.map(function(it){ return it.kind === "url" ? it.url : it.preview; });
+          }
           if (isEdit){
             p.name = name; p.cat = $("mCat").value; p.category = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
             p.oldPrice = +$("mOld").value || null; p.stock = stock;
+            p.images = finalImages; p.imageUrl = finalImages.length ? finalImages[0] : "";
             if (p.approval === "Rejected") p.approval = "Pending Approval";
-            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
+            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
             toast("Product update hoyeche");
           } else {
             var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
-            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, sold:0, status:"Active" };
+            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, sold:0, status:"Active", images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "" };
             if (supabaseConnected && supabase) {
-              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
+              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
             }
             s.products.unshift(newProd);
             toast("Product add hoyeche — My Products e dekhun. Admin moderation approve korle live hobe: " + name);
@@ -2041,7 +2229,94 @@
     if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ vacation: s.vacation }).eq('id', s.shopId); } catch(err){} }
     toast(s.vacation ? "Vacation mode on — product gulo samoyik hide" : "Vacation mode off — shop abar live");
   });
-  (function(){ var lt = $("setLogoText"); if (lt) lt.addEventListener("input", function(){ var v = lt.value.trim().toUpperCase().slice(0,2); var lp = $("logoPreview"); if (lp) lp.textContent = v || initials(me() ? me().shop : "S"); var av = $("shopAvatar"); if (av && v) av.textContent = v; }); })();
+  (function(){ var lt = $("setLogoText"); if (lt) lt.addEventListener("input", function(){ var v = lt.value.trim().toUpperCase().slice(0,2); var lp = $("logoPreview"); if (lp) lp.textContent = v || initials(me() ? me().shop : "S"); var av = $("shopAvatar"); if (av && v && !(me() && me().logoUrl)) av.textContent = v; }); })();
+
+  /* Shop logo / banner upload — 'shop-images' bucket e jay, shops table er
+     logo_url / banner_url column e save hoy, preview sathe sathe bodlay. */
+  async function handleShopImage(kind, input){
+    var s = me(); if (!s) return;
+    var f = input.files && input.files[0];
+    input.value = "";
+    if (!f) return;
+    if (["image/jpeg", "image/png", "image/webp"].indexOf(f.type) === -1) { toast("Shudhu JPG, PNG ba WebP chhobi din."); return; }
+    if (f.size > 2 * 1024 * 1024) { toast("Chhobi 2MB er beshi boro — chhoto chhobi din."); return; }
+    var url = "";
+    if (supabaseConnected && supabase) {
+      input.disabled = true;
+      try { url = await uploadImageToBucket("shop-images", f); }
+      catch(e){ input.disabled = false; toast("Image upload hoy ni: " + (e && e.message ? e.message : "abar chesta korun")); return; }
+      var patch = {}; if (kind === "logo") patch.logo_url = url; else patch.banner_url = url;
+      try {
+        var upS = await supabase.from('shops').update(patch).eq('id', s.shopId);
+        if (upS.error) { input.disabled = false; toast("Image save hoy ni: " + upS.error.message); return; }
+      } catch(e2){ input.disabled = false; toast("Image save hoy ni — abar chesta korun."); return; }
+      input.disabled = false;
+    } else {
+      url = URL.createObjectURL(f);
+    }
+    if (kind === "logo") { s.logoUrl = url; toast("Shop logo save hoyeche"); }
+    else { s.bannerUrl = url; toast("Shop banner save hoyeche"); }
+    syncShopUI();
+  }
+  $("setLogoFile").addEventListener("change", function(){ handleShopImage("logo", this); });
+  $("setBannerFile").addEventListener("change", function(){ handleShopImage("banner", this); });
+
+  /* KYC Documents (Settings) — ager copy thakle tar nam dekhay, chhobi hole
+     private bucket theke signed URL diye thumbnail-o dekhay (public link na).
+     Notun file bachhaile 'kyc-docs' bucket e upload hoye shops table er
+     nid_copy_url / trade_licence_copy_url column update hoy. */
+  async function fillKycCurrent(elId, path){
+    var el = $(elId); if (!el) return;
+    if (!path) { el.innerHTML = '<span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span>'; return; }
+    var name = kycDocName(path);
+    var isImg = /\.(jpe?g|png)$/i.test(name);
+    el.innerHTML = (isImg ? "" : '<div class="doc-file-badge">PDF</div>') + '<div class="doc-name">' + esc(name) + '</div>';
+    if (isImg && supabaseConnected && supabase) {
+      try {
+        var sr = await supabase.storage.from("kyc-docs").createSignedUrl(path, 3600);
+        var su = sr && sr.data && sr.data.signedUrl;
+        if (su) el.innerHTML = '<img src="' + esc(su) + '" alt="Document preview" /><div class="doc-name">' + esc(name) + '</div>';
+      } catch(e){}
+    }
+  }
+  function refreshKycDocs(){
+    var s = me(); if (!s) return;
+    fillKycCurrent("kycNidCurrent", s.nidCopyUrl);
+    fillKycCurrent("kycTradeCurrent", s.tradeCopyUrl);
+  }
+  async function handleKycReplace(kind, input){
+    var s = me(); if (!s) return;
+    var f = input.files && input.files[0];
+    input.value = "";
+    if (!f) return;
+    var statusEl = $(kind === "nid" ? "kycNidStatus" : "kycTradeStatus");
+    var err = kycFileError(f);
+    if (err) { if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">' + esc(err) + '</span>'; return; }
+    if (supabaseConnected && supabase && s.shopId) {
+      input.disabled = true;
+      if (statusEl) statusEl.textContent = "Upload hochhe...";
+      try {
+        var path = await uploadKycDocToStorage(s.userId || s.id, kind === "nid" ? "nid" : "trade_licence", f);
+        var patch = {}; if (kind === "nid") patch.nid_copy_url = path; else patch.trade_licence_copy_url = path;
+        var upR = await supabase.from('shops').update(patch).eq('id', s.shopId);
+        if (upR.error) throw upR.error;
+        if (kind === "nid") s.nidCopyUrl = path; else s.tradeCopyUrl = path;
+        if (statusEl) statusEl.textContent = "";
+        toast(kind === "nid" ? "NID copy update hoyeche" : "Trade licence copy update hoyeche");
+      } catch(e) {
+        if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">Upload hoy ni: ' + esc(e && e.message ? e.message : "abar chesta korun") + '</span>';
+      }
+      input.disabled = false;
+      refreshKycDocs();
+      return;
+    }
+    if (kind === "nid") s.nidCopyUrl = f.name; else s.tradeCopyUrl = f.name;
+    if (statusEl) statusEl.textContent = "";
+    renderDocPreview($(kind === "nid" ? "kycNidCurrent" : "kycTradeCurrent"), f, URL.createObjectURL(f));
+    toast(kind === "nid" ? "NID copy select hoyeche" : "Trade licence copy select hoyeche");
+  }
+  $("kycNidFile").addEventListener("change", function(){ handleKycReplace("nid", this); });
+  $("kycTradeFile").addEventListener("change", function(){ handleKycReplace("trade", this); });
 
   /* ================= MODAL PLUMBING ================= */
   function openModal(html, wire){
