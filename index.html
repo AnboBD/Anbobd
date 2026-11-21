@@ -1348,19 +1348,23 @@ function stockLine(p){
   if(p.stockQty<=15) return '<span style="color:#8a6d00;font-weight:700;font-size:.78rem">স্টক সীমিত ('+p.stockQty+'টি)</span>';
   return '<span style="color:var(--teal);font-weight:700;font-size:.78rem">✓ স্টকে আছে</span>';
 }
+/* Pack label: "500 g · Jar" — shudhu ja set kora ache tai dekhay; khali thakle "" (kichu dekhabe na). */
+function packLabel(p){ if(!p) return ""; var parts=[]; if(p.packSize!=null && p.packSize!=="" && +p.packSize>0){ parts.push(String(p.packSize)+(p.unit?" "+p.unit:"")); } else if(p.unit){ parts.push(p.unit); } if(p.packaging){ parts.push(p.packaging); } return parts.join(" · "); }
 function cardHTML(p, flash){
   var b = BR(p.brandId);
   var h = '<article class="pcard">' +
     '<button class="pimg" data-view="'+escHtml(p.id)+'" aria-label="'+escHtml(p.name)+' বড় করে দেখুন"><img loading="lazy" decoding="async" src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+' — '+escHtml(p.bn)+'"><span class="badge">−'+offPct(p)+'%</span><span class="soldtag">বিক্রি '+soldFmt(p.soldCount)+'</span></button>' +
     '<button class="wishbtn'+(wishlist[p.id]?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="উইশলিস্টে রাখুন">'+(wishlist[p.id]?'❤️':'🤍')+'</button>' +
     '<div class="pbody"><div class="pcat">'+CAT(p.categoryId).label+' • '+escHtml(b ? b.name : (SL(p.sellerId) ? SL(p.sellerId).name : "No brand"))+'</div><h3 class="pname">'+escHtml(p.name)+'</h3>' +
+    (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
     '<div>'+vfdBadge(p)+(p.isNew?' <span class="vfd-badge" style="background:#fff3c4;color:#7a5b00">NEW</span>':'')+'</div>' +
     '<div class="stars">'+stars(p.rating)+' <span>• '+p.reviewCount+' রিভিউ</span></div>' +
     '<div class="pmeta">'+(p.price>=2000?'<span>🚚 ফ্রি ডেলিভারি যোগ্য</span>':'')+'<span>💵 COD</span></div>' +
     stockLine(p) +
     '<div class="deldate">🚚 '+etaText("dhaka")+'</div>' +
     '<div class="price"><b>'+fmt(p.price)+'</b><s>'+fmt(p.oldPrice)+'</s></div>';
-  if(flash){ var claimed = p.flashClaim||50; h += '<div class="stockbar"><i style="width:'+claimed+'%"></i></div><div class="stocktxt">🔥 '+claimed+'% বিক্রি হয়ে গেছে!</div>'; }
+  /* Honest sold %: shudhu asol sold/stock theke hisab; sold 0 hole badge-i dekhabe na (kokhono hardcoded % na). */
+  if(flash){ var soldN=+p.soldCount||0, totalN=soldN+(+p.stockQty||0); if(soldN>0 && totalN>0){ var claimed=Math.round(soldN/totalN*100); h += '<div class="stockbar"><i style="width:'+claimed+'%"></i></div><div class="stocktxt">🔥 '+claimed+'% বিক্রি হয়ে গেছে!</div>'; } }
   h += '<div class="cardbtns"><button class="addbtn" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>🛒 কার্টে যোগ</button><button class="buybtn" data-buy="'+escHtml(p.id)+'">এখনই কিনুন</button></div></div></article>';
   return h;
 }
@@ -1697,7 +1701,7 @@ function openModal(id){
   document.getElementById("mName").textContent = p.name+" — "+p.bn;
   document.getElementById("mStars").innerHTML = stars(p.rating)+" <span>• "+(p.reviewCount>0 ? p.reviewCount+"টি রিভিউ" : "এখনো কোনো রিভিউ নেই")+" • "+soldFmt(p.soldCount)+" বিক্রি</span>";
   document.getElementById("mDesc").textContent = p.desc;
-  document.getElementById("mSpecs").innerHTML = "📋 <b>স্পেসিফিকেশন:</b><br>• "+p.specs.map(function(s){ return escHtml(s); }).join("<br>• ")+"<br>🛡️ "+escHtml(p.warranty)+"<br>🏷️ SKU: "+escHtml(p.sku);
+  document.getElementById("mSpecs").innerHTML = (packLabel(p) ? "📦 <b>পরিমাণ:</b> "+escHtml(packLabel(p))+"<br>" : "") + "📋 <b>স্পেসিফিকেশন:</b><br>• "+p.specs.map(function(s){ return escHtml(s); }).join("<br>• ")+"<br>🛡️ "+escHtml(p.warranty)+"<br>🏷️ SKU: "+escHtml(p.sku);
   document.getElementById("mPrice").textContent = fmt(p.price); document.getElementById("mOld").textContent = fmt(p.oldPrice);
   document.getElementById("mOff").textContent = "−"+offPct(p)+"% ছাড়";
   document.getElementById("mStock").innerHTML = stockLine(p);
@@ -2341,9 +2345,10 @@ function anboMapProductRow(r){
     rating:Number(r.rating||0), reviewCount:Number(r.reviews!=null?r.reviews:(r.review_count!=null?r.review_count:(r.reviewCount||0)))||0,
     soldCount:Number(r.sold!=null?r.sold:(r.sold_count!=null?r.sold_count:0))||0,
     stockQty:Number(r.stock!=null?r.stock:(r.stock_qty!=null?r.stock_qty:0))||0,
-    status:(String(r.status||"").toLowerCase()==="approved" ? "active" : String(r.status||"pending").toLowerCase()), /* P0-2: a status-less row is NEVER "active" — only DB "approved" maps to display "active". */ isNew:!!(r.is_new||r.isNew), flashClaim:Number(r.flash_claim||r.flashClaim||0)||0,
+    status:(String(r.status||"").toLowerCase()==="approved" ? "active" : String(r.status||"pending").toLowerCase()), /* P0-2: a status-less row is NEVER "active" — only DB "approved" maps to display "active". */ isNew:!!(r.is_new||r.isNew),
     warranty:r.warranty||"", img:(imgs.length?imgs[0]:""), images:imgs, desc:r.desc||r.description||"",
     specs:Array.isArray(r.specs)?r.specs:[], bundleWith:Array.isArray(r.bundle_with)?r.bundle_with:[],
+    packSize:(r.pack_size!=null && r.pack_size!==""?Number(r.pack_size):(r.packSize!=null?Number(r.packSize):null)), unit:r.unit||r.pack_unit||"", packaging:r.packaging||"",
     createdAt:typeof r.created_at==="number"?r.created_at:0, megaDeal:!!(r.mega_deal||r.megaDeal) };
 }
 function anboMapCouponRow(r){
