@@ -4,8 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
-    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23a8e10c'/%3E%3Ctext x='32' y='32' dy='.35em' text-anchor='middle' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23243b00'%3EA%3C/text%3E%3C/svg%3E" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>AnboBD Seller Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -568,11 +567,13 @@
           <input id="globalSearch" type="search" placeholder="Product ba order khujun…" />
         </div>
         <button class="icon-btn" id="bellBtn" type="button" aria-label="Notifications"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg><span class="dot hidden" id="bellDot"></span></button>
+      <div id="bellPanel" style="display:none;position:fixed;top:64px;right:16px;z-index:200;width:min(360px,92vw);background:#ffffff;border:1.5px solid #e5e7eb;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:12px"></div>
       </div>
 
       <!-- DASHBOARD -->
       <section id="view-dashboard">
         <div id="lowStockStrip"></div>
+        <div id="notifCard" style="margin-bottom:1rem"></div>
         <div id="onboardCard"></div>
         <div class="grid-stats" id="statGrid"></div>
         <h3 style="margin:.2rem 0 .7rem;font-size:1.02rem">Ajker kaj — Action Center</h3>
@@ -1587,12 +1588,33 @@
     window.scrollTo(0,0);
   }
   $("menuBtn").addEventListener("click", function(){ $("sidebar").classList.toggle("open"); });
+  /* P2 (2026-11-21): notifications — asol data theke (order/return/stock/campaign). Bell ekhon toast na, asol list dekhay. */
+  function sellerNotifItems(){
+    var items = [];
+    var r = ownOrders().filter(function(o){return o.status==="Ready to Ship"||o.status==="Packed";});
+    if(r.length) items.push({ t: r.length + " ta order ship korte hobe", sub: r.slice(0,3).map(function(o){ return o.id; }).join(", "), view: "orders" });
+    var w = ownOrders().filter(function(o){return o.status==="Awaiting Admin";});
+    if(w.length) items.push({ t: w.length + " ta order Admin confirmation er opekkhay", sub: w.slice(0,3).map(function(o){ return o.id; }).join(", "), view: "orders" });
+    var low = ownProducts().filter(function(x){return x.stock>0 && x.stock<10;});
+    if(low.length) items.push({ t: low.length + " ta product er stock kom (<10)", sub: low.slice(0,3).map(function(x){ return x.name + " (" + x.stock + ")"; }).join(", "), view: "products" });
+    var ret = ownReturns().filter(function(x){return x.status==="Return Requested";});
+    if(ret.length) items.push({ t: ret.length + " ta return request er siddhanto baki", sub: ret.slice(0,3).map(function(x){ return x.id; }).join(", "), view: "returns" });
+    var camp = ownSubs().filter(function(x){ return x.status==="Pending Approval"; });
+    if(camp.length) items.push({ t: camp.length + " ta Mega Sale request Admin approval er opekkhay", sub: "", view: "campaigns" });
+    return items;
+  }
+  function renderBellPanel(){
+    var p = $("bellPanel"); if(!p) return;
+    var items = sellerNotifItems();
+    p.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center"><b>🔔 Notifications</b><button type="button" id="bellClose" style="background:none;border:0;font-size:16px;cursor:pointer">✕</button></div>'
+      + (items.length ? items.map(function(n){ return '<div style="display:flex;gap:8px;align-items:center;padding:9px 2px;border-top:1px solid #f1f1f1"><div style="flex:1"><div style="font-weight:700;font-size:.92rem">' + esc(n.t) + '</div><div style="font-size:.82rem;color:#666">' + esc(n.sub || "") + '</div></div><button type="button" class="btn sm" data-bell-goto="' + n.view + '">Dekhun →</button></div>'; }).join("") : '<p style="color:#666;font-size:.9rem;margin:8px 0 0">Notun kono notification nei 🎉</p>');
+    var c = $("bellClose"); if(c) c.addEventListener("click", function(){ p.style.display = "none"; });
+    Array.prototype.forEach.call(p.querySelectorAll("[data-bell-goto]"), function(b){ b.addEventListener("click", function(){ p.style.display = "none"; showView(b.getAttribute("data-bell-goto")); }); });
+  }
   $("bellBtn").addEventListener("click", function(){
-    var r = ownOrders().filter(function(o){return o.status==="Ready to Ship"||o.status==="Packed";}).length;
-    var w = ownOrders().filter(function(o){return o.status==="Awaiting Admin";}).length;
-    var low = ownProducts().filter(function(x){return x.stock>0 && x.stock<10;}).length;
-    if (!r && !w && !low) { toast("Notun kono notification nei"); return; }
-    toast(r + " ta order ship korte hobe · " + w + " ta Admin confirmation er opekkhay · " + low + " ta product er stock kom");
+    var p = $("bellPanel"); if(!p) return;
+    if(p.style.display === "none" || !p.style.display){ renderBellPanel(); p.style.display = "block"; }
+    else p.style.display = "none";
   });
   $("globalSearch").addEventListener("input", function(){
     var q = this.value.trim().toLowerCase(); if (!q) return;
@@ -1625,6 +1647,9 @@
     var retPending = ownReturns().filter(function(r){ return r.status==="Return Requested"; }).length;
     setPill("returnPill", retPending, "");
     var bd = $("bellDot"); if (bd) bd.classList.toggle("hidden", !(ready || awaiting || retPending));
+    var nc = $("notifCard");
+    if(nc){ var ni = sellerNotifItems(); nc.innerHTML = '<div class="card" style="border-color:var(--brand)"><h3>🔔 Notifications — ajker kaj</h3>' + (ni.length ? ni.map(function(n){ return '<div style="display:flex;gap:8px;align-items:center;padding:8px 0;border-top:1px solid #f1f1f1"><div style="flex:1"><b style="font-size:.92rem">' + esc(n.t) + '</b><div style="font-size:.82rem;color:#666">' + esc(n.sub || "") + '</div></div><button type="button" class="btn sm" data-notif-goto="' + n.view + '">Dekhun →</button></div>'; }).join("") : '<p style="color:#666;margin:0">Notun kichu nei 🎉</p>') + '</div>';
+      Array.prototype.forEach.call(nc.querySelectorAll("[data-notif-goto]"), function(b){ b.addEventListener("click", function(){ showView(b.getAttribute("data-notif-goto")); }); }); }
 
     /* Onboarding — a brand-new approved shop starts empty */
     if (!products.length && !orders.length) {
