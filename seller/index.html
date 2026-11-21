@@ -527,6 +527,24 @@
         <li><span class="tdot">3</span><div><div class="tt">Admin approval</div><div class="ts">An Admin approves or rejects the shop from the Admin panel</div></div></li>
         <li><span class="tdot">4</span><div><div class="tt">Shop goes live</div><div class="ts">After approval, sign in again to add products and start selling</div></div></li>
       </ul>
+      <div id="pendKycCard" style="margin:1.2rem 0 .2rem;border:1px solid var(--line);border-radius:14px;padding:1rem 1.05rem;background:var(--surface)">
+        <h3 style="font-size:.98rem;margin:0 0 .2rem">KYC Documents</h3>
+        <p class="hint" style="margin:0 0 .8rem">Admin approval er age NID er copy lagbe. Ekhanei upload korun — upload holeo shop Pending-i thakbe, Admin approve korle live hobe.</p>
+        <div class="field" style="margin-bottom:.9rem">
+          <label for="pendNidFile">NID er copy (আবশ্যক)</label>
+          <div class="doc-prev" id="pendNidCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+          <input id="pendNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
+          <div class="hint">JPG, PNG ba PDF — sorbochcho 5MB. Sudhu number e hobe na, document er copy-i lagbe.</div>
+          <div class="doc-status" id="pendNidStatus"></div>
+        </div>
+        <div class="field">
+          <label for="pendTradeFile">Trade licence er copy (ঐচ্ছিক)</label>
+          <div class="doc-prev" id="pendTradeCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+          <input id="pendTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
+          <div class="hint">Thakle upload korun — chhoto seller der jonno baddhotamulok na. JPG, PNG ba PDF — sorbochcho 5MB.</div>
+          <div class="doc-status" id="pendTradeStatus"></div>
+        </div>
+      </div>
       <h3 style="font-size:.98rem;margin:1.1rem 0 .3rem">Application details</h3>
       <div id="pendSummary"></div>
       <h3 style="font-size:.98rem;margin:1.2rem 0 .2rem">Locked until approval</h3>
@@ -1182,6 +1200,8 @@
     $("pendingView").classList.remove("hidden");
     var rejected = s.status === "suspended";
     $("pendPill").textContent = rejected ? "Application Rejected / Suspended" : "Application Under Review";
+    if ($("pendKycCard")) $("pendKycCard").classList.toggle("hidden", rejected);
+    refreshPendKycDocs();
     $("pendLead").textContent = rejected
       ? "Your application was rejected or your shop was suspended by AnboBD Admin. Product listing, coupons and orders stay locked. Contact AnboBD seller support if you think this is a mistake — a new application needs a fresh review."
       : "Your application has been received. The AnboBD Admin team will verify your NID copy and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.";
@@ -2604,12 +2624,26 @@
     fillKycCurrent("kycNidCurrent", s.nidCopyUrl);
     fillKycCurrent("kycTradeCurrent", s.tradeCopyUrl);
   }
-  async function handleKycReplace(kind, input){
+  /* Pending page er KYC card — Settings er motoi ager copy thakle tar nam /
+     thumbnail dekhay. showPending() theke daka hoy. */
+  function refreshPendKycDocs(){
+    var s = me(); if (!s) return;
+    fillKycCurrent("pendNidCurrent", s.nidCopyUrl);
+    fillKycCurrent("pendTradeCurrent", s.tradeCopyUrl);
+  }
+  /* KYC Documents re-upload — Settings (kycNidFile/kycTradeFile) ar Pending
+     page (pendNidFile/pendTradeFile) — duitai EKI function: 'kyc-docs'
+     bucket e upload + shops row update. ids dile oi card er status/current
+     element use hoy, na dile Settings er default. successMsg dile upload
+     er por seta status e dekhay (Pending page er jonno). */
+  async function handleKycReplace(kind, input, ids){
     var s = me(); if (!s) return;
     var f = input.files && input.files[0];
     input.value = "";
     if (!f) return;
-    var statusEl = $(kind === "nid" ? "kycNidStatus" : "kycTradeStatus");
+    var statusId = (ids && ids.status) || (kind === "nid" ? "kycNidStatus" : "kycTradeStatus");
+    var currentId = (ids && ids.current) || (kind === "nid" ? "kycNidCurrent" : "kycTradeCurrent");
+    var statusEl = $(statusId);
     var err = kycFileError(f);
     if (err) { if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">' + esc(err) + '</span>'; return; }
     if (supabaseConnected && supabase && s.shopId) {
@@ -2621,22 +2655,26 @@
         var upR = await supabase.from('shops').update(patch).eq('id', s.shopId);
         if (upR.error) throw upR.error;
         if (kind === "nid") s.nidCopyUrl = path; else s.tradeCopyUrl = path;
-        if (statusEl) statusEl.textContent = "";
+        if (ids && ids.successMsg) { if (statusEl) statusEl.innerHTML = '<span style="color:var(--brand);font-weight:600">' + esc(ids.successMsg) + '</span>'; }
+        else if (statusEl) statusEl.textContent = "";
         toast(kind === "nid" ? "NID copy update hoyeche" : "Trade licence copy update hoyeche");
       } catch(e) {
         if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">Upload hoy ni: ' + esc(e && e.message ? e.message : "abar chesta korun") + '</span>';
       }
       input.disabled = false;
       refreshKycDocs();
+      if (ids) refreshPendKycDocs();
       return;
     }
     if (kind === "nid") s.nidCopyUrl = f.name; else s.tradeCopyUrl = f.name;
     if (statusEl) statusEl.textContent = "";
-    renderDocPreview($(kind === "nid" ? "kycNidCurrent" : "kycTradeCurrent"), f, URL.createObjectURL(f));
+    renderDocPreview($(currentId), f, URL.createObjectURL(f));
     toast(kind === "nid" ? "NID copy select hoyeche" : "Trade licence copy select hoyeche");
   }
   $("kycNidFile").addEventListener("change", function(){ handleKycReplace("nid", this); });
   $("kycTradeFile").addEventListener("change", function(){ handleKycReplace("trade", this); });
+  if ($("pendNidFile")) $("pendNidFile").addEventListener("change", function(){ handleKycReplace("nid", this, { status: "pendNidStatus", current: "pendNidCurrent", successMsg: "NID copy upload hoyeche ✓ — Admin approval er opekkhay thakun" }); });
+  if ($("pendTradeFile")) $("pendTradeFile").addEventListener("change", function(){ handleKycReplace("trade", this, { status: "pendTradeStatus", current: "pendTradeCurrent", successMsg: "Trade licence copy upload hoyeche ✓" }); });
 
   /* ================= MODAL PLUMBING ================= */
   function openModal(html, wire){
