@@ -820,6 +820,14 @@
             </div>
           </div>
         </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>🔐 Two-factor authentication (2FA)</h3>
+          <div class="csub">Authenticator app (Google Authenticator / Authy) diye TOTP — apnar account er jonno opt-in. Staff rao nijer account e ekhan theke enrol korte parbe.</div>
+          <div class="kv"><span>2FA status</span><b id="sellerMfaStatus">Checking…</b></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" type="button" id="sellerMfaEnrollBtn">Enable 2FA — authenticator app</button><button class="btn ghost sm" type="button" id="sellerMfaRemoveBtn">Remove my 2FA</button></div>
+          <div id="sellerMfaEnrollBox" style="margin-top:12px"></div>
+          <p class="hint" style="margin-top:10px">Supabase e recovery code nei — phone harale shop owner / Admin ke Supabase dashboard (Auth → Users → MFA) theke factor remove korte hobe.</p>
+        </div>
       </section>
     </main>
   </div>
@@ -892,6 +900,7 @@
   var DB = { sellers: [] };
   var session = { sellerId: null };
   var roleBlocked = false; /* set when the signed-in account is not a seller (e.g. an Admin/owner account) */
+  var staffLoginBlocked = ""; /* Decision 7: staff login keno block holo, setar karon */
   var orderFilter = "All", currentView = "dashboard";
 
   function sellerById(id){ for (var i=0;i<DB.sellers.length;i++) if (String(DB.sellers[i].id)===String(id)) return DB.sellers[i]; return null; }
@@ -1075,7 +1084,11 @@
     try { var p = await supabase.from('profiles').select('*').eq('id', authUser.id).single(); if (!p.error) profile = p.data; } catch(e){}
     /* Role separation: an Admin/owner account must never enter the
        Seller Center, even if it somehow has a shop row. */
-    if (profile && profile.role && String(profile.role).toLowerCase() !== "seller") {
+    /* Decision 7: "seller_staff" role o dhukte pare — staff alada login e
+       sign in kore sudhu nijer shop dekhbe (shop_id diye scope). */
+    var profRole = profile && profile.role ? String(profile.role).toLowerCase() : "";
+    var isStaffAccount = (profRole === "seller_staff");
+    if (profile && profile.role && profRole !== "seller" && !isStaffAccount) {
       roleBlocked = true;
       try { await supabase.auth.signOut(); } catch(e){}
       return null;
@@ -1083,15 +1096,31 @@
     /* Fallback: profile row na thakleo auth metadata te admin/owner
        role thakle eki bhabe block + sign out. */
     var metaRole = authUser.user_metadata && authUser.user_metadata.role ? String(authUser.user_metadata.role).toLowerCase() : "";
-    if ((!profile || !profile.role) && metaRole && metaRole !== "seller") {
+    if ((!profile || !profile.role) && metaRole && metaRole !== "seller" && metaRole !== "seller_staff") {
       roleBlocked = true;
       try { await supabase.auth.signOut(); } catch(e){}
       return null;
     }
     roleBlocked = false;
-    try { var s1 = await supabase.from('shops').select('*').eq('owner_id', authUser.id).single(); if (!s1.error) shop = s1.data; } catch(e){}
+    var staffRow = null, staffShopId = "";
+    if (isStaffAccount || metaRole === "seller_staff"){
+      /* Staff: shop khujte hobe staff row / metadata diye, owner_id diye na.
+         staff table SELECT RLS e block hole metadata fallback cholbe. */
+      try { var st = await supabase.from('staff').select('*').eq('user_id', authUser.id).limit(1); if (!st.error && st.data && st.data.length) staffRow = st.data[0]; } catch(e){}
+      if (staffRow && staffRow.active === false){ staffLoginBlocked = "Ei staff account ti deactivate kora hoyeche — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
+      staffShopId = (staffRow && staffRow.shop_id) || (authUser.user_metadata && authUser.user_metadata.shop_id) || "";
+      if (!staffShopId){ staffLoginBlocked = "Ei staff account er sathe kono shop jukto nei — shop owner ke janan."; return null; }
+      try { var s2 = await supabase.from('shops').select('*').eq('id', staffShopId).single(); if (!s2.error) shop = s2.data; } catch(e){}
+    } else {
+      try { var s1 = await supabase.from('shops').select('*').eq('owner_id', authUser.id).single(); if (!s1.error) shop = s1.data; } catch(e){}
+    }
     if (!shop) return null;
     var seller = sellerFromShopRow(profile, shop, authUser);
+    if (isStaffAccount || metaRole === "seller_staff"){
+      seller.isStaff = true;
+      seller.staffRole = (staffRow && staffRow.role) || (authUser.user_metadata && authUser.user_metadata.shop_role) || "Order Staff";
+      seller.staffUserId = authUser.id;
+    }
     var existing = sellerById(seller.id);
     if (existing) { var idx = DB.sellers.indexOf(existing); DB.sellers[idx] = seller; } else DB.sellers.push(seller);
     await loadSellerDataFromSupabase(seller);
@@ -1137,6 +1166,8 @@
     $("pendingView").classList.add("hidden");
     $("appView").classList.remove("hidden");
     syncShopUI();
+    applyStaffNav();
+    initSellerMfa(); sellerRefreshMfaStatus();
     refreshKycDocs();
     try { renderAll(); } catch (err) { /* render e somossa holeo panel khola thakbe */ }
     window.scrollTo(0,0);
@@ -1179,8 +1210,10 @@
         var user = res.data && res.data.user;
         if (!user) { $("loginErr").textContent = "Login hoy ni — abar chesta korun."; return; }
         var seller = await loadCurrentSellerFromSupabase(user);
-        if (!seller) { $("loginErr").textContent = roleBlocked ? "Ei account ti Admin/owner account — Seller Center e login kora jay na. Seller account diye login korun." : "Ei account er kono shop pawa jay ni. Age Open a Shop theke shop registration korun."; return; }
+        if (!seller) { $("loginErr").textContent = staffLoginBlocked ? staffLoginBlocked : (roleBlocked ? "Ei account ti Admin/owner account — Seller Center e login kora jay na. Seller account diye login korun." : "Ei account er kono shop pawa jay ni. Age Open a Shop theke shop registration korun."); return; }
         if (seller.status === "suspended") { $("loginErr").textContent = "Ei shop ti Admin suspend koreche. Bistaritir jonno AnboBD seller support e jogajog korun."; return; }
+        /* 2FA step-up (Decision 7): verified TOTP factor thakle code chara login hobe na. */
+        if (!await sellerMfaStepUp()){ try { await supabase.auth.signOut(); } catch(e){} $("loginErr").textContent = "2FA code na dile login hobe na."; return; }
         session.sellerId = seller.id;
         $("loginErr").textContent = "";
         routeAfterAuth();
@@ -1200,6 +1233,96 @@
     toast(s.status === "approved" ? ("Welcome back, " + s.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
   }
   $("loginForm").addEventListener("submit", function(e){ e.preventDefault(); tryLogin(); });
+  /* ==================== DECISION 7 — 2FA (TOTP, Supabase Auth MFA) =====
+     supabase-js v2: auth.mfa.enroll({factorType:"totp"}) → QR/secret,
+     challengeAndVerify({factorId, code}) verifies, listFactors() lists
+     verified factors, unenroll({factorId}) removes. Opt-in per account,
+     never forced. Supabase has NO recovery codes. */
+  var sellerMfaWired = false;
+  function initSellerMfa(){
+    if (sellerMfaWired) return; sellerMfaWired = true;
+    var eb = $("sellerMfaEnrollBtn"); if (eb) eb.addEventListener("click", function(){ sellerStartMfaEnroll(); });
+    var rb = $("sellerMfaRemoveBtn"); if (rb) rb.addEventListener("click", function(){ sellerRemoveMfa(); });
+  }
+  async function sellerRefreshMfaStatus(){
+    var el = $("sellerMfaStatus"); if (!el) return;
+    if (!supabaseConnected || !supabase){ el.textContent = "Offline — live sign-in e dekhabe"; return; }
+    try{
+      var lf = await supabase.auth.mfa.listFactors();
+      var totp = (lf && lf.data && lf.data.totp) ? lf.data.totp.filter(function(x){ return x.status === "verified"; }) : [];
+      el.textContent = totp.length ? ("ON — " + totp.length + " verified factor" + (totp.length > 1 ? "s" : "")) : "OFF — not enrolled";
+    }catch(e){ el.textContent = "Check kora jay ni"; }
+  }
+  async function sellerStartMfaEnroll(){
+    var box = $("sellerMfaEnrollBox"); if (!box) return;
+    if (!supabaseConnected || !supabase){ box.innerHTML = '<p class="hint">Live connection nei — 2FA enrol korte live Seller Center e sign in korun.</p>'; return; }
+    box.innerHTML = '<p class="hint">Enrol hochhe…</p>';
+    try{
+      var en = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: "AnboBD Seller" });
+      if (en.error) throw en.error;
+      var d = en.data || {};
+      var qr = (d.totp && d.totp.qr_code) || "";
+      var secret = (d.totp && d.totp.secret) || "";
+      box.innerHTML = '<div style="border:1.5px solid var(--line);border-radius:12px;padding:14px">'
+        + '<p style="margin:0 0 8px"><b>Step 1:</b> Authenticator app (Google Authenticator / Authy) diye QR ta scan korun, ba secret ta haate likhe nin.</p>'
+        + (qr ? '<div style="background:#fff;padding:8px;border-radius:8px;display:inline-block">' + qr + '</div>' : "")
+        + '<p style="margin:10px 0 4px">Secret: <code id="sellerMfaSecretText" style="word-break:break-all">' + esc(secret) + '</code> <button class="btn ghost sm" type="button" id="sellerMfaCopySecret">Copy</button></p>'
+        + '<p style="margin:8px 0"><b>Step 2:</b> App er 6-digit code din — code na mille enrol hobe na (unverified factor 5 minute e expire hoy).</p>'
+        + '<div style="display:flex;gap:8px"><input id="sellerMfaEnrollCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" style="flex:1;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px" /><button class="btn" type="button" id="sellerMfaVerifyBtn">Verify &amp; Enable</button></div>'
+        + '<p id="sellerMfaEnrollErr" style="color:#dc2626;font-size:.85rem;margin:6px 0 0"></p>'
+        + '<p class="hint" style="margin:10px 0 0">Supabase e recovery code nei — phone harale owner ke Supabase dashboard theke factor remove korte hobe, ba age theke dwitiyo factor enrol kore rakhun.</p></div>';
+      var cs = document.getElementById("sellerMfaCopySecret");
+      if (cs) cs.addEventListener("click", function(){ var s2 = document.getElementById("sellerMfaSecretText").textContent; if (navigator.clipboard) navigator.clipboard.writeText(s2).then(function(){ toast("✓ Secret copy hoyeche"); }); });
+      document.getElementById("sellerMfaVerifyBtn").addEventListener("click", async function(){
+        var code = (document.getElementById("sellerMfaEnrollCode").value || "").trim();
+        var ee = document.getElementById("sellerMfaEnrollErr");
+        if (!/^\d{6}$/.test(code)){ if(ee) ee.textContent = "6-digit code din."; return; }
+        try{
+          var vr = await supabase.auth.mfa.challengeAndVerify({ factorId: d.id, code: code });
+          if (vr.error) throw vr.error;
+          box.innerHTML = '<p class="hint" style="color:#15803d">✓ 2FA on hoyeche — porer bar sign-in e authenticator code lagbe.</p>';
+          sellerRefreshMfaStatus();
+          toast("✓ <b>2FA enabled</b> — porer sign-in theke authenticator code lagbe");
+        }catch(e){ if(ee) ee.textContent = "Code ta milche na — app er notun code diye abar chesta korun."; }
+      });
+    }catch(e){ box.innerHTML = '<p class="hint">Enrol hoy ni — ' + esc(e.message || "abar chesta korun") + '</p>'; }
+  }
+  async function sellerRemoveMfa(){
+    if (!supabaseConnected || !supabase){ toast("⚠ Live connection nei."); return; }
+    try{
+      var lf = await supabase.auth.mfa.listFactors();
+      var facs = (lf && lf.data && lf.data.totp) ? lf.data.totp : [];
+      if (!facs.length){ toast("Ei account e kono 2FA factor nei."); return; }
+      for (var i=0;i<facs.length;i++){ var u = await supabase.auth.mfa.unenroll({ factorId: facs[i].id }); if (u.error) throw u.error; }
+      sellerRefreshMfaStatus();
+      toast("✓ 2FA remove hoyeche");
+    }catch(e){ toast("⚠ 2FA remove hoy ni — " + esc(e.message || "abar chesta korun")); }
+  }
+  /* Login-time 2FA step-up: resolves true when no factor exists, or when
+     the user verifies a code from their authenticator app. */
+  function sellerMfaStepUp(){
+    return new Promise(async function(resolve){
+      if (!supabaseConnected || !supabase){ resolve(true); return; }
+      var aal = null;
+      try{ var ar = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(); aal = (ar && ar.data) ? ar.data : null; }catch(e){}
+      if (!aal || aal.currentLevel !== "aal1" || aal.nextLevel !== "aal2"){ resolve(true); return; }
+      openModal('<h2>🔐 Two-factor code din</h2><div class="msub">Ei account e 2FA on ache — authenticator app er 6-digit code din.</div><div class="field"><label>6-digit code</label><input id="sellerMfaCode" inputmode="numeric" autocomplete="one-time-code" placeholder="123456" /></div><p class="err" id="sellerMfaErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="sellerMfaCancel" type="button">Cancel</button><button class="btn" id="sellerMfaVerify" type="button">Verify</button></div>', function(){
+        $("sellerMfaCancel").addEventListener("click", function(){ closeModal(); resolve(false); });
+        $("sellerMfaVerify").addEventListener("click", async function(){
+          var code = ($("sellerMfaCode").value || "").trim();
+          if (!/^\d{6}$/.test(code)){ $("sellerMfaErr").textContent = "6-digit code din."; return; }
+          try{
+            var lf = await supabase.auth.mfa.listFactors();
+            var fac = (lf && lf.data && lf.data.totp) ? lf.data.totp.filter(function(x){ return x.status === "verified"; })[0] : null;
+            if (!fac){ $("sellerMfaErr").textContent = "Kono verified 2FA factor pawa jay ni."; return; }
+            var vr = await supabase.auth.mfa.challengeAndVerify({ factorId: fac.id, code: code });
+            if (vr.error) throw vr.error;
+            closeModal(); resolve(true);
+          }catch(e){ $("sellerMfaErr").textContent = "Code ta milche na — abar chesta korun."; }
+        });
+      });
+    });
+  }
   $("togglePass").addEventListener("click", function(){
     var inp = $("loginPass"), show = inp.type === "password";
     inp.type = show ? "text" : "password";
@@ -1384,7 +1507,25 @@
     var b = e.target.closest("button[data-view]"); if (!b) return;
     showView(b.getAttribute("data-view"));
   });
+  /* Decision 7 — staff permission gating: staff sudhu tar role er view
+     khulte parbe; Team & Staff shudhu owner er. */
+  var STAFF_VIEW_PERM = { dashboard: null, products: "Product add / edit", orders: "Order manage", coupons: "Product add / edit", campaigns: "Product add / edit", returns: "Customer support", payouts: "Payout request", team: null, settings: "Shop settings" };
+  function staffCanView(v){
+    var s = me(); if (!s || !s.isStaff) return true;
+    if (v === "team") return false;
+    var p = STAFF_VIEW_PERM[v]; if (!p) return true;
+    return (PERMS[s.staffRole] || []).indexOf(p) > -1;
+  }
+  function applyStaffNav(){
+    var s = me();
+    document.querySelectorAll("#sideNav button").forEach(function(b){
+      var v = b.getAttribute("data-view");
+      b.style.display = (s && s.isStaff && !staffCanView(v)) ? "none" : "";
+    });
+    var ab = document.getElementById("addStaffBtn"); if (ab) ab.style.display = (s && s.isStaff) ? "none" : "";
+  }
   function showView(v){
+    if (!staffCanView(v)){ toast("Ei view ta apnar role (" + (me() ? me().staffRole : "") + ") er jonno noy."); v = "dashboard"; }
     currentView = v;
     document.querySelectorAll("#sideNav button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-view")===v); });
     ["dashboard","products","orders","coupons","campaigns","returns","payouts","team","settings"].forEach(function(x){ $("view-"+x).classList.toggle("hidden", x!==v); });
@@ -2207,7 +2348,8 @@
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Email</label><input id="nsEmail" aria-label="Staff email" type="email" placeholder="name@shop.com" /></div>'
       + '<div class="field"><label>Mobile</label><input id="nsPhone" aria-label="Staff mobile" placeholder="01XXXXXXXXX" /></div></div>'
       + '<div class="field"><label>Role</label><select id="nsRole" aria-label="Staff role">' + roleOptions("Order Staff") + '</select><div class="hint" id="nsRoleHint"></div></div>'
-      + '<div class="hint" style="margin-bottom:.6rem">Staff er alada login nei — tara shop owner er account theke, ekhane deya role er permission onujayi kaj kore. Tai ekhane kono password deya hoy na.</div>'
+      + '<div class="field"><label>Password (staff login er jonno)</label><input id="nsPass" type="password" autocomplete="new-password" placeholder="Minimum 8 characters" /><div class="hint">Staff ei email ar password diye /seller/ e sign in korbe — owner er account share korar dorkar nei. Supabase e Confirm email ON thakle staff ke age inbox theke confirm korte hobe.</div></div>'
+      + '<div class="hint" style="margin-bottom:.6rem">Staff er alada login thakbe — se sudhu ei shop e, ekhane deya role er permission onujayi kaj korte parbe. Ager staff der (password chara add kora) login dite hole tader delete kore password diye abar add korun.</div>'
       + '<p class="err" id="nsErr"></p>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="nsCancel" type="button">Cancel</button><button class="btn" id="nsSave" type="button">Add Staff</button></div>',
       function(){
@@ -2217,17 +2359,43 @@
         $("nsCancel").addEventListener("click", closeModal);
         $("nsSave").addEventListener("click", async function(){
           var name = $("nsName").value.trim(), em = $("nsEmail").value.trim(), ph = $("nsPhone").value.trim();
+          var pw = $("nsPass") ? $("nsPass").value : "";
           if (!name || !em || em.indexOf("@") < 1) { $("nsErr").textContent = "Name ar sothik email din."; return; }
           if (!/^01\d{9}$/.test(ph.replace(/[-\s]/g, ""))) { $("nsErr").textContent = "Sothik 11 digit er mobile number din."; return; }
+          if (!pw || pw.length < 8) { $("nsErr").textContent = "Staff er jonno komপক্ষে 8 okkhorer password din."; return; }
           if (ownStaff().some(function(y){ return y.email.toLowerCase()===em.toLowerCase(); })) { $("nsErr").textContent = "Ei email diye agei ekjon staff ache."; return; }
           var role = $("nsRole").value;
           var newStaff = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true, joined: monthYear(new Date().toISOString()), color: ROLE_COLORS[role] };
           if (supabaseConnected && supabase) {
-            try { var insS = await supabase.from('staff').insert({ shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true }).select().single(); if (insS.error) { $("nsErr").textContent = insS.error.message; return; } if (insS.data) { newStaff.id = insS.data.id; } } catch(e){ $("nsErr").textContent = "Staff save hoy ni — abar chesta korun."; return; }
+            try {
+              /* Decision 7 — staff alada login: (1) staff row age (user_id
+                 pore bosbe — user_id nullable, 2026-11-20 fix), (2) throwaway
+                 client diye ashol Auth user toiri (Admin staff er moto),
+                 metadata te shop_id + shop role — staff nije staff row porte
+                 na parleo (RLS) login metadata diye cholbe, (3) staff row e
+                 user_id bosano, (4) profiles row best-effort (seller session
+                 theke profiles INSERT policy na thakle warn dekhabe, kintu
+                 login atke jabe na). */
+              var insS = await supabase.from('staff').insert({ shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true }).select().single();
+              if (insS.error) { $("nsErr").textContent = insS.error.message; return; }
+              if (insS.data) { newStaff.id = insS.data.id; }
+              var tmp = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, { auth: { persistSession: false, storageKey: "anbobd-staff-signup" } });
+              var su = await tmp.auth.signUp({ email: em, password: pw, options: { data: { name: name, role: "seller_staff", shop_id: s.shopId, shop_role: role } } });
+              if (su.error) { $("nsErr").textContent = "Staff login account toiri hoy ni: " + su.error.message + " (staff row toiri hoyeche — login chara staff hisebe thakbe)"; return; }
+              var uid = su.data && su.data.user ? su.data.user.id : null;
+              if (uid){
+                await supabase.from('staff').update({ user_id: uid }).eq('id', newStaff.id).eq('shop_id', s.shopId);
+                var pr = await supabase.from('profiles').insert({ id: uid, full_name: name, email: em, phone: ph, role: "seller_staff" });
+                if (pr.error) { newStaff._profileWarn = true; }
+              }
+            } catch(e){ $("nsErr").textContent = "Staff save hoy ni — abar chesta korun."; return; }
           }
           s.staff.unshift(newStaff);
           closeModal(); renderTeam();
-          toast(name + " staff hisebe add hoyeche — role: " + role);
+          var doneMsg = name + " staff hisebe add hoyeche — role: " + role;
+          if (supabaseConnected && supabase) doneMsg += " — se ekhon ei email + password diye Seller Center e sign in korte parbe." + (newStaff._profileWarn ? " (Profile row create hoy ni — login metadata diye cholbe, Admin ke profiles policy check korte bolun.)" : "");
+          else doneMsg += " (offline — live site e abar add korle tobei login pabe)";
+          toast(doneMsg);
         });
       });
   });
