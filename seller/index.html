@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23a8e10c'/%3E%3Ctext x='32' y='32' dy='.35em' text-anchor='middle' font-family='Arial,sans-serif' font-size='26' font-weight='800' fill='%23243b00'%3EA%3C/text%3E%3C/svg%3E" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>AnboBD Seller Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -367,7 +368,19 @@
         </div>
         <p class="err" id="loginErr"></p>
         <button class="btn" id="loginBtn" type="submit" style="width:100%">Login to Seller Center</button>
+        <p style="margin:10px 0 0"><button type="button" id="forgotPwBtn" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit;padding:0">পাসওয়ার্ড ভুলে গেছেন?</button></p>
+        <p id="forgotPwMsg" role="status" style="display:none;margin:10px 0 0;font-size:.9rem;line-height:1.6"></p>
         <div class="auth-note"><b>New to AnboBD?</b> Tap <b>Open a Shop</b> above, create your seller account and register your shop. Your shop goes live after AnboBD Admin verifies your KYC and approves the application — there is no instant access.</div>
+      </form>
+
+      <form id="resetForm" class="hidden" novalidate>
+        <h1>নতুন পাসওয়ার্ড দিন</h1>
+        <p class="lead">ইমেইলে পাওয়া রিসেট লিংক থেকে এসেছেন — এখানে নতুন পাসওয়ার্ড দিন।</p>
+        <div class="field"><label for="resetPass">নতুন পাসওয়ার্ড (কমপক্ষে 6 অক্ষর)</label><input id="resetPass" type="password" autocomplete="new-password" placeholder="নতুন পাসওয়ার্ড দিন" /></div>
+        <div class="field"><label for="resetPass2">নতুন পাসওয়ার্ড আবার দিন</label><input id="resetPass2" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
+        <p class="err" id="resetErr"></p>
+        <button class="btn" id="resetBtn" type="submit" style="width:100%">পাসওয়ার্ড বদলান</button>
+        <p class="hint" id="resetMsg" style="display:none;margin-top:10px"></p>
       </form>
 
       <form id="registerForm" class="hidden" novalidate>
@@ -1233,6 +1246,46 @@
     toast(s.status === "approved" ? ("Welcome back, " + s.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
   }
   $("loginForm").addEventListener("submit", function(e){ e.preventDefault(); tryLogin(); });
+  /* P0-5 — Forgot password (Admin er pattern, 2026-11-21): resetPasswordForEmail
+     redirectTo ছাড়া — Supabase project er Site URL e recovery link jay. */
+  $("forgotPwBtn").addEventListener("click", async function(){
+    var msg = $("forgotPwMsg");
+    function show(t){ msg.textContent = t; msg.style.display = "block"; }
+    var em = cleanText($("loginEmail").value).replace(/\s+/g, "").toLowerCase();
+    $("loginErr").textContent = "";
+    if(!em){ show("উপরে আপনার অ্যাকাউন্টের ইমেইলটি লিখুন, তারপর এই লিংকে চাপ দিন।"); return; }
+    if(!supabaseConnected || !supabase){ show("পাসওয়ার্ড রিসেটের জন্য লাইভ সংযোগ দরকার — লাইভ Seller Center সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    this.disabled = true;
+    try{
+      var r = await supabase.auth.resetPasswordForEmail(em);
+      if(r.error){ show("⚠️ রিসেট ইমেইল পাঠানো যায়নি — ইমেইলটি ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।"); }
+      else show("✅ রিসেট লিংক পাঠানো হয়েছে " + em + "-এ — ইমেইল খুলে লিংকে চাপ দিন, নতুন পাসওয়ার্ড দিন, তারপর সেই পাসওয়ার্ড দিয়ে সাইন ইন করুন।");
+    }catch(e){ show("⚠️ রিসেট ইমেইল পাঠানো যায়নি — আবার চেষ্টা করুন।"); }
+    this.disabled = false;
+  });
+  /* P0-5 — Recovery link theke fire asha: reset form dekhao, hash soriye dao. */
+  function showResetForm(){
+    $("loginForm").classList.add("hidden"); $("registerForm").classList.add("hidden");
+    $("tabLogin").classList.remove("on"); $("tabRegister").classList.remove("on");
+    $("resetForm").classList.remove("hidden");
+    try{ history.replaceState(null, "", location.pathname + location.search); }catch(e){}
+  }
+  $("resetForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var p1 = $("resetPass").value, p2 = $("resetPass2").value;
+    var errEl = $("resetErr"), msgEl = $("resetMsg");
+    errEl.textContent = "";
+    if(p1.length < 6){ errEl.textContent = "পাসওয়ার্ড কমপক্ষে 6 অক্ষরের হতে হবে।"; return; }
+    if(p1 !== p2){ errEl.textContent = "দুটি পাসওয়ার্ড মেলেনি — আবার দেখে লিখুন।"; return; }
+    $("resetBtn").disabled = true;
+    try{
+      var r = await supabase.auth.updateUser({ password: p1 });
+      if(r.error){ errEl.textContent = "পাসওয়ার্ড বদলানো যায়নি — " + (r.error.message || "আবার চেষ্টা করুন।"); $("resetBtn").disabled = false; return; }
+      msgEl.textContent = "✅ পাসওয়ার্ড বদলে গেছে — Seller Center খুলছে…";
+      msgEl.style.display = "block";
+      setTimeout(function(){ location.reload(); }, 1500);
+    }catch(err){ errEl.textContent = "পাসওয়ার্ড বদলানো যায়নি — আবার চেষ্টা করুন।"; $("resetBtn").disabled = false; }
+  });
   /* ==================== DECISION 7 — 2FA (TOTP, Supabase Auth MFA) =====
      supabase-js v2: auth.mfa.enroll({factorType:"totp"}) → QR/secret,
      challengeAndVerify({factorId, code}) verifies, listFactors() lists
@@ -2551,6 +2604,14 @@
       supabase.auth.getSession().then(async function(res){
         try {
           var sess = res && res.data && res.data.session;
+          /* P0-5 — recovery link: hash e type=recovery thakle reset form dekhao. */
+          if(String(location.hash || "").indexOf("type=recovery") >= 0){
+            if(sess && sess.user){ showResetForm(); return; }
+            showLogin();
+            var fm = $("forgotPwMsg");
+            if(fm){ fm.textContent = "এই রিসেট লিংকটির মেয়াদ শেষ হয়েছে বা ইতিমধ্যে ব্যবহার করা হয়েছে — উপরে ইমেইল দিয়ে আবার রিসেট লিংক পাঠান।"; fm.style.display = "block"; }
+            return;
+          }
           if (sess && sess.user) {
             var seller = await loadCurrentSellerFromSupabase(sess.user);
             if (seller) { session.sellerId = seller.id; routeAfterAuth(); return; }
