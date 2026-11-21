@@ -11,6 +11,7 @@
 <meta property="og:description" content="3D স্টাইলে ঘুরিয়ে দেখে কেনাকাটা করুন। ফ্ল্যাশ সেল, ক্যাশ অন ডেলিভারি, 7 দিনের সহজ রিটার্ন।" />
 <meta property="og:image" content="https://anbobd-azure.vercel.app/assets/hero-3d.webp" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="icon" type="image/x-icon" href="/favicon.ico" />
 <title>AnboBD — সবকিছু, এক ঠিকানায় | 3D Online Shopping in Bangladesh</title>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"OnlineStore","name":"AnboBD","description":"বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — ইলেকট্রনিক্স, ফ্যাশন, হোম, বিউটি ও গ্রোসারি।","areaServed":"BD","currenciesAccepted":"BDT","paymentAccepted":"Cash on Delivery, bKash (manual), Nagad (manual)"}
@@ -690,7 +691,7 @@ section{ padding-top:56px }
       <a class="logo" href="#" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
       <div class="searchwrap">
       <form class="searchbar" id="searchForm" role="search">
-        <input id="searchInput" type="search" placeholder="খুঁজুন — হেডফোন, শাড়ি, এয়ার ফ্রায়ার, সরিষার তেল…" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
+        <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন…" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
         <button type="submit">খুঁজুন</button>
       </form>
       <div class="suggest" id="searchSuggest" role="listbox" aria-label="সার্চ সাজেশন"></div>
@@ -720,10 +721,10 @@ section{ padding-top:56px }
     <div>
       <span class="pill"><span class="dot"></span> বাংলাদেশের নতুন 3D শপিং অভিজ্ঞতা</span>
       <h1 id="heroTitle">সবকিছু কিনুন,<br><span class="hl">ঘুরিয়ে দেখে</span> —<br>একদম <span class="hl2">3D স্টাইলে!</span></h1>
-      <p class="lead" id="heroLead">মোবাইল, ফ্যাশন, গ্যাজেট, ঘরের জিনিস আর বাজার-সদাই — সব এক ঠিকানায়। পণ্য কার্ডে মাউস ঘোরালেই 3D-তে নড়বে, যেন হাতে ধরে দেখছেন। সারা দেশে হোম ডেলিভারি আর ক্যাশ অন ডেলিভারি তো আছেই।</p>
+      <p class="lead" id="heroLead">আসল পণ্য, আসল দাম — সব এক ঠিকানায়। পণ্য কার্ডে মাউস ঘোরালেই 3D-তে নড়বে, যেন হাতে ধরে দেখছেন। সারা দেশে হোম ডেলিভারি আর ক্যাশ অন ডেলিভারি তো আছেই।</p>
       <div class="hero-cta">
         <a class="btn btn-lime" href="#products">🛍️ কেনাকাটা শুরু করুন</a>
-        <a class="btn btn-ghost" href="#flash">⚡ আজকের ফ্ল্যাশ সেল</a>
+        <a class="btn btn-ghost" href="#flash" id="heroFlashCta">⚡ আজকের ফ্ল্যাশ সেল</a>
       </div>
       <div class="hero-stats">
         <div><b id="prodCountStat">…</b><span>পণ্যের কালেকশন</span></div>
@@ -758,7 +759,7 @@ section{ padding-top:56px }
   </section>
 
   <!-- PROMO BANNERS -->
-  <section style="padding-top:26px">
+  <section style="padding-top:26px" id="promoBannersSec">
     <div class="banners">
       <button class="banner b1" data-banner="electronics"><img class="bimg" src="/assets/headphones.jpg" alt="হেডফোন — গ্যাজেট ফেস্ট" loading="lazy"><span class="btxt"><b>গ্যাজেট ফেস্ট</b><span>হেডফোন, স্মার্টওয়াচ, স্পিকার আর অনেক কিছু</span><span class="bcta">এখনই কিনুন →</span></span></button>
       <button class="banner b2" data-banner="fashion"><img class="bimg" src="/assets/saree.jpg" alt="শাড়ি — ঈদ-রেডি ফ্যাশন" loading="lazy"><span class="btxt"><b>ঈদ-রেডি ফ্যাশন কালেকশন</b><span>শাড়ি, জ্যাকেট, টি-শার্ট</span><span class="bcta">কালেকশন দেখুন →</span></span></button>
@@ -770,7 +771,7 @@ section{ padding-top:56px }
   <section style="padding-top:6px">
     <div class="campaign">
       <h2>অফার ও ক্যাম্পেইন</h2>
-      <p>ভাউচার, ফ্ল্যাশ সেল আর বান্ডল ডিল একসাথে — তার উপর ৳2,000+ অর্ডারে ফ্রি ডেলিভারি। পণ্য লাইভ হলেই এখানে দেখতে পাবেন।</p>
+      <p>ভাউচার আর ফ্ল্যাশ সেল একসাথে — তার উপর ৳2,000+ অর্ডারে ফ্রি ডেলিভারি। পণ্য লাইভ হলেই এখানে দেখতে পাবেন।</p>
       <div class="cbtns">
         <button class="btn btn-lime" data-goto="#flash">⚡ ফ্ল্যাশ সেলে যান</button>
         <button class="btn btn-ghost" data-goto="#vouchers">🎟️ ভাউচার সংগ্রহ করুন</button>
@@ -1196,6 +1197,25 @@ section{ padding-top:56px }
       </div>
       <div id="auAccount" style="display:none">
         <div class="acct-head"><span class="av" id="auAv">?</span><div><b id="auProfileName" style="font-size:1.1rem;display:block"></b><span id="auProfileMeta" style="color:var(--muted);font-size:.88rem"></span><br><span class="rolebadge" id="auProfileRole"></span></div></div>
+        <div id="auSellerPending" style="display:none;margin-top:12px"></div>
+        <h4 style="margin:14px 0 8px">✏️ প্রোফাইল এডিট করুন</h4>
+        <form id="auEditForm" style="display:grid;gap:8px">
+          <div class="fld"><label for="auEditName">আপনার নাম *</label><input id="auEditName" autocomplete="name" /></div>
+          <div class="fld"><label for="auEditPhone">মোবাইল নম্বর *</label><input id="auEditPhone" inputmode="tel" autocomplete="tel" /></div>
+          <button class="btn-sec" type="submit">💾 প্রোফাইল সেভ করুন</button>
+          <p class="notice" id="auEditMsg" role="status" style="display:none;margin:0"></p>
+        </form>
+        <h4 style="margin:14px 0 8px">📍 আমার ঠিকানা</h4>
+        <p style="color:var(--muted);margin:0;font-size:.88rem;line-height:1.6">সেভ করা ঠিকানা এখনো চালু হয়নি — ডেলিভারির ঠিকানা প্রতিটি অর্ডারের সময় দিতে হয়। ঠিকানা সেভ করার সুবিধা শীঘ্রই আসছে।</p>
+        <h4 style="margin:14px 0 8px">🔑 পাসওয়ার্ড বদলান</h4>
+        <form id="auPassForm" style="display:grid;gap:8px">
+          <div class="fld"><label for="auNewPass3">নতুন পাসওয়ার্ড * (কমপক্ষে 6 অক্ষর)</label>
+            <div class="passwrap"><input id="auNewPass3" type="password" autocomplete="new-password" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auNewPass3">Show</button></div>
+          </div>
+          <div class="fld"><label for="auNewPass4">নতুন পাসওয়ার্ড আবার দিন *</label><input id="auNewPass4" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
+          <button class="btn-sec" type="submit">🔑 পাসওয়ার্ড বদলান</button>
+          <p class="notice" id="auPassMsg" role="status" style="display:none;margin:0"></p>
+        </form>
         <h4 style="margin:14px 0 8px">⭐ আমার Loyalty Point</h4>
         <div id="auLoyalty"></div>
         <h4 style="margin:14px 0 8px">💬 AnboBD থেকে মেসেজ</h4>
@@ -1339,7 +1359,8 @@ var promoCode = null, zone = "dhaka", modalId = null, modalQty = 1, lastOrder = 
 var loyaltyRedeem = false; /* Decision 7: checkout e loyalty redeem on/off */
 var catalogLoading = true; /* P0-1: true until loadCatalog finishes (or Supabase is unconfigured) — renderProducts shows a loading state, never demo products. */
 var modalImages = [], modalSlide = 0;
-var FLASH_IDS = [1,10,4,5];
+/* Re-audit A11 (2026-11-21): FLASH_IDS [1,10,4,5] were dead demo IDs (real products are UUIDs) — the tile counted 0 while the section fell back to active products. One source of truth now: flash = live products with a real discount (oldPrice > price), capped at 4. */
+function flashList(){ return PRODUCTS.filter(function(p){ return p.status==="active" && p.oldPrice && p.oldPrice > p.price; }).slice(0,4); }
 
 /* ---------- Product cards ---------- */
 function vfdBadge(p){ var b=BR(p.brandId); return (b && b.verified) ? '<span class="vfd-badge">✓ Anbo Verified</span>' : ''; }
@@ -1418,13 +1439,34 @@ function renderProducts(){
   }
   document.getElementById("resultCount").textContent = list.length + "টি পণ্য পাওয়া গেছে";
 }
-function renderFlash(){ var list = FLASH_IDS.map(function(id){return P(id);}).filter(Boolean); if(!list.length) list = PRODUCTS.filter(function(p){return p.status==="active";}).slice(0,4); document.getElementById("flashGrid").innerHTML = list.map(function(p){return cardHTML(p,true);}).join(""); }
+function renderFlash(){ var list = flashList(); var sec = document.getElementById("flash"); if(sec) sec.style.display = list.length ? "" : "none"; var cta = document.getElementById("heroFlashCta"); if(cta) cta.style.display = list.length ? "" : "none"; document.getElementById("flashGrid").innerHTML = list.map(function(p){return cardHTML(p,true);}).join(""); }
 function renderUnder(){ document.getElementById("underGrid").innerHTML = PRODUCTS.filter(function(p){return p.status==="active" && p.price<999;}).map(function(p){return cardHTML(p,false);}).join(""); }
 function renderCats(){
   document.getElementById("catTiles").innerHTML = CATS.map(function(c){
-    var n = c.id==="flash" ? FLASH_IDS.filter(function(id){ return !!P(id); }).length : PRODUCTS.filter(function(p){return p.categoryId===c.id && p.status==="active";}).length; /* P0-1: flash count counts only real products that exist — demo FLASH_IDS [1,10,4,5] no longer count. */
+    var n = c.id==="flash" ? flashList().length : PRODUCTS.filter(function(p){return p.categoryId===c.id && p.status==="active";}).length;
     return '<button class="cat" data-tile="'+c.id+'"><span class="cat-media" style="background:'+(c.grad||'#0e7c6f')+'"><img loading="lazy" src="'+(c.img||'/assets/hero-3d.webp')+'" alt="'+c.label+'" onerror="this.style.display=\'none\'"><span class="cat-shade"></span><span class="go">↗</span></span><span class="cat-body"><b>'+c.label+'</b><span class="cat-note">'+c.note+'</span><span class="cnt">'+n+'টি পণ্য</span></span></button>';
   }).join("");
+}
+/* Re-audit A6/A10 (2026-11-21): promo banners + search copy must not advertise categories with 0 live products. A banner hides when its category has no live stock (the whole row hides when none have stock); search placeholder + popular searches derive from live products only. */
+function liveCatCount(catId){ return PRODUCTS.filter(function(p){ return p.categoryId===catId && p.status==="active"; }).length; }
+function renderBanners(){
+  var anyVisible = false;
+  document.querySelectorAll("[data-banner]").forEach(function(bn){
+    var n = liveCatCount(bn.dataset.banner);
+    bn.style.display = n ? "" : "none";
+    if(n) anyVisible = true;
+  });
+  var sec = document.getElementById("promoBannersSec");
+  if(sec) sec.style.display = anyVisible ? "" : "none";
+}
+function syncSearchCopy(){
+  var live = PRODUCTS.filter(function(p){ return p.status==="active"; });
+  var terms = live.slice(0,3).map(function(p){ return p.name; });
+  var cats = [];
+  CATS.forEach(function(c){ if(c.id!=="flash" && liveCatCount(c.id)) cats.push(c.label); });
+  ANBOBD_STORE.popularSearches = terms.concat(cats).slice(0,8);
+  var inp = document.getElementById("searchInput");
+  if(inp) inp.setAttribute("placeholder", terms.length ? "খুঁজুন — " + terms.join(", ") + "…" : "পণ্য খুঁজুন…");
 }
 function renderBrands(){
   /* 2026-11-21: brands section stays hidden until real brands exist (demo brands removed). */
@@ -2080,7 +2122,7 @@ document.addEventListener("click", function(e){
   var sd = e.target.closest("[data-savedel]"); if(sd){ delete savedLater[sd.dataset.savedel]; renderCart(); return; }
   var wrm = e.target.closest("[data-wishrm]"); if(wrm){ toggleWish(wrm.dataset.wishrm); return; }
   var tile = e.target.closest("[data-tile]"); if(tile){ var c=CAT(tile.dataset.tile); if(c && c.link){ document.querySelector(c.link).scrollIntoView({behavior:"smooth"}); } else { setCat(tile.dataset.tile); document.getElementById("products").scrollIntoView({behavior:"smooth"}); } return; }
-  var bn = e.target.closest("[data-banner]"); if(bn){ setCat(bn.dataset.banner); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
+  var bn = e.target.closest("[data-banner]"); if(bn){ if(!liveCatCount(bn.dataset.banner)){ toast("এই ক্যাটাগরিতে এখনো কোনো পণ্য লাইভ নেই — শীঘ্রই আসছে।"); return; } setCat(bn.dataset.banner); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
   var bc = e.target.closest("[data-brandcard]"); if(bc){ brandFilter = bc.dataset.brandcard; document.getElementById("brandSel").value = brandFilter; var bp = P(0); var first = PRODUCTS.filter(function(x){return x.brandId===brandFilter;})[0]; if(first){ setCat(first.categoryId); } renderProducts(); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
   var bd2 = e.target.closest("[data-bundle]"); if(bd2){ var bnd = ANBOBD_STORE.bundles.filter(function(x){return x.id===bd2.dataset.bundle;})[0]; if(bnd){ bnd.productIds.forEach(function(pid){ var pp=P(pid); if(pp && pp.stockQty>0 && !cart[pid]) cart[pid]=1; }); renderCart(); toast("📦 বান্ডল কার্টে যোগ হয়েছে — অটো "+fmt(bnd.save)+" ছাড় প্রযোজ্য!"); openCart(); } return; }
   var vc = e.target.closest("[data-voucher]"); if(vc){ var code = vc.dataset.voucher;
@@ -2269,7 +2311,7 @@ function syncHeroText(){
   if(t && typeof st.heroTitle === "string" && st.heroTitle.trim()) t.textContent = st.heroTitle.trim();
   if(l && typeof st.heroLead === "string" && st.heroLead.trim()) l.textContent = st.heroLead.trim();
 }
-window.__anboRender = function(){ syncFreeDeliveryText(); syncHeroText(); renderCats(); renderBrands(); renderVouchers(); renderBundles(); renderFlash(); renderProducts(); renderUnder(); renderCart(); renderRecent(); /* Buy Now drawer fix 2 (2026-11-21): catalog ele recent row-o abar render hobe — na hole guard-er jonno prothom load-e row khali theke jeto. */ if(window.renderShopCoupons) window.renderShopCoupons(); if(window.renderMega) window.renderMega(); var pcs = document.getElementById("prodCountStat"); if(pcs) pcs.textContent = PRODUCTS.filter(function(p){ return p.status==="active"; }).length + "+"; };
+window.__anboRender = function(){ syncFreeDeliveryText(); syncHeroText(); renderCats(); renderBanners(); syncSearchCopy(); renderBrands(); renderVouchers(); renderBundles(); renderFlash(); renderProducts(); renderUnder(); renderCart(); renderRecent(); /* Buy Now drawer fix 2 (2026-11-21): catalog ele recent row-o abar render hobe — na hole guard-er jonno prothom load-e row khali theke jeto. */ if(window.renderShopCoupons) window.renderShopCoupons(); if(window.renderMega) window.renderMega(); var pcs = document.getElementById("prodCountStat"); if(pcs) pcs.textContent = PRODUCTS.filter(function(p){ return p.status==="active"; }).length + "+"; };
 window.__anboRender();
 </script>
 
@@ -2872,6 +2914,19 @@ function anboUserFromProfile(authUser, prof){
   }
   return user;
 }
+/* Re-audit B5 (2026-11-21): Confirm-email ON hole signup-er somoy profile row toiri hoy na (session-check early return) — prothom sign-in / session restore-e row na thakle Auth metadata theke toiri kori. Best-effort: fail korle console.warn, user ke atkay na. */
+async function anboEnsureProfile(authUser){
+  if(!authUser || !authUser.id) return null;
+  var sb = ANBOBD_DB.sb(); if(!sb) return null;
+  try{
+    var r = await sb.from("profiles").select("id").eq("id", authUser.id).single();
+    if(r && r.data) return r.data;
+    var meta = authUser.user_metadata || {};
+    var ins = await sb.from("profiles").insert({ id:authUser.id, email:authUser.email || "", full_name:meta.full_name || "", phone:meta.phone || "", role:String(meta.role || "customer").toLowerCase() });
+    if(ins.error){ console.warn("profiles ensure:", ins.error.message); return null; }
+    return { id:authUser.id };
+  }catch(e){ console.warn("profiles ensure failed:", e); return null; }
+}
 /* DB-তে থাকা আসল shops row পাওয়া গেলে সেটাই seller-এর দোকান (Seller Center-ও owner_id দিয়ে এটাই খোঁজে) */
 function anboAdoptDbShop(user, row){
   if(!user || !row || row.id==null) return;
@@ -2913,9 +2968,12 @@ var ANBOBD_AUTH = {
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return { ok:false, error:"সঠিক ইমেইল ঠিকানা দিন (যেমন: name@example.com)।" };
     if(d.role==="admin") return { ok:false, error:"Admin অ্যাকাউন্ট এখান থেকে তৈরি করা যায় না — বিদ্যমান Admin-এর সঙ্গে যোগাযোগ করুন।" };
     var res = await sb.auth.signUp({ email:email, password:d.pass, options:{ data:{ full_name:d.name.trim(), phone:d.mobile.trim(), role:d.role, shop_name:(d.shopName||"").trim() } } });
-    if(res.error) return { ok:false, error: res.error.message || "সাইন আপ করা যায়নি — আবার চেষ্টা করুন।" };
+    /* Re-audit B7 (2026-11-21): duplicate-email error was raw English — map it to Bengali like the Seller Center does. */
+    if(res.error){ var em2 = res.error.message || ""; if(/already registered/i.test(em2)) return { ok:false, error:"এই ইমেইল দিয়ে ইতিমধ্যে একটি অ্যাকাউন্ট আছে — সাইন ইন করুন।" }; return { ok:false, error: em2 || "সাইন আপ করা যায়নি — আবার চেষ্টা করুন।" }; }
     var au = res.data ? res.data.user : null;
     if(!au) return { ok:false, error:"সাইন আপ সম্পূর্ণ হয়নি — ইমেইলে পাঠানো কনফার্মেশন লিংকটি যাচাই করে তারপর সাইন ইন করুন।" };
+    /* Re-audit B5 (2026-11-21): Confirm-email ON hole signUp user dey kintu session dey na — tokhon local session banano jabe na; user ke email check korte bolte hobe. Confirm email OFF thakle (ajker moto) session thake, tai ei branch chole na — normal signup bodlay na. */
+    if(res.data && res.data.user && !res.data.session) return { ok:false, needsConfirm:true, error:"✅ অ্যাকাউন্ট তৈরি হয়েছে — ইমেইলে পাঠানো কনফার্মেশন লিংকটি খুলে অ্যাকাউন্ট যাচাই করুন, তারপর সাইন ইন করুন।" };
     try{
       var pr = await sb.from('profiles').insert({ id:au.id, email:email, full_name:d.name.trim(), phone:d.mobile.trim(), role:d.role });
       if(pr.error) console.warn("profiles insert:", pr.error.message);
@@ -2953,6 +3011,7 @@ var ANBOBD_AUTH = {
     var res = await sb.auth.signInWithPassword({ email:email, password:(passRaw||"") });
     if(res.error || !res.data || !res.data.user) return { ok:false, error:"ইমেইল বা পাসওয়ার্ড মেলেনি। অ্যাকাউন্ট না থাকলে আগে সাইন আপ করুন।" };
     var prof = await ANBOBD_DB.fetchProfile(res.data.user.id);
+    if(!prof){ await anboEnsureProfile(res.data.user); prof = await ANBOBD_DB.fetchProfile(res.data.user.id); }
     var user = anboUserFromProfile(res.data.user, prof);
     await anboResolveSellerShop(user);
     this.session = user; window.__anboCurrentUser = user;
@@ -2971,6 +3030,7 @@ var ANBOBD_AUTH = {
       var sess = res && res.data ? res.data.session : null;
       if(!sess || !sess.user) return null;
       var prof = await ANBOBD_DB.fetchProfile(sess.user.id);
+      if(!prof){ await anboEnsureProfile(sess.user); prof = await ANBOBD_DB.fetchProfile(sess.user.id); }
       var user = anboUserFromProfile(sess.user, prof);
       await anboResolveSellerShop(user);
       this.session = user; window.__anboCurrentUser = user;
@@ -3148,6 +3208,22 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     document.getElementById("auProfileMeta").textContent = u.email + " • " + u.mobile;
     document.getElementById("auProfileRole").textContent = roleLabel(u.role) + (u.role==="seller" && currentSeller() ? " • " + currentSeller().name : "");
     document.getElementById("auGoSeller").style.display = u.role==="seller" ? "" : "none";
+    /* Re-audit B6/B4 (2026-11-21): profile-edit prefill + seller pending/KYC banner. */
+    var ef = document.getElementById("auEditName"); if(ef) ef.value = u.name || "";
+    var ep = document.getElementById("auEditPhone"); if(ep) ep.value = u.mobile || "";
+    var pend = document.getElementById("auSellerPending");
+    if(pend){
+      if(u.role === "seller"){
+        var sh = currentSeller();
+        if(sh && String(sh.status || "").toLowerCase() === "pending"){
+          pend.style.display = "";
+          pend.innerHTML = '<div class="ocard" style="border-color:var(--lime);background:#f4fbd9"><b>🏪 আপনার দোকান এখন Pending</b><p style="margin:6px 0 8px;line-height:1.6">Admin অনুমোদনের আগে <b>NID কপি আপলোড</b> করে আবেদন সম্পূর্ণ করুন — NID ছাড়া দোকান Approve হবে না।</p><button class="btn-sec" type="button" onclick="window.location.href=\'/seller/\'">Seller Center-এ আবেদন সম্পূর্ণ করুন →</button></div>';
+        } else if(!sh){
+          pend.style.display = "";
+          pend.innerHTML = '<div class="ocard" style="border-color:var(--lime);background:#f4fbd9"><b>🏪 দোকানের আবেদন এখনো সম্পূর্ণ হয়নি</b><p style="margin:6px 0 8px;line-height:1.6">Seller Center-এ গিয়ে দোকানের তথ্য আর NID কপি জমা দিন — তারপর Admin যাচাই করে অনুমোদন দেবে।</p><button class="btn-sec" type="button" onclick="window.location.href=\'/seller/\'">Seller Center খুলুন →</button></div>';
+        } else { pend.style.display = "none"; pend.innerHTML = ""; }
+      } else { pend.style.display = "none"; pend.innerHTML = ""; }
+    }
     var mine = ANBOBD_STORE.orders.filter(function(o){ return o.userId === u.id; });
     document.getElementById("auMyOrders").innerHTML = mine.length ? mine.slice().reverse().map(function(o){
       var fm = FLOW_META[o.status] || { label:o.status, cls:"st-wait" };
@@ -3161,6 +3237,8 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var msgEl = document.getElementById("auMessages");
     if(msgEl){ msgEl.innerHTML = '<p style="color:var(--muted);margin:0">লোড হচ্ছে…</p>'; loadCustomerMessages(u); }
     var sf2 = document.getElementById("auSupportForm"); if(sf2 && !sf2.__bound){ sf2.__bound = true; sf2.addEventListener("submit", function(e){ e.preventDefault(); submitSupportTicket(u); }); }
+    var ef2 = document.getElementById("auEditForm"); if(ef2 && !ef2.__bound){ ef2.__bound = true; ef2.addEventListener("submit", function(e){ e.preventDefault(); saveProfileEdit(u); }); }
+    var pf2 = document.getElementById("auPassForm"); if(pf2 && !pf2.__bound){ pf2.__bound = true; pf2.addEventListener("submit", function(e){ e.preventDefault(); changeAccountPassword(u); }); }
     var rf2 = document.getElementById("auReviewForm"); if(rf2 && !rf2.__bound){ rf2.__bound = true; rf2.addEventListener("submit", function(e){ e.preventDefault(); submitReview(u); }); var rc2 = document.getElementById("auReviewCancel"); if(rc2) rc2.addEventListener("click", function(){ var bx = document.getElementById("auReviewBox"); if(bx) bx.style.display = "none"; }); }
   }
   window.renderAccount = renderAccount;
@@ -3244,13 +3322,47 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       renderAccount();
     }catch(e){ if(m){ m.style.display=""; m.textContent = "⚠ রিভিউ জমা হয়নি — " + ((e && e.message) || "database error") + "।"; } }
   }
+  /* Re-audit B6 (2026-11-21): signed-in profile edit (profiles: full_name + phone — the only profile columns that exist) + password change (Supabase updateUser). Address save nei: profiles.address column DB-te nei (REST probe 42703) — SQL na howa porjonto address save fake kora hobe na. */
+  async function saveProfileEdit(u){
+    var m = document.getElementById("auEditMsg");
+    function show(t){ if(m){ m.style.display=""; m.textContent=t; } }
+    var nm = ((document.getElementById("auEditName")||{}).value || "").trim();
+    var ph = ((document.getElementById("auEditPhone")||{}).value || "").trim();
+    if(nm.length < 3) return show("⚠ আপনার পুরো নাম লিখুন (কমপক্ষে 3 অক্ষর)।");
+    if(!/^01[3-9]\d{8}$/.test(ph)) return show("⚠ সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।");
+    var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
+    if(!sb){ if(u){ u.name = nm; u.mobile = ph; } window.__anboCurrentUser = u; show("✅ প্রোফাইল সেভ হয়েছে।"); renderAccount(); return; }
+    try{
+      var r = await sb.from("profiles").update({ full_name:nm, phone:ph }).eq("id", u.id);
+      if(r.error) throw r.error;
+      try{ await sb.auth.updateUser({ data:{ full_name:nm, phone:ph } }); }catch(e2){ console.warn("auth metadata update:", e2); }
+      if(u){ u.name = nm; u.mobile = ph; } window.__anboCurrentUser = u;
+      show("✅ প্রোফাইল সেভ হয়েছে।"); renderAccount();
+    }catch(e){ show("⚠ প্রোফাইল সেভ হয়নি — " + ((e && e.message) || "database error") + "।"); }
+  }
+  async function changeAccountPassword(u){
+    var m = document.getElementById("auPassMsg");
+    function show(t){ if(m){ m.style.display=""; m.textContent=t; } }
+    var p1 = (document.getElementById("auNewPass3")||{}).value || "";
+    var p2 = (document.getElementById("auNewPass4")||{}).value || "";
+    if(p1.length < 6) return show("⚠ পাসওয়ার্ড কমপক্ষে 6 অক্ষরের হতে হবে।");
+    if(p1 !== p2) return show("⚠ দুটি পাসওয়ার্ড মেলেনি — আবার দেখে লিখুন।");
+    var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
+    if(!sb) return show("⚠ অনলাইন সংযোগ নেই — pore abar cheshta koro।");
+    try{
+      var r = await sb.auth.updateUser({ password:p1 });
+      if(r.error) throw r.error;
+      var f = document.getElementById("auPassForm"); if(f) f.reset();
+      show("✅ পাসওয়ার্ড বদলে গেছে — পরের বার নতুন পাসওয়ার্ড দিয়ে সাইন ইন করবেন।");
+    }catch(e){ show("⚠ পাসওয়ার্ড বদলানো যায়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।") + "।"); }
+  }
   function afterAuth(user, isNew){
     snapshotState();
     loadState(user.id);
     rerenderStore();
     if(window.refreshPanels) refreshPanels();
     closeAll();
-    toast(isNew ? "🎉 স্বাগতম, <b>" + esc(user.name) + "</b>! অ্যাকাউন্ট তৈরি হয়ে সাইন ইন হয়েছে (" + roleLabel(user.role) + ")।"
+    toast(isNew ? "🎉 স্বাগতম, <b>" + esc(user.name) + "</b>! অ্যাকাউন্ট তৈরি হয়ে সাইন ইন হয়েছে (" + roleLabel(user.role) + ")।" + (user.role === "seller" ? " 🏪 দোকান এখন Pending — NID কপি আপলোড করে আবেদন সম্পূর্ণ করুন (Seller Center)।" : "")
                 : "👋 স্বাগতম ফিরে আসায়, <b>" + esc(user.name) + "</b>! (" + roleLabel(user.role) + ")");
   }
   function doLogout(){
@@ -3301,7 +3413,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
   }
   document.getElementById("auRole").addEventListener("change", syncShopField);
 
-  function showErr(id, msg){ var el = document.getElementById(id); el.innerHTML = msg; el.style.display = "block"; }
+  function showErr(id, msg){ var el = document.getElementById(id); el.innerHTML = msg; el.style.display = "block"; el.style.color = ""; }
   function hideErr(id){ document.getElementById(id).style.display = "none"; }
 
   document.getElementById("auUpForm").addEventListener("submit", function(e){
@@ -3319,7 +3431,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     if(p1 !== p2) return showErr("auUpErr", "দুটি পাসওয়ার্ড মেলেনি — আবার দেখে লিখুন।");
     var form = this;
     Promise.resolve(ANBOBD_AUTH.register({ name:name, email:email, mobile:mobile, role:role, shopName:shop, pass:p1 })).then(function(res){
-      if(!res.ok) return showErr("auUpErr", res.error);
+      if(!res.ok){ if(res.needsConfirm){ var me = document.getElementById("auUpErr"); me.innerHTML = res.error; me.style.display = "block"; me.style.color = "var(--teal)"; } else showErr("auUpErr", res.error); return; }
       form.reset(); syncShopField();
       afterAuth(res.user, true);
     }).catch(function(err){ showErr("auUpErr", "সাইন আপ করা যায়নি — " + ((err && err.message) || "আবার চেষ্টা করুন।")); });
