@@ -1108,7 +1108,7 @@ function computeSalesSeries(){
   SALES7 = days; SALES30 = weeks;
 }
 
-var settings = { dhakaFee:60, outsideFee:120, freeAbove:2000, freeDeliveryMode:"dhaka", bkashNumber:"", nagadNumber:"", loyaltyPer100:1, loyaltyRedeemPoints:100, loyaltyRedeemValue:50, cod:true, bkash:true, nagad:true, card:false, flash:true, returns:true, vatRate:5, defaultCommission:10, payoutDay:"Thursday", payoutHoldDays:3, returnWindowDays:7, megaStacking:false, courierSteadfast:true, courierPathao:true, courierRedx:true, courierSundarban:false, bannerMega:true, bannerFreeDel:true, bannerNewSeller:false };
+var settings = { dhakaFee:60, outsideFee:120, freeAbove:2000, freeDeliveryMode:"dhaka", bkashNumber:"", nagadNumber:"", rocketNumber:"", loyaltyPer100:1, loyaltyRedeemPoints:100, loyaltyRedeemValue:50, cod:true, bkash:true, nagad:true, rocket:true, card:false, flash:true, returns:true, vatRate:5, defaultCommission:10, payoutDay:"Thursday", payoutHoldDays:3, returnWindowDays:7, megaStacking:false, courierSteadfast:true, courierPathao:true, courierRedx:true, courierSundarban:false, bannerMega:true, bannerFreeDel:true, bannerNewSeller:false };
 /* Settings persist in this browser (localStorage) so a reload doesn't lose
    them. Decision 6/7 (2026-11-21): platform payment numbers + loyalty rates
    ALSO sync to the Supabase `settings` key/value table (columns id, key,
@@ -1132,6 +1132,7 @@ async function sbSettingsSync(){
   var rows = [
     { key:"platform_bkash_number", value: settings.bkashNumber || "" },
     { key:"platform_nagad_number", value: settings.nagadNumber || "" },
+    { key:"platform_rocket_number", value: settings.rocketNumber || "" },
     { key:"loyalty_per_100", value: settings.loyaltyPer100 },
     { key:"loyalty_redeem_points", value: settings.loyaltyRedeemPoints },
     { key:"loyalty_redeem_value", value: settings.loyaltyRedeemValue }
@@ -1155,13 +1156,14 @@ async function sbSettingsSync(){
 async function sbSettingsLoad(){
   if (!sbReady()) return;
   try{
-    var r = await sb.from("settings").select("key,value").in("key", ["platform_bkash_number","platform_nagad_number","loyalty_per_100","loyalty_redeem_points","loyalty_redeem_value"]);
+    var r = await sb.from("settings").select("key,value").in("key", ["platform_bkash_number","platform_nagad_number","platform_rocket_number","loyalty_per_100","loyalty_redeem_points","loyalty_redeem_value"]);
     if (r.error || !r.data) return;
     var changed = false;
     r.data.forEach(function(row){
       var v = sbSettingsVal(row.value);
       if (row.key==="platform_bkash_number" && typeof v==="string" && v!==settings.bkashNumber){ settings.bkashNumber=v; changed=true; }
       if (row.key==="platform_nagad_number" && typeof v==="string" && v!==settings.nagadNumber){ settings.nagadNumber=v; changed=true; }
+      if (row.key==="platform_rocket_number" && typeof v==="string" && v!==settings.rocketNumber){ settings.rocketNumber=v; changed=true; }
       if (row.key==="loyalty_per_100" && !isNaN(+v)){ settings.loyaltyPer100=+v; changed=true; }
       if (row.key==="loyalty_redeem_points" && !isNaN(+v)){ settings.loyaltyRedeemPoints=+v; changed=true; }
       if (row.key==="loyalty_redeem_value" && !isNaN(+v)){ settings.loyaltyRedeemValue=+v; changed=true; }
@@ -1323,7 +1325,7 @@ function orderTotal(o){
    gives a transaction ID. Admin must verify that Txn ID before the master
    order can be confirmed and sent to the seller. COD needs no pre-check
    (rider collects), Card settles through the gateway. */
-function isManualPay(o){ return !!o && (o.pay === "bKash" || o.pay === "Nagad"); }
+function isManualPay(o){ return !!o && (o.pay === "bKash" || o.pay === "Nagad" || o.pay === "Rocket"); }
 function orderTxnId(o){ return (o && (o.txnId || o.payment_txn_id || o.transaction_id || o.txn)) || ""; }
 function orderPaymentStatus(o){
   if (!o) return "pending";
@@ -1573,7 +1575,7 @@ function renderDashboard(){
         return '<div class="top-item"><img src="'+esc(safeImg(p.img))+'" alt="" /><div><div class="nm">'+(i+1)+". "+esc(p.name)+'</div><div class="bar"><i style="width:'+Math.round(p.sold/maxSold*100)+'%"></i></div></div><b class="num">'+p.sold.toLocaleString("en-IN")+'</b></div>';
       }).join("") : '<p class="note" style="margin:0">No products yet.</p>') + "</div>"
     + '<div class="card"><h3>Payments received</h3><p class="hint">Recent non-cancelled orders, by method</p>'
-    + ["COD","bKash","Nagad","Card"].map(function(m){
+    + ["COD","bKash","Nagad","Rocket","Card"].map(function(m){
         var v = payTotals[m]||0;
         return '<div class="pay-row"><span><b>'+m+'</b></span><div class="bar"><i style="width:'+(payMax?Math.round(v/payMax*100):0)+'%"></i></div><b class="num">'+fmt(v)+'</b></div>';
       }).join("")
@@ -1636,7 +1638,7 @@ function renderOrders(){
   el.innerHTML = '<div class="card" style="margin-bottom:16px"><h3>Master Orders → Sub-Orders (multi-vendor rule)</h3><p class="hint" style="margin-bottom:6px"><b>Admin CAN:</b> master order confirm kora, prottek sub-order alada seller ke pathano, exception/cancel/dispute handle kora, SOB sub-order dekha. <b>Admin CANNOT:</b> seller er hoye pack/ship kora — pack seller er kaj, admin sudhu status track kore. Ek cart e 3 shop thakle = <b>1 master (customer dekhe) + 3 sub-order (prottek seller sudhu nijer ta dekhe)</b>, ar niche prottek order er pashei tar sub-order gula split hoye dekhabe.</p><p class="hint" style="margin-bottom:8px">Flow: Customer order → <b>Admin confirm</b> → prottek sub-order nijer seller er Seller Center e jay → seller pack → rider → delivered. Pending master seller keo dekhte pabe na.</p><p class="hint" style="margin-bottom:8px">Customer order ashe → <b>Admin (tumi) confirm koro</b> → system order ta <b>seller er Seller Center e pathiye dey</b> → seller pack kore rider er hate dey → shipped → delivered. Pending order seller dekhtei pabe na — tai wrong / fake order seller er kache jabe na.</p><div class="flow-track"><div class="flow-step"><b>Pending</b><span>Admin review baki</span></div><div class="flow-arrow">→</div><div class="flow-step"><b>Confirmed · Sent to seller</b><span>Seller Center e order geche</span></div><div class="flow-arrow">→</div><div class="flow-step"><b>Seller packed</b><span>Seller pack kore ready</span></div><div class="flow-arrow">→</div><div class="flow-step"><b>Shipped</b><span>Rider niye geche</span></div><div class="flow-arrow">→</div><div class="flow-step"><b>Delivered</b><span>Customer peyeche</span></div></div></div>'
     + '<div class="toolbar"><div class="chips">'+chips+'</div></div>'
     + '<div class="toolbar"><div class="search-box grow"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="orderSearch" type="search" placeholder="Search by order no. (#ANBO…), customer, phone or district…" value="'+esc(orderQuery)+'" aria-label="Search orders" /></div>'
-    + '<select class="filter" id="orderPay" aria-label="Filter by payment"><option value="all">All payments</option>'+["COD","bKash","Nagad","Card"].map(function(m){ return '<option value="'+m+'"'+(orderPay===m?" selected":"")+">"+m+"</option>"; }).join("")+'</select>'
+    + '<select class="filter" id="orderPay" aria-label="Filter by payment"><option value="all">All payments</option>'+["COD","bKash","Nagad","Rocket","Card"].map(function(m){ return '<option value="'+m+'"'+(orderPay===m?" selected":"")+">"+m+"</option>"; }).join("")+'</select>'
     + '<button class="btn ghost" type="button" id="exportOrders">⬇ Export CSV</button></div>'
     + '<div class="table-card"><table><thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Seller (fulfils)</th><th>Total</th><th>Payment</th><th>Status / Dispatch</th><th></th></tr></thead><tbody>'
     + (list.length ? list.map(function(o){
@@ -2260,10 +2262,11 @@ function renderSettings(){
     + switchRow("cod", "Cash on Delivery (COD)", "Rider collects cash at the door")
     + switchRow("bkash", "bKash", "Merchant wallet payments")
     + switchRow("nagad", "Nagad", "Merchant wallet payments")
+    + switchRow("rocket", "Rocket", "Merchant wallet payments")
     + switchRow("card", "Debit / Credit Card", "OFF — no payment gateway is connected yet. Turn on only after a real gateway is live.")
-    + '<h3 style="margin-top:28px">Platform bKash / Nagad number (Decision 6)</h3><p class="hint">Checkout e customer EI number-i dekhbe — seller er number na. Number na dile checkout e "number not configured yet" dekhabe, kono fake number dekhabe na. Save korle ei browser + Supabase settings table — dutotei jabe.</p>'
+    + '<h3 style="margin-top:28px">Platform bKash / Nagad / Rocket number (Decision 6)</h3><p class="hint">Checkout e customer EI number-i dekhbe — seller er number na. Number na dile checkout e "number not configured yet" dekhabe, kono fake number dekhabe na. Save korle ei browser + Supabase settings table — dutotei jabe.</p>'
     + '<form id="payNumForm"><div class="form-grid"><div class="field"><label for="sfBkashNo">Platform bKash number</label><input id="sfBkashNo" inputmode="tel" placeholder="01XXXXXXXXX" value="'+esc(settings.bkashNumber||"")+'" /></div>'
-    + '<div class="field"><label for="sfNagadNo">Platform Nagad number</label><input id="sfNagadNo" inputmode="tel" placeholder="01XXXXXXXXX" value="'+esc(settings.nagadNumber||"")+'" /></div></div>'
+    + '<div class="field"><label for="sfNagadNo">Platform Nagad number</label><input id="sfNagadNo" inputmode="tel" placeholder="01XXXXXXXXX" value="'+esc(settings.nagadNumber||"")+'" /></div><div class="field"><label for="sfRocketNo">Platform Rocket number</label><input id="sfRocketNo" inputmode="tel" placeholder="01XXXXXXXXX" value="'+esc(settings.rocketNumber||"")+'" /></div></div>'
     + '<button class="btn" type="submit">Save payment numbers</button></form>'
     + '<h3 style="margin-top:28px">Loyalty points (Decision 7)</h3><p class="hint">Delivered order thekei point jome — kokhono seed kora hoy na. Point er kono alada table nei — balance order theke hisab kora hoy.</p>'
     + '<form id="loyaltyForm"><div class="form-grid"><div class="field"><label for="sfLoyPer100">Points per ৳100 (Delivered order)</label><input id="sfLoyPer100" type="number" min="0" value="'+settings.loyaltyPer100+'" /></div>'
@@ -2307,11 +2310,11 @@ function renderSettings(){
   /* Decision 6: platform payment numbers. Decision 7: loyalty rates. */
   var pnf=$("#payNumForm"); if(pnf) pnf.addEventListener("submit", function(e){
     e.preventDefault();
-    var bk=$("#sfBkashNo").value.trim(), ng=$("#sfNagadNo").value.trim();
+    var bk=$("#sfBkashNo").value.trim(), ng=$("#sfNagadNo").value.trim(), rk=$("#sfRocketNo").value.trim();
     var okNum=function(v){ return v==="" || /^01[3-9]\d{8}$/.test(v); };
-    if(!okNum(bk)||!okNum(ng)){ toast("⚠ Sothik 11-digit number din (01 diye shuru) — khali rakhle checkout e 'not configured' dekhabe."); return; }
-    settings.bkashNumber=bk; settings.nagadNumber=ng; saveLocalSettings();
-    logActivity("Updated platform payment numbers (bKash/Nagad)");
+    if(!okNum(bk)||!okNum(ng)||!okNum(rk)){ toast("⚠ Sothik 11-digit number din (01 diye shuru) — khali rakhle checkout e 'not configured' dekhabe."); return; }
+    settings.bkashNumber=bk; settings.nagadNumber=ng; settings.rocketNumber=rk; saveLocalSettings();
+    logActivity("Updated platform payment numbers (bKash/Nagad/Rocket)");
     toast("<span class='lime'>✓ Platform payment numbers saved</span> — checkout e ekhon ei number dekhabe");
     renderAll();
   });
@@ -3075,7 +3078,7 @@ function renderFinance(){
   var dueTotal = sellers.reduce(function(a,s){ return a+derivedPayoutDue(s); },0);
   var commTotal = platformCommissionEarned();
   /* Payment reconciliation: expected vs settled per method (from non-cancelled orders) */
-  var methods = ["COD","bKash","Nagad","Card"];
+  var methods = ["COD","bKash","Nagad","Rocket","Card"];
   var recon = methods.map(function(m){
     var os = orders.filter(function(o){ return o.pay===m && o.status!=="cancelled"; });
     var expected = os.reduce(function(a,o){ return a+orderTotal(o); },0);
