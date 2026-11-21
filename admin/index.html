@@ -1043,6 +1043,7 @@ async function sbLoadAll(){
 /* UUID check (same shape as the storefront's anboIsUuid): a real shop/seller
    id is a UUID. Placeholder ids like "s1" (own-stock demo items) are NOT. */
 function anboIsUuid(v){ return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v); }
+function anboNewUuid(){ if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID(); return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c){ var r = Math.random() * 16 | 0; return (c === "x" ? r : (r & 0x3 | 0x8)).toString(16); }); }
 /* UUID seller groups for an order — the same per-shop grouping as
    getSubOrders()' computed fallback, but only groups whose shop resolves to
    a real shop UUID. Own-stock groups (no seller / non-UUID id) are skipped:
@@ -1105,11 +1106,11 @@ function ensureSubOrders(o, targetStatus){
     }).catch(function(e){ sbSaveFailed("sub_orders", e); });
   }
   function insertMissing(){
-    var rows = groups.map(function(g){ return { order_id: orderId, shop_id: g.shopId, seller_id: g.sellerId, subtotal: g.subtotal, status: targetStatus }; });
+    var rows = groups.map(function(g){ return { id: anboNewUuid(), order_id: orderId, shop_id: g.shopId, seller_id: g.sellerId, subtotal: g.subtotal, status: targetStatus }; });
     sb.from("sub_orders").insert(rows).select("id,order_id,shop_id,seller_id,subtotal,status").then(function(r){
       if (r && r.error){
         sbSaveFailed("sub_orders", r.error);
-        toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni (database insert blocked). Seller ekhono ei order dekhte pay ni — Order Details theke abar 'Seller ke pathao' chap dao.", 6500);
+        toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni (database insert blocked). Seller ekhono ei order dekhte pay ni — Order Details theke abar 'Seller ke pathao' chap dao. — DB: " + esc((r.error && (r.error.message || r.error.code)) || String(r.error)), 6500);
         return;
       }
       var inserted = (r && r.data && r.data.length) ? r.data : rows;
@@ -1119,7 +1120,7 @@ function ensureSubOrders(o, targetStatus){
       toast("✓ Sub-order toiri hoyeche — <b>" + esc(o.localId || o.id) + "</b> ekhon Seller Center e dekhabe: " + esc(names));
     }).catch(function(e){
       sbSaveFailed("sub_orders", e);
-      toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni. Seller ekhono ei order dekhte pay ni.", 6500);
+      toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni. Seller ekhono ei order dekhte pay ni. — DB: " + esc((e && e.message) || String(e)), 6500);
     });
   }
   if (o._realSubs && o._realSubs.length){ updateExisting(); return; }
