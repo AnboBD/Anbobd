@@ -1663,7 +1663,7 @@ function renderDashboard(){
   html += '<div class="grid-2"><div class="card"><h3>Team — Staff</h3><p class="hint">'+staff.filter(function(s){return s.status==="active";}).length+' active of '+staff.length+' staff · 5 roles with fixed permissions</p>'
     + staff.slice(0,4).map(function(s){ return '<div class="alert-item"><span class="avatar" style="width:38px;height:38px;font-size:13px">'+staffInitials(s.name)+'</span><div><div class="nm">'+esc(s.name)+'</div><div class="meta">'+esc(s.last)+'</div></div><span class="badge '+(ROLE_BADGE[s.role]||"b-draft")+'" style="margin-left:auto">'+s.role+'</span></div>'; }).join("")
     + '<button class="btn ghost sm" type="button" data-goto="staff" style="margin-top:12px">Manage staff &amp; roles →</button></div>'
-    + '<div class="card"><h3>Marketplace — Sellers</h3><p class="hint">'+sellers.filter(function(s){return s.status==="approved";}).length+' approved sellers · '+pendingSellerCount()+' waiting for approval · Payout due '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</p>'
+    + '<div class="card"><h3>Marketplace — Sellers</h3><p class="hint">'+plural(sellers.filter(function(s){return s.status==="approved";}).length,"approved seller","approved sellers")+' · '+plural(pendingSellerCount(),"seller","sellers")+' waiting for approval · Payout due '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</p>'
     + sellers.filter(function(s){return s.status==="approved";}).slice(0,4).map(function(s){ return '<div class="alert-item"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><div class="nm">'+esc(s.shop)+'</div><div class="meta">'+s.cat+' · '+s.products+' products · ★ '+s.rating+'</div></div><b class="num" style="margin-left:auto">'+fmt(s.sales)+'</b></div>'; }).join("")
     + '<button class="btn ghost sm" type="button" data-goto="sellers" style="margin-top:12px">Manage sellers &amp; payouts →</button></div></div>';
 
@@ -1766,7 +1766,7 @@ function renderOrders(){
           + '<td data-label="Seller / Sub-orders"><b style="font-size:13px">'+esc(shops.join(", "))+'</b><br /><span style="font-size:12px">↳ '+getSubOrders(o).length+' sub-order: '+getSubOrders(o).map(function(so){ return so.id+" ("+esc(so.shop)+" "+fmt(so.subtotal)+")"; }).join(" · ")+'</span><br /><span style="font-size:12px;color:'+(o.sentToSeller?"var(--ok)":"var(--warn-ink)")+'">'+(o.sentToSeller?"✓ Each sub-order sent to its seller":"⏳ Not sent — admin confirm korlei prottek sub-order alada jabe")+'</span></td>'
           + '<td data-label="Total"><b class="num">'+fmt(orderTotal(o))+'</b>'+(orderDiscount(o)?'<br /><span style="color:var(--ok);font-size:12px">−'+fmt(orderDiscount(o))+" "+o.coupon+"</span>":"")+'</td>'
           + '<td data-label="Payment"><b>'+esc(o.pay)+'</b><span class="pay-txn">Txn ID: <b>'+(orderTxnId(o) ? esc(orderTxnId(o)) : "—")+'</b></span>'+paymentBadge(o)+(isManualPay(o) && orderPaymentStatus(o)==="pending" && o.status!=="cancelled" ? '<br /><button class="btn sm" type="button" data-pay-ok="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm payment</button> <button class="btn danger sm" type="button" data-pay-no="'+esc(o.id)+'" style="margin-top:6px">Reject</button>' : "")+'</td>'
-          + '<td data-label="Status"><select class="status-sel" data-status-for="'+esc(o.id)+'" aria-label="Change status of '+esc(o.id)+'">'+["pending","confirmed","cancelled"].map(function(s){ return '<option value="'+s+'"'+(o.status===s?" selected":"")+'>'+(STATUS_LABEL[s]||s)+"</option>"; }).join("")+(["pending","confirmed","cancelled"].indexOf(o.status)===-1 ? '<option value="'+o.status+'" selected disabled>'+(STATUS_LABEL[o.status]||o.status)+' — seller/rider sets this</option>' : "")+'</select>'+(o.status==="pending"?'<br /><button class="btn sm" type="button" data-confirm-send="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm Master &amp; Send Sub-Orders</button>':"")+'<br /><span class="note">Packed/Shipped/Delivered seller/rider Seller Center theke update kore</span></td>'
+          + '<td data-label="Status"><select class="status-sel" data-status-for="'+esc(o.id)+'" aria-label="Change status of '+esc(displayId)+'">'+["pending","confirmed","cancelled"].map(function(s){ return '<option value="'+s+'"'+(o.status===s?" selected":"")+'>'+(STATUS_LABEL[s]||s)+"</option>"; }).join("")+(["pending","confirmed","cancelled"].indexOf(o.status)===-1 ? '<option value="'+o.status+'" selected disabled>'+(STATUS_LABEL[o.status]||o.status)+' — seller/rider sets this</option>' : "")+'</select>'+(o.status==="pending"?'<br /><button class="btn sm" type="button" data-confirm-send="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm Master &amp; Send Sub-Orders</button>':"")+'<br /><span class="note">Packed/Shipped/Delivered seller/rider Seller Center theke update kore</span></td>'
           + '<td data-label="" class="plain"><button class="btn ghost sm" type="button" data-view-order="'+esc(o.id)+'">Details</button></td></tr>';
       }).join("") : '<tr><td colspan="9"><div class="empty"><b>No orders match</b>Try a different status or search term.</div></td></tr>')
     + '</tbody></table></div>'
@@ -2355,10 +2355,10 @@ function renderReports(){
     + '<div class="card" style="margin-bottom:16px"><h3>🏆 Best sellers</h3><p class="hint">Sobcheye beshi bikri — units sold, all time</p>'
     + products.slice().sort(function(x,y){ return (y.sold||0)-(x.sold||0); }).slice(0,8).map(function(p,i){ return '<div class="pay-row" style="grid-template-columns:24px 1fr 86px"><span><b>'+(i+1)+'.</b></span><span><b>'+esc(p.name)+'</b><br /><span class="note">'+esc(PRODUCT_SELLER[p.id]||"")+'</span></span><b class="num">'+(p.sold||0)+' sold · '+fmt((p.price||0)*(p.sold||0))+'</b></div>'; }).join("")
     + '</div>'
-    + '<div class="card" style="margin-bottom:16px"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;align-items:center"><div><h3>Seller-wise report &amp; profit</h3><p class="hint" style="margin:0">Prottek seller er sales, commission, payout due ar AnboBD er profit — delivered + active order theke hisab</p></div><div class="seg"><button type="button" data-rrange="7" class="'+(reportRange==="7"?"on":"")+'">Last 7 days</button><button type="button" data-rrange="30" class="'+(reportRange==="30"?"on":"")+'">Last 30 days</button></div></div>'
+    + '<div class="card" style="margin-bottom:16px"><div><h3>Seller-wise report &amp; profit</h3><p class="hint" style="margin:0">Prottek seller er sales, commission, payout due ar AnboBD er profit — sob non-cancelled order er sub-order theke hisab, Finance ledger er sathei mile</p></div>'
     + '<div class="table-card" style="margin-top:14px"><table><thead><tr><th>Seller</th><th>Sales (all time)</th><th>Commission</th><th>Seller net</th><th>Payout due</th><th>Margin</th></tr></thead><tbody>'
-    + sellers.filter(function(s){return s.status==="approved";}).map(function(s){ var comm=sellerCommission(s); return '<tr><td data-label="Seller"><b>'+esc(s.shop)+'</b></td><td data-label="Sales"><b class="num">'+fmt(s.sales)+'</b></td><td data-label="Commission"><span class="num">'+fmt(comm)+' ('+s.commissionRate+'%)</span></td><td data-label="Net"><span class="num">'+fmt(s.sales-comm)+'</span></td><td data-label="Due"><b class="num">'+fmt(derivedPayoutDue(s))+'</b></td><td data-label="Margin"><span class="num">'+s.commissionRate+'% · VAT '+settings.vatRate+'% incl.</span></td></tr>'; }).join("")
-    + '</tbody></table></div><p class="note" style="margin:10px 0 0">Range: '+(reportRange==="7"?"Last 7 days":"Last 30 days (4 weeks)")+' · Platform profit = sob seller commission + own-stock margin − platform coupon khoroch. Seller-wise statement Finance page theke download kora jay.</p></div>'
+    + sellers.filter(function(s){return s.status==="approved";}).map(function(s){ /* Residual fix (2026-11-21): sales/commission age s.sales theke ashto — s.sales sudhu REAL sub_orders row theke hisab hoy (checkout sub-order insert na hole ৳0), ar Finance ledger getSubOrders() theke (real row na thakle order item theke compute kore). Dui jaygay dui total chilo. Ekhon table-ta ledger-er source-i bebohar kore: prottek non-cancelled order er sub-order (getSubOrders) theke sales + commission. */ var repSales=0, repComm=0; orders.forEach(function(o){ if(o.status==="cancelled") return; var so=subOrderForShop(o, s.shop); if(so){ repSales += (so.subtotal - (so.discount || 0)); repComm += so.commission; } }); return '<tr><td data-label="Seller"><b>'+esc(s.shop)+'</b></td><td data-label="Sales"><b class="num">'+fmt(repSales)+'</b></td><td data-label="Commission"><span class="num">'+fmt(repComm)+' ('+s.commissionRate+'%)</span></td><td data-label="Net"><span class="num">'+fmt(repSales-repComm)+'</span></td><td data-label="Due"><b class="num">'+fmt(derivedPayoutDue(s))+'</b></td><td data-label="Margin"><span class="num">'+s.commissionRate+'% · VAT '+settings.vatRate+'% incl.</span></td></tr>'; }).join("")
+    + '</tbody></table></div><p class="note" style="margin:10px 0 0">All time · sob non-cancelled order er sub-order theke hisab — Finance page er commission ledger er sathei mile. Payout due sudhu Delivered order theke (settlement niyom). Seller-wise statement Finance page theke download kora jay.</p></div>'
     + '<div class="card"><h3>Download reports</h3><p class="hint">CSV files you can open in Excel or Google Sheets</p><div class="dl-row">'
     + '<button class="btn" type="button" id="dlOrders">⬇ Orders CSV</button>'
     + '<button class="btn ghost" type="button" id="dlProducts">⬇ Products &amp; stock CSV</button>'
@@ -2806,35 +2806,59 @@ async function findKycDocInBucket(s, kind){
   }
   return "";
 }
-async function renderKycDocSlot(s, kind, path){
+/* Sign one kyc-docs path — returns {url, err}. A signed URL proves the
+   object exists AND this Admin can read it. Supabase Storage answers
+   "Object not found" for BOTH a missing object and an object RLS hides
+   from the caller, so the slot error must name both causes (see
+   renderKycDocSlot). Root cause, Hunny House NID (2026-11-21): the stored
+   path is correct (owner folder + nid_<ts>_<name>, saved only after the
+   seller upload succeeded — seller code never saves a path on failed
+   upload, and no code deletes storage objects), so the object exists and
+   the Admin call fails on the bucket policy: kyc-docs SELECT is
+   owner-scoped, the Admin (another uid) cannot sign it. Dashboard fix:
+   a storage.objects SELECT policy letting profiles.role='admin' read
+   kyc-docs (see change log). */
+async function signKycPath(path){
+  var clean = String(path || "").replace(/^kyc-docs\//, "");
+  if (/^https?:\/\//i.test(clean)) return { url: clean, err: "" };
+  if (!sbReady()) return { url: "", err: "" };
+  try{
+    var r = await sb.storage.from("kyc-docs").createSignedUrl(clean, 3600);
+    if (r && !r.error && r.data && r.data.signedUrl) return { url: r.data.signedUrl, err: "" };
+    return { url: "", err: (r && r.error && (r.error.message || String(r.error))) || "signed URL toiri hoy ni" };
+  }catch(e){ return { url: "", err: (e && e.message) || String(e) }; }
+}
+function kycFileName(path){ var seg = String(path || "").split("/").pop() || ""; return seg; }
+async function renderKycDocSlot(s, kind, path, signed){
   var slotId = kind === "nid" ? "kycDocNid" : "kycDocTrade";
   function slot(){ var el = document.getElementById(slotId); return (el && el.getAttribute("data-shop") === String(s.id)) ? el : null; }
   var el = slot(); if (!el) return;
   if (!path){ el.innerHTML = '<span class="note">' + (kind === "trade" ? "দেওয়া হয়নি (ঐচ্ছিক)" : "Upload kora hoy ni") + '</span>'; return; }
   var clean = String(path).replace(/^kyc-docs\//, "");
-  var url = "";
-  var kycErr = "";
-  if (/^https?:\/\//i.test(clean)){ url = clean; }
-  else if (sbReady()){
-    try{
-      var r = await sb.storage.from("kyc-docs").createSignedUrl(clean, 3600);
-      if (r && !r.error && r.data && r.data.signedUrl) url = r.data.signedUrl;
-      else if (r && r.error) kycErr = r.error.message || String(r.error);
-    }catch(e){ url = ""; kycErr = (e && e.message) || String(e); }
-  }
+  var sig = signed || await signKycPath(path);
+  var url = sig.url || "";
   el = slot(); if (!el) return;
-  if (!url){ el.innerHTML = '<span class="note">Document khola jachhe na' + (kycErr ? ' — ' + esc(kycErr) : ' (signed URL toiri hoy ni — storage policy / bucket access check korun)') + '</span>'; return; }
+  if (!url){ el.innerHTML = '<span class="note">Document khola jachhe na' + (sig.err ? ' — ' + esc(sig.err) : '') + ' (file: ' + esc(kycFileName(clean)) + '). File shops row-e ache kintu bucket theke khola jay ni — hoy file upload hoy ni / muche geche, na hoy Admin-er kyc-docs read permission nei. Seller nijer Seller Center theke file ta dekhte parle file ache — tokhon Supabase Dashboard → Storage → kyc-docs → Policies te admin-read policy lagbe.</span>'; return; }
   var isImg = /\.(jpe?g|png|webp|gif)$/i.test(clean);
   el.innerHTML = (isImg ? '<a href="'+esc(url)+'" target="_blank" rel="noopener"><img src="'+esc(url)+'" alt="'+(kind === "nid" ? "NID copy" : "Trade licence copy")+' preview" style="width:76px;height:50px;object-fit:cover;border-radius:8px;border:1px solid var(--line);vertical-align:middle;margin-right:8px" /></a>' : "")
     + '<a class="btn ghost sm" href="'+esc(url)+'" target="_blank" rel="noopener" download>Dekhun / Download</a>';
 }
 async function resolveKycDoc(s, kind){
   var path = kind === "nid" ? s.nidDoc : s.tradeDoc;
-  if (!path && sbReady()){
-    path = await findKycDocInBucket(s, kind);
-    if (path){ if (kind === "nid") s.nidDoc = path; else s.tradeDoc = path; }
+  var signed = null;
+  if (path) signed = await signKycPath(path);
+  /* Stored path sign korte na parle bucket-e khujo — seller re-upload
+     korle notun path hoy, ar shops row update na hole purono path stale
+     thake. List kora gelei notun file ta sign kore dekhao; list-o na
+     khulle (admin read permission nei) ager error-i dekhabe. */
+  if ((!signed || !signed.url) && sbReady()){
+    var alt = await findKycDocInBucket(s, kind);
+    if (alt && alt !== path){
+      var altSigned = await signKycPath(alt);
+      if (altSigned.url){ path = alt; signed = altSigned; if (kind === "nid") s.nidDoc = path; else s.tradeDoc = path; }
+    }
   }
-  renderKycDocSlot(s, kind, path);
+  renderKycDocSlot(s, kind, path, signed);
 }
 function loadKycDocs(s){ resolveKycDoc(s, "nid"); resolveKycDoc(s, "trade"); }
 function openSellerDetail(id){
