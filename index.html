@@ -2452,7 +2452,8 @@ var ANBOBD_DB = {
   },
   sb: function(){
     if(!this.configured()) return null;
-    if(!this.client){ this.client = window.supabase.createClient(ANBOBD_SUPABASE.url, ANBOBD_SUPABASE.anonKey); }
+    /* 2026-11-21 (re-audit seller-signup fix): per-panel storageKey — storefront, Admin (/admin) ar Seller Center (/seller) age default supabase-js key (sb-<ref>-auth-token) share korto, tai ek panel-e sign-in korle arek panel-er session overwrite hoye jeto; storefront reload-e seller-er bodle "Admin • Admin" dekhato. Ekhon prottek panel-er alada key — ekbar abar sign-in korte hobe. */
+    if(!this.client){ this.client = window.supabase.createClient(ANBOBD_SUPABASE.url, ANBOBD_SUPABASE.anonKey, { auth: { storageKey: "anbobd-storefront-auth" } }); }
     return this.client;
   },
   fetchProfile: async function(uid){
@@ -2840,18 +2841,21 @@ ANBOBD_DB.saveShopSettings = function(shop){
   if(!shop) return;
   return this.updateShopRow(shop.id, { name: shop.name, payout_method: shop.payoutMethod, payout_account: shop.payoutNo });
 };
-/* P0-4b (2026-11-21): fixed same bug class as the deleted homepage form — insert now sends only real shops columns (shop_name, slug, owner_id, status, kyc_status, owner_phone) and fetches the row back via fetchShopByOwner instead of .select().single(). */
-ANBOBD_DB.createShopForSeller = async function(ownerId, shopName, phone){
+/* Re-audit seller-signup fix (2026-11-21): storefront signup-er shop insert kokhono DB-te pouchato na — Seller Center "kono shop pawa jay ni" bolto, kintu toast "Pending" dekhato. Root cause: (1) insert-e sudhu 6 ta column pathano hoto, Seller Center-er proven registration (seller L1548) jekhane full payload pathay — kono NOT NULL / policy-check column baad porle insert 23502/42501-e fail kore; (2) insert-er por alada fetchShopByOwner read-back — fail korle null; (3) null pelei anboCreateLocalShop diye sudhu memory-te "Approved" shop banano hoto, tai banner lukato ar Seller Center kichu khuje peto na. Fix: Seller Center-er motoi full payload + .insert().select().single() (atomic read-back — pending row owner-er kache fere, Hunny House-er registration-e promanito), ar fail korle asol error message lastShopError-e rekhe null ferot — kono fake local shop na. */
+ANBOBD_DB.lastShopError = "";
+ANBOBD_DB.createShopForSeller = async function(ownerId, shopName, phone, ownerName){
   var sb = this.sb(); if(!sb) return null;
+  ANBOBD_DB.lastShopError = "";
   try{
     var nm = (shopName||"").trim() || "আমার দোকান";
+    var ph = phone ? String(phone).trim() : "";
     var slug = nm.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + String(ownerId||"").slice(0, 6);
-    var payload = { owner_id: ownerId, shop_name: nm, slug: slug, status: "pending", kyc_status: "pending" };
-    if(phone) payload.owner_phone = String(phone).trim();
-    var r = await sb.from('shops').insert(payload);
+    /* Seller Center registration-er (seller L1548) payload-er motoi full set — storefront signup-e ja jana jay na (category/district/address/NID) tar jonno form-er default (Fashion/Dhaka/bKash) ba khali string; seller pore Seller Center registration-e giye asol tothyo diye update korbe. Copy-URL duto pathano hoy na — NID upload Seller Center-er pending-page KYC card theke hoy, tokhon UPDATE-e bosbe. */
+    var payload = { owner_id: ownerId, shop_name: nm, slug: slug, category: "Fashion", district: "Dhaka", pickup_address: "", payout_method: "bKash", payout_account: ph, payout_name: (ownerName||"").trim() || nm, nid_number: "", trade_licence: "", owner_phone: ph, status: "pending", kyc_status: "pending" };
+    var r = await sb.from('shops').insert(payload).select().single();
     if(r.error) throw r.error;
-    return await ANBOBD_DB.fetchShopByOwner(ownerId);
-  }catch(e){ anboDbErr("দোকানটি অনলাইনে তৈরি করা যায়নি", e); return null; }
+    return r.data || null;
+  }catch(e){ ANBOBD_DB.lastShopError = (e && e.message) ? e.message : String(e || "unknown error"); anboDbErr("দোকানটি অনলাইনে তৈরি করা যায়নি", e); return null; }
 };
 /* P0-4 (2026-11-21): applySellerShop deleted — it inserted non-existent shops columns (name/owner_name/phone, no slug/owner_id) and .select().single() could never return a pending row. Seller registration lives only in /seller. */
 ANBOBD_DB.fetchShopByOwner = async function(ownerId){
@@ -2910,7 +2914,8 @@ function anboUserFromProfile(authUser, prof){
   if(user.role==="seller"){
     var existing = ANBOBD_STORE.sellers.filter(function(s){ return s.ownerId===user.id; })[0];
     if(existing) user.sellerId = existing.id;
-    else anboCreateLocalShop(user, meta.shop_name || "", user.email, user.mobile);
+    /* Re-audit seller-signup fix (2026-11-21): Supabase mode-e ekhane local shop banano jabe na — age ekhanei "Approved" fake shop toiri hoto, tai DB-te shop na thakleo Account page-e pending banner lukiye jeto ar Seller Center kichu khuje peto na. sellerId sudhu anboResolveSellerShop DB row theke bosabe; na pele null thakbe ar Account page "আবেদন এখনো সম্পূর্ণ হয়নি" dekhabe. Offline (local) mode-e local shop-i ekmatro model, tai sekhane ager motoi thakbe. */
+    else if(!ANBOBD_DB.configured()) anboCreateLocalShop(user, meta.shop_name || "", user.email, user.mobile);
   }
   return user;
 }
@@ -2981,14 +2986,16 @@ var ANBOBD_AUTH = {
     var user = { id:au.id, name:d.name.trim(), email:email, mobile:d.mobile.trim(), role:d.role, sellerId:null, createdAt:new Date().toISOString() };
     if(d.role==="seller"){
       /* Seller হলে shops table-এও row তৈরি হয় (status: pending) — ফিরে আসা shop id-ই sellerId */
-      var shopRow = await ANBOBD_DB.createShopForSeller(au.id, d.shopName, d.mobile);
+      var shopRow = await ANBOBD_DB.createShopForSeller(au.id, d.shopName, d.mobile, d.name);
       if(shopRow && shopRow.id){
         user.sellerId = shopRow.id;
         if(!ANBOBD_STORE.sellers.some(function(s){ return String(s.id)===String(shopRow.id); })){
           ANBOBD_STORE.sellers.push({ id:shopRow.id, supabaseId:shopRow.id, name:shopRow.shop_name || shopRow.name || (d.shopName||"").trim() || "আমার দোকান", logoUrl:shopRow.logo_url || "", area:shopRow.district || "বাংলাদেশ", rating:0, email:email, phone:d.mobile.trim(), payoutMethod:"bKash", payoutNo:d.mobile.trim(), commissionRate:8, status:shopRow.status || "pending", ownerId:au.id });
         }
       } else {
-        anboCreateLocalShop(user, d.shopName, email, d.mobile);
+        /* Re-audit seller-signup fix (2026-11-21): shop insert fail korle kokhono local "Approved" shop banano jabe na — age eitai hoto, tai toast "Pending" bolto kintu Seller Center shop khuje peto na. Account toiri hoye geche, tai signup ok thakbe; shopError dekhe afterAuth asol karon janabe, ar Account page "আবেদন এখনো সম্পূর্ণ হয়নি" banner dekhabe (Seller Center registration diye shop toiri kora jabe). */
+        user.sellerId = null;
+        user.shopError = ANBOBD_DB.lastShopError || "দোকান তৈরি হয়নি";
       }
     }
     this.session = user; window.__anboCurrentUser = user;
@@ -3362,7 +3369,14 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     rerenderStore();
     if(window.refreshPanels) refreshPanels();
     closeAll();
-    toast(isNew ? "🎉 স্বাগতম, <b>" + esc(user.name) + "</b>! অ্যাকাউন্ট তৈরি হয়ে সাইন ইন হয়েছে (" + roleLabel(user.role) + ")।" + (user.role === "seller" ? " 🏪 দোকান এখন Pending — NID কপি আপলোড করে আবেদন সম্পূর্ণ করুন (Seller Center)।" : "")
+    /* Re-audit seller-signup fix (2026-11-21): seller toast age sobsomoy "Pending" bolto — shop insert fail korleo. Ekhon shop-er asol obostha onujayi: DB shop thakle Pending, insert fail korle asol error, ar na thakle Seller Center-e jete bolbe. */
+    var sellerNote = "";
+    if(user.role === "seller"){
+      if(user.shopError) sellerNote = " ⚠️ দোকান অনলাইনে তৈরি হয়নি (" + esc(user.shopError) + ") — Seller Center-এ গিয়ে আবেদন সম্পূর্ণ করুন।";
+      else if(user.sellerId) sellerNote = " 🏪 দোকান এখন Pending — NID কপি আপলোড করে আবেদন সম্পূর্ণ করুন (Seller Center)।";
+      else sellerNote = " 🏪 দোকানের আবেদন সম্পূর্ণ করতে Seller Center-এ যান।";
+    }
+    toast(isNew ? "🎉 স্বাগতম, <b>" + esc(user.name) + "</b>! অ্যাকাউন্ট তৈরি হয়ে সাইন ইন হয়েছে (" + roleLabel(user.role) + ")।" + sellerNote
                 : "👋 স্বাগতম ফিরে আসায়, <b>" + esc(user.name) + "</b>! (" + roleLabel(user.role) + ")");
   }
   function doLogout(){
