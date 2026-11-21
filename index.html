@@ -155,7 +155,7 @@ section{padding:52px 0 8px}
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .pcard{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--card-shadow);display:flex;flex-direction:column;transition:transform .25s, box-shadow .25s;transform-style:preserve-3d;position:relative}
 .pcard:hover{transform:perspective(800px) rotateX(3deg) translateY(-5px);box-shadow:0 26px 44px rgba(16,40,32,.16)}
-.pimg{position:relative;background:#fff;aspect-ratio:1/1;overflow:hidden;cursor:pointer;border:0;padding:0;width:100%}
+.pimg{position:relative;display:block;background:#fff;aspect-ratio:1/1;overflow:hidden;cursor:pointer;border:0;padding:0;width:100%;text-decoration:none}
 .pimg img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
 .pcard:hover .pimg img{transform:scale(1.06) rotate(-1deg)}
 .badge{position:absolute;top:10px;left:10px;background:var(--coral);color:#fff;font-weight:800;font-size:.78rem;border-radius:9px;padding:4px 9px;box-shadow:0 4px 0 rgba(0,0,0,.18);transform:rotate(-3deg);z-index:2}
@@ -165,6 +165,7 @@ section{padding:52px 0 8px}
 .pbody{padding:14px 16px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
 .pcat{font-size:.74rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--teal)}
 .pname{font-weight:700;font-size:1.02rem;line-height:1.35;margin:0}
+.pname a{color:inherit;text-decoration:none}
 .stars{color:var(--amber);font-size:.85rem;letter-spacing:1px}
 .stars span{color:var(--muted);letter-spacing:0}
 .pmeta{display:flex;gap:6px;flex-wrap:wrap}
@@ -1352,10 +1353,13 @@ function stockLine(p){
 function packLabel(p){ if(!p) return ""; var parts=[]; if(p.packSize!=null && p.packSize!=="" && +p.packSize>0){ parts.push(String(p.packSize)+(p.unit?" "+p.unit:"")); } else if(p.unit){ parts.push(p.unit); } if(p.packaging){ parts.push(p.packaging); } return parts.join(" · "); }
 function cardHTML(p, flash){
   var b = BR(p.brandId);
+  /* Product page (2026-11-21): card-er chhobi + nam /product.html?id=<id>-e
+     jay — alada product page. data-view modal ar khole na; #product-<id>
+     hash link ekhono modal khole (openProductFromHash, backward compat). */
   var h = '<article class="pcard">' +
-    '<button class="pimg" data-view="'+escHtml(p.id)+'" aria-label="'+escHtml(p.name)+' বড় করে দেখুন"><img loading="lazy" decoding="async" src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+' — '+escHtml(p.bn)+'"><span class="badge">−'+offPct(p)+'%</span><span class="soldtag">বিক্রি '+soldFmt(p.soldCount)+'</span></button>' +
+    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — বিস্তারিত দেখুন"><img loading="lazy" decoding="async" src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+' — '+escHtml(p.bn)+'"><span class="badge">−'+offPct(p)+'%</span><span class="soldtag">বিক্রি '+soldFmt(p.soldCount)+'</span></a>' +
     '<button class="wishbtn'+(wishlist[p.id]?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="উইশলিস্টে রাখুন">'+(wishlist[p.id]?'❤️':'🤍')+'</button>' +
-    '<div class="pbody"><div class="pcat">'+CAT(p.categoryId).label+' • '+escHtml(b ? b.name : (SL(p.sellerId) ? SL(p.sellerId).name : "No brand"))+'</div><h3 class="pname">'+escHtml(p.name)+'</h3>' +
+    '<div class="pbody"><div class="pcat">'+CAT(p.categoryId).label+' • '+escHtml(b ? b.name : (SL(p.sellerId) ? SL(p.sellerId).name : "No brand"))+'</div><h3 class="pname"><a href="/product.html?id='+encodeURIComponent(p.id)+'">'+escHtml(p.name)+'</a></h3>' +
     (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
     '<div>'+vfdBadge(p)+(p.isNew?' <span class="vfd-badge" style="background:#fff3c4;color:#7a5b00">NEW</span>':'')+'</div>' +
     '<div class="stars">'+stars(p.rating)+' <span>• '+p.reviewCount+' রিভিউ</span></div>' +
@@ -1690,9 +1694,10 @@ function renderRecent(){
 function openModal(id){
   var p = P(id); if(!p) return;
   modalId = id; modalQty = 1; document.getElementById("mQty").textContent = "1";
-  /* P1-15 — hash routing: product khulle URL e #product-<id> boshe. Share
-     button (mShare) age thekei ei format er link banay; ekhon sei link
-     khulleo product khulbe (openProductFromHash). replaceState — hashchange
+  /* P1-15 — hash routing: product khulle URL e #product-<id> boshe.
+     Share button (mShare) ekhon canonical /product.html?id=<id> link
+     banay; purono #product- link khulleo modal khulbe
+     (openProductFromHash, backward compat). replaceState — hashchange
      fire kore na, tai loop hoy na. */
   try{ history.replaceState(null, "", "#product-" + encodeURIComponent(String(id))); }catch(e){}
   renderSlider(p);
@@ -2063,7 +2068,7 @@ document.addEventListener("click", function(e){
   var add = e.target.closest("[data-add]"); if(add){ addToCart(add.dataset.add); return; }
   var buy = e.target.closest("[data-buy]"); if(buy){ addToCart(buy.dataset.buy); openCart(); return; }
   var wish = e.target.closest("[data-wish]"); if(wish){ toggleWish(wish.dataset.wish); return; }
-  var view = e.target.closest("[data-view]"); if(view){ openModal(view.dataset.view); return; }
+  var view = e.target.closest("[data-view]"); if(view){ location.href = "/product.html?id=" + encodeURIComponent(view.dataset.view); return; } /* Product page (2026-11-21): recent/recommended-er data-view click-o alada product page-e jay; modal khole shudhu #product- hash link-e. */
   var inc = e.target.closest("[data-inc]"); if(inc){ var p=P(inc.dataset.inc); cart[inc.dataset.inc]=Math.min(cart[inc.dataset.inc]+1, p?p.stockQty:99); renderCart(); return; }
   var dec = e.target.closest("[data-dec]"); if(dec){ var id=dec.dataset.dec; cart[id]--; if(cart[id]<=0) delete cart[id]; renderCart(); return; }
   var rm = e.target.closest("[data-rm]"); if(rm){ delete cart[rm.dataset.rm]; renderCart(); return; }
@@ -2195,7 +2200,7 @@ document.getElementById("mImgWrap").addEventListener("pointermove", function(e){
 /* share: পণ্যের লিংক কপি (লাইভ সাইটের ঠিকানা — এই প্রিভিউর নিজের URL নয়) */
 document.getElementById("mShare").addEventListener("click", function(){
   if(!modalId) return;
-  var link = "https://anbobd-azure.vercel.app/#product-" + modalId;
+  var link = "https://anbobd-azure.vercel.app/product.html?id=" + encodeURIComponent(modalId);
   function copied(){ toast("🔗 পণ্যের লিংক কপি হয়েছে — যেখানে খুশি শেয়ার করুন!"); }
   function failed(){ toast("⚠️ লিংক কপি করা যায়নি — লিংকটি হাতে কপি করুন: " + link); }
   function fallbackCopy(){
@@ -3411,11 +3416,24 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     }).catch(function(err){ errEl.textContent = "পাসওয়ার্ড বদলানো যায়নি — " + ((err && err.message) || "আবার চেষ্টা করুন।"); });
   });
   anboCheckRecovery();
-  /* /login, /register, /signup redirect (?auth=...) — vercel.json theke ase. */
+  /* /login, /register, /signup redirect (?auth=...) — vercel.json theke ase.
+     ?checkout=1 — product.html theke Buy Now: catalog load howar por cart
+     drawer khule (renderCart-er age catalog dorkar — retry loop).
+     ?q=... — product.html theke search: query bosiye filter kore. */
   (function(){
     try{
-      var q = new URLSearchParams(location.search).get("auth");
+      var params = new URLSearchParams(location.search);
+      var q = params.get("auth");
       if(q === "signin" || q === "signup"){ openAuth(q); }
+      var sq = params.get("q");
+      if(sq){ var si = document.getElementById("searchInput"); if(si){ si.value = sq; query = sq.trim().toLowerCase(); renderProducts(); var pe = document.getElementById("products"); if(pe) pe.scrollIntoView({behavior:"smooth"}); } }
+      if(params.get("checkout") === "1"){
+        var tries = 0;
+        (function openWhenReady(){
+          if(typeof catalogLoading !== "undefined" && catalogLoading && tries < 20){ tries++; setTimeout(openWhenReady, 500); return; }
+          if(typeof openCart === "function") openCart();
+        })();
+      }
     }catch(e){}
   })();
 })();
