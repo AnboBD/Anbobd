@@ -2634,7 +2634,16 @@ var ANBOBD_DB = {
       var subTotal = subItems.reduce(function(s,it){ return s+it.lineTotal; },0);
       if(!saved || !saved.id) break;
       var subPayload = { order_id: saved.id, subtotal: subTotal, status: order.status };
-      if(anboIsUuid(sid)){ subPayload.shop_id = sid; subPayload.seller_id = sid; }
+      if(anboIsUuid(sid)){
+        subPayload.shop_id = sid;
+        /* FK fix (2026-11-21): sub_orders.seller_id references the seller PERSON
+           (profiles.id = shop owner), NOT the shop UUID — sending sid as seller_id
+           violates sub_orders_seller_id_fkey. Resolve the owner id from the loaded
+           sellers list; omit seller_id when unknown. */
+        var sv = null;
+        (ANBOBD_STORE.sellers || []).forEach(function(s){ if (String(s.id) === String(sid) || String(s.supabaseId || "") === String(sid)) sv = s; });
+        if (sv && sv.ownerId) subPayload.seller_id = sv.ownerId;
+      }
       try{
         var sr = await sb.from('sub_orders').insert(subPayload);
         if(sr.error) console.warn("Sub-order insert rejected (main order saved):", sr.error);
