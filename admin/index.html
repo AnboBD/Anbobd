@@ -1377,8 +1377,8 @@ function orderPaymentStatus(o){
   if (!o) return "pending";
   if (o.pay === "COD") return "cod";
   if (o.pay === "Card") return "gateway";
-  if (o.paymentStatus) return o.paymentStatus;
-  if (o.payment_status) return o.payment_status;
+  var ps = o.paymentStatus || o.payment_status || "pending";
+  if (ps === "confirmed" || ps === "rejected") return ps;
   return "pending";
 }
 function paymentBadge(o){
