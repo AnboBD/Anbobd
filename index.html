@@ -1921,7 +1921,7 @@ function checkoutSubmit(e){
     id: orderId,
     items: Object.keys(cart).map(function(k){ var p=P(k); return { productId:p.id, sku:p.sku, name:p.name, qty:cart[k], unitPrice:p.price, lineTotal:p.price*cart[k], sellerId:p.sellerId }; }),
     customer: { name:name, phone:phone, address:addr, district:dist, note:note },
-    payment: { method:pay, status: pay==="ক্যাশ অন ডেলিভারি" ? "Pay on delivery" : (isManual ? "Manual payment submitted — AwaitingAdmin verification" : "Pending"), transactionId: isManual ? trxId : null, senderNumber: isManual ? paySender : null },
+    payment: { method:pay, status: pay==="ক্যাশ অন ডেলিভারি" ? "Pay on delivery" : (isManual ? "pending" : "Pending"), transactionId: isManual ? trxId : null, senderNumber: isManual ? paySender : null },
     amounts: { subtotal:t.sub, discount:t.discount, deliveryFee:t.ship, total:t.total },
     promoCode: (loyaltyRedeem ? "LOYALTY100" : promoCode), zone: zone, status: "AwaitingAdmin",
     statusHistory: [{ status:"AwaitingAdmin", at:new Date().toISOString(), note:"অর্ডার গৃহীত — Admin যাচাইয়ে পাঠানো হয়েছে" }],
