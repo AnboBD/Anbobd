@@ -48,6 +48,13 @@ a{color:var(--teal)}
 .pay-txn b{color:var(--ink)}
 /* ---------- Login ---------- */
 #loginView{min-height:100vh;display:grid;grid-template-columns:1.05fr 1fr}
+/* Session-restore boot screen (2026-11-21): sign-in form flash fix — #loginView
+   starts hidden behind this while getSession() resolves. */
+#bootView{position:fixed;inset:0;z-index:2000;background:var(--teal-deep);color:#eaf5ee;display:flex;align-items:center;justify-content:center;text-align:center}
+#bootView .boot-inner{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px}
+#bootView .boot-spin{width:44px;height:44px;border-radius:50%;border:4px solid rgba(255,255,255,.25);border-top-color:var(--lime);animation:bootSpin .8s linear infinite}
+@keyframes bootSpin{to{transform:rotate(360deg)}}
+#bootView p{margin:0;color:#b9d4c6;font-size:14px}
 .login-brand{background:var(--teal-deep);color:#eaf5ee;padding:48px 44px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
 .login-brand::after{content:"";position:absolute;right:-90px;bottom:-90px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle at 35% 35%,rgba(168,225,12,.5),rgba(168,225,12,0) 65%)}
 .brand-logo{font-family:"Bricolage Grotesque",sans-serif;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap}
@@ -349,8 +356,20 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
 </head>
 <body>
 
+<!-- Session-restore boot screen (2026-11-21): shown while getSession() resolves so a
+     signed-in admin never sees the sign-in form flash on reload. Hidden by hideBoot(). -->
+<div id="bootView" role="status" aria-live="polite">
+  <div class="boot-inner">
+    <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span><span class="brand-tag">Admin</span></div>
+    <div class="boot-spin" aria-hidden="true"></div>
+    <p>সেশন যাচাই করা হচ্ছে…</p>
+  </div>
+</div>
+
 <!-- ================= LOGIN ================= -->
-<section id="loginView" aria-label="Admin sign in">
+<!-- Starts hidden (inline style) — shown only by showLoginView() after the session
+     check finishes with NO session. -->
+<section id="loginView" aria-label="Admin sign in" style="display:none">
   <div class="login-brand">
     <div>
       <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span><span class="brand-tag">Admin</span></div>
@@ -2870,6 +2889,12 @@ function setAuthMode(mode){
   var lf = $("#loginForm");
   if (lf) lf.style.display = "";
 }
+/* Session-restore flash fix (2026-11-21): #loginView starts hidden behind
+   #bootView while getSession() resolves. The sign-in form is only shown after
+   the check finishes with NO session — a signed-in admin goes straight to the
+   dashboard and never sees the form, not even for one frame. */
+function hideBoot(){ var b = document.getElementById("bootView"); if (b) b.style.display = "none"; }
+function showLoginView(){ hideBoot(); var lv = document.getElementById("loginView"); if (lv) lv.style.display = ""; }
 function refreshAuthView(){
   renderConnectionNotice();
   setAuthMode("login");
@@ -2887,6 +2912,7 @@ function findAccount(email){
   return found;
 }
 function enterApp(member){
+  hideBoot();
   currentUserId = member.id;
   currentUserName = member.name; currentUserRole = member.role; currentUserEmail = member.email || "";
   member.last = "Now · signed in";
@@ -3161,20 +3187,28 @@ document.addEventListener("keydown", function(e){ if (e.key==="Escape"){ closeDr
 try{ $("#topDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long", day:"numeric", month:"long", year:"numeric"}) + " · Dhaka, Bangladesh"; }catch(e){}
 refreshAuthView();
 renderNav();
-/* Restore an existing Supabase session on load (supabase.auth.getSession). */
+/* Restore an existing Supabase session on load (supabase.auth.getSession).
+   Flash fix (2026-11-21): every no-session / failure path shows the sign-in
+   form explicitly via showLoginView() — it starts hidden behind #bootView. */
 if (sbReady()){
   sb.auth.getSession().then(async function(res){
     var session = res && res.data && res.data.session;
-    if (!session || !session.user) return;
+    if (!session || !session.user){ showLoginView(); return; }
     try{
       var member = await sbFetchMember(session.user);
-      if (member.status !== "active" || !member.role) return;
+      if (member.status !== "active" || !member.role){ showLoginView(); return; }
       if (!staff.some(function(s){ return String(s.id) === String(member.id); })) staff.push(member);
       refreshAuthView();
       await sbLoadAll();
       enterApp(member);
-    }catch(e){ sbWarn("auth", e); }
-  }).catch(function(e){ sbWarn("auth", e); });
+    }catch(e){ sbWarn("auth", e); showLoginView(); }
+  }).catch(function(e){ sbWarn("auth", e); showLoginView(); });
+  /* Safety net: if the session check ever hangs, never leave the boot screen
+     up forever — fall back to the sign-in form after 10s. A late getSession
+     resolve still enters the app via enterApp(). */
+  setTimeout(function(){ var b = document.getElementById("bootView"); if (b && b.style.display !== "none") showLoginView(); }, 10000);
+}else{
+  showLoginView();
 }
 </script>
 <script>
