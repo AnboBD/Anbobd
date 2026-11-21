@@ -1094,8 +1094,10 @@
   function mapProductRow(r){
     var st = String(r.status || "pending").toLowerCase();
     var imgs = (Array.isArray(r.images) && r.images.length) ? r.images.filter(function(u){ return !!u; }).slice() : (r.image_url ? [r.image_url] : []);
-    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", desc: r.description || r.desc || "", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved"), images: imgs, imageUrl: imgs.length ? imgs[0] : (r.image_url || "") };
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", desc: r.description || r.desc || "", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved"), images: imgs, imageUrl: imgs.length ? imgs[0] : (r.image_url || ""), packSize: (r.pack_size != null && r.pack_size !== "" ? Number(r.pack_size) : (r.packSize != null ? Number(r.packSize) : null)), unit: r.unit || r.pack_unit || "", packaging: r.packaging || "" };
   }
+  /* Pack label: "500 g · Jar" — shudhu ja set kora ache tai dekhay; khali thakle "" (kichu dekhabe na). */
+  function packLabel(p){ if(!p) return ""; var parts=[]; if(p.packSize != null && p.packSize !== "" && +p.packSize > 0){ parts.push(String(p.packSize) + (p.unit ? " " + p.unit : "")); } else if(p.unit){ parts.push(p.unit); } if(p.packaging){ parts.push(p.packaging); } return parts.join(" · "); }
   function mapCouponRow(r){
     var expStr = r.expiry || (r.expires_at ? fmtDate(r.expires_at) : "");
     var rawSt = String(r.status || "live").toLowerCase();
@@ -1104,15 +1106,33 @@
     var cStatus = rawSt === "paused" ? "Paused" : (rawSt === "pending" ? "Pending Approval" : ((!isNaN(expMs) && expMs <= Date.now()) ? "Expired" : "Live"));
     return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, code: r.code || "", type: (String(r.type || r.discount_type || "Percent").toLowerCase().indexOf("flat") > -1 ? "Flat" : "Percent"), value: Number(r.value != null ? r.value : (r.discount_value || 0)), min: Number(r.min_order != null ? r.min_order : (r.min || 0)), cap: Number(r.max_cap != null ? r.max_cap : (r.max_discount != null ? r.max_discount : (r.cap || 0))), scope: r.scope || "Shop-wide (sob product)", expiry: expStr, limit: Number(r.usage_limit || r.limit || 200), used: Number(r.used_count || r.used || 0), status: cStatus };
   }
+  /* sub_orders er asol status column (DB values: AwaitingAdmin,
+     AdminConfirmed, ReadyToShip, Packed, Shipped, Delivered, Cancelled).
+     status_label / seller_status bole kono column nei — age ogulo poray
+     prottek sub-order "Awaiting Admin" hoye jeto, Admin confirm korleo
+     seller er kache actionable order asto na. */
+  function subOrderStatusLabel(dbStatus){
+    var s = String(dbStatus || "");
+    var m = { AwaitingAdmin: "Awaiting Admin", AdminConfirmed: "Admin Confirmed", ReadyToShip: "Ready to Ship", Packed: "Packed", Shipped: "Shipped", Delivered: "Delivered", Cancelled: "Cancelled" };
+    if (m[s]) return m[s];
+    var low = s.toLowerCase();
+    if (low === "pending") return "Awaiting Admin";
+    if (low === "confirmed") return "Admin Confirmed";
+    if (low === "cancelled") return "Cancelled";
+    return "Awaiting Admin";
+  }
   function mapSubOrderRow(r){
     var items = Array.isArray(r.items) ? r.items : [];
-    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: r.customer_name || r.customer || "", phone: r.customer_phone || r.phone || "", district: r.district || "", shipAddress: r.ship_address || r.address || "", items: items, status: r.status_label || r.seller_status || "Awaiting Admin", commissionRate: (typeof r.commission_rate === "number" ? r.commission_rate : undefined), trackingId: r.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: r.pay_visibility || "Prepaid — Admin verified", payment: r.payment_method || "", _total: (r.total != null ? Number(r.total) : null), _earning: (r.earning != null ? Number(r.earning) : null), deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false };
+    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: r.customer_name || r.customer || "", phone: r.customer_phone || r.phone || "", district: r.district || "", shipAddress: r.ship_address || r.address || "", items: items, status: subOrderStatusLabel(r.status), commissionRate: (typeof r.commission_rate === "number" ? r.commission_rate : undefined), trackingId: r.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: r.pay_visibility || "Prepaid — Admin verified", payment: r.payment_method || "", _total: (r.total != null ? Number(r.total) : null), _earning: (r.earning != null ? Number(r.earning) : null), deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false };
   }
   function mapMegaRow(r){
     return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : "Pending Approval")), adminNote: r.admin_note || "Admin er review er opekkhay ache." };
   }
+  /* returns table eo status_label bole kono column nei (asol column:
+     id, shop_id, order_id, refund_amount, reason, status, created_at) —
+     tai status sorasori r.status theke map kora hoy. */
   function mapReturnRow(r){
-    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", amount: Number(r.amount || r.refund_amount || 0), status: r.status_label || ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
+    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", amount: Number(r.amount || r.refund_amount || 0), status: ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
   }
   async function loadSellerDataFromSupabase(sellerObj){
     if (!supabaseConnected || !supabase || !sellerObj || !sellerObj.shopId) return;
@@ -1800,7 +1820,7 @@
       var pct = Math.min(100, Math.round(p.stock/150*100));
       var cls = p.stock===0 || p.stock<5 ? "low" : (p.stock<25 ? "mid" : "");
       var thumbHtml = (p.images && p.images.length) ? '<img class="thumb" src="' + esc(p.images[0]) + '" alt="' + esc(p.name) + '" style="object-fit:cover" />' : '<div class="thumb" style="background:' + (CAT_COLORS[p.cat]||"#666") + '">' + catIcon(p.cat) + '</div>';
-      return '<tr><td><div class="prod-cell">' + thumbHtml + '<div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div></div></div></td>'
+      return '<tr><td><div class="prod-cell">' + thumbHtml + '<div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div>' + (packLabel(p) ? '<div class="psku">📦 ' + esc(packLabel(p)) + '</div>' : '') + '</div></div></td>'
         + '<td><b>' + fmt(p.price) + '</b>' + (p.oldPrice ? '<div class="psku"><s>' + fmt(p.oldPrice) + '</s></div>' : '') + '</td>'
         + '<td><b>' + p.stock + '</b><div class="stockbar"><i class="' + cls + '" style="width:' + pct + '%"></i></div></td>'
         + '<td>' + (p.sold || 0).toLocaleString("en-IN") + '</td>'
@@ -1862,8 +1882,10 @@
 
   function openProductModal(p){
     var s = me(); if (!s) return;
-    var isEdit = !!p; p = p || { name:"", sku:"", cat:s.category || "Electronics", price:"", oldPrice:"", stock:"", desc:"" };
+    var isEdit = !!p; p = p || { name:"", sku:"", cat:s.category || "Electronics", price:"", oldPrice:"", stock:"", desc:"", packSize:"", unit:"", packaging:"" };
     var catOpts = Object.keys(COMMISSION).map(function(c){ return '<option ' + (p.cat===c ? "selected" : "") + '>' + c + '</option>'; }).join("");
+    var unitOpts = ["", "g", "kg", "ml", "L", "pcs"].map(function(u){ return '<option value="' + u + '"' + (String(p.unit || "") === u ? " selected" : "") + '>' + (u === "" ? "— একক বাছুন —" : (u === "pcs" ? "pcs (পিস)" : u)) + '</option>'; }).join("");
+    var packOpts = ["", "Jar", "Bottle", "Packet", "Box", "Piece", "Other"].map(function(k){ return '<option value="' + k + '"' + (String(p.packaging || "") === k ? " selected" : "") + '>' + (k === "" ? "— প্যাকেজিং বাছুন —" : k) + '</option>'; }).join("");
     openModal(
       '<h2>' + (isEdit ? "Edit Product" : "Add New Product") + '</h2><div class="msub">' + (isEdit ? "Product er tothyo update korun" : "Submit korle product ta sathe sathe My Products e dekhabe, ar Admin moderation e Pending Approval thakbe — Admin approve na kora porjonto storefront e live hobe na") + '</div>'
       + '<div class="field"><label>Product name</label><input id="mName" aria-label="Product name" value="' + esc(p.name) + '" placeholder="e.g. Wireless Bluetooth Headphone" /></div>'
@@ -1872,6 +1894,10 @@
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem"><div class="field"><label>Price (৳)</label><input id="mPrice" aria-label="Price" type="number" min="1" value="' + p.price + '" /></div>'
       + '<div class="field"><label>Old price (৳)</label><input id="mOld" aria-label="Old price" type="number" min="0" value="' + (p.oldPrice || "") + '" /></div>'
       + '<div class="field"><label>Stock</label><input id="mStock" aria-label="Stock" type="number" min="0" value="' + p.stock + '" /></div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem"><div class="field"><label>পরিমাণ (Pack size)</label><input id="mPackSize" aria-label="Pack size" type="number" min="0" step="any" value="' + (p.packSize != null && p.packSize !== "" ? p.packSize : "") + '" placeholder="e.g. 500" /></div>'
+      + '<div class="field"><label>একক (Unit)</label><select id="mUnit" aria-label="Unit">' + unitOpts + '</select></div>'
+      + '<div class="field"><label>প্যাকেজিং (Packaging)</label><select id="mPack" aria-label="Packaging">' + packOpts + '</select></div></div>'
+      + '<div class="hint">পরিমাণ + প্যাকেজিং customer product page e dekhabe — e.g. "500 g · Jar". ℹ️ এই তথ্য ডাটাবেজে সংরক্ষণের জন্য নতুন কলাম লাগবে; কলাম যোগ না হওয়া পর্যন্ত এখানে লেখা মান শুধু এই সেশনে দেখাবে, save করলে ডাটাবেজে যাবে না।</div>'
       + '<div class="field"><label>Product description</label><textarea id="mDesc" aria-label="Product description" rows="4" placeholder="Ponner biboron likhun — size, material, ki ki ache, warranty ityadi. Customer product page e eta dekhbe.">' + esc(p.desc || "") + '</textarea></div>'
       + '<div class="field"><label>Product images</label><input id="mImages" type="file" accept="image/*" multiple aria-label="Product images" /><div class="hint">Sorbochcho 5 ta chhobi, prottekta sorbochcho 2MB (JPG, PNG, WebP). Prothom chhobi tai primary hobe.</div><div class="img-grid" id="mImgGrid"></div></div>'
       + '<p class="err" id="mErr"></p>'
@@ -1911,6 +1937,8 @@
         });
         $("mSave").addEventListener("click", async function(){
           var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value, desc = $("mDesc").value.trim();
+          var packSizeVal = $("mPackSize").value.trim(), packUnitVal = $("mUnit").value, packVal = $("mPack").value;
+          if (packSizeVal !== "" && !(+packSizeVal > 0)) { $("mErr").textContent = "পরিমাণ সঠিক সংখ্যায় দিন (e.g. 500)।"; return; }
           if (!name || !(price>0) || isNaN(stock) || stock<0) { $("mErr").textContent = "Name, sothik price ar stock din."; return; }
           /* P1-24: a product needs at least 1 image — on create (no images yet)
              and on edit (total images after removals). imgItems already holds
@@ -1941,13 +1969,15 @@
           if (isEdit){
             p.name = name; p.cat = $("mCat").value; p.category = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
             p.oldPrice = +$("mOld").value || null; p.stock = stock; p.desc = desc;
+            /* Pack size/unit/packaging: local product object ei update hoy — Supabase payload e pathano hoy na, karon products table e pack_size/unit/packaging column nei (REST probe 2026-11-21: 42703 "column products.unit does not exist"). Column jog korar SQL change log e ache; column jog hole insert/update payload e add korte hobe. */
+            p.packSize = packSizeVal === "" ? null : +packSizeVal; p.unit = packUnitVal; p.packaging = packVal;
             p.images = finalImages; p.imageUrl = finalImages.length ? finalImages[0] : "";
             if (p.approval === "Rejected") p.approval = "Pending Approval";
             if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
             toast("Product update hoyeche");
           } else {
             var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
-            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"Active", images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "" };
+            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"Active", packSize: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "" };
             if (supabaseConnected && supabase) {
               try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
             }
