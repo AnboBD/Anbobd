@@ -975,7 +975,11 @@
   function ownStaff(){ var s = me(); return s ? s.staff : []; }
   function prodById(id){ var l = ownProducts(); for (var i=0;i<l.length;i++) if (String(l[i].id)===String(id)) return l[i]; return null; }
   function orderTotal(o){ if (o && typeof o._total === "number" && o._total) return o._total; var t=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p) t += p.price*(it.qty||1); else if (it.price) t += Number(it.price)*(it.qty||1); }); return t; }
-  function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100 - tot*0.015); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*(COMMISSION[p.cat]||8)/100 - gross*0.015; } }); return Math.round(e); }
+  /* Earning = subtotal − commission (Admin er formula). Ager 1.5%
+     processing kata bad deya holo, jate Admin ar Seller er number mile.
+     Rate hisabe Admin er category rate (adminCatRate) lage — Seller er
+     nijer COMMISSION map (Grocery 5) na, karon Admin ledger Grocery te 8% dhore. */
+  function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*adminCatRate(p.cat)/100; } }); return Math.round(e); }
   /* Wallet settlement — single source of truth, derived from the
      seller's OWN orders/payouts/returns (Admin derives it the same
      way). Delivered earning sits in pendingClearance for the 7-day
@@ -1122,9 +1126,62 @@
     if (low === "cancelled") return "Cancelled";
     return "Awaiting Admin";
   }
-  function mapSubOrderRow(r){
-    var items = Array.isArray(r.items) ? r.items : [];
-    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: r.customer_name || r.customer || "", phone: r.customer_phone || r.phone || "", district: r.district || "", shipAddress: r.ship_address || r.address || "", items: items, status: subOrderStatusLabel(r.status), commissionRate: (typeof r.commission_rate === "number" ? r.commission_rate : undefined), trackingId: r.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: r.pay_visibility || "Prepaid — Admin verified", payment: r.payment_method || "", _total: (r.total != null ? Number(r.total) : null), _earning: (r.earning != null ? Number(r.earning) : null), deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false };
+  /* Admin er category commission rate — Admin er ledger ei rate ei hisab
+     kore (grocery 8, electronics 10, fashion 12, home 10, beauty 10,
+     shoesbags 11, default 10). Seller er nijer COMMISSION map er rate
+     (Grocery 5) earning hisabe bebohar hoy na. */
+  function adminCatRate(cat){
+    var k = String(cat || "").toLowerCase().replace(/[^a-z]/g, "");
+    if (k.indexOf("grocer") > -1) return 8;
+    if (k.indexOf("electronic") > -1) return 10;
+    if (k.indexOf("fashion") > -1) return 12;
+    if (k.indexOf("home") > -1) return 10;
+    if (k.indexOf("beaut") > -1) return 10;
+    if (k.indexOf("shoe") > -1 || k.indexOf("bag") > -1) return 11;
+    return 10;
+  }
+  /* sub_orders row + tar master order (orders table) mile ekta order view.
+     Customer, items, payment ar #ANBO number master order ei thake —
+     sub_orders e nei. Ager version total/earning er jonno total/earning
+     column khujto (sub_orders e nei — asol naam subtotal/seller_earning),
+     tai TOTAL/EARNING ৳0 ar customer/items khali dekhato, ar payment
+     method na janay sob order ei "Prepaid — Admin verified" dekhato.
+     Master na pele (fetch fail) page vangbe na: subtotal theke
+     total/earning hisab hobe, customer/items khali thakbe. */
+  function mapSubOrderRow(r, master, products){
+    var m = master || {};
+    var rawItems = Array.isArray(m.items) ? m.items : (Array.isArray(r.items) ? r.items : []);
+    var localId = m.local_id || m.localId || "";
+    var items = [];
+    rawItems.forEach(function(it){
+      if (!it) return;
+      if (it.meta) { if (it.localId || it.local_id) localId = String(it.localId || it.local_id); return; }
+      var sid = it.sellerId != null ? it.sellerId : (it.shop_id != null ? it.shop_id : it.seller_id);
+      if (sid != null && String(sid) !== String(r.shop_id)) return;
+      items.push(it);
+    });
+    var subtotal = r.subtotal != null ? Number(r.subtotal) : (r.total != null ? Number(r.total) : 0);
+    var storedRate = Number(r.commission_rate);
+    var effRate = storedRate > 0 ? storedRate : null;
+    if (effRate == null) {
+      var cat = "";
+      for (var ii = 0; ii < items.length && !cat; ii++) {
+        var it0 = items[ii];
+        cat = it0.category || it0.cat || "";
+        if (!cat && products) { for (var pi = 0; pi < products.length; pi++) { if (String(products[pi].id) === String(it0.pid || it0.product_id || it0.id)) { cat = products[pi].cat || products[pi].category || ""; break; } } }
+      }
+      effRate = adminCatRate(cat);
+    }
+    var storedEarn = Number(r.seller_earning);
+    var earning = storedEarn > 0 ? storedEarn : Math.max(0, subtotal - Math.round(subtotal * effRate / 100));
+    var payMethod = m.payment_method || r.payment_method || "";
+    var payVis;
+    if (/cod|cash/i.test(String(payMethod))) payVis = "COD — delivery te collect korun";
+    else if (payMethod) payVis = "Prepaid — Admin verified";
+    else payVis = r.pay_visibility || "";
+    var masterCancelled = String(m.status || "").toLowerCase().indexOf("cancel") > -1;
+    var status = masterCancelled ? "Cancelled" : subOrderStatusLabel(r.status);
+    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, localId: localId, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: m.customer_name || r.customer_name || r.customer || "", phone: m.customer_phone || r.customer_phone || r.phone || "", district: m.district || r.district || "", shipAddress: m.address || m.ship_address || r.ship_address || r.address || "", items: items, status: status, masterStatus: m.status || "", commissionRate: effRate, trackingId: r.tracking_id || m.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: payVis, payment: payMethod, paymentStatus: m.payment_status || "", _total: subtotal, _earning: earning, deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false };
   }
   function mapMegaRow(r){
     return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : "Pending Approval")), adminNote: r.admin_note || "Admin er review er opekkhay ache." };
@@ -1139,8 +1196,21 @@
     if (!supabaseConnected || !supabase || !sellerObj || !sellerObj.shopId) return;
     var shopId = sellerObj.shopId;
     try { var pr = await supabase.from('products').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!pr.error && pr.data) sellerObj.products = pr.data.map(mapProductRow); } catch(e){}
-    try { var so = await supabase.from('sub_orders').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!so.error && so.data) sellerObj.orders = so.data.map(mapSubOrderRow); } catch(e){}
-    try { var oo = await supabase.from('orders').select('*').eq('shop_id', shopId); if (oo && oo.error) { /* orders may be master-only; sub_orders is the seller view */ } } catch(e){}
+    try {
+      var so = await supabase.from('sub_orders').select('*').eq('shop_id', shopId).order('created_at', { ascending: false });
+      if (!so.error && so.data) {
+        /* Master order gulo order_id diye ano — customer, items, payment
+           ar #ANBO number okhanei thake. Seller er orders_select_seller
+           policy te egulo porte parar kotha. Master fetch fail hole
+           masters khali thakbe, mapSubOrderRow sub-order diyei cholbe. */
+        var masters = {}, orderIds = [];
+        so.data.forEach(function(r){ if (r.order_id && masters[r.order_id] === undefined) { masters[r.order_id] = null; orderIds.push(r.order_id); } });
+        if (orderIds.length) {
+          try { var mo = await supabase.from('orders').select('*').in('id', orderIds); if (!mo.error && mo.data) mo.data.forEach(function(mrow){ masters[mrow.id] = mrow; }); } catch(e){}
+        }
+        sellerObj.orders = so.data.map(function(r){ return mapSubOrderRow(r, masters[r.order_id] || null, sellerObj.products); });
+      }
+    } catch(e){}
     try { var cp = await supabase.from('coupons').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!cp.error && cp.data) sellerObj.coupons = cp.data.map(mapCouponRow); } catch(e){}
     try { var ms = await supabase.from('mega_submissions').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!ms.error && ms.data) sellerObj.campSubs = ms.data.map(mapMegaRow); } catch(e){}
     try { var po = await supabase.from('payouts').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!po.error && po.data) sellerObj.payouts = po.data.map(function(r){ var pst = String(r.status || "pending").toLowerCase(); return { date: r.created_at ? fmtDate(r.created_at) : "", method: r.method || sellerObj.payMethod, account: maskAccount(r.account || sellerObj.payAccount), amount: Number(r.amount || 0), status: (pst === "paid" ? "Paid" : (pst === "approved" ? "Approved" : "Processing")) }; }); } catch(e){}
@@ -2003,11 +2073,11 @@
     $("ordersBody").innerHTML = list.map(function(o){
       var next = NEXT_STATUS[o.status];
       var src = o.status==="Awaiting Admin" ? '<div class="psku">Admin confirmation er opekkhay</div>' : (o.adminBy ? '<div class="psku">✓ ' + esc(o.adminBy) + '</div>' : '');
-      return '<tr><td><b>' + esc(o.subId || o.id) + '</b><div class="psku">Master: ' + esc(o.id) + '</div></td><td>' + esc(o.date) + '<div class="psku">' + esc(o.time) + '</div></td><td>' + esc(o.customer) + '<div class="psku">' + esc(o.district) + ' · ' + esc(o.shipAddress || "") + '</div></td>'
+      return '<tr><td><b>' + esc(o.localId || o.subId || o.id) + '</b>' + (o.localId ? '<div class="psku">Master order</div>' : '') + '</td><td>' + esc(o.date) + '<div class="psku">' + esc(o.time) + '</div></td><td><b>' + esc(o.customer) + '</b><div class="psku">' + esc(o.phone) + (o.district ? ' · ' + esc(o.district) : '') + '</div>' + (o.shipAddress ? '<div class="psku">' + esc(o.shipAddress) + '</div>' : '') + '</td>'
         + '<td style="max-width:240px">' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b><div class="psku">' + esc(o.payVisibility || "Prepaid — Admin verified") + (o.codCollect ? '<br>COD collect: <b>' + fmt(o.codCollect) + '</b>' : '') + (o.trackingId ? '<br>Tracking: <b>' + esc(o.trackingId) + '</b>' : '') + '</div></td>'
         + '<td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td>'
         + '<td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span>' + src + '</td>'
-        + '<td><div class="row-actions"><button class="mini-btn" data-view-order="' + o.id + '" type="button">View</button><button class="mini-btn" data-label="' + o.id + '" type="button">Print Label</button>'
+        + '<td><div class="row-actions"><button class="mini-btn" data-view-order="' + o.id + '" type="button">View</button>' + (o.status === "Cancelled" ? '' : '<button class="mini-btn" data-label="' + o.id + '" type="button">Print Label</button>')
         + (next ? '<button class="mini-btn" data-advance="' + o.id + '" type="button">' + NEXT_LABEL[o.status] + '</button>' : '')
         + (o.status==="Awaiting Admin" ? '<span style="font-size:.78rem;color:var(--muted);font-weight:600">Admin confirm korle ship korte parben</span>' : '')
         + '</div></td></tr>';
@@ -2030,7 +2100,7 @@
     var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
     openModal('<h2>Shipping Label — ' + esc(o.subId || o.id) + '</h2><div class="msub">Print kore parcel er gaye lagan. Sudhu apnar sub-order er item ache.</div>'
       + '<div style="border:2px dashed var(--line);border-radius:12px;padding:1rem"><div style="font-family:Sora;font-weight:800;font-size:1.1rem">AnboBD · ' + esc(s.shop) + '</div>'
-      + '<div style="font-size:.9rem;margin-top:.5rem"><b>To:</b> ' + esc(o.customer) + ' · ' + esc(o.phone) + '<br>' + esc(o.shipAddress || o.district) + ', ' + esc(o.district) + '<br><b>Items:</b> ' + esc(orderItemsText(o)) + '<br><b>Master Order:</b> ' + esc(o.id) + ' · <b>Sub-Order:</b> ' + esc(o.subId || o.id) + (o.codCollect ? '<br><b>COD Collect:</b> ' + fmt(o.codCollect) : '<br><b>Prepaid</b> — kichu collect korte hobe na') + (o.trackingId ? '<br><b>Tracking:</b> ' + esc(o.trackingId) : '') + '</div></div>'
+      + '<div style="font-size:.9rem;margin-top:.5rem"><b>To:</b> ' + esc(o.customer) + ' · ' + esc(o.phone) + '<br>' + esc(o.shipAddress || o.district) + ', ' + esc(o.district) + '<br><b>Items:</b> ' + esc(orderItemsText(o)) + '<br><b>Master Order:</b> ' + esc(o.localId || o.id) + ' · <b>Sub-Order:</b> ' + esc(o.subId || o.id) + (o.codCollect ? '<br><b>COD Collect:</b> ' + fmt(o.codCollect) : '<br><b>Prepaid</b> — kichu collect korte hobe na') + (o.trackingId ? '<br><b>Tracking:</b> ' + esc(o.trackingId) : '') + '</div></div>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn" id="lbPrint" type="button">Print / Save Label</button><button class="btn ghost" id="lbClose" type="button">Close</button></div>',
       function(){ $("lbPrint").addEventListener("click", function(){ window.print(); }); $("lbClose").addEventListener("click", closeModal); });
   }
@@ -2063,6 +2133,7 @@
   async function advanceOrder(id){
     var s = me(); if (!s) return;
     var o = ownOrders().filter(function(x){ return String(x.id)===String(id) || String(x.subId)===String(id); })[0]; if (!o) return;
+    if (o.status==="Cancelled") { toast("Ei order cancelled — pack/ship kora jabe na"); return; }
     if (o.status==="Awaiting Admin") { toast("Seller order confirm korte pare na — Admin confirm korlei apni ship korte parben"); return; }
     if (!NEXT_STATUS[o.status]) { toast("Ei order ekhon agano jabe na"); return; }
     if (o.status==="Packed" && !o.trackingId) {
@@ -2106,7 +2177,7 @@
     var next = NEXT_STATUS[o.status];
     $("drawerRoot").innerHTML = '<div class="drawer-wrap" id="drawerWrap"><div class="drawer">'
       + '<button class="icon-btn modal-x" id="drawerX" type="button" aria-label="Close">✕</button>'
-      + '<h2 style="margin:.2rem 0 .2rem;font-size:1.3rem">' + esc(o.id) + '</h2>'
+      + '<h2 style="margin:.2rem 0 .2rem;font-size:1.3rem">' + esc(o.localId || o.id) + '</h2>'
       + '<div style="color:var(--muted);font-size:.88rem">' + esc(o.date) + ' · ' + esc(o.time) + '</div>'
       + '<div style="margin:.8rem 0"><span class="status ' + statusClass(o.status) + '">' + o.status + '</span></div>'
       + '<h3 style="font-size:.95rem;margin:1rem 0 .3rem">Customer</h3>'
@@ -2116,9 +2187,9 @@
       + '<div class="kv"><span>Payment (ship er jonno)</span><b>' + esc(o.payVisibility || "Prepaid — Admin verified") + '</b></div><div class="kv"><span>Ship to</span><b>' + esc(o.shipAddress || o.district) + '</b></div>' + (o.trackingId ? '<div class="kv"><span>Tracking ID</span><b>' + esc(o.trackingId) + '</b></div>' : '')
       + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Items</h3>' + items
       + '<div class="kv"><span>Order total</span><b>' + fmt(orderTotal(o)) + '</b></div>'
-      + '<div class="kv"><span>Commission (snapshot ' + (typeof o.commissionRate==="number" ? o.commissionRate + "%" : "category rate") + ') + processing 1.5%</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
+      + '<div class="kv"><span>Commission (' + (typeof o.commissionRate==="number" ? o.commissionRate + "%" : "category rate") + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
       + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
-      + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Tracking — Admin → Seller → Customer</h3><ul class="timeline">' + tl + '</ul><button class="btn ghost" id="drawerLabel" type="button" style="width:100%;margin-bottom:.6rem">Print Shipping Label</button>'
+      + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Tracking — Admin → Seller → Customer</h3><ul class="timeline">' + tl + '</ul>' + (o.status==="Cancelled" ? '' : '<button class="btn ghost" id="drawerLabel" type="button" style="width:100%;margin-bottom:.6rem">Print Shipping Label</button>')
       + (o.status==="Awaiting Admin" ? '<div class="locked-note"><b>Waiting for Admin confirmation.</b> Admin panel theke confirm hole order ta “Ready to Ship” hoye asbe — tokhon e ship korte parben. Seller hisebe apni order confirm ba cancel korte parben na.</div>' : '')
       + (next ? '<button class="btn" id="drawerAdvance" type="button" style="width:100%">' + NEXT_LABEL[o.status] + '</button>' : '')
       + (o.status==="Ready to Ship" || o.status==="Shipped" ? '<p style="font-size:.82rem;color:var(--muted);margin:.7rem 0 0">Kono somossa hole (stock nei, address vul) Admin support e janaben — order cancel sudhu Admin korte pare.</p>' : '')
