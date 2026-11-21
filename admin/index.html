@@ -1106,7 +1106,17 @@ function ensureSubOrders(o, targetStatus){
     }).catch(function(e){ sbSaveFailed("sub_orders", e); });
   }
   function insertMissing(){
-    var rows = groups.map(function(g){ return { id: anboNewUuid(), order_id: orderId, shop_id: g.shopId, seller_id: g.sellerId, subtotal: g.subtotal, status: targetStatus }; });
+    /* FK fix (2026-11-21): sub_orders.seller_id references the seller PERSON
+       (profiles.id = shop owner), NOT the shop. Sending the shop UUID as
+       seller_id violates sub_orders_seller_id_fkey, so resolve the owner id
+       from the sellers array; omit seller_id entirely when unknown. */
+    var rows = groups.map(function(g){
+      var row = { id: anboNewUuid(), order_id: orderId, shop_id: g.shopId, subtotal: g.subtotal, status: targetStatus };
+      var sv = null;
+      sellers.forEach(function(ss){ if (String(ss.id) === String(g.shopId) || String(ss.supabaseId || "") === String(g.shopId)) sv = ss; });
+      if (sv && sv.ownerId) row.seller_id = sv.ownerId;
+      return row;
+    });
     sb.from("sub_orders").insert(rows).select("id,order_id,shop_id,seller_id,subtotal,status").then(function(r){
       if (r && r.error){
         sbSaveFailed("sub_orders", r.error);
