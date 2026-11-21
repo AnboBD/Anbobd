@@ -1587,6 +1587,7 @@ function renderCart(){
   if(t.count===0){ box.innerHTML = '<div class="cartempty"><div class="big">🛒</div>কার্ট খালি আছে।<br>পছন্দের পণ্য যোগ করে কেনাকাটা শুরু করুন!</div>'; }
   else box.innerHTML = Object.keys(cart).map(function(k){
     var p = P(k);
+    if(!p) return ""; /* Buy Now drawer fix 2026-11-21: catalog na ele P(k) undefined — escHtml(p.name) throw kore AUTH IIFE-ke mere felto, ?checkout=1 handler install-i hoto na. Catalog ele porer render-e item fire asbe. */
     return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(p.price)+' × '+cart[k]+' = '+fmt(p.price*cart[k])+'</div><div>'+stockLine(p)+'</div><button class="rm" data-rm="'+p.id+'">মুছুন</button> <button class="rm" style="color:var(--teal)" data-save="'+p.id+'">💾 পরে কিনব (Save for Later)</button></div>' +
     '<div class="qty"><button data-dec="'+p.id+'" aria-label="কমান">−</button><b>'+cart[k]+'</b><button data-inc="'+p.id+'" aria-label="বাড়ান">+</button></div></div>';
   }).join("");
@@ -1596,6 +1597,7 @@ function renderCart(){
   sBox.style.display = sIds.length ? "block":"none";
   document.getElementById("savedItems").innerHTML = sIds.map(function(k){
     var p = P(k);
+    if(!p) return ""; /* catalog-e na thaka item skip — renderCart kokhono throw korbe na (uporer cart map-er motoi). */
     return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(p.price)+'</div><button class="rm" style="color:var(--teal)" data-unsave="'+p.id+'">🛒 কার্টে ফেরত নিন</button> <button class="rm" data-savedel="'+p.id+'">মুছুন</button></div></div>';
   }).join("");
   renderWish();
@@ -1608,6 +1610,7 @@ function renderWish(){
   if(!ids.length){ box.innerHTML = '<div class="cartempty"><div class="big">🤍</div>উইশলিস্ট খালি আছে।<br>পণ্যের ❤️ বোতামে ক্লিক করে পছন্দের পণ্য জমা রাখুন!</div>'; return; }
   box.innerHTML = ids.map(function(k){
     var p = P(k);
+    if(!p) return ""; /* catalog-e na thaka item skip — renderWish renderCart theke daka hoy, ekhane throw holeo AUTH IIFE morto. */
     return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(p.price)+' <s style="color:var(--muted)">'+fmt(p.oldPrice)+'</s></div><div>'+stockLine(p)+'</div><button class="rm" data-wishrm="'+p.id+'">সরিয়ে ফেলুন</button></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+p.id+'">🛒 কার্টে</button></div>';
   }).join("");
 }
@@ -3431,7 +3434,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         var tries = 0;
         (function openWhenReady(){
           if(typeof catalogLoading !== "undefined" && catalogLoading && tries < 20){ tries++; setTimeout(openWhenReady, 500); return; }
-          if(typeof openCart === "function") openCart();
+          if(typeof openCart === "function" && typeof cartCount === "function" && cartCount() > 0) openCart();
         })();
       }
     }catch(e){}
