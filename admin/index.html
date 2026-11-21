@@ -448,6 +448,8 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
       <main class="content">
         <!-- DASHBOARD -->
         <section class="view" id="view-dashboard"></section>
+        <!-- NOTIFICATIONS -->
+        <section class="view" id="view-notifications"></section>
         <!-- ORDERS -->
         <section class="view" id="view-orders"></section>
         <!-- PRODUCTS -->
@@ -834,7 +836,7 @@ async function sbLoadAll(){
       var nm = rw.shop_name || "Shop";
       if (rw.id){ shopNameById[rw.id] = nm; }
       var op = ownerProfileById[rw.owner_id] || {};
-      var s = { id: rw.id, supabaseId: rw.id, shop: nm, owner: op.full_name || op.name || "—", phone: op.phone || "—", email: op.email || "", district: "—", cat: "—", joined: sbDateLabel(rw.created_at), status: rw.status || "pending", products: 0, sold: 0, sales: 0, commissionRate: (rw.commission_rate != null ? rw.commission_rate : 10), payoutMethod: (rw.payout_method || "—") + (rw.payout_account ? " · " + rw.payout_account : ""), payoutAccount: rw.payout_account || "", rating: 0, license: rw.trade_licence || rw.trade_license || "—", nidNumber: rw.nid_number || "", nidCopyUrl: rw.nid_copy_url || "", tradeCopyUrl: rw.trade_licence_copy_url || rw.trade_license_copy_url || "", ownerId: rw.owner_id || "", nidDoc: kycDocPath(rw, ["nid_copy_url", "nid_doc", "nid_doc_path", "nid_document", "nid_document_path", "nid_copy", "nid_copy_path", "nid_file", "nid_file_path", "nid_image", "nid_image_path"]), tradeDoc: kycDocPath(rw, ["trade_licence_copy_url", "trade_license_copy_url", "trade_doc", "trade_doc_path", "trade_document", "trade_document_path", "trade_licence_doc", "trade_licence_path", "trade_license_doc", "trade_license_path", "licence_doc", "licence_copy", "trade_copy", "trade_file", "trade_file_path"]), kycStatus: rw.kyc_status || "", color: "" };
+      var s = { id: rw.id, supabaseId: rw.id, shop: nm, owner: op.full_name || op.name || "—", phone: op.phone || "—", email: op.email || "", district: "—", cat: rw.category || "—", joined: sbDateLabel(rw.created_at), status: rw.status || "pending", products: 0, sold: 0, sales: 0, commissionRate: effectiveCommissionRate({commissionRate: rw.commission_rate}, anboCatNorm(rw.category)), payoutMethod: (rw.payout_method || "—") + (rw.payout_account ? " · " + rw.payout_account : ""), payoutAccount: rw.payout_account || "", rating: 0, license: rw.trade_licence || rw.trade_license || "—", nidNumber: rw.nid_number || "", nidCopyUrl: rw.nid_copy_url || "", tradeCopyUrl: rw.trade_licence_copy_url || rw.trade_license_copy_url || "", ownerId: rw.owner_id || "", nidDoc: kycDocPath(rw, ["nid_copy_url", "nid_doc", "nid_doc_path", "nid_document", "nid_document_path", "nid_copy", "nid_copy_path", "nid_file", "nid_file_path", "nid_image", "nid_image_path"]), tradeDoc: kycDocPath(rw, ["trade_licence_copy_url", "trade_license_copy_url", "trade_doc", "trade_doc_path", "trade_document", "trade_document_path", "trade_licence_doc", "trade_licence_path", "trade_license_doc", "trade_license_path", "licence_doc", "licence_copy", "trade_copy", "trade_file", "trade_file_path"]), kycStatus: rw.kyc_status || "", color: "" };
       shopById[rw.id] = s;
       return s;
     });
@@ -851,7 +853,7 @@ async function sbLoadAll(){
          columns — rating stays 0. Decision 5: Admin edit keeps these real
          fields (desc/images/shopId) for the Edit drawer. */
       var pImgs = (Array.isArray(rw.images) && rw.images.length) ? rw.images.filter(function(u){ return !!u; }).slice() : (rw.image_url ? [rw.image_url] : []);
-      return { id: pid, supabaseId: pid, sku: rw.sku || ("ANB-" + String(pid).slice(0, 8).toUpperCase()), name: rw.name || "Product", cat: anboCatNorm(rw.category), /* P1-9: normalised at load; DB value untouched. */ price: rw.price || 0, old: (rw.old_price != null ? rw.old_price : rw.price) || 0, rating: 0, reviews: 0, sold: rw.sold || 0, stock: rw.stock || 0, status: rw.status || "active", img: safeImg(rw.image_url || ""), desc: rw.description || "", images: pImgs, shopId: rw.shop_id || "" };
+      return { id: pid, supabaseId: pid, sku: rw.sku || ("ANB-" + String(pid).slice(0, 8).toUpperCase()), name: rw.name || "Product", cat: anboCatNorm(rw.category), /* P1-9: normalised at load; DB value untouched. */ price: rw.price || 0, old: (rw.old_price != null ? rw.old_price : rw.price) || 0, rating: 0, reviews: 0, sold: rw.sold || 0, stock: rw.stock || 0, status: rw.status || "active", img: safeImg(rw.image_url || ""), desc: rw.description || "", packSize: (rw.pack_size != null && rw.pack_size !== "" ? Number(rw.pack_size) : null), unit: rw.unit || "", packaging: rw.packaging || "", images: pImgs, shopId: rw.shop_id || "" };
     });
     sellers.forEach(function(s){
       s.products = products.filter(function(p){ return PRODUCT_SELLER[p.id] === s.shop; }).length;
@@ -1097,7 +1099,7 @@ var sellerCoupons = [];
 var CATEGORY_COMMISSION = {electronics:10, fashion:12, shoesbags:11, home:10, beauty:10, grocery:8};
 var COMMISSION_HISTORY = [];
 loadLocalSettings();
-function effectiveCommissionRate(sellerObj, catKey){ if(!sellerObj) return settings?settings.defaultCommission:10; if(sellerObj.commissionRate!=null) return sellerObj.commissionRate; if(catKey && CATEGORY_COMMISSION[catKey]!=null) return CATEGORY_COMMISSION[catKey]; return settings?settings.defaultCommission:10; }
+function effectiveCommissionRate(sellerObj, catKey){ if(!sellerObj) return settings?settings.defaultCommission:10; /* Re-audit fix (2026-11-21): a stored rate of 0 is the old DB default, never a deliberate 0% override — treat it as unset so the category/global rate applies. */ if(sellerObj.commissionRate!=null && sellerObj.commissionRate>0) return sellerObj.commissionRate; if(catKey && CATEGORY_COMMISSION[catKey]!=null) return CATEGORY_COMMISSION[catKey]; return settings?settings.defaultCommission:10; }
 /* Payout requests — seller ASKS, admin DECIDES (Approve / Hold / Mark Paid). Admin never invents a seller payout and never edits a seller's earnings; wallet balance is derived below. */
 var payoutRequests = [];
 var payoutPaidAdjustments = {}; /* sellerId -> amount already marked Paid in this session from derived balance */
@@ -1234,7 +1236,7 @@ var ROLE_PERMS = {
   "Support": ["Dashboard","Orders","Customers","Support","Returns"],
   "Warehouse": ["Dashboard","Orders","Products","Inventory","Logistics"]
 };
-var VIEW_PERM = {dashboard:"Dashboard", orders:"Orders", products:"Products", inventory:"Inventory", customers:"Customers", staff:"Staff", sellers:"Sellers", campaigns:"Mega Sale", coupons:"Coupons", finance:"Finance", returns:"Returns", logistics:"Logistics", support:"Support", activity:"Activity", reports:"Reports", settings:"Settings"};
+var VIEW_PERM = {dashboard:"Dashboard", notifications:"Dashboard", orders:"Orders", products:"Products", inventory:"Inventory", customers:"Customers", staff:"Staff", sellers:"Sellers", campaigns:"Mega Sale", coupons:"Coupons", finance:"Finance", returns:"Returns", logistics:"Logistics", support:"Support", activity:"Activity", reports:"Reports", settings:"Settings"};
 var currentUserName = "Admin", currentUserRole = "Super Admin", currentUserEmail = "";
 function canSee(viewId){ var need = VIEW_PERM[viewId]; if(!need) return true; return (ROLE_PERMS[currentUserRole]||[]).indexOf(need)!==-1; }
 var ROLE_DESC = {
@@ -1410,18 +1412,24 @@ function getSubOrders(o){ /* Commission snapshot: the first calculation for an o
   if (o._realSubs && o._realSubs.length){
     /* Real sub-orders from Postgres — subtotal and commission_rate are the
        stored snapshot, so a later rate change never rewrites history.
-       Line items come from orders.items, split by shop. */
+       Exception (re-audit 2026-11-21): a stored rate of 0 is the old DB
+       default, not a deliberate 0% — it counts as unset and the effective
+       rate applies. Line items come from orders.items, split by shop. */
     var letters=["A","B","C","D","E"];
     o._subs = o._realSubs.map(function(rs, idx){
-      var comm = Math.round(rs.subtotal * rs.commissionRate / 100);
       var subItems = (o.items || []).filter(function(it, ii){ var s = shopForStoredItem(o, ii, it) || (PRODUCT_SELLER[it[0]] || ""); return s === rs.shop; });
       // If shop matching yields nothing (e.g. single-seller order), attach all items to the first sub-order
       if (!subItems.length && idx === 0 && o._realSubs.length === 1) subItems = (o.items || []).slice();
-      return { id: (o.localId || o.id)+"-"+letters[idx], subId: rs.subId, shop: rs.shop, shopId: rs.shopId, items: subItems, subtotal: rs.subtotal, sellerId: rs.shopId || "ANBO-OWN", commissionRate: rs.commissionRate, discount: 0, commission: comm, earning: rs.subtotal - comm, status: rs.status, sentToSeller: rs.status !== "pending" && rs.status !== "cancelled", trackingId: rs.trackingId || "" };
+      /* Re-audit fix (2026-11-21): a stored commission_rate of 0 is the old DB default, never a deliberate 0% override — use the effective rate (seller > category > global). A stored rate above 0 stays the snapshot, so settled history never changes. */
+      var _catKey = null;
+      if (subItems.length){ var _p0 = null; try{ _p0 = prod(subItems[0][0]); }catch(e){} if (_p0) _catKey = anboCatNorm(_p0.cat); }
+      var effRate = (rs.commissionRate != null && rs.commissionRate > 0) ? rs.commissionRate : effectiveCommissionRate(sellerOfShop(rs.shop), _catKey);
+      var comm = Math.round(rs.subtotal * effRate / 100);
+      return { id: (o.localId || o.id)+"-"+letters[idx], subId: rs.subId, shop: rs.shop, shopId: rs.shopId, items: subItems, subtotal: rs.subtotal, sellerId: rs.shopId || "ANBO-OWN", commissionRate: effRate, discount: 0, commission: comm, earning: rs.subtotal - comm, status: rs.status, sentToSeller: rs.status !== "pending" && rs.status !== "cancelled", trackingId: rs.trackingId || "" };
     });
     return o._subs;
   }
-  var byShop={}; var order=[]; (o.items||[]).forEach(function(it, idx2){ var shop=shopForStoredItem(o, idx2, it) || PRODUCT_SELLER[it[0]]||"AnboBD (own stock)"; if(!byShop[shop]){ byShop[shop]={shop:shop, items:[], subtotal:0}; order.push(shop); } var d=storedItemDisplay(o, idx2, it); byShop[shop].items.push(it); if(d.lineTotal != null) byShop[shop].subtotal+=d.lineTotal; else { var p=prod(it[0]); if(p) byShop[shop].subtotal+=p.price*it[1]; } }); var letters=["A","B","C","D","E"]; o._subs = order.map(function(shop, idx){ var so=byShop[shop]; var sellerObj=sellerOfShop(shop); var rate=sellerObj?sellerObj.commissionRate:(shop==="AnboBD (own stock)"?0:settings.defaultCommission); /* seller coupon discount is allocated only if the order coupon belongs to this shop */ var chk=couponCheck(o.coupon,o); var disc=(chk.ok && chk.kind==="seller" && chk.coupon && chk.coupon.shop===shop)?chk.discount:0; /* platform coupon is platform cost — it does NOT reduce a single seller's earning; it is shown at master level */ so.id=(o.localId||o.id)+"-"+letters[idx]; so.sellerId=sellerObj?sellerObj.id:"ANBO-OWN"; so.commissionRate=rate; so.discount=disc; so.commission=Math.round((so.subtotal-disc)*rate/100); so.earning=so.subtotal-disc-so.commission; so.status=o.status; so.sentToSeller=!!o.sentToSeller; return so; }); return o._subs; }
+  var byShop={}; var order=[]; (o.items||[]).forEach(function(it, idx2){ var shop=shopForStoredItem(o, idx2, it) || PRODUCT_SELLER[it[0]]||"AnboBD (own stock)"; if(!byShop[shop]){ byShop[shop]={shop:shop, items:[], subtotal:0}; order.push(shop); } var d=storedItemDisplay(o, idx2, it); byShop[shop].items.push(it); if(d.lineTotal != null) byShop[shop].subtotal+=d.lineTotal; else { var p=prod(it[0]); if(p) byShop[shop].subtotal+=p.price*it[1]; } }); var letters=["A","B","C","D","E"]; o._subs = order.map(function(shop, idx){ var so=byShop[shop]; var sellerObj=sellerOfShop(shop); var _ck=null; if(so.items.length){ var _pc=null; try{ _pc=prod(so.items[0][0]); }catch(e){} if(_pc) _ck=anboCatNorm(_pc.cat); } var rate=(shop==="AnboBD (own stock)")?0:effectiveCommissionRate(sellerObj, _ck); /* seller coupon discount is allocated only if the order coupon belongs to this shop */ var chk=couponCheck(o.coupon,o); var disc=(chk.ok && chk.kind==="seller" && chk.coupon && chk.coupon.shop===shop)?chk.discount:0; /* platform coupon is platform cost — it does NOT reduce a single seller's earning; it is shown at master level */ so.id=(o.localId||o.id)+"-"+letters[idx]; so.sellerId=sellerObj?sellerObj.id:"ANBO-OWN"; so.commissionRate=rate; so.discount=disc; so.commission=Math.round((so.subtotal-disc)*rate/100); so.earning=so.subtotal-disc-so.commission; so.status=o.status; so.sentToSeller=!!o.sentToSeller; return so; }); return o._subs; }
 function subOrderForShop(o, shop){ var subs=getSubOrders(o); for(var i=0;i<subs.length;i++) if(subs[i].shop===shop) return subs[i]; return null; }
 function orderCommission(o){ /* Sum of sub-order commissions — correct even for 3-shop carts. Own-stock sub-order pays 0 commission. */ return getSubOrders(o).reduce(function(a,so){ return a+so.commission; },0); }
 function orderSellerEarning(o){ /* For single-seller orders this is that seller's earning; for multi-seller use getSubOrders() per shop. Kept for drawer/ledger compatibility: returns total seller earnings across sub-orders (excluding platform coupon, which AnboBD bears). */ var chk=couponCheck(o.coupon,o); var platDisc=(chk.ok&&chk.kind==="platform")?chk.discount:0; return orderSubtotal(o) - ((chk.ok&&chk.kind==="seller")?chk.discount:0) - orderCommission(o) - 0 + platDisc*0; }
@@ -1448,6 +1456,7 @@ function pendingCount(){ return orders.filter(function(o){ return o.status==="pe
 var toastTimer=null;
 function toast(msg, ms){ var t=$("#toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){ t.classList.remove("show"); }, ms || 2800); }
 function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;"); }
+function plural(n, one, many){ return (n===1 ? "1 " : n+" ") + (n===1 ? one : many); }
 function safeImg(u){
   u = String(u == null ? "" : u).trim();
   if (!u) return "/assets/grocery.jpg";
@@ -1473,6 +1482,7 @@ $("#confirmYes").addEventListener("click", function(){ if(confirmReasonCb){ var 
 /* ==================== NAV ==================== */
 var NAV = [
  {id:"dashboard", label:"Dashboard", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>'},
+ {id:"notifications", label:"Notifications", badge:function(){ return computeNotifItems().length; }, icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'},
  {id:"orders", label:"Orders", badge:function(){ return pendingCount(); }, icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>'},
  {id:"products", label:"Products", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.3 7 12 12 20.7 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>'},
  {id:"inventory", label:"Inventory", badge:function(){ return lowStock().length; }, badgeClass:"lime", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.3 7 12 12l8.7-5"/><path d="m7.5 4.2 9 5.3"/></svg>'},
@@ -1515,7 +1525,7 @@ function showView(id){
   window.scrollTo({top:0});
 }
 function renderCurrent(){
-  ({dashboard:renderDashboard, orders:renderOrders, products:renderProducts, inventory:renderInventory, customers:renderCustomers, staff:renderStaff, sellers:renderSellers, campaigns:renderCampaigns, coupons:renderCoupons, finance:renderFinance, returns:renderReturns, logistics:renderLogistics, support:renderSupport, activity:renderActivity, reports:renderReports, pages:renderWebsitePages, settings:renderSettings})[currentView]();
+  ({dashboard:renderDashboard, notifications:renderNotifications, orders:renderOrders, products:renderProducts, inventory:renderInventory, customers:renderCustomers, staff:renderStaff, sellers:renderSellers, campaigns:renderCampaigns, coupons:renderCoupons, finance:renderFinance, returns:renderReturns, logistics:renderLogistics, support:renderSupport, activity:renderActivity, reports:renderReports, pages:renderWebsitePages, settings:renderSettings})[currentView]();
 }
 function renderAll(){ renderNav(); renderCurrent(); }
 
@@ -1566,6 +1576,24 @@ function donutSVG(counts){
   }).join("") + "</ul>";
   return '<div class="donut-row">'+s+leg+"</div>";
 }
+/* Notifications — sudhu asol data theke (order/seller/product/support/return/payment). Kono fake notification nei. Dashboard card ar Notifications page — dutotei ei ek-i list. */
+function computeNotifItems(){
+  var notifItems = [];
+  var _pendOrd = orders.filter(function(o){ return o.status === "pending"; });
+  if (_pendOrd.length) notifItems.push({ t: _pendOrd.length + " ta order confirm er opekkhay", sub: _pendOrd.slice(0,3).map(function(o){ return o.localId || o.id; }).join(", "), view: "orders" });
+  var _pendSell = sellers.filter(function(s){ return s.status === "pending"; });
+  if (_pendSell.length) notifItems.push({ t: _pendSell.length + " ta seller approval er opekkhay", sub: _pendSell.slice(0,3).map(function(s){ return s.shop; }).join(", "), view: "sellers" });
+  if (productApprovals.length) notifItems.push({ t: productApprovals.length + " ta product moderation er opekkhay", sub: productApprovals.slice(0,3).map(function(x){ return x.product; }).join(", "), view: "products" });
+  var _lowStock = products.filter(function(p){ return p.stock > 0 && p.stock <= 5; });
+  if (_lowStock.length) notifItems.push({ t: _lowStock.length + " ta product er stock kom (≤5)", sub: _lowStock.slice(0,3).map(function(p){ return p.name + " (" + p.stock + ")"; }).join(", "), view: "products" });
+  var _openTkt = supportTickets.filter(function(t){ return t.status === "Open"; });
+  if (_openTkt.length) notifItems.push({ t: _openTkt.length + " ta support ticket khola", sub: _openTkt.slice(0,3).map(function(t){ return t.subject; }).join(" · "), view: "support" });
+  var _openRet = returnRequests.filter(function(r){ return r.status === "Requested"; });
+  if (_openRet.length) notifItems.push({ t: _openRet.length + " ta return request er siddhanto baki", sub: _openRet.slice(0,3).map(function(r){ return r.id; }).join(", "), view: "returns" });
+  var _payQ = orders.filter(function(o){ return isManualPay(o) && orderPaymentStatus(o) === "pending" && orderTxnId(o) && o.status !== "cancelled"; });
+  if (_payQ.length) notifItems.push({ t: _payQ.length + " ta manual payment TrxID jachai er opekkhay", sub: _payQ.slice(0,3).map(function(o){ return (o.localId || o.id) + " · " + o.pay; }).join(", "), view: "finance" });
+  return notifItems;
+}
 function renderDashboard(){
   computeSalesSeries();
   var today = SALES7[SALES7.length-1] || {rev:0, ord:0}, yday = SALES7[SALES7.length-2] || {rev:0, ord:0};
@@ -1582,21 +1610,7 @@ function renderDashboard(){
 
   var html = "";
   html += '<div class="card" style="margin-bottom:16px;border-color:var(--teal)"><h3>🛡 Admin Panel — Platform Owner Only · Seller Center is a SEPARATE app</h3><p class="hint" style="margin-bottom:0">Reference: Daraz / Amazon / Shopify multi-vendor separation. <b>Admin</b> = whole marketplace: GMV, commission, seller approval, moderation, payout approval. <b>Seller Center (alada artifact)</b> = ekta shop er nijer product, order, coupon, Mega submission ar payout request. Ei Admin e <b>kono seller login, seller preview, ba seller er hoye product/coupon edit nai</b> — seller er kaj admin sudhu <b>approve / reject / pause / hold</b> kore. Golano bondho korte prottek page e “Admin can / Admin cannot” line deya ache.</p></div>';
-  /* P2 (2026-11-21): Notifications — sudhu asol data theke (order/seller/product/support/return/payment). Kono fake notification nei. */
-  var notifItems = [];
-  var _pendOrd = orders.filter(function(o){ return o.status === "pending"; });
-  if (_pendOrd.length) notifItems.push({ t: _pendOrd.length + " ta order confirm er opekkhay", sub: _pendOrd.slice(0,3).map(function(o){ return o.localId || o.id; }).join(", "), view: "orders" });
-  var _pendSell = sellers.filter(function(s){ return s.status === "pending"; });
-  if (_pendSell.length) notifItems.push({ t: _pendSell.length + " ta seller approval er opekkhay", sub: _pendSell.slice(0,3).map(function(s){ return s.shop; }).join(", "), view: "sellers" });
-  if (productApprovals.length) notifItems.push({ t: productApprovals.length + " ta product moderation er opekkhay", sub: productApprovals.slice(0,3).map(function(x){ return x.product; }).join(", "), view: "products" });
-  var _lowStock = products.filter(function(p){ return p.stock > 0 && p.stock <= 5; });
-  if (_lowStock.length) notifItems.push({ t: _lowStock.length + " ta product er stock kom (≤5)", sub: _lowStock.slice(0,3).map(function(p){ return p.name + " (" + p.stock + ")"; }).join(", "), view: "products" });
-  var _openTkt = supportTickets.filter(function(t){ return t.status === "Open"; });
-  if (_openTkt.length) notifItems.push({ t: _openTkt.length + " ta support ticket khola", sub: _openTkt.slice(0,3).map(function(t){ return t.subject; }).join(" · "), view: "support" });
-  var _openRet = returnRequests.filter(function(r){ return r.status === "Requested"; });
-  if (_openRet.length) notifItems.push({ t: _openRet.length + " ta return request er siddhanto baki", sub: _openRet.slice(0,3).map(function(r){ return r.id; }).join(", "), view: "returns" });
-  var _payQ = orders.filter(function(o){ return isManualPay(o) && orderPaymentStatus(o) === "pending" && orderTxnId(o) && o.status !== "cancelled"; });
-  if (_payQ.length) notifItems.push({ t: _payQ.length + " ta manual payment TrxID jachai er opekkhay", sub: _payQ.slice(0,3).map(function(o){ return (o.localId || o.id) + " · " + o.pay; }).join(", "), view: "finance" });
+  var notifItems = computeNotifItems();
   html += '<div class="card" style="margin-bottom:16px;border-color:var(--lime)"><h3>🔔 Notifications — ja ja korte hobe</h3><p class="hint">Asol data theke — fake alert nei. Click korle sei page e jabe.</p>'
     + (notifItems.length ? notifItems.map(function(n){ return '<div class="alert-item"><div><div class="nm">🔔 ' + esc(n.t) + '</div><div class="meta">' + esc(n.sub) + '</div></div><button class="btn ghost sm" type="button" data-notif-view="' + n.view + '" style="margin-left:auto">Dekhun →</button></div>'; }).join("") : '<p class="note" style="margin:0">Notun kichu nei — sob order confirm, sob approval sesh. 🎉</p>')
     + '</div>';
@@ -1604,9 +1618,9 @@ function renderDashboard(){
   var subOrderCount = orders.filter(function(o){return o.status!=="cancelled";}).reduce(function(a,o){ return a+getSubOrders(o).length; },0);
   html += '<div class="kpis">'
     + kpi("Platform GMV · All recorded orders", fmt(platformGMV()), '<span class="sub">Sob seller + own stock mile · Cancelled order bad diye hisab</span>')
-    + kpi("Total orders · Platform", orders.length+" master · "+subOrderCount+" sub", '<span class="sub">'+pendingCount()+' master pending confirm · Order aslei ekhane jog hobe</span>')
+    + kpi("Total orders · Platform", plural(orders.length,"master order","master orders")+" · "+plural(subOrderCount,"sub-order","sub-orders"), '<span class="sub">'+plural(pendingCount(),"master order","master orders")+' pending confirm · Order aslei ekhane jog hobe</span>')
     + kpi("Platform commission earned", fmt(platformCommissionEarned()), '<span class="sub">Sub-order commission er jog · Finance e ledger ache</span>')
-    + kpi("Sellers · Customers", sellers.filter(function(s){return s.status==="approved";}).length+" sellers · "+customers.length+" cust.", '<span class="sub">'+pendingSellerCount()+' seller pending · Payout due (derived) '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</span>')
+    + kpi("Sellers · Customers", plural(sellers.filter(function(s){return s.status==="approved";}).length,"seller","sellers")+" · "+plural(customers.length,"customer","customers"), '<span class="sub">'+plural(pendingSellerCount(),"seller","sellers")+' pending · Payout due (derived) '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</span>')
     + "</div>";
 
   var awaitingSeller = orders.filter(function(o){return o.status==="confirmed";}).length;
@@ -1674,6 +1688,21 @@ function bindCommon(root){
     Array.prototype.forEach.call(document.querySelectorAll("[data-notif-view]"), function(b){ b.addEventListener("click", function(){ showView(b.getAttribute("data-notif-view")); }); });
   });
 }
+
+/* ==================== NOTIFICATIONS ==================== */
+/* Re-audit fix (2026-11-21): there was no dedicated Notifications page — only a dashboard card. This page lists the same live items from computeNotifItems(). No read/unread state is stored — the list IS the current state; an item leaves the list as soon as the work is done. No data is invented. */
+function renderNotifications(){
+  var el = $("#view-notifications");
+  var items = computeNotifItems();
+  var html = '<div class="card" style="margin-bottom:16px"><h3>🔔 Notifications — ja ja korte hobe</h3><p class="hint" style="margin-bottom:0">Asol data theke toiri — fake alert nei. Ekta kaj sesh holei seta ei list theke sore jabe. Dashboard er card ar ei page — dutotei ek-i list.</p></div>';
+  if (!items.length){
+    html += '<div class="card"><p class="note" style="margin:0">Notun kichu nei — sob order confirm, sob approval sesh. 🎉</p></div>';
+  } else {
+    html += '<div class="card">' + items.map(function(n){ return '<div class="alert-item"><div><div class="nm">🔔 ' + esc(n.t) + '</div><div class="meta">' + esc(n.sub) + '</div></div><button class="btn ghost sm" type="button" data-notif-view="' + n.view + '" style="margin-left:auto">Dekhun →</button></div>'; }).join("") + '</div>';
+  }
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.querySelectorAll("[data-notif-view]"), function(b){ b.addEventListener("click", function(){ showView(b.getAttribute("data-notif-view")); }); });
+}
 function restock(pid, qty){
   var p = prod(pid); if(!p) return;
   if (PRODUCT_SELLER[p.id]){ toast("🔒 Seller product er stock admin bodlay na — seller ke Seller Center e update korte bolo"); return; }
@@ -1731,7 +1760,7 @@ function renderOrders(){
         var itemTxt = o.items.length ? o.items.map(function(it, ii){ var d = storedItemDisplay(o, ii, it); var nm = d.name || d.sku || "Item"; return esc(nm)+" ×"+it[1] + (d.lineTotal != null ? " ("+fmt(d.lineTotal)+")" : ""); }).join(", ") : '<span class="note">No items recorded</span>';
         var shops = sellerShopsForOrder(o);
         var displayId = o.localId || o.id;
-        return '<tr><td><input type="checkbox" data-bulk-order="'+esc(o.id)+'" aria-label="Select order" /></td><td data-label="Order"><b>'+esc(displayId)+'</b>'+(o.localId ? '<br /><span style="color:var(--muted);font-size:11px;word-break:break-all">'+esc(o.id)+'</span>' : "")+'<br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.date)+'</span></td>'
+        return '<tr><td><input type="checkbox" data-bulk-order="'+esc(o.id)+'" aria-label="Select order" /></td><td data-label="Order"><b>'+esc(displayId)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.date)+'</span></td>'
           + '<td data-label="Customer"><b>'+esc(o.customer)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.district)+' · '+esc(o.phone)+'</span></td>'
           + '<td data-label="Items" style="max-width:240px"><span style="font-size:13px">'+itemTxt+'</span></td>'
           + '<td data-label="Seller / Sub-orders"><b style="font-size:13px">'+esc(shops.join(", "))+'</b><br /><span style="font-size:12px">↳ '+getSubOrders(o).length+' sub-order: '+getSubOrders(o).map(function(so){ return so.id+" ("+esc(so.shop)+" "+fmt(so.subtotal)+")"; }).join(" · ")+'</span><br /><span style="font-size:12px;color:'+(o.sentToSeller?"var(--ok)":"var(--warn-ink)")+'">'+(o.sentToSeller?"✓ Each sub-order sent to its seller":"⏳ Not sent — admin confirm korlei prottek sub-order alada jabe")+'</span></td>'
@@ -1845,7 +1874,7 @@ function openOrder(id){
   var waitingNote = (o.status==="confirmed" || o.status==="packed" || o.status==="shipped") ? '<span class="note" style="align-self:center">Seller packs &amp; ships — status Seller Center theke update hobe</span>' : "";
   var displayId = o.localId || o.id;
   $("#orderDrawer").innerHTML = '<button class="icon-btn x" type="button" id="drawerClose" aria-label="Close details">✕</button>'
-    + '<h3>Order '+esc(displayId)+'</h3>'+(o.localId ? '<p class="sub" style="margin:0 0 2px;font-size:11.5px;word-break:break-all">'+esc(o.id)+'</p>' : "")+'<p class="sub">'+esc(o.date)+' · '+statusBadge(o.status)+'</p>'
+    + '<h3>Order '+esc(displayId)+'</h3><p class="sub">'+esc(o.date)+' · '+statusBadge(o.status)+'</p>'
     + '<div class="kv"><span>Customer</span><b>'+esc(o.customer)+'</b></div>'
     + '<div class="kv"><span>Phone</span><b class="num">'+esc(o.phone)+'</b></div>'
     + '<div class="kv"><span>District</span><b>'+esc(o.district || "—")+'</b></div>'
@@ -1976,6 +2005,8 @@ function sbUploadAdminImage(file){
     return (pub && pub.data && pub.data.publicUrl) || "";
   });
 }
+/* Pack label: "500 g · Jar" — shudhu ja set kora ache tai dekhay; khali thakle "" (kichu dekhabe na). */
+function packLabel(p){ if(!p) return ""; var parts=[]; if(p.packSize!=null && p.packSize!=="" && +p.packSize>0){ parts.push(String(p.packSize)+(p.unit?" "+p.unit:"")); } else if(p.unit){ parts.push(p.unit); } if(p.packaging){ parts.push(p.packaging); } return parts.join(" · "); }
 function openProductEdit(pid){
   var p = products.filter(function(x){ return String(x.id) === String(pid); })[0];
   if (!p){ toast("⚠ Product ta pawa jay ni."); return; }
@@ -1984,7 +2015,7 @@ function openProductEdit(pid){
   wrap.className = "modal-wrap show"; wrap.id = "prodEditWrap";
   wrap.innerHTML = '<div class="modal" style="max-width:560px">'
     + '<h3 style="margin-top:0">✏️ Edit product — ' + esc(p.name) + '</h3>'
-    + '<p class="hint" style="margin-top:0">Status: <b>' + esc(p.status || "") + '</b> (ekhane bodlabe na — Approve/Reject moderation theke hobe) · Sold: <b>' + (p.sold || 0) + '</b> (read-only) · SKU: ' + esc(p.sku || "") + '</p>'
+    + '<p class="hint" style="margin-top:0">Status: <b>' + esc(p.status || "") + '</b> (ekhane bodlabe na — Approve/Reject moderation theke hobe) · Sold: <b>' + (p.sold || 0) + '</b> (read-only) · SKU: ' + esc(p.sku || "") + ' · পরিমাণ: <b>' + esc(packLabel(p) || "—") + '</b> (read-only — ডাটাবেজে কলাম যোগ হলে এখান থেকে বদলানো যাবে)</p>'
     + '<div class="form-grid"><div class="field full"><label>Product name</label><input id="peName" value="' + esc(p.name) + '" /></div>'
     + '<div class="field"><label>Category</label><select id="peCat">' + Object.keys(CATS).map(function(k){ return '<option value="' + k + '"' + (p.cat === k ? " selected" : "") + '>' + CATS[k] + '</option>'; }).join("") + '</select></div>'
     + '<div class="field"><label>Price (৳)</label><input id="pePrice" type="number" min="1" value="' + p.price + '" /></div>'
@@ -2206,17 +2237,17 @@ function renderCoupons(){
     + '<div class="field"><label for="cfLimit">Total usage limit</label><input id="cfLimit" type="number" min="0" value="1000" /></div></div>'
     + '<button class="btn block" type="submit">Create coupon</button></form></div>'
     + '<div class="card"><h3>How coupons are doing</h3><p class="hint">Redemptions on the storefront so far</p>'
-    + coupons.map(function(c){ return '<div class="pay-row"><span><b>'+esc(c.code)+'</b></span><div class="bar"><i style="width:'+Math.min(100, c.used/3)+'%"></i></div><b class="num">'+c.used+' uses</b></div>'; }).join("")
+    + (coupons.length ? coupons.map(function(c){ return '<div class="pay-row"><span><b>'+esc(c.code)+'</b></span><div class="bar"><i style="width:'+Math.min(100, c.used/3)+'%"></i></div><b class="num">'+c.used+' uses</b></div>'; }).join("") : '<p class="note" style="margin:0">Ekhono kono platform coupon toiri hoy ni — kono redemption data nei.</p>')
     + '<p class="note" style="margin:12px 0 0">Coupon toiri korlei ekhane tar redemption count uthbe — ekhono kono coupon na thakle list khali thakbe.</p></div></div>'
     + '<div class="card" style="margin-bottom:16px"><h3>Coupon kivabe kaj kore — full niyom (ekhon live)</h3><p class="hint" style="margin-bottom:6px">Age percent discount e ৳500 cap sob jaygay hardcoded chilo ar seller coupon order total e dhora-i hoto na. Ekhon prottek order er total ei niyom diyei hisab hoy, ar Order Details e karon soho dekhay:</p><p class="note" style="margin:0">1) <b>Platform coupon</b> — 1 order e 1 ta, active + expiry + min-spend + total usage limit + per-customer limit pass korte hobe. Percent er cap prottek coupon er nijer <b>maxCap</b> (ANBO10 = ৳500, EID25 = ৳1,000). Khoroch AnboBD er.<br />2) <b>Seller coupon</b> — sudhu oi seller er item subtotal er upor, onno seller er item e na. Khoroch seller er, tai seller er earning theke kate.<br />3) <b>Stacking</b> — Platform + 1 seller coupon eksathe cholte pare. Kintu <b>Mega Sale price er item e seller coupon cholbe na</b> (Settings e Mega stacking ON na korle) — double discount block.<br />4) <b>Free delivery</b> — FREEDEL/HOMEFREE ba '+fmt(settings.freeAbove)+'+ order, jekono ekta diyei delivery 0 hoy, duibar kata jay na.</p></div>'
     + '<h3 style="margin:6px 0 12px">Platform coupons — AnboBD nijer</h3>'
-    + coupons.map(function(c, i){
+    + (coupons.length ? coupons.map(function(c, i){
         return '<div class="card coupon-card" style="margin-bottom:12px"><span class="coupon-code">'+esc(c.code)+'</span>'
           + '<div style="flex:1;min-width:200px"><b>'+esc(c.desc)+'</b><br /><span class="note">Used '+c.used+' / '+(c.limit||"∞")+' · Per customer '+(c.perCustomer||"∞")+' · Min '+fmt(c.min||0)+(c.maxCap?' · Cap '+fmt(c.maxCap):"")+' · Scope '+(c.scope||"all")+' · Expires '+c.expiry+'</span></div>'
           + (c.active ? '<span class="badge b-active">Active</span>' : '<span class="badge b-draft">Paused</span>')
           + '<button class="btn ghost sm" type="button" data-coupon-toggle="'+i+'">'+(c.active?"Pause":"Activate")+'</button>'
           + '<button class="btn danger sm" type="button" data-coupon-del="'+i+'">Delete</button></div>';
-      }).join("")
+      }).join("") : '<div class="card" style="margin-bottom:12px"><p class="note" style="margin:0">Ekhono kono platform coupon nei — uporer form theke prothom coupon ta banan.</p></div>')
     + '<div class="card" style="margin:20px 0 14px"><h3>🏪 Seller shop coupons — website e live</h3><p class="hint">Seller ra nijer shop er jonno Seller Center theke coupon banay. Live hole seta storefront e <b>shop page banner, oi seller er product page ar checkout e</b> show hoy — sudhu oi seller er product ei kaj kore, onno seller er product e na. Discount er khoroch seller er, AnboBD er na. Tumi ekhane sob seller coupon dekhte, pause korte ba vul hole soriye dite parba.</p>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap"><span class="badge b-live">'+liveSellerCouponCount()+' live on website</span><span class="badge b-low">'+pendingSellerCouponCount()+' pending quick-check</span><span class="badge b-draft">'+sellerCoupons.filter(function(c){return c.status==="paused";}).length+' paused</span></div></div>'
     + sellerCoupons.map(function(c, i){
@@ -2299,7 +2330,9 @@ function renderReports(){
   var repRev = repOrders.reduce(function(a,o){ return a+orderTotal(o); },0);
   var dateCard = '<div class="card" style="margin-bottom:16px"><h3>📅 Date range</h3><p class="hint">District + category hisab ei range er order theke hoy. Seller-wise table all-time thake. Khali rakhle sob order dhora hoy.</p><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end"><div class="field"><label for="repFrom">From</label><input id="repFrom" type="date" value="'+reportFrom+'" /></div><div class="field"><label for="repTo">To</label><input id="repTo" type="date" value="'+reportTo+'" /></div><button class="btn" type="button" id="repApply">Apply</button><button class="btn ghost" type="button" id="repClear">Clear</button></div><p class="note" style="margin:10px 0 0">Range: '+(reportFrom||"—")+' → '+(reportTo||"—")+' · '+repOrders.length+' ta order · '+fmt(repRev)+'</p></div>';
   var catRev = {};
-  products.forEach(function(p){ var ck = anboCatNorm(p.cat); catRev[ck] = (catRev[ck]||0) + p.price*p.sold; }); /* P1-9: revenue grouped by normalised category. */
+  Object.keys(CATS).forEach(function(k){ catRev[k] = 0; });
+  /* Re-audit fix (2026-11-21): category revenue used to come from products.sold, but the products table has no sold column, so it was always ৳0. Now it is derived from the same recorded orders the dashboard GMV uses — each order line item grouped by its product's category. */
+  repOrders.forEach(function(o){ (o.items||[]).forEach(function(it, ii){ var d = storedItemDisplay(o, ii, it); var p = d.product; if(!p) return; var ck = anboCatNorm(p.cat); catRev[ck] = (catRev[ck]||0) + (d.lineTotal || 0); }); });
   var maxCat = 0; Object.keys(catRev).forEach(function(k){ if(catRev[k]>maxCat) maxCat=catRev[k]; });
   var distTotals = {};
   repOrders.forEach(function(o){ distTotals[o.district]=(distTotals[o.district]||0)+orderTotal(o); });
@@ -2311,11 +2344,11 @@ function renderReports(){
     + kpi("Delivered orders", orders.filter(function(o){return o.status==="delivered";}).length, '<span class="sub">Settlement er vitti</span>')
     + kpi("Cancel rate", orders.length ? Math.round(orders.filter(function(o){return o.status==="cancelled";}).length/orders.length*1000)/10+"%" : "0%", '<span class="sub">'+orders.filter(function(o){return o.status==="cancelled";}).length+' cancelled of '+orders.length+' orders</span>')
     + '</div>'
-    + '<div class="grid-2"><div class="card"><h3>Revenue by category</h3><p class="hint">Catalogue price × units sold, all time</p>'
+    + '<div class="grid-2"><div class="card"><h3>Revenue by category</h3><p class="hint">Recorded order er item theke, category onujayi (date range onujayi)</p>'
     + Object.keys(catRev).sort(function(a,b){ return catRev[b]-catRev[a]; }).map(function(k){
         return '<div class="pay-row" style="grid-template-columns:110px 1fr 86px"><span><b>'+catLabel(k)+'</b></span><div class="bar"><i style="width:'+(maxCat ? Math.round(catRev[k]/maxCat*100) : 0)+'%"></i></div><b class="num">'+fmt(catRev[k])+'</b></div>';
       }).join("")
-    + '<p class="note" style="margin:12px 0 0">Category revenue recorded product sales theke hisab hoy — product na thakle sob 0 dekhabe.</p></div>'
+    + '<p class="note" style="margin:12px 0 0">Category revenue order er line item theke hisab hoy (delivery charge bad diye) — order na thakle 0 dekhabe.</p></div>'
     + '<div class="card"><h3>Sales by district</h3><p class="hint">From the latest '+orders.length+' orders (excluding cancelled)</p>'
     + distList.map(function(d){ return '<div class="pay-row" style="grid-template-columns:110px 1fr 86px"><span><b>'+esc(d[0])+'</b></span><div class="bar"><i style="width:'+Math.round(d[1]/distList[0][1]*100)+'%"></i></div><b class="num">'+fmt(d[1])+'</b></div>'; }).join("")
     + '</div></div>'
@@ -2379,7 +2412,7 @@ function renderSettings(){
     + '<h3 style="margin-top:28px">Seller finance defaults</h3><p class="hint">Notun seller er default commission, VAT ar payout niyom. Prottek seller er nijer rate Sellers page thekeo bodlano jay.</p>'
     + '<form id="finForm"><div class="form-grid"><div class="field"><label for="sfComm">Default commission %</label><input id="sfComm" type="number" min="0" max="30" value="'+settings.defaultCommission+'" /></div>'
     + '<div class="field"><label for="sfVat">VAT % (product price e)</label><input id="sfVat" type="number" min="0" max="15" value="'+settings.vatRate+'" /></div>'
-    + '<div class="field"><label for="sfPayoutDay">Payout day</label><select id="sfPayoutDay"><option'+(settings.payoutDay==="Thursday"?" selected":"")+'>Thursday</option><option'+(settings.payoutDay==="Sunday"?" selected":"")+'>Sunday</option><option'+(settings.payoutDay==="Monday"?" selected":"")+'>Monday</option></select></div>'
+    + '<div class="field"><label for="sfPayoutDay">Payout day</label><select id="sfPayoutDay"><option'+(settings.payoutDay==="Saturday"?" selected":"")+'>Saturday</option><option'+(settings.payoutDay==="Sunday"?" selected":"")+'>Sunday</option><option'+(settings.payoutDay==="Monday"?" selected":"")+'>Monday</option><option'+(settings.payoutDay==="Tuesday"?" selected":"")+'>Tuesday</option><option'+(settings.payoutDay==="Wednesday"?" selected":"")+'>Wednesday</option><option'+(settings.payoutDay==="Thursday"?" selected":"")+'>Thursday</option><option'+(settings.payoutDay==="Friday"?" selected":"")+'>Friday</option></select></div>'
     + '<div class="field"><label for="sfHold">Payout hold (days after delivery)</label><input id="sfHold" type="number" min="0" max="14" value="'+settings.payoutHoldDays+'" /></div></div>'
     + '<button class="btn" type="submit">Save finance settings</button></form>'
     + '</div>'
@@ -2780,15 +2813,17 @@ async function renderKycDocSlot(s, kind, path){
   if (!path){ el.innerHTML = '<span class="note">' + (kind === "trade" ? "দেওয়া হয়নি (ঐচ্ছিক)" : "Upload kora hoy ni") + '</span>'; return; }
   var clean = String(path).replace(/^kyc-docs\//, "");
   var url = "";
+  var kycErr = "";
   if (/^https?:\/\//i.test(clean)){ url = clean; }
   else if (sbReady()){
     try{
       var r = await sb.storage.from("kyc-docs").createSignedUrl(clean, 3600);
       if (r && !r.error && r.data && r.data.signedUrl) url = r.data.signedUrl;
-    }catch(e){ url = ""; }
+      else if (r && r.error) kycErr = r.error.message || String(r.error);
+    }catch(e){ url = ""; kycErr = (e && e.message) || String(e); }
   }
   el = slot(); if (!el) return;
-  if (!url){ el.innerHTML = '<span class="note">Document khola jachhe na</span>'; return; }
+  if (!url){ el.innerHTML = '<span class="note">Document khola jachhe na' + (kycErr ? ' — ' + esc(kycErr) : ' (signed URL toiri hoy ni — storage policy / bucket access check korun)') + '</span>'; return; }
   var isImg = /\.(jpe?g|png|webp|gif)$/i.test(clean);
   el.innerHTML = (isImg ? '<a href="'+esc(url)+'" target="_blank" rel="noopener"><img src="'+esc(url)+'" alt="'+(kind === "nid" ? "NID copy" : "Trade licence copy")+' preview" style="width:76px;height:50px;object-fit:cover;border-radius:8px;border:1px solid var(--line);vertical-align:middle;margin-right:8px" /></a>' : "")
     + '<a class="btn ghost sm" href="'+esc(url)+'" target="_blank" rel="noopener" download>Dekhun / Download</a>';
@@ -2811,7 +2846,7 @@ function openSellerDetail(id){
   var deliveredOwn = ownOrders.filter(function(o){ return o.status==="delivered"; });
   var ledgerSales = deliveredOwn.reduce(function(a,o){ var so=subOrderForShop(o, s.shop); return a + (so ? so.subtotal - so.discount : 0); }, 0);
   var ledgerComm = deliveredOwn.reduce(function(a,o){ var so=subOrderForShop(o, s.shop); return a + (so ? so.commission : 0); }, 0);
-  $("#sellerDetailBody").innerHTML = '<div style="display:flex;gap:14px;align-items:center;margin-bottom:6px"><span class="shop-logo '+(s.color||"")+'" style="width:54px;height:54px;font-size:16px">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><h3 style="margin:0">'+esc(s.shop)+'</h3><p class="sub" style="margin:0">'+s.id+' · '+s.cat+' · '+esc(s.district)+' · '+sellerStatusBadge(s.status)+'</p></div></div>'
+  $("#sellerDetailBody").innerHTML = '<div style="display:flex;gap:14px;align-items:center;margin-bottom:6px"><span class="shop-logo '+(s.color||"")+'" style="width:54px;height:54px;font-size:16px">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><h3 style="margin:0">'+esc(s.shop)+'</h3><p class="sub" style="margin:0">'+esc(s.cat)+' · '+esc(s.district)+' · '+sellerStatusBadge(s.status)+'</p></div></div>'
     + '<div class="kv"><span>Owner</span><b>'+esc(s.owner)+'</b></div>'
     + '<div class="kv"><span>Contact</span><b class="num">'+esc(s.phone)+' · '+esc(s.email)+'</b></div>'
     + '<div class="kv"><span>KYC status</span><b>'+esc(s.kycStatus || "pending")+'</b></div>'
@@ -2956,7 +2991,7 @@ async function sbEnterWithUser(user, fail){
   await sbLoadAll();
   /* sbLoadAll may have replaced staff from profiles — make sure we're in it. */
   if (!staff.some(function(s){ return String(s.id) === String(member.id); })) staff.unshift(member);
-  sbLog("Signed in");
+  logActivity("Signed in");
   enterApp(member);
   return member;
 }
@@ -3205,6 +3240,8 @@ if (sbReady()){
       refreshAuthView();
       await sbLoadAll();
       enterApp(member);
+      /* Re-audit fix (2026-11-21): a restored session previously logged nothing, so the Activity Log stayed empty after reload. Log the restore so the log shows entries from this session too. */
+      try{ logActivity("Session restored — signed in as " + member.name); }catch(e){}
     }catch(e){ sbWarn("auth", e); showLoginView(); }
   }).catch(function(e){ sbWarn("auth", e); showLoginView(); });
   /* Safety net: if the session check ever hangs, never leave the boot screen
@@ -3338,8 +3375,8 @@ function renderSupport(){
 function renderActivity(){
   var el = $("#view-activity");
   el.innerHTML = '<div class="card"><h3>🧾 Activity log — ke ki korlo</h3><p class="hint">Order confirm, payout, coupon, seller approval, commission change — sob boro kaj ekhane record thake. Notun kaj korlei ekhane entry jog hoy (upore).</p>'
-    + activityLog.map(function(a){ return '<div class="kv"><span>'+a.time+' · <b>'+esc(a.who)+'</b></span><b style="text-align:right;max-width:55%">'+esc(a.what)+'</b></div>'; }).join("")
-    + '<p class="note" style="margin-top:12px">Login, account toiri, order confirm, payout, approval — prottek entry te ke koreche tar account name shoho thake. Supabase connect hole ei log Postgres e permanent thakbe.</p></div>';
+    + (activityLog.length ? activityLog.map(function(a){ return '<div class="kv"><span>'+a.time+' · <b>'+esc(a.who)+'</b></span><b style="text-align:right;max-width:55%">'+esc(a.what)+'</b></div>'; }).join("") : '<p class="note" style="margin:0">Ekhono kono activity nei — Admin kono kaj korlei (order confirm, approval, payout) ekhane entry asbe.</p>')
+    + '<p class="note" style="margin-top:12px">Login, account toiri, order confirm, payout, approval — prottek entry te ke koreche tar account name shoho thake. Entry gulo Supabase er activity_log table e save hoy (database connect thakle) ar ei device e kora kaj sathe sathe ekhane dekhay — database e save na hole reload korle entry harate pare.</p></div>';
 }
 
 /* ==================== WEBSITE PAGES ====================
@@ -3428,17 +3465,35 @@ function renderPageEditor(el){
   var row = sitePagesCache[def.slug] || null;
   var html = '<button class="btn ghost sm" type="button" id="wpBack" style="margin-bottom:14px">← Sob page er list</button>'
     + '<div class="card wp-editor"><h3>' + esc(def.name) + ' · ' + esc(def.bn) + '</h3>'
-    + '<p class="hint">Page: <b>/' + def.slug + '</b>' + (row ? ' · ' + esc(wpUpdatedLabel(row)) : '') + '</p>'
+    + '<p class="hint">Page: <b>/' + def.slug + '</b>' + (row ? ' · ' + esc(wpUpdatedLabel(row)) : ' · Built-in content') + ' · <a href="/pages/' + def.slug + '.html" target="_blank" rel="noopener">Live page dekhun ↗</a></p>'
     + '<form id="wpForm">'
-    + '<div class="field"><label for="wpTitle">Page title</label><input id="wpTitle" value="' + esc(row ? (row.title || "") : "") + '" placeholder="' + esc(def.name) + '" /></div>'
-    + '<div class="field"><label for="wpContent">Content — HTML lekha jabe</label>'
+    + '<div class="field"><label for="wpTitle">Page title</label><input id="wpTitle" value="' + esc(row ? (row.title || "") : def.name) + '" placeholder="' + esc(def.name) + '" /></div>'
+    + '<div class="field"><label for="wpContent">Content — HTML lekha jabe' + (row ? '' : ' · Built-in content dekhano hocche — edit kore Save korle override hobe') + '</label>'
     + '<textarea id="wpContent" placeholder="&lt;h2&gt;Heading&lt;/h2&gt;&#10;&lt;p&gt;Paragraph lekha…&lt;/p&gt;&#10;&lt;ul&gt;&lt;li&gt;List item&lt;/li&gt;&lt;/ul&gt;">' + esc(row ? (row.content || "") : "") + '</textarea>'
     + '<p class="note" style="margin:6px 0 0">Heading er jonno &lt;h2&gt;, paragraph er jonno &lt;p&gt;, list er jonno &lt;ul&gt;&lt;li&gt; babohar kora jabe. Save korle-i live site e ei lekha dekhabe.</p></div>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px"><button class="btn" type="submit" id="wpSaveBtn">Save page</button><button class="btn ghost" type="button" id="wpCancel">Cancel</button></div>'
     + '</form>'
-    + (row ? '' : '<div class="wp-note">এখনো Admin থেকে এডিট করা হয়নি — পেজটি তার আসল লেখা দেখাচ্ছে। এখানে title ar content likhe Save korlei live site e notun lekha dekhabe.</div>')
+    + (row ? '' : '<div class="wp-note" id="wpBuiltInNote">এখনো Admin থেকে এডিট করা হয়নি — নিচে পেজের আসল (built-in) লেখা dekhano hocche। Ekhane bodle Save korlei live site e notun lekha dekhabe।</div>')
     + '</div>';
   el.innerHTML = html;
+  /* Re-audit fix (2026-11-21): when no Admin edit exists the fields were blank even though the public page shows its built-in content. Prefill the editor with the live built-in content so the editor never looks empty. */
+  if (!row){
+    var wpTa = document.getElementById("wpContent");
+    if (wpTa){
+      wpTa.placeholder = "Built-in content load hochhe…";
+      fetch("/pages/" + def.slug + ".html").then(function(r){ return r.ok ? r.text() : ""; }).then(function(txt){
+        if (!txt) return;
+        var doc = null;
+        try{ doc = new DOMParser().parseFromString(txt, "text/html"); }catch(e){ return; }
+        var body = doc ? doc.getElementById("pageBody") : null;
+        if (body && body.innerHTML.trim()){
+          wpTa.value = body.innerHTML.trim();
+          var nt = document.getElementById("wpBuiltInNote");
+          if (nt) nt.textContent = "Built-in content load hoyeche — ekhono Admin theke edit hoy ni. Ekhane bodle Save korlei live site e ei lekha override hobe.";
+        }
+      }).catch(function(){});
+    }
+  }
   var back = function(){ editingPageSlug = null; renderWebsitePages(); };
   $("#wpBack").addEventListener("click", back);
   $("#wpCancel").addEventListener("click", back);
