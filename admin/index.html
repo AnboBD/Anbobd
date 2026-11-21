@@ -1092,6 +1092,29 @@ function ensureSubOrders(o, targetStatus){
       return { subId: sr.id || "", shopId: sr.shop_id, shop: shopNameForId(sr.shop_id), subtotal: sr.subtotal != null ? sr.subtotal : 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 0), status: sbNormOrderStatus(sr.status || targetStatus), trackingId: sr.tracking_id || "" };
     });
   }
+  /* Commission fix (2026-11-21): sub_orders rows used to be written WITHOUT
+     commission_rate / commission_amount / seller_earning, so the DB kept the
+     0.00 defaults and Seller Center showed earning ৳0. Compute the real
+     numbers here — rate = the shop's effective rate (stored seller rate if
+     > 0, else the category rate, else the global default, via
+     effectiveCommissionRate), amount = round(subtotal × rate / 100),
+     earning = subtotal − amount — and write them on BOTH insert and update,
+     so rows created earlier with 0.00 are repaired on confirm/resend. */
+  function commissionFor(shopId, shopName, subtotal){
+    var sv = null;
+    sellers.forEach(function(ss){ if (String(ss.id) === String(shopId) || String(ss.supabaseId || "") === String(shopId)) sv = ss; });
+    if (!sv && shopName) sv = sellerOfShop(shopName);
+    var catKey = null;
+    (o.items || []).forEach(function(it, idx){
+      if (catKey) return;
+      var s = shopForStoredItem(o, idx, it) || PRODUCT_SELLER[it[0]] || "";
+      if (s === shopName){ var p = null; try{ p = prod(it[0]); }catch(e){} if (p) catKey = anboCatNorm(p.cat); }
+    });
+    if (!catKey && sv && sv.cat) catKey = anboCatNorm(sv.cat);
+    var rate = effectiveCommissionRate(sv, catKey);
+    var amount = Math.round(subtotal * rate / 100);
+    return { rate: rate, amount: amount, earning: subtotal - amount };
+  }
   function afterWrite(){
     o._subs = null; /* getSubOrders() rebuilds from _realSubs next render */
     if (targetStatus === "AdminConfirmed") o.sentToSeller = true;
@@ -1099,9 +1122,33 @@ function ensureSubOrders(o, targetStatus){
     if ($("#orderDrawer").classList.contains("show")) openOrder(o.id);
   }
   function updateExisting(){
-    sb.from("sub_orders").update({ status: targetStatus }).eq("order_id", orderId).then(function(r){
-      if (r && r.error){ sbSaveFailed("sub_orders", r.error); return; }
-      (o._realSubs || []).forEach(function(rs){ rs.status = sbNormOrderStatus(targetStatus); });
+    /* Per-row update: alongside the status, (re)write each row's real
+       commission_rate / commission_amount / seller_earning so rows stored
+       earlier with 0.00 get repaired when Admin confirms / resends. */
+    var subs = (o._realSubs || []).slice();
+    if (!subs.length){
+      sb.from("sub_orders").update({ status: targetStatus }).eq("order_id", orderId).then(function(r){
+        if (r && r.error){ sbSaveFailed("sub_orders", r.error); return; }
+        afterWrite();
+      }).catch(function(e){ sbSaveFailed("sub_orders", e); });
+      return;
+    }
+    var jobs = subs.map(function(rs){
+      var c = commissionFor(rs.shopId, rs.shop, rs.subtotal || 0);
+      rs._pendingCommission = c;
+      var q = sb.from("sub_orders").update({ status: targetStatus, commission_rate: c.rate, commission_amount: c.amount, seller_earning: c.earning });
+      q = rs.subId ? q.eq("id", rs.subId) : q.eq("order_id", orderId).eq("shop_id", rs.shopId);
+      return q.then(function(r){ return (r && r.error) ? r.error : null; }).catch(function(e){ return e; });
+    });
+    Promise.all(jobs).then(function(errs){
+      var firstErr = null;
+      errs.forEach(function(e){ if (e && !firstErr) firstErr = e; });
+      if (firstErr){ sbSaveFailed("sub_orders", firstErr); return; }
+      subs.forEach(function(rs){
+        rs.status = sbNormOrderStatus(targetStatus);
+        if (rs._pendingCommission) rs.commissionRate = rs._pendingCommission.rate;
+        delete rs._pendingCommission;
+      });
       afterWrite();
     }).catch(function(e){ sbSaveFailed("sub_orders", e); });
   }
@@ -1111,13 +1158,14 @@ function ensureSubOrders(o, targetStatus){
        seller_id violates sub_orders_seller_id_fkey, so resolve the owner id
        from the sellers array; omit seller_id entirely when unknown. */
     var rows = groups.map(function(g){
-      var row = { id: anboNewUuid(), order_id: orderId, shop_id: g.shopId, subtotal: g.subtotal, status: targetStatus };
+      var c = commissionFor(g.shopId, g.shop, g.subtotal || 0);
+      var row = { id: anboNewUuid(), order_id: orderId, shop_id: g.shopId, subtotal: g.subtotal, status: targetStatus, commission_rate: c.rate, commission_amount: c.amount, seller_earning: c.earning };
       var sv = null;
       sellers.forEach(function(ss){ if (String(ss.id) === String(g.shopId) || String(ss.supabaseId || "") === String(g.shopId)) sv = ss; });
       if (sv && sv.ownerId) row.seller_id = sv.ownerId;
       return row;
     });
-    sb.from("sub_orders").insert(rows).select("id,order_id,shop_id,seller_id,subtotal,status").then(function(r){
+    sb.from("sub_orders").insert(rows).select("id,order_id,shop_id,seller_id,subtotal,status,commission_rate,commission_amount,seller_earning").then(function(r){
       if (r && r.error){
         sbSaveFailed("sub_orders", r.error);
         toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni (database insert blocked). Seller ekhono ei order dekhte pay ni — Order Details theke abar 'Seller ke pathao' chap dao. — DB: " + esc((r.error && (r.error.message || r.error.code)) || String(r.error)), 6500);
@@ -1134,7 +1182,7 @@ function ensureSubOrders(o, targetStatus){
     });
   }
   if (o._realSubs && o._realSubs.length){ updateExisting(); return; }
-  sb.from("sub_orders").select("id,order_id,shop_id,seller_id,subtotal,status").eq("order_id", orderId).then(function(r){
+  sb.from("sub_orders").select("id,order_id,shop_id,seller_id,subtotal,status,commission_rate,commission_amount,seller_earning").eq("order_id", orderId).then(function(r){
     if (r && r.error){ sbSaveFailed("sub_orders", r.error); return; }
     var real = (r && r.data) || [];
     if (real.length){ o._realSubs = toRealSubs(real); updateExisting(); }
