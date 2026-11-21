@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://anbobd-azure.vercel.app/sitemap.xml
