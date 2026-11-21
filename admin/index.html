@@ -1040,14 +1040,106 @@ async function sbLoadAll(){
   }
   }
 }
+/* UUID check (same shape as the storefront's anboIsUuid): a real shop/seller
+   id is a UUID. Placeholder ids like "s1" (own-stock demo items) are NOT. */
+function anboIsUuid(v){ return typeof v === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v); }
+/* UUID seller groups for an order — the same per-shop grouping as
+   getSubOrders()' computed fallback, but only groups whose shop resolves to
+   a real shop UUID. Own-stock groups (no seller / non-UUID id) are skipped:
+   there is no seller to send those to. */
+function uuidSellerGroups(o){
+  var byShopId = {}, order = [];
+  (o.items || []).forEach(function(it, idx){
+    var det = (o._storedItems && o._storedItems[idx]) ? o._storedItems[idx] : null;
+    var shop = "", shopId = "";
+    if (det && anboIsUuid(det.sellerId)){ shopId = det.sellerId; shop = shopForStoredItem(o, idx, it) || PRODUCT_SELLER[it[0]] || ""; }
+    if (!shopId){
+      shop = shopForStoredItem(o, idx, it) || PRODUCT_SELLER[it[0]] || "AnboBD (own stock)";
+      var sellerObj = sellerOfShop(shop);
+      shopId = sellerObj ? (sellerObj.id || sellerObj.supabaseId || "") : "";
+      if (!anboIsUuid(shopId)) return;
+    }
+    if (!byShopId[shopId]){ byShopId[shopId] = { shop: shop, shopId: shopId, sellerId: shopId, subtotal: 0 }; order.push(byShopId[shopId]); }
+    var d = storedItemDisplay(o, idx, it);
+    if (d.lineTotal != null) byShopId[shopId].subtotal += d.lineTotal;
+    else { var p = prod(it[0]); if (p) byShopId[shopId].subtotal += p.price * it[1]; }
+  });
+  return order;
+}
+/* Confirming must NEVER silently leave an order with the seller: the
+   checkout's sub_orders INSERT can fail on RLS (it only console.warns), and
+   an UPDATE matching 0 rows succeeds silently — so Admin used to claim
+   "Sent to seller" while Seller Center (which reads only real sub_orders
+   rows) saw nothing. ensureSubOrders() updates the existing rows, or
+   INSERTs the missing ones (real columns only, UUID shops only); a blocked
+   insert is shown loudly with sbSaveFailed + a toast, never swallowed. */
+function ensureSubOrders(o, targetStatus){
+  if (!o || !sbReady()) return;
+  var orderId = o.supabaseId || o.id;
+  var groups = uuidSellerGroups(o);
+  if (!groups.length) return; /* own-stock only — kono seller ke pathanor nei */
+  function shopNameForId(shopId){
+    var g = null;
+    groups.forEach(function(gg){ if (String(gg.shopId) === String(shopId)) g = gg; });
+    if (g && g.shop) return g.shop;
+    var s = null;
+    sellers.forEach(function(ss){ if (String(ss.id) === String(shopId) || String(ss.supabaseId || "") === String(shopId)) s = ss; });
+    return s ? s.shop : "Shop";
+  }
+  function toRealSubs(rows){
+    return rows.map(function(sr){
+      return { subId: sr.id || "", shopId: sr.shop_id, shop: shopNameForId(sr.shop_id), subtotal: sr.subtotal != null ? sr.subtotal : 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 0), status: sbNormOrderStatus(sr.status || targetStatus), trackingId: sr.tracking_id || "" };
+    });
+  }
+  function afterWrite(){
+    o._subs = null; /* getSubOrders() rebuilds from _realSubs next render */
+    if (targetStatus === "AdminConfirmed") o.sentToSeller = true;
+    renderAll();
+    if ($("#orderDrawer").classList.contains("show")) openOrder(o.id);
+  }
+  function updateExisting(){
+    sb.from("sub_orders").update({ status: targetStatus }).eq("order_id", orderId).then(function(r){
+      if (r && r.error){ sbSaveFailed("sub_orders", r.error); return; }
+      (o._realSubs || []).forEach(function(rs){ rs.status = sbNormOrderStatus(targetStatus); });
+      afterWrite();
+    }).catch(function(e){ sbSaveFailed("sub_orders", e); });
+  }
+  function insertMissing(){
+    var rows = groups.map(function(g){ return { order_id: orderId, shop_id: g.shopId, seller_id: g.sellerId, subtotal: g.subtotal, status: targetStatus }; });
+    sb.from("sub_orders").insert(rows).select("id,order_id,shop_id,seller_id,subtotal,status").then(function(r){
+      if (r && r.error){
+        sbSaveFailed("sub_orders", r.error);
+        toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni (database insert blocked). Seller ekhono ei order dekhte pay ni — Order Details theke abar 'Seller ke pathao' chap dao.", 6500);
+        return;
+      }
+      var inserted = (r && r.data && r.data.length) ? r.data : rows;
+      o._realSubs = toRealSubs(inserted);
+      afterWrite();
+      var names = groups.map(function(g){ return g.shop || "Shop"; }).join(", ");
+      toast("✓ Sub-order toiri hoyeche — <b>" + esc(o.localId || o.id) + "</b> ekhon Seller Center e dekhabe: " + esc(names));
+    }).catch(function(e){
+      sbSaveFailed("sub_orders", e);
+      toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni. Seller ekhono ei order dekhte pay ni.", 6500);
+    });
+  }
+  if (o._realSubs && o._realSubs.length){ updateExisting(); return; }
+  sb.from("sub_orders").select("id,order_id,shop_id,seller_id,subtotal,status").eq("order_id", orderId).then(function(r){
+    if (r && r.error){ sbSaveFailed("sub_orders", r.error); return; }
+    var real = (r && r.data) || [];
+    if (real.length){ o._realSubs = toRealSubs(real); updateExisting(); }
+    else insertMissing();
+  }).catch(function(e){ sbSaveFailed("sub_orders", e); });
+}
 /* Confirming a master order in Supabase: orders.status -> AdminConfirmed
    (the database value, via sbDbOrderStatus — NOT the lowercase display
    status, which the orders_status_check constraint rejects) and every
-   sub_orders row for it -> AdminConfirmed, so sellers only see it afterwards. */
+   sub_orders row for it -> AdminConfirmed, so sellers only see it afterwards.
+   ensureSubOrders() also INSERTs the rows when the checkout never created
+   them, so "Sent to seller" is never a lie. */
 function sbConfirmOrder(o){
   if (!sbReady()) return;
   sbUpdate("orders", "id", o.supabaseId || o.id, { status: sbDbOrderStatus("confirmed") });
-  sb.from("sub_orders").update({ status: "AdminConfirmed" }).eq("order_id", o.supabaseId || o.id).then(function(r){ if (r && r.error) sbSaveFailed("sub_orders", r.error); }).catch(function(e){ sbSaveFailed("sub_orders", e); });
+  ensureSubOrders(o, "AdminConfirmed");
 }
 initSupabase();
 sbSettingsLoad(); /* Decision 6/7: DB settings (platform numbers, loyalty) load — localStorage fallback already applied. */
@@ -1888,7 +1980,7 @@ function openOrder(id){
     + (isManualPay(o) && orderPaymentStatus(o)==="pending" ? '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Manual ' + o.pay + ' payment — jachai chara seller er kache jabe na</b><p class="note" style="margin:0 0 10px">Customer er deya Txn ID <b>' + (orderTxnId(o) ? esc(orderTxnId(o)) : "—") + '</b> tomar ' + o.pay + ' statement er sathe miliye dekho. Mile gele Confirm, na mille Reject — Reject hole order hold thakbe.</p><span style="display:inline-flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="drawerPayOk">✓ Confirm payment</button><button class="btn danger sm" type="button" id="drawerPayNo">✕ Reject payment</button></span></div>' : "")
     + (isManualPay(o) && orderPaymentStatus(o)==="rejected" ? '<div class="dispatch-box" style="border-color:var(--danger)"><b>Payment rejected</b><p class="note" style="margin:4px 0 0">Ei order seller er kache pathano hobe na. Customer ke bolo sothik Txn ID diye abar payment korte.</p></div>' : "")
     + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+so.status+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span></span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+so.commissionRate+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
-    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Seller dispatch (master)</b><div class="kv" style="border:none;padding:4px 0"><span>Fulfilling seller</span><b>'+esc(sellerShopsForOrder(o).join(", "))+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Sent to seller?</span><b>'+(o.sentToSeller?"✓ Yes — Seller Center e ache":"✕ Na — Admin confirm korlei jabe")+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Seller status</span><b>'+esc(o.sellerStatus||"—")+'</b></div><p class="note" style="margin:6px 0 0">Seller customer er full address/phone dekhbe na pack korar age porjonto label print er jonno ja lage tai pabe — eta seller er kaj, delivery AnboBD rider diyei hobe.</p></div>'
+    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Seller dispatch (master)</b><div class="kv" style="border:none;padding:4px 0"><span>Fulfilling seller</span><b>'+esc(sellerShopsForOrder(o).join(", "))+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Sent to seller?</span><b>'+(o.sentToSeller?"✓ Yes — Seller Center e ache":"✕ Na — Admin confirm korlei jabe")+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Seller status</span><b>'+esc(o.sellerStatus||"—")+'</b></div>' + ((o.status==="confirmed"||o.status==="packed"||o.status==="shipped"||o.status==="delivered") && (!o._realSubs || !o._realSubs.length) && uuidSellerGroups(o).length ? '<p class="note" style="margin:8px 0;color:var(--danger)">⚠ DB te sub-order row nei — seller ekhono ei order dekhte pay ni.</p><button class="btn sm" type="button" id="drawerSendSubs">Seller ke pathao</button>' : "") + '<p class="note" style="margin:6px 0 0">Seller customer er full address/phone dekhbe na pack korar age porjonto label print er jonno ja lage tai pabe — eta seller er kaj, delivery AnboBD rider diyei hobe.</p></div>'
     + '<h4 style="margin:20px 0 6px">Items</h4>'
     + ((!o.items || !o.items.length) ? '<p class="note">No items recorded for this order.</p>' : "")
     + o.items.map(function(it, ii){ var d = storedItemDisplay(o, ii, it); var imgSrc = d.product ? safeImg(d.product.img) : "/assets/grocery.jpg"; var priceNote = (d.unitPrice != null ? fmt(d.unitPrice)+" × "+it[1]+" · " : "") + (d.sku ? esc(d.sku) : ""); return '<div class="alert-item"><img src="'+esc(imgSrc)+'" alt="" /><div><div class="nm">'+esc(d.name || d.sku || "Item")+'</div><div class="meta">'+priceNote+'</div></div><b class="num" style="margin-left:auto">'+fmt(d.lineTotal != null ? d.lineTotal : 0)+'</b></div>'; }).join("")
@@ -1912,6 +2004,7 @@ function openOrder(id){
   var pno = $("#drawerPayNo"); if (pno) pno.addEventListener("click", function(){ askConfirm("Reject this payment?", "Order " + displayId + " seller er kache pathano hobe na jotokkhon na customer sothik payment kore.", function(){ setPaymentStatus(o.id, "rejected"); }); });
   var cb = $("#drawerCancel"); if (cb) cb.addEventListener("click", function(){ askConfirm("Cancel order "+displayId+"?", "The customer will see the order as cancelled and any prepaid amount must be refunded.", function(){ setOrderStatus(o.id, "cancelled"); closeDrawer(); }); });
   var dp = $("#drawerPrint"); if (dp) dp.addEventListener("click", function(){ printOrderInvoice(o); });
+  var rsb = $("#drawerSendSubs"); if (rsb) rsb.addEventListener("click", function(){ ensureSubOrders(o, "AdminConfirmed"); });
 }
 function closeDrawer(){ $("#orderDrawer").classList.remove("show"); $("#drawerOverlay").classList.remove("show"); }
 $("#drawerOverlay").addEventListener("click", closeDrawer);
