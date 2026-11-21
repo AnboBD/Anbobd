@@ -829,7 +829,7 @@ async function sbLoadAll(){
          status, image_url, created_at. No sku / old_price / sold / rating —
          SKU is derived from the id, old price falls back to price, sold
          and rating are 0 until those columns exist. */
-      return { id: pid, supabaseId: pid, sku: "ANB-" + String(pid).slice(0, 8).toUpperCase(), name: rw.name || "Product", cat: rw.category || "electronics", price: rw.price || 0, old: rw.price || 0, rating: 0, reviews: 0, sold: 0, stock: rw.stock || 0, status: rw.status || "active", img: safeImg(rw.image_url || "") };
+      return { id: pid, supabaseId: pid, sku: "ANB-" + String(pid).slice(0, 8).toUpperCase(), name: rw.name || "Product", cat: anboCatNorm(rw.category), /* P1-9: normalised at load; DB value untouched. */ price: rw.price || 0, old: rw.price || 0, rating: 0, reviews: 0, sold: 0, stock: rw.stock || 0, status: rw.status || "active", img: safeImg(rw.image_url || "") };
     });
     sellers.forEach(function(s){
       s.products = products.filter(function(p){ return PRODUCT_SELLER[p.id] === s.shop; }).length;
@@ -1010,6 +1010,19 @@ initSupabase();
    this panel is derived from records the owner, sellers and customers actually
    create. Empty stores simply render 0 / empty states. ==================== */
 var CATS = {electronics:"Electronics", fashion:"Fashion", shoesbags:"Shoes & Bags", home:"Home & Kitchen", beauty:"Beauty", grocery:"Grocery"};
+/* P1-9 (2026-11-21): ONE category normaliser. Seller writes "Fashion" /
+   "Home & Living" / "Shoes & Bags" (mixed case, spaces, "&"), Admin CATS keys
+   are lowercase slugs — without this, CATS[raw] is undefined. DB values are
+   NOT rewritten; normalisation happens only at read/render time. */
+function anboCatNorm(v){
+  var s = String(v==null ? "" : v).toLowerCase().trim();
+  if(!s) return "electronics";
+  if(s==="home & living" || s==="home and living" || s==="home & kitchen" || s==="home and kitchen") return "home";
+  if(s==="shoes & bags" || s==="shoes" || s==="bags") return "shoesbags";
+  if(CATS[s]) return s;
+  return "electronics";
+}
+function catLabel(v){ return CATS[anboCatNorm(v)] || String(v==null ? "" : v); }
 
 var products = [];
 
@@ -1044,6 +1057,11 @@ function effectiveCommissionRate(sellerObj, catKey){ if(!sellerObj) return setti
 /* Payout requests — seller ASKS, admin DECIDES (Approve / Hold / Mark Paid). Admin never invents a seller payout and never edits a seller's earnings; wallet balance is derived below. */
 var payoutRequests = [];
 var payoutPaidAdjustments = {}; /* sellerId -> amount already marked Paid in this session from derived balance */
+/* P1-22 (2026-11-21): NID / trade licence masking for the Admin seller detail.
+   NID shows first 3 + last 2 digits only; licence shows last 4 only. The full
+   value is revealed only by an explicit Reveal click, which is activity-logged. */
+function maskNidAdmin(v){ var d = String(v==null ? "" : v).replace(/\D/g, ""); if(!d) return "—"; if(d.length<=5) return "•••••"; return d.slice(0,3)+"••••"+d.slice(-2); }
+function maskLicenceAdmin(v){ var t = String(v==null ? "" : v).trim(); if(!t || t==="—") return "—"; if(t.length<=4) return "••••"; return "••••"+t.slice(-4); }
 function maskPayoutMethod(full){ if(!full || full==="—") return "— (not set)"; var parts=String(full).split("·"); var kind=(parts[0]||"").trim(); var num=(parts[1]||"").trim(); var digits=num.replace(/\D/g,""); if(digits.length>=2) return kind+" ••••"+digits.slice(-2)+" (full number hidden in Admin)"; return kind+" •••• (hidden)"; }
 function liveSellerCouponCount(){ return sellerCoupons.filter(function(c){return c.status==="live";}).length; }
 function pendingSellerCouponCount(){ return sellerCoupons.filter(function(c){return c.status==="pending";}).length; }
@@ -1479,7 +1497,7 @@ function renderDashboard(){
 
   html += '<div class="grid-2b"><div class="card"><h3>⚠ Low-stock alerts</h3><p class="hint">At or below 6 units — restock before they sell out</p>'
     + (lowStock().length ? lowStock().map(function(p){
-        return '<div class="alert-item"><img src="'+esc(safeImg(p.img))+'" alt="" /><div><div class="nm">'+esc(p.name)+'</div><div class="meta">'+esc(p.sku)+' · '+CATS[p.cat]+' · Sold '+p.sold.toLocaleString("en-IN")+'</div></div>'
+        return '<div class="alert-item"><img src="'+esc(safeImg(p.img))+'" alt="" /><div><div class="nm">'+esc(p.name)+'</div><div class="meta">'+esc(p.sku)+' · '+catLabel(p.cat)+' · Sold '+p.sold.toLocaleString("en-IN")+'</div></div>'
           + '<div class="stock-pill"><span class="badge '+(p.stock===0?"b-out":"b-low")+'">'+p.stock+' left</span>'+(PRODUCT_SELLER[p.id] ? '<br /><span class="note">Seller-managed stock</span>' : '<br /><button class="btn ghost sm" type="button" data-restock="'+p.id+'" style="margin-top:6px">Restock +20</button>')+'</div></div>';
       }).join("") : '<p class="note" style="margin:0">No products yet — stock alerts will appear here once products are added.</p>')
     + '</div>'
@@ -1727,7 +1745,7 @@ function renderProducts(){
       : '<span style="display:inline-flex;gap:6px;flex-wrap:wrap"><button class="btn ghost sm" type="button" data-flag-prod="'+p.id+'">🚩 Flag for seller</button><span class="note" style="align-self:center">Price/stock seller edits in Seller Center</span></span>';
     var stockCell = '<span class="num" style="font-weight:700">'+p.stock+'</span>' + (isOwn ? "" : ' <span class="note">(seller-managed)</span>');
     return '<tr><td data-label="Product"><div class="prod-cell"><img src="'+esc(safeImg(p.img))+'" alt="" /><div><div class="nm">'+esc(p.name)+'</div><div class="sku">'+esc(p.sku)+' · 🏪 '+esc(owner)+mega+'</div></div></div></td>'
-      + '<td data-label="Category">'+CATS[p.cat]+'</td>'
+      + '<td data-label="Category">'+catLabel(p.cat)+'</td>'
       + '<td data-label="Price"><b class="num">'+fmt(p.price)+'</b>'+(disc?' <span style="color:var(--muted);text-decoration:line-through;font-size:12.5px" class="num">'+fmt(p.old)+'</span> <span class="badge b-active">−'+disc+'%</span>':"")+'</td>'
       + '<td data-label="Stock">'+stockCell+'</td>'
       + '<td data-label="Sold"><span class="num">'+p.sold.toLocaleString("en-IN")+'</span></td>'
@@ -1779,7 +1797,7 @@ function renderInventory(){
     + sorted.map(function(p){
         var health = p.stock===0 ? '<span class="badge b-out">Out of stock</span>' : p.stock<=6 ? '<span class="badge b-low">Low — reorder now</span>' : p.stock<=20 ? '<span class="badge b-confirmed">Healthy</span>' : '<span class="badge b-active">Well stocked</span>';
         return '<tr><td data-label="Product"><div class="prod-cell"><img src="'+esc(safeImg(p.img))+'" alt="" /><div><div class="nm">'+esc(p.name)+'</div><div class="sku">'+esc(p.sku)+'</div></div></div></td>'
-          + '<td data-label="Category">'+CATS[p.cat]+'</td><td data-label="Stock">'+stockBadge(p)+'</td>'
+          + '<td data-label="Category">'+catLabel(p.cat)+'</td><td data-label="Stock">'+stockBadge(p)+'</td>'
           + '<td data-label="Sold"><span class="num">'+p.sold.toLocaleString("en-IN")+'</span></td><td data-label="Health">'+health+'</td>'
           + '<td data-label="Restock">'+(PRODUCT_SELLER[p.id] ? '<span class="note">Seller-managed — stock seller Seller Center theke update kore</span>' : '<span style="display:inline-flex;gap:6px;align-items:center"><input type="number" min="1" value="20" style="width:74px;padding:7px 9px;border:1.5px solid var(--line);border-radius:9px" id="rq-'+p.id+'" aria-label="Restock quantity for '+esc(p.name)+'" /><button class="btn ghost sm" type="button" data-restock-qty="'+p.id+'">Add</button></span>')+'</td></tr>';
       }).join("")
@@ -1943,7 +1961,7 @@ var reportRange = "7";
 function renderReports(){
   computeSalesSeries();
   var catRev = {};
-  products.forEach(function(p){ catRev[p.cat] = (catRev[p.cat]||0) + p.price*p.sold; });
+  products.forEach(function(p){ var ck = anboCatNorm(p.cat); catRev[ck] = (catRev[ck]||0) + p.price*p.sold; }); /* P1-9: revenue grouped by normalised category. */
   var maxCat = 0; Object.keys(catRev).forEach(function(k){ if(catRev[k]>maxCat) maxCat=catRev[k]; });
   var distTotals = {};
   orders.forEach(function(o){ if(o.status!=="cancelled"){ distTotals[o.district]=(distTotals[o.district]||0)+orderTotal(o); } });
@@ -1957,7 +1975,7 @@ function renderReports(){
     + '</div>'
     + '<div class="grid-2"><div class="card"><h3>Revenue by category</h3><p class="hint">Catalogue price × units sold, all time</p>'
     + Object.keys(catRev).sort(function(a,b){ return catRev[b]-catRev[a]; }).map(function(k){
-        return '<div class="pay-row" style="grid-template-columns:110px 1fr 86px"><span><b>'+CATS[k]+'</b></span><div class="bar"><i style="width:'+(maxCat ? Math.round(catRev[k]/maxCat*100) : 0)+'%"></i></div><b class="num">'+fmt(catRev[k])+'</b></div>';
+        return '<div class="pay-row" style="grid-template-columns:110px 1fr 86px"><span><b>'+catLabel(k)+'</b></span><div class="bar"><i style="width:'+(maxCat ? Math.round(catRev[k]/maxCat*100) : 0)+'%"></i></div><b class="num">'+fmt(catRev[k])+'</b></div>';
       }).join("")
     + '<p class="note" style="margin:12px 0 0">Category revenue recorded product sales theke hisab hoy — product na thakle sob 0 dekhabe.</p></div>'
     + '<div class="card"><h3>Sales by district</h3><p class="hint">From the latest '+orders.length+' orders (excluding cancelled)</p>'
@@ -1976,7 +1994,7 @@ function renderReports(){
   $("#dlOrders").addEventListener("click", function(){ downloadCSV("anbobd-orders.csv", ordersCSV()); });
   $("#dlProducts").addEventListener("click", function(){
     var rows=[["SKU","Product","Category","Price","Regular price","Stock","Sold","Rating"]];
-    products.forEach(function(p){ rows.push([p.sku,p.name,CATS[p.cat],p.price,p.old,p.stock,p.sold,p.rating]); });
+    products.forEach(function(p){ rows.push([p.sku,p.name,catLabel(p.cat),p.price,p.old,p.stock,p.sold,p.rating]); });
     downloadCSV("anbobd-products.csv", rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(","); }).join("\n"));
   });
   $("#dlSales").addEventListener("click", function(){
@@ -2388,8 +2406,8 @@ function openSellerDetail(id){
     + '<div class="kv"><span>Contact</span><b class="num">'+esc(s.phone)+' · '+esc(s.email)+'</b></div>'
     + '<div class="kv"><span>KYC status</span><b>'+esc(s.kycStatus || "pending")+'</b></div>'
     + '<h4 style="margin:16px 0 2px">KYC documents</h4>'
-    + '<div class="kv"><span>NID Copy <span class="note">(NID no. <span class="num">'+esc(s.nidNumber || "—")+'</span>)</span></span><b><span id="kycDocNid" data-shop="'+esc(s.id)+'">'+kycDocInitial(s, "nid")+'</span></b></div>'
-    + '<div class="kv"><span>Trade Licence Copy <span class="note">(Licence no. <span class="num">'+esc(s.license || "—")+'</span>)</span></span><b><span id="kycDocTrade" data-shop="'+esc(s.id)+'">'+kycDocInitial(s, "trade")+'</span></b></div>'
+    + '<div class="kv"><span>NID Copy <span class="note">(NID no. <span class="num" id="nidMasked">'+esc(maskNidAdmin(s.nidNumber))+'</span>'+(s.nidNumber ? ' <button class="btn ghost sm" type="button" id="revealNid">Reveal</button>' : '')+')</span></span><b><span id="kycDocNid" data-shop="'+esc(s.id)+'">'+kycDocInitial(s, "nid")+'</span></b></div>'
+    + '<div class="kv"><span>Trade Licence Copy <span class="note">(Licence no. <span class="num" id="licenceMasked">'+esc(maskLicenceAdmin(s.license))+'</span>'+(s.license && s.license!=="—" ? ' <button class="btn ghost sm" type="button" id="revealLicence">Reveal</button>' : '')+')</span></span><b><span id="kycDocTrade" data-shop="'+esc(s.id)+'">'+kycDocInitial(s, "trade")+'</span></b></div>'
     + '<div class="kv"><span>Joined / Applied</span><b>'+(s.status==="pending" ? (s.applied||"—") : s.joined)+'</b></div>'
     + '<div class="kv"><span>Rating</span><b>'+(s.rating ? "★ "+s.rating : "New seller")+'</b></div>'
     + '<h4 style="margin:20px 0 6px">Sales &amp; money</h4>'
@@ -2414,6 +2432,10 @@ function openSellerDetail(id){
     + '</div>';
   $("#sellerDetailWrap").classList.add("show");
   bindSellerActions($("#sellerDetailBody"));
+  /* P1-22: Reveal shows the full number once and logs it — the number is
+     never in the DOM until an admin deliberately reveals it. */
+  var rn = $("#revealNid"); if(rn) rn.addEventListener("click", function(){ var m = $("#nidMasked"); if(m) m.textContent = s.nidNumber; logActivity("Revealed NID number for seller " + s.shop + " in seller detail"); rn.remove(); });
+  var rl = $("#revealLicence"); if(rl) rl.addEventListener("click", function(){ var m = $("#licenceMasked"); if(m) m.textContent = s.license; logActivity("Revealed trade licence number for seller " + s.shop + " in seller detail"); rl.remove(); });
   loadKycDocs(s);
   var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", function(){ var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } s.commissionRate=v; sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); logActivity("Changed commission of "+s.shop+" to "+v+"%"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+v+"%"); renderAll(); openSellerDetail(s.id); });
 }
@@ -2627,8 +2649,15 @@ async function sbFetchMember(user){
   }
   return { id: user.id, supabaseId: user.id, name: meta.name || meta.full_name || user.email, email: user.email, phone: meta.phone || "—", role: role, status: "active", last: "Now · signed in", joined: monthLabel(), _bootstrap: bootstrap };
 }
-$("#logoutBtn").addEventListener("click", function(){
-  if (sbReady()){ sb.auth.signOut().catch(function(e){ sbWarn("auth", e); }); }
+$("#logoutBtn").addEventListener("click", async function(){
+  /* P0-6 (2026-11-21): signOut is awaited, THEN every in-memory PII array is
+     emptied and every rendered view is cleared — logout must not leave a
+     customer name, phone, address or order number in the DOM or in memory
+     (previously the handler only hid #appView). */
+  if (sbReady()){ try{ await sb.auth.signOut(); }catch(e){ sbWarn("auth", e); } }
+  orders.length = 0; customers.length = 0; products.length = 0; sellers.length = 0; returnRequests.length = 0;
+  Array.prototype.forEach.call(document.querySelectorAll(".view"), function(v){ v.innerHTML = ""; });
+  var od = $("#orderDrawer"); if(od) od.innerHTML = "";
   currentUserId = null; currentUserEmail = "";
   currentUserName = "—"; currentUserRole = "Super Admin";
   $("#sideUserName").textContent = "—";
@@ -2639,6 +2668,7 @@ $("#logoutBtn").addEventListener("click", function(){
   authMode = "login";
   refreshAuthView();
   closeDrawer(); closeSidebar();
+  ["customerModalWrap","sellerModalWrap","sellerDetailWrap","staffModalWrap"].forEach(function(id){ var w = document.getElementById(id); if(w) w.classList.remove("show"); });
 });
 document.addEventListener("keydown", function(e){ if (e.key==="Escape"){ closeDrawer(); $("#customerModalWrap").classList.remove("show"); } });
 try{ $("#topDate").textContent = new Date().toLocaleDateString("en-GB",{weekday:"long", day:"numeric", month:"long", year:"numeric"}) + " · Dhaka, Bangladesh"; }catch(e){}
