@@ -1146,8 +1146,15 @@
     if (s.status === "approved") enterApp(); else showPending();
   }
   async function doLogout(){
+    /* P0-6 (2026-11-21): signOut was already awaited here, but the shop object
+       stayed in DB.sellers and every rendered view kept its rows — logout now
+       clears the in-memory shop data and the rendered shop tables too, so no
+       shop/product/order/coupon data survives in the DOM or in memory. The
+       next sign-in reloads everything from Supabase. */
     if (supabaseConnected && supabase) { try { await supabase.auth.signOut(); } catch(e){} }
     session.sellerId = null;
+    DB.sellers.length = 0;
+    ["statGrid","todoGrid","recentOrdersBody","productsBody","ordersBody","couponGrid","campGrid","returnList","payoutHistoryBody","earningsBody","staffGrid","permMatrixBody"].forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = ""; });
     $("sidebar").classList.remove("open");
     closeDrawer(); closeModal();
     showLogin();
@@ -1539,7 +1546,34 @@
       b.addEventListener("click", async function(){
         var id = b.getAttribute("data-id"), act = b.getAttribute("data-act"), p = prodById(id);
         if (!p) return;
-        if (act==="stock"){ p.stock += 20; if (supabaseConnected && supabase) { try { await supabase.from('products').update({ stock: p.stock }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " — 20 ta stock add holo. Ekhon total " + p.stock); renderAll(); }
+        if (act==="stock"){
+          /* P1-23 (2026-11-21): no more one-click +20. Seller types a quantity
+             (default 1), confirms, and the row is re-read from Supabase after
+             the update — the displayed total is the stored total, not a guess. */
+          openModal('<h2>Stock যোগ করুন — ' + esc(p.name) + '</h2><div class="msub">বর্তমান স্টক: <b>' + p.stock + '</b></div>'
+            + '<div class="field"><label>কতটি যোগ করবেন?</label><input id="stockQtyInput" type="number" min="1" value="1" aria-label="Stock quantity to add" /></div>'
+            + '<p class="err" id="stockQtyErr"></p>'
+            + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="stockQtyCancel" type="button">Cancel</button><button class="btn" id="stockQtyConfirm" type="button">Confirm</button></div>',
+            function(){
+              $("stockQtyCancel").addEventListener("click", closeModal);
+              $("stockQtyConfirm").addEventListener("click", async function(){
+                var qty = parseInt($("stockQtyInput").value, 10);
+                if(!qty || qty < 1){ $("stockQtyErr").textContent = "কমপক্ষে ১টি দিতে হবে।"; return; }
+                var newStock = p.stock + qty;
+                if (supabaseConnected && supabase) {
+                  try {
+                    var r = await supabase.from('products').update({ stock: newStock }).eq('id', p.id).eq('shop_id', me().shopId).select().single();
+                    if (r.error) { $("stockQtyErr").textContent = r.error.message; return; }
+                    if (r.data && r.data.stock != null) newStock = Number(r.data.stock);
+                  } catch(e){ $("stockQtyErr").textContent = "Stock update hoy ni — abar chesta korun."; return; }
+                }
+                p.stock = newStock;
+                closeModal();
+                toast(p.name + " — " + qty + " ta stock add holo. Ekhon total " + p.stock);
+                renderAll();
+              });
+            });
+        }
         if (act==="toggle"){ p.status = p.status==="Active" ? "Paused" : "Active"; if (supabaseConnected && supabase) { try { var dbSt = p.approval === "Pending Approval" ? "pending" : (p.approval === "Rejected" ? "rejected" : (p.status === "Paused" ? "paused" : "approved")); await supabase.from('products').update({ status: dbSt }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " ekhon " + p.status); renderAll(); }
         if (act==="del"){ openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', async function(){ var s = me(); if (supabaseConnected && supabase) { try { await supabase.from('products').delete().eq('id', p.id).eq('shop_id', s.shopId); } catch(e){} } s.products = s.products.filter(function(x){ return String(x.id)!==String(id); }); toast("Product delete hoyeche"); renderAll(); }); }
         if (act==="edit"){ openProductModal(p); }
@@ -1604,6 +1638,10 @@
         $("mSave").addEventListener("click", async function(){
           var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value, desc = $("mDesc").value.trim();
           if (!name || !(price>0) || isNaN(stock) || stock<0) { $("mErr").textContent = "Name, sothik price ar stock din."; return; }
+          /* P1-24: a product needs at least 1 image — on create (no images yet)
+             and on edit (total images after removals). imgItems already holds
+             the kept old URLs + newly picked files, so its length is the total. */
+          if (imgItems.length < 1) { $("mErr").textContent = "কমপক্ষে ১টি পণ্যের ছবি দিতে হবে — ছবি ছাড়া product save হবে না।"; return; }
           /* Notun file thakle age Storage e upload — upload cholakalin Save
              disabled thakbe, vul hole ashol error mErr e dekhabe. */
           var finalImages = [];
@@ -1869,7 +1907,7 @@
       + '<div class="field"><label>Usage limit (mot koybar)</label><input id="cLimit" aria-label="Usage limit" type="number" min="1" value="200" /></div></div>'
       + '<div class="field"><label>Max discount cap (৳) — ek order e sorbochcho chhar</label><input id="cCap" aria-label="Max discount cap" type="number" min="0" value="500" /><div class="hint">Percent coupon eo ei cap er beshi chhar hobe na.</div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Scope</label><select id="cScope" aria-label="Scope"><option>Shop-wide (sob product)</option><option>Electronics only</option><option>Fashion only</option><option>Beauty only</option><option>Home &amp; Living only</option></select></div>'
-      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="text" placeholder="e.g. 31 Dec 2026" /></div></div>'
+      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="date" min="' + new Date().toISOString().slice(0,10) + '" /></div></div>' /* P2-35: date picker, past dates blocked by min=today; future-date validation below still applies. */
       + '<p class="err" id="cErr"></p>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cCancel" type="button">Cancel</button><button class="btn" id="cSave" type="button">Create &amp; Publish on Website</button></div>',
       function(){
@@ -1885,7 +1923,7 @@
           var exp = $("cExp").value.trim();
           if (!exp) { $("cErr").textContent = "Expiry date din."; return; }
           var expDate = Date.parse(exp);
-          if (isNaN(expDate)) { $("cErr").textContent = "Expiry date bojha jay ni — jemon: 31 Dec 2026."; return; }
+          if (isNaN(expDate)) { $("cErr").textContent = "Expiry date din — date picker theke ekta din beche nin."; return; }
           if (expDate <= Date.now()) { $("cErr").textContent = "Expiry date obossoi agami din hote hobe — meyad sesh coupon live kora jabe na."; return; }
           var newCoupon = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Pending Approval" };
           if (supabaseConnected && supabase) {
