@@ -484,25 +484,26 @@
             <input id="regNid" type="text" inputmode="numeric" placeholder="NID number (digits only)" />
           </div>
           <div class="field">
-            <label for="regTrade">Trade license number</label>
-            <input id="regTrade" type="text" placeholder="Trade license number" />
+            <label for="regTrade">Trade license number (ঐচ্ছিক)</label>
+            <input id="regTrade" type="text" placeholder="Trade license number — thakle din" />
+            <div class="hint">Chhoto seller der jonno baddhotamulok na — trade licence na thakle khali rakhun.</div>
           </div>
         </div>
         <div class="grid-2">
           <div class="field">
-            <label for="regNidFile">NID er copy upload korun</label>
+            <label for="regNidFile">NID er copy upload korun (আবশ্যক)</label>
             <input id="regNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" />
             <div class="hint">JPG, PNG ba PDF — sorbochcho 5MB. Sudhu number e hobe na, document er copy-i lagbe.</div>
             <div class="doc-prev hidden" id="regNidPrev"></div>
           </div>
           <div class="field">
-            <label for="regTradeFile">Trade licence er copy upload korun</label>
+            <label for="regTradeFile">ট্রেড লাইসেন্সের কপি (ঐচ্ছিক)</label>
             <input id="regTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" />
-            <div class="hint">JPG, PNG ba PDF — sorbochcho 5MB. Sudhu number e hobe na, document er copy-i lagbe.</div>
+            <div class="hint">Thakle upload korun — chhoto seller der jonno baddhotamulok na. JPG, PNG ba PDF — sorbochcho 5MB.</div>
             <div class="doc-prev hidden" id="regTradePrev"></div>
           </div>
         </div>
-        <p style="font-size:.85rem;color:var(--muted);margin:.2rem 0 .9rem">Admin will verify your NID and trade license against these numbers before approving your shop. Submitting false information will get the application rejected.</p>
+        <p style="font-size:.85rem;color:var(--muted);margin:.2rem 0 .9rem">Admin will verify your NID before approving your shop — trade licence thakle setao verify kora hobe, na thakleo approve hobe. Submitting false information will get the application rejected.</p>
 
         <p class="err" id="regErr"></p>
         <button class="btn" id="regSubmitBtn" type="submit" style="width:100%">Submit Application for Admin Approval</button>
@@ -519,10 +520,10 @@
       </div>
       <span class="status-pill" id="pendPill">Application Under Review</span>
       <h1 id="pendShopName">Your shop</h1>
-      <p class="lead" id="pendLead">Your application has been received. The AnboBD Admin team will verify your KYC (NID + trade license) and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.</p>
+      <p class="lead" id="pendLead">Your application has been received. The AnboBD Admin team will verify your NID copy and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.</p>
       <ul class="timeline" id="pendTimeline">
         <li class="done"><span class="tdot">✓</span><div><div class="tt">Application submitted</div><div class="ts" id="pendSubmittedAt">Received</div></div></li>
-        <li class="now"><span class="tdot">2</span><div><div class="tt">KYC verification</div><div class="ts">Admin is checking your NID and trade license numbers</div></div></li>
+        <li class="now"><span class="tdot">2</span><div><div class="tt">KYC verification</div><div class="ts">Admin is checking your NID copy (trade licence thakle setao)</div></div></li>
         <li><span class="tdot">3</span><div><div class="tt">Admin approval</div><div class="ts">An Admin approves or rejects the shop from the Admin panel</div></div></li>
         <li><span class="tdot">4</span><div><div class="tt">Shop goes live</div><div class="ts">After approval, sign in again to add products and start selling</div></div></li>
       </ul>
@@ -835,20 +836,20 @@
         </div>
         <div class="card" style="margin-top:1rem">
           <h3>KYC Documents</h3>
-          <div class="csub">Registration er somoy deya NID ar trade licence er copy — Admin notun kore chaile ekhan thekei bodle / re-upload kore dite parben</div>
+          <div class="csub">Registration er somoy deya NID er copy (আবশ্যক) ar trade licence er copy (ঐচ্ছিক) — Admin notun kore chaile ekhan thekei bodle / re-upload kore dite parben</div>
           <div class="grid-2">
             <div class="field" style="margin-bottom:0">
-              <label for="kycNidFile">NID er copy</label>
+              <label for="kycNidFile">NID er copy (আবশ্যক)</label>
               <div class="doc-prev" id="kycNidCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
               <input id="kycNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
               <div class="hint">Notun file bachhle ager copy bodle jabe. JPG, PNG ba PDF — sorbochcho 5MB.</div>
               <div class="doc-status" id="kycNidStatus"></div>
             </div>
             <div class="field" style="margin-bottom:0">
-              <label for="kycTradeFile">Trade licence er copy</label>
+              <label for="kycTradeFile">Trade licence er copy (ঐচ্ছিক)</label>
               <div class="doc-prev" id="kycTradeCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
               <input id="kycTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
-              <div class="hint">Notun file bachhle ager copy bodle jabe. JPG, PNG ba PDF — sorbochcho 5MB.</div>
+              <div class="hint">Na dileo cholbe — chhoto seller der jonno baddhotamulok na. Notun file bachhle ager copy bodle jabe. JPG, PNG ba PDF — sorbochcho 5MB.</div>
               <div class="doc-status" id="kycTradeStatus"></div>
             </div>
           </div>
@@ -1183,7 +1184,7 @@
     $("pendPill").textContent = rejected ? "Application Rejected / Suspended" : "Application Under Review";
     $("pendLead").textContent = rejected
       ? "Your application was rejected or your shop was suspended by AnboBD Admin. Product listing, coupons and orders stay locked. Contact AnboBD seller support if you think this is a mistake — a new application needs a fresh review."
-      : "Your application has been received. The AnboBD Admin team will verify your KYC (NID + trade license) and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.";
+      : "Your application has been received. The AnboBD Admin team will verify your NID copy and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.";
     $("pendShopName").textContent = s.shop;
     $("pendRef").textContent = String(s.shopId || s.id).replace("SEL-", "APP-");
     $("pendSubmittedAt").textContent = "Received · " + fmtDate(s.appliedOn);
@@ -1196,7 +1197,7 @@
       + '<div class="kv"><span>Pickup address</span><b>'+esc(s.address)+'</b></div>'
       + '<div class="kv"><span>Payout</span><b>'+esc(s.payMethod)+' · '+esc(maskAccount(s.payAccount))+'</b></div>'
       + '<div class="kv"><span>NID</span><b>'+esc(maskNid(s.nid))+'</b></div>'
-      + '<div class="kv"><span>Trade license</span><b>'+esc(s.tradeLicense)+'</b></div>'
+      + '<div class="kv"><span>Trade license</span><b>'+esc(s.tradeLicense || "— (ঐচ্ছিক)")+'</b></div>'
       + '<div class="kv"><span>Status</span><b style="color:var(--amber)">' + (rejected ? "Application Rejected / Suspended" : "Pending — awaiting Admin approval") + '</b></div>';
     window.scrollTo(0,0);
   }
@@ -1421,7 +1422,9 @@
   });
 
   /* Registration er KYC file input — bachhai korlei preview, vul file hole
-     inline error. Submit er somoy ei duto File-i storage e upload hoy. */
+     inline error. Submit er somoy NID copy upload hoy; trade licence copy
+     thakle setao upload hoy (oichchhik — chhoto seller der jonno
+     baddhotamulok na). */
   var regNidDoc = null, regTradeDoc = null;
   function wireRegDoc(inputId, prevId, isNid){
     var inp = $(inputId); if (!inp) return;
@@ -1469,8 +1472,8 @@
     if ((payMethod === "bKash" || payMethod === "Nagad") && !/^01\d{9}$/.test(payAccount.replace(/[-\s]/g, ""))) { fail(payMethod + " account er jonno sothik 11 digit er number din."); return; }
     if (payMethod === "Bank Transfer" && payAccount.replace(/\s/g, "").length < 8) { fail("Sothik bank account number din (kompokkhe 8 character)."); return; }
     if (!/^\d{10,17}$/.test(nid)) { fail("Sothik NID number din (10–17 digit)."); return; }
-    if (trade.length < 5) { fail("Trade license number din — KYC er jonno lagbe."); return; }
-    if (!regNidDoc || !regTradeDoc) { fail("NID copy ar trade licence copy upload korte hobe"); return; }
+    if (trade && trade.length < 5) { fail("Trade license number thakle sothik number din (kompokkhe 5 character)."); return; }
+    if (!regNidDoc) { fail("NID er copy upload korte hobe"); return; }
     if (!supabaseConnected && sellerByEmail(em)) { fail("Ei email diye agei ekta seller account ache. Login korun, ba onno email use korun."); return; }
 
     if (supabaseConnected && supabase) {
@@ -1492,7 +1495,7 @@
         if (regBtn) { regBtn.disabled = true; regBtn.textContent = "Upload hochhe..."; }
         try {
           nidCopyPath = await uploadKycDocToStorage(newUser.id, "nid", regNidDoc);
-          tradeCopyPath = await uploadKycDocToStorage(newUser.id, "trade_licence", regTradeDoc);
+          if (regTradeDoc) tradeCopyPath = await uploadKycDocToStorage(newUser.id, "trade_licence", regTradeDoc);
         } catch (upErr) {
           if (regBtn) { regBtn.disabled = false; regBtn.textContent = "Submit Application for Admin Approval"; }
           fail("Document upload hoy ni: " + (upErr && upErr.message ? upErr.message : "abar chesta korun"));
