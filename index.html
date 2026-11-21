@@ -1692,7 +1692,7 @@ function renderRecent(){
   var sec = document.getElementById("recentSec"), row = document.getElementById("recentRow");
   if(!recent.length){ sec.style.display="none"; return; }
   sec.style.display="block"; row.style.display="flex";
-  row.innerHTML = recent.map(function(id){ var p=P(id); return '<button class="ritem" data-view="'+id+'"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'"><div><b>'+escHtml(p.name)+'</b><span>'+fmt(p.price)+'</span></div></button>'; }).join("");
+  row.innerHTML = recent.map(function(id){ var p=P(id); if(!p) return ""; /* Buy Now drawer fix 2 (2026-11-21): catalog na ele P(id) undefined — p.img/p.name throw kore AUTH IIFE-ke L3346-e (rerenderStore) mere felto, ?checkout=1 handler install-i hoto na. Catalog ele __anboRender theke renderRecent abar daka hoy, item fire asbe. */ return '<button class="ritem" data-view="'+id+'"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'"><div><b>'+escHtml(p.name)+'</b><span>'+fmt(p.price)+'</span></div></button>'; }).join("");
 }
 function openModal(id){
   var p = P(id); if(!p) return;
@@ -2269,7 +2269,7 @@ function syncHeroText(){
   if(t && typeof st.heroTitle === "string" && st.heroTitle.trim()) t.textContent = st.heroTitle.trim();
   if(l && typeof st.heroLead === "string" && st.heroLead.trim()) l.textContent = st.heroLead.trim();
 }
-window.__anboRender = function(){ syncFreeDeliveryText(); syncHeroText(); renderCats(); renderBrands(); renderVouchers(); renderBundles(); renderFlash(); renderProducts(); renderUnder(); renderCart(); if(window.renderShopCoupons) window.renderShopCoupons(); if(window.renderMega) window.renderMega(); var pcs = document.getElementById("prodCountStat"); if(pcs) pcs.textContent = PRODUCTS.filter(function(p){ return p.status==="active"; }).length + "+"; };
+window.__anboRender = function(){ syncFreeDeliveryText(); syncHeroText(); renderCats(); renderBrands(); renderVouchers(); renderBundles(); renderFlash(); renderProducts(); renderUnder(); renderCart(); renderRecent(); /* Buy Now drawer fix 2 (2026-11-21): catalog ele recent row-o abar render hobe — na hole guard-er jonno prothom load-e row khali theke jeto. */ if(window.renderShopCoupons) window.renderShopCoupons(); if(window.renderMega) window.renderMega(); var pcs = document.getElementById("prodCountStat"); if(pcs) pcs.textContent = PRODUCTS.filter(function(p){ return p.status==="active"; }).length + "+"; };
 window.__anboRender();
 </script>
 
