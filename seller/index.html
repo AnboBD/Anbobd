@@ -35,6 +35,13 @@
       input,select,textarea{font-family:inherit;font-size:15px;color:var(--ink)}
       a{color:var(--brand)}
       .hidden{display:none !important}
+      /* Session-restore boot screen (2026-11-21): sign-in form flash fix —
+         #loginView starts hidden behind this while getSession() resolves. */
+      #bootView{position:fixed;inset:0;z-index:2000;background:var(--bg);display:flex;align-items:center;justify-content:center;text-align:center}
+      #bootView .boot-inner{display:flex;flex-direction:column;align-items:center;gap:18px;padding:24px}
+      #bootView .boot-spin{width:44px;height:44px;border-radius:50%;border:4px solid rgba(14,124,111,.18);border-top-color:var(--brand);animation:bootSpin .8s linear infinite}
+      @keyframes bootSpin{to{transform:rotate(360deg)}}
+      #bootView p{margin:0;color:var(--muted);font-size:14px}
 
       /* ---------- Buttons / inputs ---------- */
       .btn{display:inline-flex;align-items:center;justify-content:center;gap:.45rem;border:1px solid transparent;border-radius:10px;padding:.5rem 1rem;font-weight:700;font-size:.9rem;background:var(--brand);color:#fff;transition:background .15s,transform .1s}
@@ -337,10 +344,22 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   </head>
   <body>
+  <!-- Session-restore boot screen (2026-11-21): shown while getSession() resolves so a
+       signed-in seller never sees the sign-in form flash on reload. Hidden by hideBoot(). -->
+  <div id="bootView" role="status" aria-live="polite">
+    <div class="boot-inner">
+      <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></div>
+      <div class="sub">Seller Center</div>
+      <div class="boot-spin" aria-hidden="true"></div>
+      <p>সেশন যাচাই করা হচ্ছে…</p>
+    </div>
+  </div>
   <div id="supabaseBanner" class="supabase-banner hidden" role="alert">Not connected to the database yet — accounts, products and orders will not be saved until the connection is restored. Please try again later or contact support.</div>
 
   <!-- ============ LOGIN / REGISTER ============ -->
-  <section id="loginView">
+  <!-- Starts hidden — shown only by showLogin() after the session check finishes
+       with NO session. -->
+  <section id="loginView" class="hidden">
     <div class="login-card">
       <div class="logo-row">
         <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></div>
@@ -1142,13 +1161,20 @@
   }
 
   /* ================= VIEW ROUTING ================= */
+  /* Session-restore flash fix (2026-11-21): #loginView starts hidden behind
+     #bootView while getSession() resolves. Every terminal auth state hides the
+     boot screen; the sign-in form only appears after the check finishes with
+     NO session, so a signed-in seller never sees it flash on reload. */
+  function hideBoot(){ var b = document.getElementById("bootView"); if (b) b.classList.add("hidden"); }
   function showLogin(){
+    hideBoot();
     $("loginView").classList.remove("hidden");
     $("pendingView").classList.add("hidden");
     $("appView").classList.add("hidden");
     window.scrollTo(0,0);
   }
   function showPending(){
+    hideBoot();
     var s = me(); if (!s) { showLogin(); return; }
     $("loginView").classList.add("hidden");
     $("appView").classList.add("hidden");
@@ -1175,6 +1201,7 @@
     window.scrollTo(0,0);
   }
   function enterApp(){
+    hideBoot();
     var s = me(); if (!s) { showLogin(); return; }
     $("loginView").classList.add("hidden");
     $("pendingView").classList.add("hidden");
@@ -1266,6 +1293,11 @@
   });
   /* P0-5 — Recovery link theke fire asha: reset form dekhao, hash soriye dao. */
   function showResetForm(){
+    /* Recovery link path: the reset form lives inside #loginView, which starts
+       hidden behind the boot screen — unhide it here (this is the only path
+       that reaches the reset form without going through showLogin()). */
+    $("loginView").classList.remove("hidden");
+    hideBoot();
     $("loginForm").classList.add("hidden"); $("registerForm").classList.add("hidden");
     $("tabLogin").classList.remove("on"); $("tabRegister").classList.remove("on");
     $("resetForm").classList.remove("hidden");
@@ -2647,6 +2679,10 @@
     } else {
       showLogin();
     }
+    /* Safety net: if the session check ever hangs, never leave the boot screen
+       up forever — fall back to the sign-in form after 10s. A late getSession
+       resolve still routes to the app via routeAfterAuth(). */
+    setTimeout(function(){ var b = document.getElementById("bootView"); if (b && !b.classList.contains("hidden")) showLogin(); }, 10000);
   })();
   </script>
   </body>
