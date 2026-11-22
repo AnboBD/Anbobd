@@ -149,7 +149,7 @@
       .search-box svg{color:var(--muted);flex:none}
 
       /* ---------- Cards & stats ---------- */
-      .grid-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.2rem}
+      .grid-stats{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1.2rem}
       .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1.05rem 1.1rem}
       .stat .lbl{font-size:.8rem;color:var(--muted);font-weight:700;display:flex;align-items:center;gap:.5rem}
       .stat .val{font-family:"Sora";font-size:1.55rem;font-weight:800;margin:.3rem 0 .15rem}
@@ -1341,6 +1341,17 @@
     ["statGrid","todoGrid","recentOrdersBody","productsBody","ordersBody","couponGrid","campGrid","returnList","payoutHistoryBody","earningsBody","staffGrid","permMatrixBody"].forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = ""; });
     $("sidebar").classList.remove("open");
     closeDrawer(); closeModal();
+    /* Logout e login form ekdom khali thakbe — ager email/password/error jeno na thake, ar Login tab active thakbe. */
+    var le = $("loginEmail"); if (le) le.value = "";
+    var lp = $("loginPass"); if (lp) lp.value = "";
+    var lerr = $("loginErr"); if (lerr) lerr.textContent = "";
+    var fpw = $("forgotPwMsg"); if (fpw) { fpw.textContent = ""; fpw.style.display = "none"; }
+    var rp = $("resetPass"); if (rp) rp.value = "";
+    var rp2 = $("resetPass2"); if (rp2) rp2.value = "";
+    var rerr = $("resetErr"); if (rerr) rerr.textContent = "";
+    var rmsg = $("resetMsg"); if (rmsg) { rmsg.textContent = ""; rmsg.style.display = "none"; }
+    var rf = $("resetForm"); if (rf) rf.classList.add("hidden");
+    switchTab(true);
     showLogin();
   }
 
@@ -1814,11 +1825,14 @@
       $("onboardCard").innerHTML = "";
     }
 
+    var liveProd = products.filter(function(p){ return p.status==="Active" && p.approval==="Approved"; }).length;
+    var pendProd = products.filter(function(p){ return p.approval==="Pending Approval"; }).length;
     var stats = [
       { lbl:"Total sales (amar shop)", val:fmt(totalSales), delta:'<span style="color:var(--muted)">Mot order: </span><b>' + liveOrders.length + '</b><span style="color:var(--muted)"> · items sold: </span><b>' + totalSold.toLocaleString("en-IN") + '</b>', bg:"var(--brand-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>' },
       { lbl:"Total sub-orders", val: liveOrders.length, delta:'<span style="color:var(--muted)">Sudhu amar shop-er sub-order — onno seller-er order ekhane nei</span>', bg:"var(--blue-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M6 3h12l1 5H5L6 3z"/><path d="M5 8h14v13H5z"/></svg>' },
       { lbl:"Ready to Ship (Admin confirmed)", val: ready, delta:'<span style="color:var(--amber);font-weight:800">Pack kore dispatch korun</span> <span style="color:var(--muted)">· ' + awaiting + ' ta Admin confirmation er opekkhay</span>', bg:"var(--amber-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
-      { lbl:"Wallet balance", val: fmt(s.balance), delta:'<span style="color:var(--muted)">Pending clearance: </span><b>' + fmt(s.pendingClearance) + '</b>', bg:"var(--violet-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg>' }
+      { lbl:"Wallet balance", val: fmt(s.balance), delta:'<span style="color:var(--muted)">Pending clearance: </span><b>' + fmt(s.pendingClearance) + '</b>', bg:"var(--violet-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg>' },
+      { lbl:"Total products", val: products.length, delta:'<span style="color:var(--muted)">Live: </span><b>' + liveProd + '</b><span style="color:var(--muted)"> · Pending Approval: </span><b>' + pendProd + '</b>', bg:"var(--brand-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>' }
     ];
     $("statGrid").innerHTML = stats.map(function(x){
       return '<div class="stat"><div class="lbl"><span class="ic" style="background:' + x.bg + '">' + x.ic + '</span>' + x.lbl + '</div><div class="val">' + x.val + '</div><div class="delta">' + x.delta + '</div></div>';
