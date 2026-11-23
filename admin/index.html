@@ -1321,7 +1321,23 @@ var settings = { dhakaFee:60, outsideFee:120, freeAbove:2000, freeDeliveryMode:"
    connected yet. */
 var SETTINGS_KEY = "anbobd-admin-settings-v1";
 function loadLocalSettings(){ try{ var raw=localStorage.getItem(SETTINGS_KEY); if(!raw) return; var saved=JSON.parse(raw); if(saved.settings) Object.keys(saved.settings).forEach(function(k){ if(k in settings) settings[k]=saved.settings[k]; }); if(saved.cats) Object.keys(saved.cats).forEach(function(k){ if(k in CATEGORY_COMMISSION) CATEGORY_COMMISSION[k]=saved.cats[k]; }); if(Array.isArray(saved.commHist)) COMMISSION_HISTORY = saved.commHist; }catch(e){} }
-function saveLocalSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify({settings:settings, cats:CATEGORY_COMMISSION, commHist:COMMISSION_HISTORY})); }catch(e){} sbSettingsSync(); }
+function saveLocalSettings(){ try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify({settings:settings, cats:CATEGORY_COMMISSION, commHist:COMMISSION_HISTORY})); }catch(e){} return sbSettingsSync(); }
+/* Await a settings save before claiming success: disables the submit
+   button with a "Saving…" state while the DB sync runs. Returns true
+   only if every key was confirmed by the database — a failed sync already
+   showed its own error toast via settingsSyncFailed, so the caller just
+   returns without its success toast. Pass null when there is no button
+   (e.g. a toggle switch). */
+function saveSettingsAndWait(btn){
+  if (btn){ btn.disabled = true; btn._anboLabel = btn.textContent; btn.textContent = "Saving…"; }
+  return saveLocalSettings().then(function(){
+    if (btn){ btn.disabled = false; btn.textContent = btn._anboLabel; }
+    return true;
+  }, function(){
+    if (btn){ btn.disabled = false; btn.textContent = btn._anboLabel; }
+    return false;
+  });
+}
 /* Decision 6/7 — settings table sync (key/value). Value is stored as a JSON
    string so it works whether the column is text or jsonb. A failed sync only
    warns + toasts once; localStorage stays the source of truth in this
@@ -1394,22 +1410,50 @@ function settingsSyncFailed(e){
   sbWarn("settings", e);
   toast("⚠ Settings database e sync hoy ni ("+esc((e && e.message) || "RLS policy")+") — ei browser e save ache, kintu onno device / storefront notun value dekhte pabe na. Supabase settings policy check korun.", 8000);
 }
-async function sbSettingsSync(){
+/* Settings sync — speed fix (2026-11-23): the old loop did one SELECT +
+   one INSERT/UPDATE per key, sequentially (~0.65s/key, ~25s for 38 keys),
+   while the save button toasted success immediately. A reload a few
+   seconds later killed the in-flight writes — live proof: only the first
+   4 keys reached the DB and the platform numbers (keys 5–7) never got
+   written. Now: ONE select fetches all existing keys, then all 38 rows
+   are written in parallel; the returned promise resolves only when every
+   write is confirmed. Syncs are serialized so two overlapping saves can't
+   both see a missing row and both try to insert the same key. */
+var _settingsSyncChain = Promise.resolve();
+function sbSettingsSync(){
+  var p = _settingsSyncChain.then(function(){ return runSettingsSync(); });
+  _settingsSyncChain = p.catch(function(){});
+  return p;
+}
+async function runSettingsSync(){
   if (!sbReady()) return;
   var rows = settingsSyncRows();
-  for (var i=0;i<rows.length;i++){
-    var r = rows[i], val = JSON.stringify(r.value);
-    try{
-      var chk = await sb.from("settings").select("id").eq("key", r.key).limit(1);
-      if (chk.error) throw chk.error;
-      var res;
-      if (chk.data && chk.data.length) res = await sb.from("settings").update({ value: val }).eq("key", r.key);
-      else res = await sb.from("settings").insert({ key: r.key, value: val });
-      if (res.error) throw res.error;
-    }catch(e){
-      settingsSyncFailed(e);
-      return;
-    }
+  var keys = rows.map(function(r){ return r.key; });
+  var existing = {};
+  try{
+    var chk = await sb.from("settings").select("key").in("key", keys);
+    if (chk.error) throw chk.error;
+    (chk.data || []).forEach(function(row){ existing[row.key] = true; });
+  }catch(e){
+    settingsSyncFailed(e);
+    throw e;
+  }
+  /* allSettled-style: every row is attempted even if others fail. */
+  var results = await Promise.all(rows.map(function(r){
+    var val = JSON.stringify(r.value);
+    var q = existing[r.key]
+      ? sb.from("settings").update({ value: val }).eq("key", r.key)
+      : sb.from("settings").insert({ key: r.key, value: val });
+    return Promise.resolve(q).then(
+      function(res){ return { key: r.key, error: (res && res.error) || null }; },
+      function(err){ return { key: r.key, error: err }; }
+    );
+  }));
+  var failed = results.filter(function(x){ return x.error; });
+  if (failed.length){
+    var e = failed[0].error;
+    settingsSyncFailed(e);
+    throw e;
   }
 }
 async function sbSettingsLoad(){
@@ -1427,7 +1471,7 @@ async function sbSettingsLoad(){
       d.set(sbSettingsVal(row.value));
       if (JSON.stringify(d.get()) !== before) changed = true;
     });
-    if (changed) saveLocalSettings();
+    if (changed) saveLocalSettings().catch(function(){}); /* no toast gated on this; a sync failure already toasted via settingsSyncFailed */
   }catch(e){ sbWarn("settings", e); }
 }
 
@@ -2746,43 +2790,45 @@ function renderSettings(){
     + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn sm" type="button" id="mfaEnrollBtn">Enable 2FA — authenticator app</button><button class="btn ghost sm" type="button" id="mfaRemoveBtn">Remove my 2FA</button></div>'
     + '<div id="mfaEnrollBox" style="margin-top:12px"></div>'
     + '</div></div>';
-  $("#feeForm").addEventListener("submit", function(e){
+  $("#feeForm").addEventListener("submit", async function(e){
     e.preventDefault();
     settings.dhakaFee = parseInt($("#sfDhaka").value,10)||0;
     settings.outsideFee = parseInt($("#sfOutside").value,10)||0;
     settings.freeAbove = parseInt($("#sfFree").value,10)||0;
     settings.freeDeliveryMode = ($("#sfFreeMode").value==="nationwide" ? "nationwide" : "dhaka");
-    saveLocalSettings();
+    if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return;
     toast('<span class="lime">✓ Delivery settings saved</span> — order totals updated'); renderAll();
   });
-  var hf=$("#heroForm"); if(hf) hf.addEventListener("submit", function(e){ e.preventDefault(); settings.heroTitle=$("#sfHeroTitle").value.trim(); settings.heroLead=$("#sfHeroLead").value.trim(); saveLocalSettings(); sbSettingsSync(); logActivity("Updated homepage hero text"); toast('<span class="lime">✓ Hero text saved</span> — storefront e sathe sathe dekhabe (ei browser e)'); renderAll(); });
-  var scc=$("#saveCatComm"); if(scc) scc.addEventListener("click", function(){ Array.prototype.forEach.call(document.querySelectorAll("[data-cat-comm]"), function(inp){ var k=inp.getAttribute("data-cat-comm"); var v=parseInt(inp.value,10); if(!isNaN(v)&&v>=0&&v<=30 && CATEGORY_COMMISSION[k]!==v){ COMMISSION_HISTORY.unshift({when:nowLabel(), scope:"Category · "+CATS[k], change:CATEGORY_COMMISSION[k]+"% → "+v+"%", by:currentUserName+" ("+currentUserRole+")", reason:"Settings theke update"}); CATEGORY_COMMISSION[k]=v; } }); saveLocalSettings(); logActivity("Updated category commission rates"); toast("<span class='lime'>✓ Category commission saved</span> — notun order theke lagbe, history te record ache"); renderAll(); });
-  var ff=$("#finForm"); if(ff) ff.addEventListener("submit", function(e){ e.preventDefault(); settings.defaultCommission=parseInt($("#sfComm").value,10)||10; settings.vatRate=parseInt($("#sfVat").value,10)||0; settings.payoutDay=$("#sfPayoutDay").value; settings.payoutHoldDays=parseInt($("#sfHold").value,10)||0; saveLocalSettings(); logActivity("Updated finance settings — commission "+settings.defaultCommission+"%, VAT "+settings.vatRate+"%, payout "+settings.payoutDay); toast('<span class="lime">✓ Finance settings saved</span>'); renderAll(); });
+  var hf=$("#heroForm"); if(hf) hf.addEventListener("submit", async function(e){ e.preventDefault(); settings.heroTitle=$("#sfHeroTitle").value.trim(); settings.heroLead=$("#sfHeroLead").value.trim(); if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return; logActivity("Updated homepage hero text"); toast('<span class="lime">✓ Hero text saved</span> — storefront e sathe sathe dekhabe (ei browser e)'); renderAll(); });
+  var scc=$("#saveCatComm"); if(scc) scc.addEventListener("click", async function(){ Array.prototype.forEach.call(document.querySelectorAll("[data-cat-comm]"), function(inp){ var k=inp.getAttribute("data-cat-comm"); var v=parseInt(inp.value,10); if(!isNaN(v)&&v>=0&&v<=30 && CATEGORY_COMMISSION[k]!==v){ COMMISSION_HISTORY.unshift({when:nowLabel(), scope:"Category · "+CATS[k], change:CATEGORY_COMMISSION[k]+"% → "+v+"%", by:currentUserName+" ("+currentUserRole+")", reason:"Settings theke update"}); CATEGORY_COMMISSION[k]=v; } }); if (!await saveSettingsAndWait(scc)) return; logActivity("Updated category commission rates"); toast("<span class='lime'>✓ Category commission saved</span> — notun order theke lagbe, history te record ache"); renderAll(); });
+  var ff=$("#finForm"); if(ff) ff.addEventListener("submit", async function(e){ e.preventDefault(); settings.defaultCommission=parseInt($("#sfComm").value,10)||10; settings.vatRate=parseInt($("#sfVat").value,10)||0; settings.payoutDay=$("#sfPayoutDay").value; settings.payoutHoldDays=parseInt($("#sfHold").value,10)||0; if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return; logActivity("Updated finance settings — commission "+settings.defaultCommission+"%, VAT "+settings.vatRate+"%, payout "+settings.payoutDay); toast('<span class="lime">✓ Finance settings saved</span>'); renderAll(); });
   Array.prototype.forEach.call(document.querySelectorAll("[data-setting]"), function(sw){
-    sw.addEventListener("click", function(){
+    sw.addEventListener("click", async function(){
       var k = sw.getAttribute("data-setting"); settings[k] = !settings[k];
       sw.setAttribute("aria-checked", settings[k]);
-      saveLocalSettings();
       if (k==="flash") $("#flashLink").textContent = settings.flash ? "⚡ Flash Sale: Live" : "⚡ Flash Sale: Off";
+      if (!await saveSettingsAndWait(null)) return;
       toast("<b>"+k.charAt(0).toUpperCase()+k.slice(1)+"</b> is now "+(settings[k]?"ON":"OFF"));
     });
   });
   /* Decision 6: platform payment numbers. Decision 7: loyalty rates. */
-  var pnf=$("#payNumForm"); if(pnf) pnf.addEventListener("submit", function(e){
+  var pnf=$("#payNumForm"); if(pnf) pnf.addEventListener("submit", async function(e){
     e.preventDefault();
     var bk=$("#sfBkashNo").value.trim(), ng=$("#sfNagadNo").value.trim(), rk=$("#sfRocketNo").value.trim();
     var okNum=function(v){ return v==="" || /^01[3-9]\d{8}$/.test(v); };
     if(!okNum(bk)||!okNum(ng)||!okNum(rk)){ toast("⚠ Sothik 11-digit number din (01 diye shuru) — khali rakhle checkout e 'not configured' dekhabe."); return; }
-    settings.bkashNumber=bk; settings.nagadNumber=ng; settings.rocketNumber=rk; saveLocalSettings();
+    settings.bkashNumber=bk; settings.nagadNumber=ng; settings.rocketNumber=rk;
+    if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return;
     logActivity("Updated platform payment numbers (bKash/Nagad/Rocket)");
     toast("<span class='lime'>✓ Platform payment numbers saved</span> — checkout e ekhon ei number dekhabe");
     renderAll();
   });
-  var lyf=$("#loyaltyForm"); if(lyf) lyf.addEventListener("submit", function(e){
+  var lyf=$("#loyaltyForm"); if(lyf) lyf.addEventListener("submit", async function(e){
     e.preventDefault();
     var a=parseInt($("#sfLoyPer100").value,10), b=parseInt($("#sfLoyPts").value,10), c=parseInt($("#sfLoyVal").value,10);
     if(isNaN(a)||a<0||isNaN(b)||b<1||isNaN(c)||c<0){ toast("⚠ Loyalty rate sothik kore din."); return; }
-    settings.loyaltyPer100=a; settings.loyaltyRedeemPoints=b; settings.loyaltyRedeemValue=c; saveLocalSettings();
+    settings.loyaltyPer100=a; settings.loyaltyRedeemPoints=b; settings.loyaltyRedeemValue=c;
+    if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return;
     logActivity("Updated loyalty settings — "+a+" pt per ৳100, "+b+" pt = ৳"+c+" off");
     toast("<span class='lime'>✓ Loyalty settings saved</span>");
     renderAll();
