@@ -685,6 +685,27 @@ section{ padding-top:56px }
 .services .svc{ background:none; border:0; border-radius:0; box-shadow:none }
 .services .stx{ background:none; border:0; border-radius:0; box-shadow:none; padding:0; display:block }
 .services .sic{ font-size:1rem; color:#fff }
+
+/* ============ P2 (2026-11-23): compare / language / slots / variants / search history ============ */
+.langbtn{font-weight:800;font-size:.85rem;padding:0 12px;min-width:46px}
+.cmpbtn{position:absolute;left:12px;top:12px;z-index:2;border:0;border-radius:999px;padding:6px 10px;font-size:.78rem;font-weight:800;background:rgba(255,255,255,.94);color:#0e7c6f;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer}
+.cmpbtn.on{background:#0e7c6f;color:#fff}
+.compare-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:78px;z-index:95;display:none;align-items:center;gap:10px;background:#07332f;color:#fff;border-radius:999px;padding:10px 12px 10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-weight:700;max-width:calc(100vw - 24px)}
+.compare-bar.show{display:flex}
+.compare-bar button{border:0;border-radius:999px;padding:9px 16px;font-weight:800;cursor:pointer;white-space:nowrap}
+.compare-bar .cgo{background:#a8e10c;color:#243b00}
+.compare-bar .cclear{background:transparent;color:#cfe8d6}
+.compare-table{width:100%;border-collapse:collapse;font-size:.92rem}
+.compare-table th,.compare-table td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
+.compare-table th{background:var(--surface2);width:110px}
+.slotgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slotgrid label{display:flex;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:600;cursor:pointer;background:var(--surface);margin:0}
+.slotgrid label:has(input:checked){border-color:var(--teal);background:#eef7f0}
+.slotgrid input{accent-color:#0e7c6f}
+.varbtn{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:.88rem;color:var(--ink)}
+.varbtn.on{border-color:var(--teal);background:#eef7f0;color:#0a5c50}
+.varbtn:disabled{opacity:.45;cursor:not-allowed}
+.histclear{margin-left:auto;font-size:.78rem;color:var(--muted);background:none;border:0;cursor:pointer;font-weight:700;padding:2px 4px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -698,13 +719,14 @@ section{ padding-top:56px }
       <a class="logo" href="/" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
       <div class="searchwrap">
       <form class="searchbar" id="searchForm" role="search">
-        <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন…" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
-        <button type="submit">খুঁজুন</button>
+        <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন…" data-i18n-ph="searchPh" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
+        <button type="submit" data-i18n="searchBtn">খুঁজুন</button>
       </form>
       <div class="suggest" id="searchSuggest" role="listbox" aria-label="সার্চ সাজেশন"></div>
       </div>
       <div class="navbtns">
-        <button class="rolebtn" id="accountBtn">👤 লগইন / সাইন আপ</button>
+        <button class="rolebtn" id="accountBtn" data-i18n="loginSignup">👤 লগইন / সাইন আপ</button>
+        <button class="iconbtn langbtn" id="langBtn" aria-label="ভাষা বদলান / Switch language">EN</button>
         <button class="iconbtn hideS" id="trackBtn" aria-label="অর্ডার ট্র্যাক করুন">📦</button>
         <button class="iconbtn" id="wishBtn" aria-label="উইশলিস্ট খুলুন">❤️<span class="cartcount lime" id="wishCount">0</span></button>
         <span class="notifwrap">
@@ -715,7 +737,7 @@ section{ padding-top:56px }
       </div>
     </div>
     <nav class="catnav" id="catNav" aria-label="ক্যাটাগরি">
-      <button data-cat="all" class="on">সব পণ্য</button>
+      <button data-cat="all" class="on" data-i18n="catAll">সব পণ্য</button>
       <button data-cat="electronics">ইলেকট্রনিক্স</button>
       <button data-cat="fashion">ফ্যাশন</button>
       <button data-cat="shoesbags">জুতা ও ব্যাগ</button>
@@ -731,19 +753,19 @@ section{ padding-top:56px }
 <div class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="pill"><span class="dot"></span> বাংলাদেশের নতুন 3D শপিং অভিজ্ঞতা</span>
+      <span class="pill"><span class="dot"></span> <span data-i18n="heroPill">বাংলাদেশের নতুন 3D শপিং অভিজ্ঞতা</span></span>
       <h1 id="heroTitle">সবকিছু কিনুন,<br><span class="hl">ঘুরিয়ে দেখে</span> —<br>একদম <span class="hl2">3D স্টাইলে!</span></h1>
       <p class="lead" id="heroLead">আসল পণ্য, আসল দাম — সব এক ঠিকানায়। পণ্য কার্ডে মাউস ঘোরালেই 3D-তে নড়বে, যেন হাতে ধরে দেখছেন। সারা দেশে হোম ডেলিভারি আর ক্যাশ অন ডেলিভারি তো আছেই।</p>
       <div class="hero-cta">
-        <a class="btn btn-lime" href="#products">🛍️ কেনাকাটা শুরু করুন</a>
-        <a class="btn btn-ghost" href="#flash" id="heroFlashCta">⚡ আজকের ফ্ল্যাশ সেল</a>
+        <a class="btn btn-lime" href="#products" data-i18n="heroCtaShop">🛍️ কেনাকাটা শুরু করুন</a>
+        <a class="btn btn-ghost" href="#flash" id="heroFlashCta" data-i18n="heroCtaFlash">⚡ আজকের ফ্ল্যাশ সেল</a>
       </div>
       <div class="hero-stats">
-        <div><b id="prodCountStat">…</b><span>পণ্যের কালেকশন</span></div>
-        <div><b>64 জেলা</b><span>ডেলিভারি কভারেজ</span></div>
-        <div><b>7 দিনের</b><span>সহজ রিটার্ন</span></div>
+        <div><b id="prodCountStat">…</b><span data-i18n="heroStatProducts">পণ্যের কালেকশন</span></div>
+        <div><b>64 জেলা</b><span data-i18n="heroStatDistricts">ডেলিভারি কভারেজ</span></div>
+        <div><b>7 দিনের</b><span data-i18n="heroStatReturn">সহজ রিটার্ন</span></div>
       </div>
-      <div class="hero-pay"><span>💵 ক্যাশ অন ডেলিভারি</span><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span></div>
+      <div class="hero-pay"><span data-i18n="payCod">💵 ক্যাশ অন ডেলিভারি</span><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span></div>
     </div>
     <div class="stage" id="stage">
       <div class="stage-inner" id="stageInner">
@@ -756,16 +778,16 @@ section{ padding-top:56px }
 
 <main class="wrap">
   <div class="services" aria-label="সেবা">
-    <div class="svc"><span class="sic s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 8h13v9H1z"/><path d="M14 11h4l3 3v3h-7z"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg></span><div class="stx"><b>দ্রুত ডেলিভারি</b><span>ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা</span></div></div>
-    <div class="svc"><span class="sic s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M5.5 9.5h.01M18.5 14.5h.01"/></svg></span><div class="stx"><b>ক্যাশ অন ডেলিভারি</b><span>পণ্য হাতে পেয়ে টাকা দিন</span></div></div>
-    <div class="svc"><span class="sic s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.3"/><path d="M3 4v5h5"/></svg></span><div class="stx"><b>7 দিনের রিটার্ন</b><span>সমস্যা থাকলেই রিপ্লেস / রিফান্ড</span></div></div>
-    <div class="svc"><span class="sic s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5.5V11c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V5.5z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/></svg></span><div class="stx"><b>100% অরিজিনাল</b><span>যাচাইকৃত বিক্রেতা, মানি-ব্যাক গ্যারান্টি</span></div></div>
+    <div class="svc"><span class="sic s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 8h13v9H1z"/><path d="M14 11h4l3 3v3h-7z"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg></span><div class="stx"><b data-i18n="svc1t">দ্রুত ডেলিভারি</b><span data-i18n="svc1s">ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা</span></div></div>
+    <div class="svc"><span class="sic s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M5.5 9.5h.01M18.5 14.5h.01"/></svg></span><div class="stx"><b data-i18n="svc2t">ক্যাশ অন ডেলিভারি</b><span data-i18n="svc2s">পণ্য হাতে পেয়ে টাকা দিন</span></div></div>
+    <div class="svc"><span class="sic s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.3"/><path d="M3 4v5h5"/></svg></span><div class="stx"><b data-i18n="svc3t">7 দিনের রিটার্ন</b><span data-i18n="svc3s">সমস্যা থাকলেই রিপ্লেস / রিফান্ড</span></div></div>
+    <div class="svc"><span class="sic s4"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5.5V11c0 5 3.4 8.4 8 10 4.6-1.6 8-5 8-10V5.5z"/><path d="m8.8 12 2.2 2.2 4.2-4.4"/></svg></span><div class="stx"><b data-i18n="svc4t">100% অরিজিনাল</b><span data-i18n="svc4s">যাচাইকৃত বিক্রেতা, মানি-ব্যাক গ্যারান্টি</span></div></div>
   </div>
 
   <!-- CATEGORIES -->
   <section id="categories">
     <div class="sec-head">
-      <div><h2>ক্যাটাগরি — 3D কিউবে সাজানো</h2><p>যেকোনো ক্যাটাগরিতে ক্লিক করলেই নিচের পণ্য ফিল্টার হয়ে যাবে</p></div>
+      <div><h2 data-i18n="catTitle">ক্যাটাগরি — 3D কিউবে সাজানো</h2><p data-i18n="catSub">যেকোনো ক্যাটাগরিতে ক্লিক করলেই নিচের পণ্য ফিল্টার হয়ে যাবে</p></div>
     </div>
     <div class="cats" id="catTiles"></div>
   </section>
@@ -782,14 +804,14 @@ section{ padding-top:56px }
   <!-- CAMPAIGN 11.11 STYLE -->
   <section style="padding-top:6px">
     <div class="campaign">
-      <h2>অফার ও ক্যাম্পেইন</h2>
-      <p>ভাউচার আর ফ্ল্যাশ সেল একসাথে — তার উপর ৳2,000+ অর্ডারে ফ্রি ডেলিভারি। পণ্য লাইভ হলেই এখানে দেখতে পাবেন।</p>
+      <h2 data-i18n="campTitle">অফার ও ক্যাম্পেইন</h2>
+      <p data-i18n="campSub">ভাউচার আর ফ্ল্যাশ সেল একসাথে — তার উপর ৳2,000+ অর্ডারে ফ্রি ডেলিভারি। পণ্য লাইভ হলেই এখানে দেখতে পাবেন।</p>
       <div class="cbtns">
-        <button class="btn btn-lime" data-goto="#flash">⚡ ফ্ল্যাশ সেলে যান</button>
-        <button class="btn btn-ghost" data-goto="#vouchers">🎟️ ভাউচার সংগ্রহ করুন</button>
-        <button class="btn btn-ghost" data-goto="#under999">💸 ৳999 এর নিচে ডিল</button>
+        <button class="btn btn-lime" data-goto="#flash" data-i18n="campFlash">⚡ ফ্ল্যাশ সেলে যান</button>
+        <button class="btn btn-ghost" data-goto="#vouchers" data-i18n="campVouch">🎟️ ভাউচার সংগ্রহ করুন</button>
+        <button class="btn btn-ghost" data-goto="#under999" data-i18n="campUnder">💸 ৳999 এর নিচে ডিল</button>
       </div>
-      <div class="cfeat"><span>🚚 ফ্রি শিপিং ৳2,000+</span><span>💵 ক্যাশ অন ডেলিভারি</span></div>
+      <div class="cfeat"><span data-i18n="campFree">🚚 ফ্রি শিপিং ৳2,000+</span><span data-i18n="campCod">💵 ক্যাশ অন ডেলিভারি</span></div>
     </div>
   </section>
 
@@ -797,8 +819,8 @@ section{ padding-top:56px }
   <section id="mega" style="padding-top:6px">
     <div class="mega-sec">
       <span class="mega-tag">🔥 MEGA SALE — Seller Deal</span>
-      <h2 style="margin-top:12px">মেগা ডিসকাউন্ট</h2>
-      <p style="margin:8px 0 0;opacity:.93;line-height:1.6;max-width:38rem">Seller-রা নিজের পণ্যে মেগা ডিসকাউন্ট দিয়ে আবেদন করে — প্রতিটি ডিল <b>AnboBD Admin যাচাই করে অনুমোদন</b> দেওয়ার পরই এখানে লাইভ হয়। তাই দামও আসল, ছাড়ও আসল।</p>
+      <h2 style="margin-top:12px" data-i18n="megaTitle">মেগা ডিসকাউন্ট</h2>
+      <p style="margin:8px 0 0;opacity:.93;line-height:1.6;max-width:38rem" data-i18n="megaSub">Seller-রা নিজের পণ্যে মেগা ডিসকাউন্ট দিয়ে আবেদন করে — প্রতিটি ডিল <b>AnboBD Admin যাচাই করে অনুমোদন</b> দেওয়ার পরই এখানে লাইভ হয়। তাই দামও আসল, ছাড়ও আসল।</p>
       <div class="mega-grid" id="megaGrid"></div>
     </div>
   </section>
@@ -809,9 +831,9 @@ section{ padding-top:56px }
       <div class="flash-head">
         <h2><span class="bolt">⚡ FLASH SALE</span></h2>
         <div class="timer" aria-label="ফ্ল্যাশ সেল শেষ হতে বাকি সময়">
-          <div><b id="tH">00</b><span>ঘণ্টা</span></div>
-          <div><b id="tM">00</b><span>মিনিট</span></div>
-          <div><b id="tS">00</b><span>সেকেন্ড</span></div>
+          <div><b id="tH">00</b><span data-i18n="timerH">ঘণ্টা</span></div>
+          <div><b id="tM">00</b><span data-i18n="timerM">মিনিট</span></div>
+          <div><b id="tS">00</b><span data-i18n="timerS">সেকেন্ড</span></div>
         </div>
       </div>
       <div class="flash-grid" id="flashGrid"></div>
@@ -820,60 +842,60 @@ section{ padding-top:56px }
 
   <!-- VOUCHERS -->
   <section id="vouchers">
-    <div class="sec-head"><div><h2>🎟️ ভাউচার সংগ্রহ করুন</h2><p>ভাউচার নিয়ে চেকআউটে কোড বসালেই ছাড় — ফ্ল্যাশ সেলের দামের উপরেও প্রযোজ্য</p></div></div>
+    <div class="sec-head"><div><h2 data-i18n="vouchTitle">🎟️ ভাউচার সংগ্রহ করুন</h2><p data-i18n="vouchSub">ভাউচার নিয়ে চেকআউটে কোড বসালেই ছাড় — ফ্ল্যাশ সেলের দামের উপরেও প্রযোজ্য</p></div></div>
     <div class="vouchers" id="voucherGrid"></div>
   </section>
 
   <!-- SHOP COUPONS (Seller-issued, live on storefront) -->
   <section id="shopcoupons" style="display:none">
-    <div class="sec-head"><div><h2>🏪 শপ কুপন — সরাসরি দোকান থেকে</h2><p>Seller-রা নিজের দোকানের জন্য এই কুপনগুলো দিয়েছে — কুপন নিয়ে ওই দোকানের পণ্য কার্টে যোগ করে চেকআউটে কোড বসালেই ছাড়</p></div></div>
+    <div class="sec-head"><div><h2 data-i18n="shopCoupTitle">🏪 শপ কুপন — সরাসরি দোকান থেকে</h2><p data-i18n="shopCoupSub">Seller-রা নিজের দোকানের জন্য এই কুপনগুলো দিয়েছে — কুপন নিয়ে ওই দোকানের পণ্য কার্টে যোগ করে চেকআউটে কোড বসালেই ছাড়</p></div></div>
     <div class="vouchers" id="shopCouponGrid"></div>
   </section>
 
   <!-- PRODUCTS -->
   <section id="products">
     <div class="sec-head">
-      <div><h2 id="prodTitle">আপনার জন্য বাছাই করা</h2><p id="prodSub">কার্ডের উপর মাউস নিলে 3D-তে ঝুঁকবে — ছবিতে ক্লিক করলে বড় করে দেখুন, ❤️ দিলে উইশলিস্টে যাবে</p></div>
-      <a href="#categories">সব ক্যাটাগরি ↑</a>
+      <div><h2 id="prodTitle" data-i18n="prodTitle">আপনার জন্য বাছাই করা</h2><p id="prodSub" data-i18n="prodSub">কার্ডের উপর মাউস নিলে 3D-তে ঝুঁকবে — ছবিতে ক্লিক করলে বড় করে দেখুন, ❤️ দিলে উইশলিস্টে যাবে</p></div>
+      <a href="#categories" data-i18n="allCatsLink">সব ক্যাটাগরি ↑</a>
     </div>
     <div class="toolbar">
       <span class="count" id="resultCount"></span>
       <div class="pricechips" id="priceChips" role="group" aria-label="দাম অনুযায়ী ফিল্টার">
-        <button data-price="all" class="on">সব দাম</button>
-        <button data-price="u1000">৳1,000 এর নিচে</button>
+        <button data-price="all" class="on" data-i18n="priceAll">সব দাম</button>
+        <button data-price="u1000" data-i18n="priceU1000">৳1,000 এর নিচে</button>
         <button data-price="m">৳1,000–3,000</button>
-        <button data-price="h">৳3,000+</button>
+        <button data-price="h" data-i18n="priceH">৳3,000+</button>
       </div>
-      <label class="sortsel">সাজান:
+      <label class="sortsel"><span data-i18n="sortLbl">সাজান:</span>
         <select id="sortSel" aria-label="পণ্য সাজান">
-          <option value="popular">সবচেয়ে জনপ্রিয়</option>
-          <option value="rating">রেটিং (বেশি → কম)</option>
-          <option value="discount">ছাড় (বেশি → কম)</option>
-          <option value="low">দাম (কম → বেশি)</option>
-          <option value="high">দাম (বেশি → কম)</option>
-          <option value="new">নতুন আগে</option>
+          <option value="popular" data-i18n="sortPopular">সবচেয়ে জনপ্রিয়</option>
+          <option value="rating" data-i18n="sortRating">রেটিং (বেশি → কম)</option>
+          <option value="discount" data-i18n="sortDiscount">ছাড় (বেশি → কম)</option>
+          <option value="low" data-i18n="sortLow">দাম (কম → বেশি)</option>
+          <option value="high" data-i18n="sortHigh">দাম (বেশি → কম)</option>
+          <option value="new" data-i18n="sortNew">নতুন আগে</option>
         </select>
       </label>
     </div>
     <div class="filters2">
-      <label class="fsel">রেটিং:
+      <label class="fsel"><span data-i18n="ratingLbl">রেটিং:</span>
         <select id="ratingSel" aria-label="রেটিং ফিল্টার">
-          <option value="0">যেকোনো রেটিং</option>
+          <option value="0" data-i18n="ratingAny">যেকোনো রেটিং</option>
           <option value="4.8">4.8 ★ ও বেশি</option>
           <option value="4.7">4.7 ★ ও বেশি</option>
           <option value="4.6">4.6 ★ ও বেশি</option>
           <option value="4.5">4.5 ★ ও বেশি</option>
         </select>
       </label>
-      <label class="fsel">শুধু:
+      <label class="fsel"><span data-i18n="onlyLbl">শুধু:</span>
         <select id="extraSel" aria-label="অতিরিক্ত ফিল্টার">
-          <option value="all">সব পণ্য</option>
-          <option value="freedel">ফ্রি ডেলিভারি যোগ্য (৳2,000+ পণ্য)</option>
-          <option value="instock">স্টকে আছে</option>
-          <option value="lowstock">স্টক শেষ প্রায় (৫ বা কম)</option>
+          <option value="all" data-i18n="extraAll">সব পণ্য</option>
+          <option value="freedel" data-i18n="extraFree">ফ্রি ডেলিভারি যোগ্য (৳2,000+ পণ্য)</option>
+          <option value="instock" data-i18n="extraStock">স্টকে আছে</option>
+          <option value="lowstock" data-i18n="extraLow">স্টক শেষ প্রায় (৫ বা কম)</option>
         </select>
       </label>
-      <button class="ghostbtn" id="clearFilters2" style="width:auto;margin:0;padding:9px 16px">সব ফিল্টার রিসেট</button>
+      <button class="ghostbtn" id="clearFilters2" style="width:auto;margin:0;padding:9px 16px" data-i18n="resetFilters">সব ফিল্টার রিসেট</button>
     </div>
     <div class="grid" id="productGrid"></div>
     <div class="empty" id="emptyState"><b>দুঃখিত, কিছু পাওয়া যায়নি 😔</b>অন্য নামে খুঁজে দেখুন, দামের ফিল্টার বদলান অথবা সব পণ্য দেখুন।<br><button id="resetFilters">সব ফিল্টার মুছে ফেলুন</button></div>
@@ -881,33 +903,61 @@ section{ padding-top:56px }
 
   <!-- RECENTLY VIEWED -->
   <section id="recentSec" style="display:none;padding-top:30px">
-    <div class="sec-head"><div><h2 style="font-size:1.4rem">সম্প্রতি দেখেছেন</h2></div></div>
+    <div class="sec-head"><div><h2 style="font-size:1.4rem" data-i18n="recentTitle">সম্প্রতি দেখেছেন</h2></div></div>
     <div class="recent" id="recentRow"></div>
   </section>
 
   <!-- DEALS UNDER 999 -->
   <section id="under999">
     <div class="sec-head">
-      <div><h2>💸 Deals Under ৳999</h2><p>পকেট-বান্ধব দামে প্রতিদিনের দরকারি জিনিস — সবগুলোই হাজার টাকার নিচে</p></div>
-      <a href="#products" data-showall>সব পণ্য দেখুন ↑</a>
+      <div><h2 data-i18n="underTitle">💸 Deals Under ৳999</h2><p data-i18n="underSub">পকেট-বান্ধব দামে প্রতিদিনের দরকারি জিনিস — সবগুলোই হাজার টাকার নিচে</p></div>
+      <a href="#products" data-showall data-i18n="showAllLink">সব পণ্য দেখুন ↑</a>
     </div>
     <div class="grid" id="underGrid"></div>
   </section>
 
+  <!-- P2 (2026-11-23): New arrivals / Best sellers / Top rated — shudhu asol data; khali hole honest empty state. -->
+  <section id="newArrivals">
+    <div class="sec-head">
+      <div><h2 data-i18n="newTitle">🆕 নতুন এসেছে</h2><p data-i18n="newSub">সবচেয়ে নতুন পণ্যগুলো — আগে আসে, আগে দেখুন</p></div>
+      <a href="#products" data-showall data-i18n="showAllLink2">সব পণ্য দেখুন ↑</a>
+    </div>
+    <div class="grid" id="newGrid"></div>
+    <div class="empty" id="newEmpty" style="display:none"><b data-i18n="newEmptyT">এখনো নতুন পণ্য আসেনি</b><span data-i18n="newEmptyS">নতুন পণ্য অনুমোদিত হলেই এখানে দেখা যাবে।</span></div>
+  </section>
+
+  <section id="bestSellers">
+    <div class="sec-head">
+      <div><h2 data-i18n="bestTitle">🏆 সবচেয়ে বেশি বিক্রি</h2><p data-i18n="bestSub">ক্রেতাদের সবচেয়ে পছন্দের পণ্য — আসল বিক্রির হিসাবে সাজানো</p></div>
+      <a href="#products" data-showall data-i18n="showAllLink3">সব পণ্য দেখুন ↑</a>
+    </div>
+    <div class="grid" id="bestGrid"></div>
+    <div class="empty" id="bestEmpty" style="display:none"><b data-i18n="bestEmptyT">এখনো কোনো পণ্য বিক্রি হয়নি</b><span data-i18n="bestEmptyS">প্রথম বিক্রি হলেই এখানে সেরা পণ্য দেখা যাবে।</span></div>
+  </section>
+
+  <section id="topRated">
+    <div class="sec-head">
+      <div><h2 data-i18n="topTitle">⭐ সেরা রেটিং</h2><p data-i18n="topSub">আসল কাস্টমার রিভিউয়ের গড় রেটিং অনুযায়ী সেরা পণ্য</p></div>
+      <a href="#products" data-showall data-i18n="showAllLink4">সব পণ্য দেখুন ↑</a>
+    </div>
+    <div class="grid" id="topGrid"></div>
+    <div class="empty" id="topEmpty" style="display:none"><b data-i18n="topEmptyT">এখনো কোনো রিভিউ নেই</b><span data-i18n="topEmptyS">কাস্টমার রিভিউ দিলেই সেরা রেটিংয়ের পণ্য এখানে দেখা যাবে।</span></div>
+  </section>
+
   <!-- HOW + TRUST -->
   <section>
-    <div class="sec-head"><div><h2>কীভাবে অর্ডার করবেন?</h2><p>মাত্র 3টি সহজ ধাপে</p></div></div>
+    <div class="sec-head"><div><h2 data-i18n="howTitle">কীভাবে অর্ডার করবেন?</h2><p data-i18n="howSub">মাত্র 3টি সহজ ধাপে</p></div></div>
     <div class="steps">
-      <div><div class="n">1</div><b>পণ্য বেছে কার্টে যোগ করুন</b><p>পছন্দের পণ্য খুঁজুন, ছবিতে ক্লিক করে বিস্তারিত দেখুন, তারপর “কার্টে যোগ করুন” বা “এখনই কিনুন” চাপুন।</p></div>
-      <div><div class="n">2</div><b>নাম, মোবাইল ও ঠিকানা দিন</b><p>চেকআউটে আপনার নাম, সচল মোবাইল নম্বর আর পুরো ঠিকানা দিন। পেমেন্ট বেছে নিন — ক্যাশ অন ডেলিভারি, অথবা bKash/Nagad/Rocket ম্যানুয়াল পেমেন্ট (টাকা পাঠিয়ে Transaction ID দিতে হবে, Admin যাচাই করে কনফার্ম করবে)।</p></div>
-      <div><div class="n">3</div><b>Admin কনফার্মের পর Seller পাঠিয়ে দেবে</b><p>প্রতিটি অর্ডার আগে AnboBD Admin যাচাই করে কনফার্ম করে, তারপর Seller-এর কাছে পাঠানো হয়। Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি শুরু — ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা।</p></div>
+      <div><div class="n">1</div><b data-i18n="how1t">পণ্য বেছে কার্টে যোগ করুন</b><p data-i18n="how1s">পছন্দের পণ্য খুঁজুন, ছবিতে ক্লিক করে বিস্তারিত দেখুন, তারপর “কার্টে যোগ করুন” বা “এখনই কিনুন” চাপুন।</p></div>
+      <div><div class="n">2</div><b data-i18n="how2t">নাম, মোবাইল ও ঠিকানা দিন</b><p data-i18n="how2s">চেকআউটে আপনার নাম, সচল মোবাইল নম্বর আর পুরো ঠিকানা দিন। পেমেন্ট বেছে নিন — ক্যাশ অন ডেলিভারি, অথবা bKash/Nagad/Rocket ম্যানুয়াল পেমেন্ট (টাকা পাঠিয়ে Transaction ID দিতে হবে, Admin যাচাই করে কনফার্ম করবে)।</p></div>
+      <div><div class="n">3</div><b data-i18n="how3t">Admin কনফার্মের পর Seller পাঠিয়ে দেবে</b><p data-i18n="how3s">প্রতিটি অর্ডার আগে AnboBD Admin যাচাই করে কনফার্ম করে, তারপর Seller-এর কাছে পাঠানো হয়। Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি শুরু — ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা।</p></div>
     </div>
-    <div class="sec-head" style="margin-top:34px"><div><h2>কেন AnboBD?</h2><p>কেনাকাটা হোক নিশ্চিন্তে</p></div></div>
+    <div class="sec-head" style="margin-top:34px"><div><h2 data-i18n="whyTitle">কেন AnboBD?</h2><p data-i18n="whySub">কেনাকাটা হোক নিশ্চিন্তে</p></div></div>
     <div class="trust">
-      <div><div class="ic">💵</div><b>ক্যাশ অন ডেলিভারি</b><p>পণ্য হাতে পেয়ে তারপর টাকা দিন। আগাম দিতে চাইলে bKash/Nagad/Rocket ম্যানুয়াল পেমেন্ট আছে — টাকা পাঠিয়ে Transaction ID দিলে Admin যাচাই করে অর্ডার কনফার্ম করে।</p></div>
-      <div><div class="ic">↩️</div><b>7 দিনের সহজ রিটার্ন</b><p>পণ্যে সমস্যা থাকলে বা ভুল পণ্য এলে 7 দিনের মধ্যে সহজে রিটার্ন/রিপ্লেস — রিফান্ড 3–5 কর্মদিবসে।</p></div>
-      <div><div class="ic">✅</div><b>100% অরিজিনাল পণ্য</b><p>প্রতিটি পণ্য যাচাই করা বিক্রেতার কাছ থেকে — নকল পণ্যে সম্পূর্ণ মানি-ব্যাক গ্যারান্টি।</p></div>
-      <div><div class="ic">🎧</div><b>সকাল 9টা – রাত 11টা সাপোর্ট</b><p>বাংলায় কথা বলুন — কল, চ্যাট বা মেসেঞ্জারে আমাদের টিম পাশে আছে, সপ্তাহে 7 দিনই।</p></div>
+      <div><div class="ic">💵</div><b data-i18n="why1t">ক্যাশ অন ডেলিভারি</b><p data-i18n="why1s">পণ্য হাতে পেয়ে তারপর টাকা দিন। আগাম দিতে চাইলে bKash/Nagad/Rocket ম্যানুয়াল পেমেন্ট আছে — টাকা পাঠিয়ে Transaction ID দিলে Admin যাচাই করে অর্ডার কনফার্ম করে।</p></div>
+      <div><div class="ic">↩️</div><b data-i18n="why2t">7 দিনের সহজ রিটার্ন</b><p data-i18n="why2s">পণ্যে সমস্যা থাকলে বা ভুল পণ্য এলে 7 দিনের মধ্যে সহজে রিটার্ন/রিপ্লেস — রিফান্ড 3–5 কর্মদিবসে।</p></div>
+      <div><div class="ic">✅</div><b data-i18n="why3t">100% অরিজিনাল পণ্য</b><p data-i18n="why3s">প্রতিটি পণ্য যাচাই করা বিক্রেতার কাছ থেকে — নকল পণ্যে সম্পূর্ণ মানি-ব্যাক গ্যারান্টি।</p></div>
+      <div><div class="ic">🎧</div><b data-i18n="why4t">সকাল 9টা – রাত 11টা সাপোর্ট</b><p data-i18n="why4s">বাংলায় কথা বলুন — কল, চ্যাট বা মেসেঞ্জারে আমাদের টিম পাশে আছে, সপ্তাহে 7 দিনই।</p></div>
     </div>
   </section>
 
@@ -915,7 +965,7 @@ section{ padding-top:56px }
 
   <!-- FAQ -->
   <section id="faq">
-    <div class="sec-head"><div><h2>সাধারণ জিজ্ঞাসা</h2><p>কেনাকাটার আগে জেনে নিন</p></div></div>
+    <div class="sec-head"><div><h2 data-i18n="faqTitle">সাধারণ জিজ্ঞাসা</h2><p data-i18n="faqSub">কেনাকাটার আগে জেনে নিন</p></div></div>
     <div class="faq">
       <details><summary>ডেলিভারি চার্জ কত আর কতদিনে পাব?</summary><p id="faqFreeDelText">ঢাকার ভিতরে ডেলিভারি চার্জ ৳60 (24 ঘণ্টা), ঢাকার বাইরে ৳120 (48–72 ঘণ্টা)। ঢাকার ভিতরে ৳2,000 বা তার বেশি অর্ডারে ডেলিভারি সম্পূর্ণ FREE (ঢাকার বাইরে ডেলিভারি চার্জ ৳120 প্রযোজ্য)। অর্ডারের পর AnboBD Admin যাচাই করে কনফার্ম করে Seller-এর কাছে পাঠায় — Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি প্রক্রিয়া শুরু হয়।</p></details>
       <details><summary>কীভাবে পেমেন্ট করব?</summary><p>দুটি উপায় আছে: (1) <b>ক্যাশ অন ডেলিভারি</b> — পণ্য হাতে পেয়ে নগদ টাকা দিন। (2) <b>bKash / Nagad / Rocket ম্যানুয়াল পেমেন্ট</b> — চেকআউটে মাধ্যমটি বেছে নিন, চেকআউটেই অফিসিয়াল নম্বর দেখানো হবে; সেই নম্বরে <b>Send Money</b> করুন — Cash Out বা Payment করবেন না। টাকা পাঠিয়ে আপনার নম্বর ও <b>Transaction ID (TrxID)</b> দিন — TrxID ছাড়া অর্ডার কনফার্ম হবে না। Admin ট্রান্সাকশন যাচাই করে কনফার্ম করলেই অর্ডারটি এগিয়ে যাবে — ভুল নম্বরে টাকা গেলে বা ভুল TrxID দিলে অর্ডার কনফার্ম হবে না। যাচাইয়ের আগে অর্ডার AwaitingAdmin অবস্থায় থাকে। অনলাইন কার্ড গেটওয়ে এখনো চালু হয়নি।</p></details>
@@ -927,11 +977,11 @@ section{ padding-top:56px }
 
     <!-- NEWSLETTER -->
     <div class="newsletter">
-      <div><h2>অফারের খবর সবার আগে পান 🎁</h2><p>নতুন পণ্য, এক্সক্লুসিভ কুপন আর ফ্ল্যাশ সেলের আপডেট সরাসরি আপনার ইমেইলে। স্প্যাম নয় — শুধু কাজের অফার, মাসে সর্বোচ্চ 4টি মেইল।</p></div>
+      <div><h2 data-i18n="newsTitle">অফারের খবর সবার আগে পান 🎁</h2><p data-i18n="newsSub">নতুন পণ্য, এক্সক্লুসিভ কুপন আর ফ্ল্যাশ সেলের আপডেট সরাসরি আপনার ইমেইলে। স্প্যাম নয় — শুধু কাজের অফার, মাসে সর্বোচ্চ 4টি মেইল।</p></div>
       <div>
         <form class="newsform" id="newsForm" novalidate>
-          <input type="email" id="newsEmail" placeholder="আপনার ইমেইল ঠিকানা" aria-label="ইমেইল ঠিকানা" />
-          <button type="submit">সাবস্ক্রাইব করুন</button>
+          <input type="email" id="newsEmail" placeholder="আপনার ইমেইল ঠিকানা" data-i18n-ph="newsPh" aria-label="ইমেইল ঠিকানা" />
+          <button type="submit" data-i18n="newsBtn">সাবস্ক্রাইব করুন</button>
         </form>
         <div class="news-ok" id="newsOk">✅ ধন্যবাদ! আপনার ইমেইলটি <b>এই ডিভাইসে সংরক্ষিত</b> হয়েছে — অনলাইন নিউজলেটার চালু হলেই সবার আগে অফারের খবর পাবেন।</div>
         <p id="newsErr" style="display:none;color:#ffb59f;font-weight:700;font-size:.86rem;margin:8px 2px 0">সঠিক ইমেইল ঠিকানা দিন (যেমন: name@example.com)।</p>
@@ -941,12 +991,12 @@ section{ padding-top:56px }
     <!-- SELLER -->
     <div class="seller">
       <div>
-        <h2>আপনার দোকানও AnboBD-তে খুলুন 🏪</h2>
-        <p>বিক্রেতা হিসেবে জয়েন করুন — সারা দেশের ক্রেতার কাছে পৌঁছে যান, ডেলিভারি আর পেমেন্টের ঝামেলা আমাদের।</p>
-        <ul><li>✔ কোনো মাসিক ফি নেই — শুধু বিক্রিতে কমিশন</li><li>✔ 64 জেলায় আমাদের ডেলিভারি নেটওয়ার্ক</li><li>✔ সাপ্তাহিক পেমেন্ট সেটেলমেন্ট (bKash/ব্যাংক)</li><li>✔ নিজের দোকানের কুপন দিন — ওয়েবসাইটে লাইভ দেখাবে</li><li>✔ Mega Sale-এ পণ্য দিন (Admin অনুমোদন সাপেক্ষে)</li></ul>
+        <h2 data-i18n="sellTitle">আপনার দোকানও AnboBD-তে খুলুন 🏪</h2>
+        <p data-i18n="sellSub">বিক্রেতা হিসেবে জয়েন করুন — সারা দেশের ক্রেতার কাছে পৌঁছে যান, ডেলিভারি আর পেমেন্টের ঝামেলা আমাদের।</p>
+        <ul><li data-i18n="sellLi1">✔ কোনো মাসিক ফি নেই — শুধু বিক্রিতে কমিশন</li><li data-i18n="sellLi2">✔ 64 জেলায় আমাদের ডেলিভারি নেটওয়ার্ক</li><li data-i18n="sellLi3">✔ সাপ্তাহিক পেমেন্ট সেটেলমেন্ট (bKash/ব্যাংক)</li><li data-i18n="sellLi4">✔ নিজের দোকানের কুপন দিন — ওয়েবসাইটে লাইভ দেখাবে</li><li data-i18n="sellLi5">✔ Mega Sale-এ পণ্য দিন (Admin অনুমোদন সাপেক্ষে)</li></ul>
         <div style="display:flex;gap:10px;flex-wrap:wrap">
-          <button class="btn btn-lime" id="sellerBtn">বিক্রেতা হিসেবে আবেদন করুন →</button>
-          <button class="btn btn-ghost" id="sellerLoginCta" style="display:none">🏪 Seller Center-এ লগইন</button>
+          <button class="btn btn-lime" id="sellerBtn" data-i18n="sellBtn">বিক্রেতা হিসেবে আবেদন করুন →</button>
+          <button class="btn btn-ghost" id="sellerLoginCta" style="display:none" data-i18n="sellLogin">🏪 Seller Center-এ লগইন</button>
         </div>
       </div>
       <div class="cube3d" aria-hidden="true">📦</div>
@@ -962,21 +1012,21 @@ section{ padding-top:56px }
       <p>📍 বনানী, ঢাকা 1213, বাংলাদেশ<br>📞 হটলাইন: <b style="display:inline;color:var(--ink)">09638-555555</b> (সকাল 9টা – রাত 11টা)<br>✉️ support@anbobd.com</p>
       <div class="payrow"><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span><span>COD</span></div>
     </div>
-    <div><b>কেনাকাটা</b><a href="#flash">ফ্ল্যাশ সেল</a><a href="#products">সব পণ্য</a><a href="#categories">ক্যাটাগরি</a><a href="/shop">🏪 সব দোকান</a><a href="#faq">সাধারণ জিজ্ঞাসা</a><button class="flink" data-policy="track">অর্ডার ট্র্যাক করুন</button></div>
-    <div><b>কাস্টমার কেয়ার</b><a href="/pages/return-refund.html">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html">ডেলিভারি তথ্য</a><a href="/pages/warranty.html">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html">প্রাইভেসি পলিসি</a><a href="/pages/contact.html">যোগাযোগ করুন</a></div>
-    <div><b>AnboBD</b><a href="/pages/about.html">আমাদের সম্পর্কে</a><button class="flink" data-policy="seller">বিক্রেতা হোন</button><button class="flink" id="footSellerBtn" style="display:none" hidden>🏪 Seller Center</button><button class="flink" id="footAdminBtn" style="display:none" hidden>🛡️ Admin Panel</button><a href="/pages/terms.html">শর্তাবলী</a><a href="/pages/career.html">ক্যারিয়ার</a></div>
+    <div><b data-i18n="footShop">কেনাকাটা</b><a href="#flash" data-i18n="footFlash">ফ্ল্যাশ সেল</a><a href="#products" data-i18n="footAll">সব পণ্য</a><a href="#categories" data-i18n="footCats">ক্যাটাগরি</a><a href="/shop" data-i18n="footShops">🏪 সব দোকান</a><a href="#faq" data-i18n="footFaq">সাধারণ জিজ্ঞাসা</a><button class="flink" data-policy="track" data-i18n="footTrack">অর্ডার ট্র্যাক করুন</button></div>
+    <div><b data-i18n="footCare">কাস্টমার কেয়ার</b><a href="/pages/help.html" data-i18n="footHelp">❓ সাহায্য কেন্দ্র (Help Center)</a><a href="/pages/return-refund.html" data-i18n="footReturn">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html" data-i18n="footDel">ডেলিভারি তথ্য</a><a href="/pages/warranty.html" data-i18n="footWarr">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html" data-i18n="footPriv">প্রাইভেসি পলিসি</a><a href="/pages/contact.html" data-i18n="footContact">যোগাযোগ করুন</a></div>
+    <div><b>AnboBD</b><a href="/pages/about.html" data-i18n="footAbout">আমাদের সম্পর্কে</a><button class="flink" data-policy="seller" data-i18n="footSeller">বিক্রেতা হোন</button><button class="flink" id="footSellerBtn" style="display:none" hidden>🏪 Seller Center</button><button class="flink" id="footAdminBtn" style="display:none" hidden>🛡️ Admin Panel</button><a href="/pages/terms.html" data-i18n="footTerms">শর্তাবলী</a><a href="/pages/career.html" data-i18n="footCareer">ক্যারিয়ার</a></div>
   </div>
-  <div class="wrap" style="margin-top:26px;font-size:.85rem">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩</div>
+  <div class="wrap" style="margin-top:26px;font-size:.85rem"><span data-i18n="footCopy">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩</span> • <a href="/sitemap.xml" style="color:var(--muted)" data-i18n="footSitemap">সাইটম্যাপ</a></div>
 </footer>
 
 <!-- MOBILE BOTTOM NAV -->
 <div class="bottomnav"><nav>
-  <a href="/"><span class="bi">🏠</span>হোম</a>
-  <a href="#categories"><span class="bi">🧩</span>ক্যাটাগরি</a>
-  <a href="#flash"><span class="bi">⚡</span>ফ্ল্যাশ সেল</a>
-  <button id="wishBtnM"><span class="bi">❤️</span>উইশলিস্ট<span class="bdg" id="wishCountM">0</span></button>
-  <button id="cartBtnM"><span class="bi">🛒</span>কার্ট<span class="bdg" id="cartCountM">0</span></button>
-  <button id="accountBtnM"><span class="bi">👤</span>অ্যাকাউন্ট</button>
+  <a href="/"><span class="bi">🏠</span><span data-i18n="navHome">হোম</span></a>
+  <a href="#categories"><span class="bi">🧩</span><span data-i18n="navCats">ক্যাটাগরি</span></a>
+  <a href="#flash"><span class="bi">⚡</span><span data-i18n="navFlash">ফ্ল্যাশ সেল</span></a>
+  <button id="wishBtnM"><span class="bi">❤️</span><span data-i18n="navWish">উইশলিস্ট</span><span class="bdg" id="wishCountM">0</span></button>
+  <button id="cartBtnM"><span class="bi">🛒</span><span data-i18n="navCart">কার্ট</span><span class="bdg" id="cartCountM">0</span></button>
+  <button id="accountBtnM"><span class="bi">👤</span><span data-i18n="navAccount">অ্যাকাউন্ট</span></button>
 </nav></div>
 <button class="totop" id="toTop" aria-label="উপরে যান">↑</button>
 
@@ -985,30 +1035,30 @@ section{ padding-top:56px }
 <!-- CART DRAWER (template থেকে প্রয়োজনে তৈরি হয়) -->
 <template id="cartTpl">
 <aside class="drawer" id="cartDrawer" aria-label="শপিং কার্ট">
-  <header><h3>🛒 আপনার কার্ট (<span id="drawerCount">0</span>)</h3><button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button></header>
+  <header><h3><span data-i18n="cartTitle">🛒 আপনার কার্ট</span> (<span id="drawerCount">0</span>)</h3><button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button></header>
   <div id="cartMain" style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div class="ship" id="shipBox"></div>
     <div class="zonesel" role="radiogroup" aria-label="ডেলিভারি এলাকা">
-      <label><input type="radio" name="zone" value="dhaka" checked> ঢাকার ভিতরে (৳60)</label>
-      <label><input type="radio" name="zone" value="outside"> ঢাকার বাইরে (৳120)</label>
+      <label><input type="radio" name="zone" value="dhaka" checked> <span data-i18n="zoneDhaka">ঢাকার ভিতরে (৳60)</span></label>
+      <label><input type="radio" name="zone" value="outside"> <span data-i18n="zoneOutside">ঢাকার বাইরে (৳120)</span></label>
     </div>
     <div class="items" id="cartItems"></div>
-    <div class="savedbox" id="savedBox"><h4>💾 Save for Later (<span id="savedCount">0</span>)</h4><div id="savedItems" style="display:grid;gap:10px"></div></div>
-    <div class="promo"><input id="promoInput" placeholder="প্রোমো / ভাউচার কোড" aria-label="প্রোমো কোড" /><button id="promoBtn">অ্যাপ্লাই</button></div>
+    <div class="savedbox" id="savedBox"><h4><span data-i18n="savedTitle">💾 Save for Later</span> (<span id="savedCount">0</span>)</h4><div id="savedItems" style="display:grid;gap:10px"></div></div>
+    <div class="promo"><input id="promoInput" placeholder="প্রোমো / ভাউচার কোড" data-i18n-ph="promoPh" aria-label="প্রোমো কোড" /><button id="promoBtn" data-i18n="promoApply">অ্যাপ্লাই</button></div>
     <div class="promohint">💡 <b>ANBO10</b> = 10% ছাড় (সর্বোচ্চ ৳500) • <b>MEGA150</b> = ৳150 ছাড় (৳1,500+) • <b>FREEDEL</b> = ফ্রি ডেলিভারি</div>
     <footer>
-      <div class="trow"><span>সাবটোটাল</span><span id="subTotal">৳0</span></div>
-      <div class="trow" id="discRow" style="display:none"><span>প্রোমো ছাড়</span><span class="neg" id="discVal">−৳0</span></div>
-      <div class="trow"><span>ডেলিভারি চার্জ</span><span id="shipCost">—</span></div>
-      <div class="trow grand"><span>সর্বমোট</span><span id="grandTotal">৳0</span></div>
-      <button class="checkout" id="toCheckoutBtn">চেকআউটে যান →</button>
+      <div class="trow"><span data-i18n="subtotal">সাবটোটাল</span><span id="subTotal">৳0</span></div>
+      <div class="trow" id="discRow" style="display:none"><span data-i18n="promoDisc">প্রোমো ছাড়</span><span class="neg" id="discVal">−৳0</span></div>
+      <div class="trow"><span data-i18n="shipFee">ডেলিভারি চার্জ</span><span id="shipCost">—</span></div>
+      <div class="trow grand"><span data-i18n="grandTotal">সর্বমোট</span><span id="grandTotal">৳0</span></div>
+      <button class="checkout" id="toCheckoutBtn" data-i18n="goCheckout">চেকআউটে যান →</button>
     </footer>
   </div>
 
   <!-- CHECKOUT FORM -->
   <form class="coform" id="checkoutForm" novalidate>
-    <div style="display:flex;align-items:center;gap:10px"><button type="button" class="xbtn" id="backToCart" aria-label="কার্টে ফিরুন">←</button><b style="font-size:1.05rem">ডেলিভারির তথ্য দিন</b></div>
-    <div class="guestnote">👤 <b>গেস্ট চেকআউট</b> — অ্যাকাউন্ট বা লগইন লাগবে না। নিচে অর্ডারের <b>পুরো হিসাব আগেই</b> দেখানো হয়েছে, লুকানো কোনো চার্জ নেই।</div>
+    <div style="display:flex;align-items:center;gap:10px"><button type="button" class="xbtn" id="backToCart" aria-label="কার্টে ফিরুন">←</button><b style="font-size:1.05rem" data-i18n="coTitle">ডেলিভারির তথ্য দিন</b></div>
+    <div class="guestnote">👤 <b data-i18n="coGuestT">গেস্ট চেকআউট</b> — <span data-i18n="coGuestS">অ্যাকাউন্ট বা লগইন লাগবে না। নিচে অর্ডারের <b>পুরো হিসাব আগেই</b> দেখানো হয়েছে, লুকানো কোনো চার্জ নেই।</span></div>
     <div id="coAddrPickWrap" style="display:none">
       <div class="fld" style="margin-bottom:8px"><label for="coAddrSel">💾 সেভ করা ঠিকানা</label>
         <select id="coAddrSel" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink)"></select>
@@ -1017,13 +1067,23 @@ section{ padding-top:56px }
     </div>
     <div class="cosummary" id="coSummary"></div>
     <p class="deldate" id="coEta" style="margin:0"></p>
-    <div class="fld" id="fName"><label for="coName">আপনার নাম *</label><input id="coName" autocomplete="name" placeholder="যেমন: মোঃ রফিকুল ইসলাম" /><span class="err">নাম লিখুন (কমপক্ষে 3 অক্ষর)।</span></div>
-    <div class="fld" id="fPhone"><label for="coPhone">মোবাইল নম্বর *</label><input id="coPhone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /><span class="err">সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।</span></div>
-    <div class="fld" id="fAddr"><label for="coAddr">পুরো ঠিকানা *</label><textarea id="coAddr" autocomplete="street-address" placeholder="বাসা/হোল্ডিং, রোড, এলাকা, থানা"></textarea><span class="err">ডেলিভারির জন্য পুরো ঠিকানা লিখুন।</span></div>
-    <div class="fld" id="fDist"><label for="coDist">জেলা *</label>
+    <div class="fld" id="fName"><label for="coName" data-i18n="coName">আপনার নাম *</label><input id="coName" autocomplete="name" placeholder="যেমন: মোঃ রফিকুল ইসলাম" data-i18n-ph="coNamePh" /><span class="err">নাম লিখুন (কমপক্ষে 3 অক্ষর)।</span></div>
+    <div class="fld" id="fPhone"><label for="coPhone" data-i18n="coPhone">মোবাইল নম্বর *</label><input id="coPhone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /><span class="err">সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।</span></div>
+    <div class="fld" id="fAddr"><label for="coAddr" data-i18n="coAddr">পুরো ঠিকানা *</label><textarea id="coAddr" autocomplete="street-address" placeholder="বাসা/হোল্ডিং, রোড, এলাকা, থানা" data-i18n-ph="coAddrPh"></textarea><span class="err">ডেলিভারির জন্য পুরো ঠিকানা লিখুন।</span></div>
+    <div class="fld" id="fDist"><label for="coDist" data-i18n="coDist">জেলা *</label>
       <select id="coDist"><option value="">— জেলা বেছে নিন —</option><option>ঢাকা</option><option>গাজীপুর</option><option>নারায়ণগঞ্জ</option><option>চট্টগ্রাম</option><option>সিলেট</option><option>খুলনা</option><option>রাজশাহী</option><option>বরিশাল</option><option>রংপুর</option><option>ময়মনসিংহ</option><option>কুমিল্লা</option><option>অন্যান্য</option></select>
       <span class="err">জেলা বেছে নিন।</span></div>
-    <div class="fld"><label>পেমেন্ট মাধ্যম *</label>
+    <!-- P2 (2026-11-23): delivery slot — Admin/Seller-er kache order-e jay; DB column orders.delivery_slot na thakle local record + success screen-e dekhay. -->
+    <div class="fld"><label data-i18n="coSlot">ডেলিভারির সময় (স্লট) *</label>
+      <div class="slotgrid" role="radiogroup" aria-label="ডেলিভারি স্লট">
+        <label><input type="radio" name="slot" value="anytime" checked> <span data-i18n="slotAny">যেকোনো সময়</span></label>
+        <label><input type="radio" name="slot" value="morning"> <span data-i18n="slotMorning">সকাল ৯টা–১২টা</span></label>
+        <label><input type="radio" name="slot" value="afternoon"> <span data-i18n="slotAfternoon">দুপুর ১২টা–৩টা</span></label>
+        <label><input type="radio" name="slot" value="evening"> <span data-i18n="slotEvening">বিকেল ৩টা–৬টা</span></label>
+        <label><input type="radio" name="slot" value="night"> <span data-i18n="slotNight">সন্ধ্যা ৬টা–৯টা</span></label>
+      </div>
+    </div>
+    <div class="fld"><label data-i18n="coPay">পেমেন্ট মাধ্যম *</label>
       <div class="payopts">
         <label><input type="radio" name="pay" value="ক্যাশ অন ডেলিভারি" checked><span>💵 ক্যাশ অন ডেলিভারি<small>পণ্য হাতে পেয়ে নগদ টাকা দিন — এটাই এখনকার মূল পেমেন্ট মাধ্যম</small></span></label>
         <label><input type="radio" name="pay" value="bKash"><span>📱 bKash — ম্যানুয়াল পেমেন্ট<small>টাকা পাঠিয়ে Transaction ID দিন — Admin যাচাই করে কনফার্ম করবে</small></span></label>
@@ -1037,19 +1097,22 @@ section{ padding-top:56px }
       <div id="platformPayInfo"></div>
       <div class="fld" id="fPaySender"><label for="coPaySender">যে নম্বর থেকে টাকা পাঠিয়েছেন *</label><input id="coPaySender" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /><span class="err">সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।</span></div>
       <div class="fld" id="fTrx"><label for="coTrxId">Transaction ID *</label><input id="coTrxId" placeholder="যেমন: 9H7XXXXXXX" style="text-transform:uppercase" /><span class="err">পেমেন্টের Transaction ID দিন (কমপক্ষে 6 অক্ষর) — Admin এটি মিলিয়ে যাচাই করবে।</span></div>
+      <!-- P2 (2026-11-23): saved payment number — shudhu nijer sender number, per method, per account, localStorage-e; card kokhono na. -->
+      <label style="display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:600;margin:4px 0 2px"><input type="checkbox" id="coSavePay" style="min-height:0"> <span data-i18n="coSavePay">💾 আমার এই নম্বরটি মনে রাখুন — পরের বার এই মাধ্যমে ব্যবহার করব</span></label>
+      <button type="button" class="btn-sec" id="coForgetPay" style="display:none;margin-top:6px">🗑️ সেভ করা নম্বর ভুলে যান</button>
     </div>
-    <div class="fld"><label for="coNote">বিশেষ নির্দেশনা (ঐচ্ছিক)</label><input id="coNote" placeholder="যেমন: বিকেলে ডেলিভারি দিলে ভালো হয়" /></div>
+    <div class="fld"><label for="coNote" data-i18n="coNote">বিশেষ নির্দেশনা (ঐচ্ছিক)</label><input id="coNote" placeholder="যেমন: বিকেলে ডেলিভারি দিলে ভালো হয়" data-i18n-ph="coNotePh" /></div>
     <div id="loyaltyBox"></div>
-    <div class="trow grand" style="border:0"><span>সর্বমোট (ডেলিভারিসহ)</span><span id="coTotal">৳0</span></div>
-    <button class="checkout" type="submit" id="placeOrderBtn">✅ অর্ডার কনফার্ম করুন</button>
-    <p style="font-size:.8rem;color:var(--muted);margin:0;text-align:center">অর্ডারটি প্রথমে AnboBD Admin যাচাই করে কনফার্ম করবে, তারপর Seller-এর কাছে পাঠানো হবে — Seller প্যাক করে পাঠিয়ে দেবে।</p>
+    <div class="trow grand" style="border:0"><span data-i18n="coGrand">সর্বমোট (ডেলিভারিসহ)</span><span id="coTotal">৳0</span></div>
+    <button class="checkout" type="submit" id="placeOrderBtn" data-i18n="placeOrder">✅ অর্ডার কনফার্ম করুন</button>
+    <p style="font-size:.8rem;color:var(--muted);margin:0;text-align:center" data-i18n="coFlowNote">অর্ডারটি প্রথমে AnboBD Admin যাচাই করে কনফার্ম করবে, তারপর Seller-এর কাছে পাঠানো হবে — Seller প্যাক করে পাঠিয়ে দেবে।</p>
   </form>
 
   <!-- SUCCESS -->
   <div class="success" id="orderSuccess">
     <div class="big">🎉</div>
-    <h3 style="margin:8px 0 6px">অর্ডার হয়ে গেছে!</h3>
-    <p style="color:var(--muted);line-height:1.6;margin:0">ধন্যবাদ! অর্ডারটি এখন <b style="color:var(--ink)">Admin-এর যাচাইয়ে</b> আছে — Admin কনফার্ম করলেই Seller-এর কাছে পাঠানো হবে, Seller প্যাক করে কুরিয়ারে দিয়ে দেবে।</p>
+    <h3 style="margin:8px 0 6px" data-i18n="okTitle">অর্ডার হয়ে গেছে!</h3>
+    <p style="color:var(--muted);line-height:1.6;margin:0" data-i18n="okSub">ধন্যবাদ! অর্ডারটি এখন <b style="color:var(--ink)">Admin-এর যাচাইয়ে</b> আছে — Admin কনফার্ম করলেই Seller-এর কাছে পাঠানো হবে, Seller প্যাক করে কুরিয়ারে দিয়ে দেবে।</p>
     <div class="sumbox" id="orderSummary"></div>
     <div class="paystatus" id="orderSyncStatus" style="display:none;text-align:left"></div>
     <div class="timeline">
@@ -1059,8 +1122,8 @@ section{ padding-top:56px }
       <div><span class="tdot">4</span><div><b>Seller পাঠিয়ে দেবে — কুরিয়ারের পথে</b><span>ডেলিভারির দিন কুরিয়ার ফোন করবে</span></div></div>
       <div><span class="tdot">5</span><div><b>Delivered — ডেলিভারি সম্পন্ন</b><span id="etaTxt">আনুমানিক 24–72 ঘণ্টা</span></div></div>
     </div>
-    <button class="checkout" id="trackFromSuccess" style="background:var(--teal);box-shadow:0 5px 0 #063f38">📦 অর্ডার ট্র্যাক করুন</button>
-    <button class="ghostbtn" id="continueBtn">আরও কেনাকাটা করুন</button>
+    <button class="checkout" id="trackFromSuccess" style="background:var(--teal);box-shadow:0 5px 0 #063f38" data-i18n="okTrack">📦 অর্ডার ট্র্যাক করুন</button>
+    <button class="ghostbtn" id="continueBtn" data-i18n="okContinue">আরও কেনাকাটা করুন</button>
   </div>
 </aside>
 </template>
@@ -1068,9 +1131,9 @@ section{ padding-top:56px }
 <!-- WISHLIST DRAWER -->
 <template id="wishTpl">
 <aside class="drawer" id="wishDrawer" aria-label="উইশলিস্ট">
-  <header><h3>❤️ উইশলিস্ট (<span id="wishDrawerCount">0</span>)</h3><button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button></header>
+  <header><h3><span data-i18n="wishTitle">❤️ উইশলিস্ট</span> (<span id="wishDrawerCount">0</span>)</h3><button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button></header>
   <div class="items" id="wishItems"></div>
-  <footer><p style="margin:0;font-size:.88rem;color:var(--muted)">পছন্দের পণ্য এখানে জমা থাকে — দাম কমলেই কিনে ফেলুন! উইশলিস্ট থেকে সরাসরি কার্টে যোগ করা যায়।</p></footer>
+  <footer><p style="margin:0 0 10px;font-size:.88rem;color:var(--muted)" data-i18n="wishNote">পছন্দের পণ্য এখানে জমা থাকে — দাম কমলেই কিনে ফেলুন! উইশলিস্ট থেকে সরাসরি কার্টে যোগ করা যায়।</p><button class="btn-sec" type="button" id="shareWishBtn" data-i18n="wishShare">🔗 উইশলিস্ট শেয়ার করুন</button></footer>
 </aside>
 </template>
 
@@ -1117,17 +1180,44 @@ section{ padding-top:56px }
   </div>
 </div>
 
+<!-- P2 (2026-11-23): product comparison — max 3, shudhu asol data. -->
+<div class="modal" id="compareModal" role="dialog" aria-modal="true" aria-label="পণ্য তুলনা">
+  <div class="modal-card single">
+    <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
+    <div class="mbody">
+      <h3 style="font-size:1.4rem;margin:0 0 6px" data-i18n="cmpTitle">⇄ পণ্য তুলনা</h3>
+      <p style="color:var(--muted);margin:0 0 14px;line-height:1.6" data-i18n="cmpSub">পাশাপাশি দেখে সিদ্ধান্ত নিন — দাম, স্টক, দোকান, রেটিং সব এক জায়গায়।</p>
+      <div id="compareBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- P2 (2026-11-23): shared wishlist view — #wishlist=<id1>,<id2> link theke khole; read-only, shudhu Add-to-Cart. -->
+<div class="modal" id="sharedWishModal" role="dialog" aria-modal="true" aria-label="শেয়ার করা উইশলিস্ট">
+  <div class="modal-card single">
+    <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
+    <div class="mbody">
+      <h3 style="font-size:1.4rem;margin:0 0 6px">💝 শেয়ার করা উইশলিস্ট</h3>
+      <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">এটি অন্য কারো শেয়ার করা উইশলিস্ট — শুধু দেখা ও কার্টে নেওয়া যাবে। শেয়ার করা পণ্য লাইভ না থাকলে এখানে দেখাবে না।</p>
+      <div id="sharedWishBody"></div>
+    </div>
+  </div>
+</div>
+
+<!-- P2 (2026-11-23): compare bar — compare-e item thakle niche vasbe. -->
+<div class="compare-bar" id="compareBar"><span id="compareBarTxt"></span><button type="button" class="cgo" data-compare-open data-i18n="cmpOpen">⇄ তুলনা করুন</button><button type="button" class="cclear" data-compare-clear data-i18n="cmpClear">✕ মুছুন</button></div>
+
 <!-- TRACK MODAL -->
 <div class="modal" id="trackModal" role="dialog" aria-modal="true" aria-label="অর্ডার ট্র্যাকিং">
   <div class="modal-card single">
     <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
-      <h3 style="font-size:1.4rem;margin:0 0 6px">📦 অর্ডার ট্র্যাক করুন</h3>
-      <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">অর্ডার কনফার্মেশনে পাওয়া নম্বরটি দিন (যেমন <b>#ANBO123456</b>)। আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিন — অনলাইনে খুঁজে দেখা হবে।</p>
+      <h3 style="font-size:1.4rem;margin:0 0 6px" data-i18n="trackTitle">📦 অর্ডার ট্র্যাক করুন</h3>
+      <p style="color:var(--muted);margin:0 0 14px;line-height:1.6" data-i18n="trackSub">অর্ডার কনফার্মেশনে পাওয়া নম্বরটি দিন (যেমন <b>#ANBO123456</b>)। আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিন — অনলাইনে খুঁজে দেখা হবে।</p>
       <form id="trackForm" style="display:flex;gap:8px;flex-wrap:wrap">
-        <input id="trackInput" placeholder="অর্ডার নম্বর" aria-label="অর্ডার নম্বর" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);min-width:0" />
-        <input id="trackPhone" inputmode="tel" placeholder="মোবাইল নম্বর (আগের অর্ডার হলে আবশ্যক)" aria-label="মোবাইল নম্বর" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);min-width:0" />
-        <button class="checkout" type="submit" style="width:auto;margin:0;padding:11px 20px">ট্র্যাক</button>
+        <input id="trackInput" placeholder="অর্ডার নম্বর" data-i18n-ph="trackNumPh" aria-label="অর্ডার নম্বর" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);min-width:0" />
+        <input id="trackPhone" inputmode="tel" placeholder="মোবাইল নম্বর (আগের অর্ডার হলে আবশ্যক)" data-i18n-ph="trackPhonePh" aria-label="মোবাইল নম্বর" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);min-width:0" />
+        <button class="checkout" type="submit" style="width:auto;margin:0;padding:11px 20px" data-i18n="trackBtn">ট্র্যাক</button>
       </form>
       <div id="trackResult" style="margin-top:14px"></div>
     </div>
@@ -1340,7 +1430,8 @@ function safeImgFor(prod){ /* prottek product-er nijer chobi; na thakle tar cate
   return (prod && CAT_FALLBACK[prod.categoryId]) || "/assets/hero-3d.webp";
 }
 function imgFallbackAttr(prod){ return ' onerror="this.onerror=null;this.src=\''+((prod && CAT_FALLBACK[prod.categoryId])||"/assets/hero-3d.webp")+'\'"'; }
-function offPct(p){ return Math.round((1 - p.price/p.oldPrice)*100); }
+/* P2 (2026-11-23): sale window-er baire thakle chhar 0 — effPrice/effOldPrice dekhe. */
+function offPct(p){ var ep = effPrice(p), eo = effOldPrice(p); if(!eo || eo <= ep) return 0; return Math.round((1 - ep/eo)*100); }
 function soldFmt(n){ return n>=1000 ? (n/1000).toFixed(1).replace(".0","")+"k" : ""+n; }
 function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s+" <span>("+r+")</span>"; }
 function etaDate(days){ var d=new Date(); d.setDate(d.getDate()+days); try{ return d.toLocaleDateString("bn-BD",{weekday:"long", day:"numeric", month:"long"}); }catch(e){ return d.toDateString(); } }
@@ -1361,15 +1452,258 @@ var loyaltyRedeem = false; /* Decision 7: checkout e loyalty redeem on/off */
 var catalogLoading = true; /* P0-1: true until loadCatalog finishes (or Supabase is unconfigured) — renderProducts shows a loading state, never demo products. */
 window.__anboAuthPending = true; /* P1 follow-up (2026-11-23): true until restoreSession settles — header cart/wishlist badge + account button stay neutral, never the guest state for a signed-in user. Cleared in the boot IIFE (both branches + no-auth else). */
 var modalImages = [], modalSlide = 0;
-/* Re-audit A11 (2026-11-21): FLASH_IDS [1,10,4,5] were dead demo IDs (real products are UUIDs) — the tile counted 0 while the section fell back to active products. One source of truth now: flash = live products with a real discount (oldPrice > price), capped at 4. */
-function flashList(){ return PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && p.oldPrice && p.oldPrice > p.price; }).slice(0,4); }
+
+/* ============ P2 (2026-11-23): Language switcher (SCOPED) ============
+   Header EN/BN toggle — storefront chrome only (nav, pills, section
+   headings, buttons, footer, cart/checkout labels). Product names,
+   descriptions, seller names and Admin-set hero text stay exactly as
+   entered. Choice persists in localStorage ("anbobd-lang"), default
+   Bengali. NOT translated (stays Bengali, stated in the report):
+   toasts, the Account modal, Admin messages, FAQ answers, category
+   notes, voucher/coupon labels, and any Admin-set label. */
+var CAT_LABELS_EN = {electronics:"Electronics", fashion:"Fashion", shoesbags:"Shoes & Bags", home:"Home & Kitchen", beauty:"Beauty", grocery:"Grocery", sports:"Sports", flash:"Flash Sale"};
+function anboLang(){ try{ var l = localStorage.getItem("anbobd-lang"); return (l==="en"||l==="bn") ? l : "bn"; }catch(e){ return "bn"; } }
+var ANBO_LANG = anboLang();
+var I18N = {
+bn:{
+searchPh:"পণ্য খুঁজুন…", searchBtn:"খুঁজুন", loginSignup:"👤 লগইন / সাইন আপ", catAll:"সব পণ্য",
+heroPill:"বাংলাদেশের নতুন 3D শপিং অভিজ্ঞতা",
+heroTitle:"সবকিছু কিনুন,<br><span class=\"hl\">ঘুরিয়ে দেখে</span> —<br>একদম <span class=\"hl2\">3D স্টাইলে!</span>",
+heroLead:"আসল পণ্য, আসল দাম — সব এক ঠিকানায়। পণ্য কার্ডে মাউস ঘোরালেই 3D-তে নড়বে, যেন হাতে ধরে দেখছেন। সারা দেশে হোম ডেলিভারি আর ক্যাশ অন ডেলিভারি তো আছেই।",
+heroCtaShop:"🛍️ কেনাকাটা শুরু করুন", heroCtaFlash:"⚡ আজকের ফ্ল্যাশ সেল",
+heroStatProducts:"পণ্যের কালেকশন", heroStatDistricts:"ডেলিভারি কভারেজ", heroStatReturn:"সহজ রিটার্ন", payCod:"💵 ক্যাশ অন ডেলিভারি",
+svc1t:"দ্রুত ডেলিভারি", svc1s:"ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা", svc2t:"ক্যাশ অন ডেলিভারি", svc2s:"পণ্য হাতে পেয়ে টাকা দিন",
+svc3t:"7 দিনের রিটার্ন", svc3s:"সমস্যা থাকলেই রিপ্লেস / রিফান্ড", svc4t:"100% অরিজিনাল", svc4s:"যাচাইকৃত বিক্রেতা, মানি-ব্যাক গ্যারান্টি",
+catTitle:"ক্যাটাগরি — 3D কিউবে সাজানো", catSub:"যেকোনো ক্যাটাগরিতে ক্লিক করলেই নিচের পণ্য ফিল্টার হয়ে যাবে",
+campTitle:"অফার ও ক্যাম্পেইন", campSub:"ভাউচার আর ফ্ল্যাশ সেল একসাথে — তার উপর ৳2,000+ অর্ডারে ফ্রি ডেলিভারি। পণ্য লাইভ হলেই এখানে দেখতে পাবেন।",
+campFlash:"⚡ ফ্ল্যাশ সেলে যান", campVouch:"🎟️ ভাউচার সংগ্রহ করুন", campUnder:"💸 ৳999 এর নিচে ডিল", campFree:"🚚 ফ্রি শিপিং ৳2,000+", campCod:"💵 ক্যাশ অন ডেলিভারি",
+megaTitle:"মেগা ডিসকাউন্ট", megaSub:"Seller-রা নিজের পণ্যে মেগা ডিসকাউন্ট দিয়ে আবেদন করে — প্রতিটি ডিল <b>AnboBD Admin যাচাই করে অনুমোদন</b> দেওয়ার পরই এখানে লাইভ হয়। তাই দামও আসল, ছাড়ও আসল।",
+timerH:"ঘণ্টা", timerM:"মিনিট", timerS:"সেকেন্ড",
+vouchTitle:"🎟️ ভাউচার সংগ্রহ করুন", vouchSub:"ভাউচার নিয়ে চেকআউটে কোড বসালেই ছাড় — ফ্ল্যাশ সেলের দামের উপরেও প্রযোজ্য",
+shopCoupTitle:"🏪 শপ কুপন — সরাসরি দোকান থেকে", shopCoupSub:"Seller-রা নিজের দোকানের জন্য এই কুপনগুলো দিয়েছে — কুপন নিয়ে ওই দোকানের পণ্য কার্টে যোগ করে চেকআউটে কোড বসালেই ছাড়",
+prodTitle:"আপনার জন্য বাছাই করা", prodSub:"কার্ডের উপর মাউস নিলে 3D-তে ঝুঁকবে — ছবিতে ক্লিক করলে বড় করে দেখুন, ❤️ দিলে উইশলিস্টে যাবে", allCatsLink:"সব ক্যাটাগরি ↑",
+priceAll:"সব দাম", priceU1000:"৳1,000 এর নিচে", priceH:"৳3,000+",
+sortLbl:"সাজান:", sortPopular:"সবচেয়ে জনপ্রিয়", sortRating:"রেটিং (বেশি → কম)", sortDiscount:"ছাড় (বেশি → কম)", sortLow:"দাম (কম → বেশি)", sortHigh:"দাম (বেশি → কম)", sortNew:"নতুন আগে",
+ratingLbl:"রেটিং:", ratingAny:"যেকোনো রেটিং", onlyLbl:"শুধু:", extraAll:"সব পণ্য", extraFree:"ফ্রি ডেলিভারি যোগ্য (৳2,000+ পণ্য)", extraStock:"স্টকে আছে", extraLow:"স্টক শেষ প্রায় (৫ বা কম)", resetFilters:"সব ফিল্টার রিসেট",
+recentTitle:"সম্প্রতি দেখেছেন", underTitle:"💸 Deals Under ৳999", underSub:"পকেট-বান্ধব দামে প্রতিদিনের দরকারি জিনিস — সবগুলোই হাজার টাকার নিচে", showAllLink:"সব পণ্য দেখুন ↑", showAllLink2:"সব পণ্য দেখুন ↑", showAllLink3:"সব পণ্য দেখুন ↑", showAllLink4:"সব পণ্য দেখুন ↑",
+newTitle:"🆕 নতুন এসেছে", newSub:"সবচেয়ে নতুন পণ্যগুলো — আগে আসে, আগে দেখুন", newEmptyT:"এখনো নতুন পণ্য আসেনি", newEmptyS:"নতুন পণ্য অনুমোদিত হলেই এখানে দেখা যাবে।",
+bestTitle:"🏆 সবচেয়ে বেশি বিক্রি", bestSub:"ক্রেতাদের সবচেয়ে পছন্দের পণ্য — আসল বিক্রির হিসাবে সাজানো", bestEmptyT:"এখনো কোনো পণ্য বিক্রি হয়নি", bestEmptyS:"প্রথম বিক্রি হলেই এখানে সেরা পণ্য দেখা যাবে।",
+topTitle:"⭐ সেরা রেটিং", topSub:"আসল কাস্টমার রিভিউয়ের গড় রেটিং অনুযায়ী সেরা পণ্য", topEmptyT:"এখনো কোনো রিভিউ নেই", topEmptyS:"কাস্টমার রিভিউ দিলেই সেরা রেটিংয়ের পণ্য এখানে দেখা যাবে।",
+howTitle:"কীভাবে অর্ডার করবেন?", howSub:"মাত্র 3টি সহজ ধাপে",
+how1t:"পণ্য বেছে কার্টে যোগ করুন", how1s:"পছন্দের পণ্য খুঁজুন, ছবিতে ক্লিক করে বিস্তারিত দেখুন, তারপর “কার্টে যোগ করুন” বা “এখনই কিনুন” চাপুন।",
+how2t:"নাম, মোবাইল ও ঠিকানা দিন", how2s:"চেকআউটে আপনার নাম, সচল মোবাইল নম্বর আর পুরো ঠিকানা দিন। পেমেন্ট বেছে নিন — ক্যাশ অন ডেলিভারি, অথবা bKash/Nagad/Rocket ম্যানুয়াল পেমেন্ট (টাকা পাঠিয়ে Transaction ID দিতে হবে, Admin যাচাই করে কনফার্ম করবে)।",
+how3t:"Admin কনফার্মের পর Seller পাঠিয়ে দেবে", how3s:"প্রতিটি অর্ডার আগে AnboBD Admin যাচাই করে কনফার্ম করে, তারপর Seller-এর কাছে পাঠানো হয়। Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি শুরু — ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা।",
+whyTitle:"কেন AnboBD?", whySub:"কেনাকাটা হোক নিশ্চিন্তে",
+why1t:"ক্যাশ অন ডেলিভারি", why1s:"পণ্য হাতে পেয়ে তারপর টাকা দিন। আগাম দিতে চাইলে bKash/Nagad/Rocket ম্যানুয়াল পেমেন্ট আছে — টাকা পাঠিয়ে Transaction ID দিলে Admin যাচাই করে অর্ডার কনফার্ম করে।",
+why2t:"7 দিনের সহজ রিটার্ন", why2s:"পণ্যে সমস্যা থাকলে বা ভুল পণ্য এলে 7 দিনের মধ্যে সহজে রিটার্ন/রিপ্লেস — রিফান্ড 3–5 কর্মদিবসে।",
+why3t:"100% অরিজিনাল পণ্য", why3s:"প্রতিটি পণ্য যাচাই করা বিক্রেতার কাছ থেকে — নকল পণ্যে সম্পূর্ণ মানি-ব্যাক গ্যারান্টি।",
+why4t:"সকাল 9টা – রাত 11টা সাপোর্ট", why4s:"বাংলায় কথা বলুন — কল, চ্যাট বা মেসেঞ্জারে আমাদের টিম পাশে আছে, সপ্তাহে 7 দিনই।",
+faqTitle:"সাধারণ জিজ্ঞাসা", faqSub:"কেনাকাটার আগে জেনে নিন",
+newsTitle:"অফারের খবর সবার আগে পান 🎁", newsSub:"নতুন পণ্য, এক্সক্লুসিভ কুপন আর ফ্ল্যাশ সেলের আপডেট সরাসরি আপনার ইমেইলে। স্প্যাম নয় — শুধু কাজের অফার, মাসে সর্বোচ্চ 4টি মেইল।", newsPh:"আপনার ইমেইল ঠিকানা", newsBtn:"সাবস্ক্রাইব করুন",
+sellTitle:"আপনার দোকানও AnboBD-তে খুলুন 🏪", sellSub:"বিক্রেতা হিসেবে জয়েন করুন — সারা দেশের ক্রেতার কাছে পৌঁছে যান, ডেলিভারি আর পেমেন্টের ঝামেলা আমাদের।",
+sellLi1:"✔ কোনো মাসিক ফি নেই — শুধু বিক্রিতে কমিশন", sellLi2:"✔ 64 জেলায় আমাদের ডেলিভারি নেটওয়ার্ক", sellLi3:"✔ সাপ্তাহিক পেমেন্ট সেটেলমেন্ট (bKash/ব্যাংক)", sellLi4:"✔ নিজের দোকানের কুপন দিন — ওয়েবসাইটে লাইভ দেখাবে", sellLi5:"✔ Mega Sale-এ পণ্য দিন (Admin অনুমোদন সাপেক্ষে)",
+sellBtn:"বিক্রেতা হিসেবে আবেদন করুন →", sellLogin:"🏪 Seller Center-এ লগইন",
+footShop:"কেনাকাটা", footFlash:"ফ্ল্যাশ সেল", footAll:"সব পণ্য", footCats:"ক্যাটাগরি", footShops:"🏪 সব দোকান", footFaq:"সাধারণ জিজ্ঞাসা", footTrack:"অর্ডার ট্র্যাক করুন",
+footCare:"কাস্টমার কেয়ার", footHelp:"❓ সাহায্য কেন্দ্র (Help Center)", footReturn:"রিটার্ন ও রিফান্ড পলিসি", footDel:"ডেলিভারি তথ্য", footWarr:"ওয়ারেন্টি পলিসি", footPriv:"প্রাইভেসি পলিসি", footContact:"যোগাযোগ করুন",
+footAbout:"আমাদের সম্পর্কে", footSeller:"বিক্রেতা হোন", footTerms:"শর্তাবলী", footCareer:"ক্যারিয়ার",
+footCopy:"© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩", footSitemap:"সাইটম্যাপ",
+navHome:"হোম", navCats:"ক্যাটাগরি", navFlash:"ফ্ল্যাশ সেল", navWish:"উইশলিস্ট", navCart:"কার্ট", navAccount:"অ্যাকাউন্ট",
+cartTitle:"🛒 আপনার কার্ট", zoneDhaka:"ঢাকার ভিতরে (৳60)", zoneOutside:"ঢাকার বাইরে (৳120)", savedTitle:"💾 Save for Later",
+promoPh:"প্রোমো / ভাউচার কোড", promoApply:"অ্যাপ্লাই", subtotal:"সাবটোটাল", promoDisc:"প্রোমো ছাড়", shipFee:"ডেলিভারি চার্জ", grandTotal:"সর্বমোট", goCheckout:"চেকআউটে যান →",
+coTitle:"ডেলিভারির তথ্য দিন", coGuestT:"গেস্ট চেকআউট", coGuestS:"অ্যাকাউন্ট বা লগইন লাগবে না। নিচে অর্ডারের <b>পুরো হিসাব আগেই</b> দেখানো হয়েছে, লুকানো কোনো চার্জ নেই।",
+coName:"আপনার নাম *", coNamePh:"যেমন: মোঃ রফিকুল ইসলাম", coPhone:"মোবাইল নম্বর *", coAddr:"পুরো ঠিকানা *", coAddrPh:"বাসা/হোল্ডিং, রোড, এলাকা, থানা", coDist:"জেলা *",
+coSlot:"ডেলিভারির সময় (স্লট) *", slotAny:"যেকোনো সময়", slotMorning:"সকাল ৯টা–১২টা", slotAfternoon:"দুপুর ১২টা–৩টা", slotEvening:"বিকেল ৩টা–৬টা", slotNight:"সন্ধ্যা ৬টা–৯টা",
+coPay:"পেমেন্ট মাধ্যম *", coSavePay:"💾 আমার এই নম্বরটি মনে রাখুন — পরের বার এই মাধ্যমে ব্যবহার করব",
+coNote:"বিশেষ নির্দেশনা (ঐচ্ছিক)", coNotePh:"যেমন: বিকেলে ডেলিভারি দিলে ভালো হয়", coGrand:"সর্বমোট (ডেলিভারিসহ)", placeOrder:"✅ অর্ডার কনফার্ম করুন",
+coFlowNote:"অর্ডারটি প্রথমে AnboBD Admin যাচাই করে কনফার্ম করবে, তারপর Seller-এর কাছে পাঠানো হবে — Seller প্যাক করে পাঠিয়ে দেবে।",
+okTitle:"অর্ডার হয়ে গেছে!", okSub:"ধন্যবাদ! অর্ডারটি এখন <b style=\"color:var(--ink)\">Admin-এর যাচাইয়ে</b> আছে — Admin কনফার্ম করলেই Seller-এর কাছে পাঠানো হবে, Seller প্যাক করে কুরিয়ারে দিয়ে দেবে।",
+okTrack:"📦 অর্ডার ট্র্যাক করুন", okContinue:"আরও কেনাকাটা করুন",
+wishTitle:"❤️ উইশলিস্ট", wishNote:"পছন্দের পণ্য এখানে জমা থাকে — দাম কমলেই কিনে ফেলুন! উইশলিস্ট থেকে সরাসরি কার্টে যোগ করা যায়।", wishShare:"🔗 উইশলিস্ট শেয়ার করুন",
+trackTitle:"📦 অর্ডার ট্র্যাক করুন", trackSub:"অর্ডার কনফার্মেশনে পাওয়া নম্বরটি দিন (যেমন <b>#ANBO123456</b>)। আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিন — অনলাইনে খুঁজে দেখা হবে।",
+trackNumPh:"অর্ডার নম্বর", trackPhonePh:"মোবাইল নম্বর (আগের অর্ডার হলে আবশ্যক)", trackBtn:"ট্র্যাক",
+cmpTitle:"⇄ পণ্য তুলনা", cmpSub:"পাশাপাশি দেখে সিদ্ধান্ত নিন — দাম, স্টক, দোকান, রেটিং সব এক জায়গায়।", cmpOpen:"⇄ তুলনা করুন", cmpClear:"✕ মুছুন",
+cardSold:"বিক্রি {n}", cardReviews:"{n} রিভিউ", cardFreeDel:"🚚 ফ্রি ডেলিভারি যোগ্য", cardCod:"💵 COD", cardAdd:"🛒 কার্টে যোগ", cardBuy:"এখনই কিনুন",
+stockOut:"❌ স্টক শেষ", stockLow:"🔥 মাত্র {n}টি বাকি — দ্রুত করুন!", stockLimited:"স্টক সীমিত ({n}টি)", stockOk:"✓ স্টকে আছে",
+resultCount:"{n}টি পণ্য পাওয়া গেছে", resultLoading:"পণ্য লোড হচ্ছে…",
+emptyNoResult:"<b>দুঃখিত, কিছু পাওয়া যায়নি 😔</b>অন্য নামে খুঁজে দেখুন, দামের ফিল্টার বদলান অথবা সব পণ্য দেখুন।<br><button id=\"resetFilters\">সব ফিল্টার মুছে ফেলুন</button>",
+emptyNoLive:"<b>এখনো কোনো পণ্য লাইভ হয়নি 😔</b>এই মুহূর্তে বিক্রির জন্য কোনো অনুমোদিত পণ্য নেই — পরে আবার দেখুন।",
+prodTitleAll:"আপনার জন্য বাছাই করা", prodTitleFlash:"⚡ ফ্ল্যাশ সেল — ছাড়ের পণ্য",
+histTitle:"🕘 সাম্প্রতিক সার্চ", popTitle:"🔥 জনপ্রিয় সার্চ",
+cmpBar:"⇄ তুলনা ({n}/3)", cmpEmpty:"তুলনার জন্য এখনো কোনো পণ্য বেছে নেওয়া হয়নি — পণ্য কার্ডের ⇄ বোতামে ক্লিক করুন (সর্বোচ্চ 3টি)।",
+cmpMax:"সর্বোচ্চ 3টি পণ্য তুলনা করা যায়", cmpAdded:"তুলনায় যোগ হয়েছে", cmpRemoved:"তুলনা থেকে সরানো হয়েছে",
+wishShared:"🔗 উইশলিস্টের লিংক কপি হয়েছে — যেখানে খুশি শেয়ার করুন!", wishEmptyShare:"উইশলিস্ট খালি — শেয়ার করার মতো কিছু নেই",
+cmpRowPrice:"দাম", cmpRowOld:"পুরনো দাম", cmpRowStock:"স্টক", cmpRowCat:"ক্যাটাগরি", cmpRowShop:"দোকান", cmpRowRating:"রেটিং", cmpRowPack:"পরিমাণ", cmpRowRemove:"সরান", cmpRowAdd:"🛒 কার্টে", cmpNoRating:"এখনো রিভিউ নেই"
+},
+en:{
+searchPh:"Search products…", searchBtn:"Search", loginSignup:"👤 Login / Sign Up", catAll:"All products",
+heroPill:"Bangladesh's new 3D shopping experience",
+heroTitle:"Shop everything,<br><span class=\"hl\">spin &amp; see</span> —<br>in <span class=\"hl2\">3D style!</span>",
+heroLead:"Real products, real prices — all in one place. Hover a product card and it tilts in 3D, as if you're holding it. Home delivery across the country, plus Cash on Delivery.",
+heroCtaShop:"🛍️ Start shopping", heroCtaFlash:"⚡ Today's Flash Sale",
+heroStatProducts:"Product collection", heroStatDistricts:"Delivery coverage", heroStatReturn:"Easy returns", payCod:"💵 Cash on Delivery",
+svc1t:"Fast delivery", svc1s:"24 hours in Dhaka, 48–72 hours outside", svc2t:"Cash on Delivery", svc2s:"Pay when the product reaches you",
+svc3t:"7-day returns", svc3s:"Replace / refund if there's a problem", svc4t:"100% original", svc4s:"Verified sellers, money-back guarantee",
+catTitle:"Categories — arranged in 3D cubes", catSub:"Click any category to filter the products below",
+campTitle:"Offers & campaigns", campSub:"Vouchers and Flash Sale together — plus free delivery on ৳2,000+ orders. You'll see products here as soon as they're live.",
+campFlash:"⚡ Go to Flash Sale", campVouch:"🎟️ Collect vouchers", campUnder:"💸 Deals under ৳999", campFree:"🚚 Free shipping ৳2,000+", campCod:"💵 Cash on Delivery",
+megaTitle:"Mega Discount", megaSub:"Sellers apply with a mega discount on their products — each deal goes live only after <b>AnboBD Admin verifies and approves</b> it. So the price is real, and so is the discount.",
+timerH:"hours", timerM:"minutes", timerS:"seconds",
+vouchTitle:"🎟️ Collect vouchers", vouchSub:"Collect a voucher and enter the code at checkout for a discount — it also works on Flash Sale prices",
+shopCoupTitle:"🏪 Shop coupons — straight from the shop", shopCoupSub:"Sellers issued these coupons for their own shops — collect one, add that shop's product to your cart, and enter the code at checkout",
+prodTitle:"Picked for you", prodSub:"Hover a card to tilt it in 3D — click the photo to see it bigger, ❤️ to save it to your wishlist", allCatsLink:"All categories ↑",
+priceAll:"All prices", priceU1000:"Under ৳1,000", priceH:"৳3,000+",
+sortLbl:"Sort:", sortPopular:"Most popular", sortRating:"Rating (high → low)", sortDiscount:"Discount (high → low)", sortLow:"Price (low → high)", sortHigh:"Price (high → low)", sortNew:"Newest first",
+ratingLbl:"Rating:", ratingAny:"Any rating", onlyLbl:"Only:", extraAll:"All products", extraFree:"Free-delivery eligible (৳2,000+ products)", extraStock:"In stock", extraLow:"Almost out of stock (5 or fewer)", resetFilters:"Reset all filters",
+recentTitle:"Recently viewed", underTitle:"💸 Deals Under ৳999", underSub:"Everyday essentials at pocket-friendly prices — all under a thousand taka", showAllLink:"See all products ↑", showAllLink2:"See all products ↑", showAllLink3:"See all products ↑", showAllLink4:"See all products ↑",
+newTitle:"🆕 New arrivals", newSub:"The newest products — see them first", newEmptyT:"No new products yet", newEmptyS:"New products will appear here once approved.",
+bestTitle:"🏆 Best sellers", bestSub:"The products customers love most — ranked by real sales", bestEmptyT:"Nothing sold yet", bestEmptyS:"The best sellers will appear here after the first sale.",
+topTitle:"⭐ Top rated", topSub:"The best products by average rating from real customer reviews", topEmptyT:"No reviews yet", topEmptyS:"Top-rated products will appear here once customers leave reviews.",
+howTitle:"How to order?", howSub:"Just 3 easy steps",
+how1t:"Pick a product and add it to the cart", how1s:"Find a product you like, click its photo for details, then press “Add to Cart” or “Buy Now”.",
+how2t:"Give your name, mobile and address", how2s:"At checkout, give your name, an active mobile number and full address. Choose payment — Cash on Delivery, or bKash/Nagad/Rocket manual payment (send money and give the Transaction ID; Admin verifies it before confirming).",
+how3t:"Admin confirms, then the seller ships", how3s:"Every order is first verified and confirmed by AnboBD Admin, then sent to the seller. The seller packs it and hands it to the courier — 24 hours in Dhaka, 48–72 hours outside.",
+whyTitle:"Why AnboBD?", whySub:"Shop with confidence",
+why1t:"Cash on Delivery", why1s:"Pay only when the product is in your hands. Prefer to pay in advance? bKash/Nagad/Rocket manual payment is available — send money and give the Transaction ID; Admin verifies it before confirming the order.",
+why2t:"Easy 7-day returns", why2s:"If a product is faulty or wrong, return or replace it within 7 days — refund in 3–5 working days.",
+why3t:"100% original products", why3s:"Every product comes from a verified seller — full money-back guarantee on fakes.",
+why4t:"Support 9 AM – 11 PM", why4s:"Talk in Bangla — call, chat or message our team, 7 days a week.",
+faqTitle:"Frequently asked questions", faqSub:"Know before you shop",
+newsTitle:"Get offer news first 🎁", newsSub:"New products, exclusive coupons and Flash Sale updates straight to your email. No spam — only useful offers, at most 4 mails a month.", newsPh:"Your email address", newsBtn:"Subscribe",
+sellTitle:"Open your shop on AnboBD too 🏪", sellSub:"Join as a seller — reach customers across the country; we handle the delivery and payment hassle.",
+sellLi1:"✔ No monthly fee — only commission on sales", sellLi2:"✔ Our delivery network covers 64 districts", sellLi3:"✔ Weekly payment settlement (bKash/bank)", sellLi4:"✔ Offer your shop's own coupons — shown live on the site", sellLi5:"✔ Put products in the Mega Sale (with Admin approval)",
+sellBtn:"Apply as a seller →", sellLogin:"🏪 Login to Seller Center",
+footShop:"Shopping", footFlash:"Flash Sale", footAll:"All products", footCats:"Categories", footShops:"🏪 All shops", footFaq:"FAQ", footTrack:"Track your order",
+footCare:"Customer Care", footHelp:"❓ Help Center", footReturn:"Return & Refund Policy", footDel:"Delivery info", footWarr:"Warranty Policy", footPriv:"Privacy Policy", footContact:"Contact us",
+footAbout:"About us", footSeller:"Become a seller", footTerms:"Terms", footCareer:"Careers",
+footCopy:"© 2026 AnboBD — Dhaka, Bangladesh. All prices in Bangladeshi Taka (BDT), VAT included where applicable. Made with love 🇧🇩", footSitemap:"Sitemap",
+navHome:"Home", navCats:"Categories", navFlash:"Flash Sale", navWish:"Wishlist", navCart:"Cart", navAccount:"Account",
+cartTitle:"🛒 Your cart", zoneDhaka:"Inside Dhaka (৳60)", zoneOutside:"Outside Dhaka (৳120)", savedTitle:"💾 Save for Later",
+promoPh:"Promo / voucher code", promoApply:"Apply", subtotal:"Subtotal", promoDisc:"Promo discount", shipFee:"Delivery charge", grandTotal:"Grand total", goCheckout:"Go to checkout →",
+coTitle:"Enter delivery details", coGuestT:"Guest checkout", coGuestS:"No account or login needed. The <b>full bill is shown up front</b> below — no hidden charges.",
+coName:"Your name *", coNamePh:"e.g. Md. Rafiqul Islam", coPhone:"Mobile number *", coAddr:"Full address *", coAddrPh:"House/holding, road, area, thana", coDist:"District *",
+coSlot:"Delivery time (slot) *", slotAny:"Any time", slotMorning:"Morning 9 AM–12 PM", slotAfternoon:"Afternoon 12–3 PM", slotEvening:"Evening 3–6 PM", slotNight:"Night 6–9 PM",
+coPay:"Payment method *", coSavePay:"💾 Remember this number — use it next time with this method",
+coNote:"Special instructions (optional)", coNotePh:"e.g. afternoon delivery would be better", coGrand:"Grand total (with delivery)", placeOrder:"✅ Confirm order",
+coFlowNote:"AnboBD Admin will first verify and confirm your order, then send it to the seller — the seller packs it and ships it.",
+okTitle:"Order placed!", okSub:"Thank you! Your order is now <b style=\"color:var(--ink)\">under Admin review</b> — once Admin confirms, it goes to the seller, who packs it and hands it to the courier.",
+okTrack:"📦 Track your order", okContinue:"Continue shopping",
+wishTitle:"❤️ Wishlist", wishNote:"Your favourite products are saved here — buy them when the price drops! You can add them to your cart straight from the wishlist.", wishShare:"🔗 Share wishlist",
+trackTitle:"📦 Track your order", trackSub:"Enter the number from your order confirmation (e.g. <b>#ANBO123456</b>). For an order from an earlier session, also give the mobile number used for that order — we'll search online.",
+trackNumPh:"Order number", trackPhonePh:"Mobile number (required for earlier orders)", trackBtn:"Track",
+cmpTitle:"⇄ Compare products", cmpSub:"Decide side by side — price, stock, shop and rating in one place.", cmpOpen:"⇄ Compare", cmpClear:"✕ Clear",
+cardSold:"Sold {n}", cardReviews:"{n} reviews", cardFreeDel:"🚚 Free-delivery eligible", cardCod:"💵 COD", cardAdd:"🛒 Add to cart", cardBuy:"Buy now",
+stockOut:"❌ Out of stock", stockLow:"🔥 Only {n} left — hurry!", stockLimited:"Limited stock ({n})", stockOk:"✓ In stock",
+resultCount:"{n} products found", resultLoading:"Loading products…",
+emptyNoResult:"<b>Sorry, nothing found 😔</b>Try another name, change the price filter, or see all products.<br><button id=\"resetFilters\">Clear all filters</button>",
+emptyNoLive:"<b>No products live yet 😔</b>There are no approved products for sale right now — please check back later.",
+prodTitleAll:"Picked for you", prodTitleFlash:"⚡ Flash Sale — discounted products",
+histTitle:"🕘 Recent searches", popTitle:"🔥 Popular searches",
+cmpBar:"⇄ Compare ({n}/3)", cmpEmpty:"No products picked for comparison yet — use the ⇄ button on a product card (up to 3).",
+cmpMax:"You can compare up to 3 products", cmpAdded:"Added to comparison", cmpRemoved:"Removed from comparison",
+wishShared:"🔗 Wishlist link copied — share it anywhere!", wishEmptyShare:"Your wishlist is empty — nothing to share yet",
+cmpRowPrice:"Price", cmpRowOld:"Old price", cmpRowStock:"Stock", cmpRowCat:"Category", cmpRowShop:"Shop", cmpRowRating:"Rating", cmpRowPack:"Pack", cmpRowRemove:"Remove", cmpRowAdd:"🛒 Add to cart", cmpNoRating:"No reviews yet"
+}
+};
+function t(k, vars){
+  var d = I18N[ANBO_LANG] || I18N.bn;
+  var s = (d && d[k] != null) ? d[k] : ((I18N.bn[k] != null) ? I18N.bn[k] : k);
+  if(vars) for(var key in vars) s = String(s).split("{"+key+"}").join(vars[key]);
+  return s;
+}
+function applyLang(){
+  document.documentElement.lang = ANBO_LANG === "en" ? "en" : "bn";
+  var btn = document.getElementById("langBtn"); if(btn) btn.textContent = ANBO_LANG === "en" ? "বাং" : "EN";
+  document.querySelectorAll("[data-i18n]").forEach(function(el){ el.innerHTML = t(el.getAttribute("data-i18n")); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(function(el){ el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))); });
+  /* Hero title/lead — Admin override thakle setai thakbe; na thakle dict. */
+  var st = window.__anboPlatformSettings;
+  var hasAdminHero = st && ((typeof st.heroTitle === "string" && st.heroTitle.trim()) || (typeof st.heroLead === "string" && st.heroLead.trim()));
+  if(!hasAdminHero){
+    var ht = document.getElementById("heroTitle"), hl = document.getElementById("heroLead");
+    if(ht) ht.innerHTML = t("heroTitle");
+    if(hl) hl.textContent = t("heroLead");
+  }
+  /* Account button — signed-in hole restoreSession nam bosay; signed-out holei dict. */
+  var ab = document.getElementById("accountBtn");
+  if(ab && !window.__anboCurrentUser) ab.textContent = t("loginSignup");
+  syncCatNav();
+  renderCompareBar();
+  if(window.__anboRender) window.__anboRender();
+}
+function anboSetLang(l){
+  if(l !== "en" && l !== "bn") return;
+  ANBO_LANG = l;
+  try{ localStorage.setItem("anbobd-lang", l); }catch(e){}
+  applyLang();
+}
+document.getElementById("langBtn").addEventListener("click", function(){ anboSetLang(ANBO_LANG === "en" ? "bn" : "en"); });
+
+/* ============ P2 (2026-11-23): Sale scheduling + product variations (READ side) ============
+   products.sale_start / sale_end thakle old_price-er sale shudhu window-er
+   moddhe dekhabe; baire hole regular price (oldPrice). Column na thakle
+   ajker motoi (sale sobsomoy). products.variants jsonb thakle
+   [{name, options:[{label, price_delta, stock}]}] — variant selector
+   (product page) dam/stock bodlay; cart key "id||label" (purono cart-e
+   shudhu id thake — seta base variant hisebe kaj kore). */
+function saleActive(p){
+  if(!p) return true;
+  if(!p.saleStart && !p.saleEnd) return true;
+  var now = Date.now(), s = p.saleStart ? Date.parse(p.saleStart) : NaN, e = p.saleEnd ? Date.parse(p.saleEnd) : NaN;
+  if(!isNaN(s) && now < s) return false;
+  if(!isNaN(e) && now > e) return false;
+  return true;
+}
+function effPrice(p){ if(!p) return 0; if(saleActive(p)) return p.price; return (p.oldPrice > p.price) ? p.oldPrice : p.price; }
+function effOldPrice(p){ if(!p) return 0; return saleActive(p) ? p.oldPrice : 0; }
+function anboVariantOption(p, label){
+  if(!p || !Array.isArray(p.variants) || !label) return null;
+  var found = null;
+  p.variants.forEach(function(g){ (g.options||[]).forEach(function(o){ if(String(o.label) === String(label)) found = o; }); });
+  return found;
+}
+function cartKeyId(k){ var s = String(k||""); var i = s.indexOf("||"); return i < 0 ? s : s.slice(0, i); }
+function cartKeyVariant(k){ var s = String(k||""); var i = s.indexOf("||"); return i < 0 ? "" : s.slice(i+2); }
+function cartProd(k){ return P(cartKeyId(k)); }
+function cartVariantStock(k){
+  var p = cartProd(k), v = cartKeyVariant(k);
+  if(p && v){ var o = anboVariantOption(p, v); if(o && o.stock != null) return Math.max(0, Number(o.stock)||0); }
+  return p ? p.stockQty : 0;
+}
+function cartUnitPrice(k){
+  var p = cartProd(k); if(!p) return 0;
+  var u = effPrice(p), v = cartKeyVariant(k);
+  if(v){ var o = anboVariantOption(p, v); if(o && o.price_delta != null) u += Number(o.price_delta)||0; }
+  return u;
+}
+/* P2: delivery slot label (dict-er slot* key theke). */
+function anboSlotLabel(v){
+  var m = { anytime:"slotAny", morning:"slotMorning", afternoon:"slotAfternoon", evening:"slotEvening", night:"slotNight" };
+  return t(m[v] || "slotAny");
+}
+/* P2: delivery zones — district slug (checkout-er coDist value theke). */
+var ANBO_DISTRICT_SLUGS = {"ঢাকা":"dhaka","গাজীপুর":"gazipur","নারায়ণগঞ্জ":"narayanganj","চট্টগ্রাম":"chattogram","সিলেট":"sylhet","খুলনা":"khulna","রাজশাহী":"rajshahi","বরিশাল":"barishal","রংপুর":"rangpur","ময়মনসিংহ":"mymensingh","কুমিল্লা":"cumilla","অন্যান্য":"other"};
+function anboDistrictSlug(d){ return ANBO_DISTRICT_SLUGS[String(d||"").trim()] || ""; }
+function anboZoneFee(){
+  var st = window.__anboPlatformSettings, fees = (st && st.zoneFees) || {};
+  var dt = null; try{ var el = document.getElementById("coDist"); if(el) dt = el.value; }catch(e){}
+  if(dt){ var sl = anboDistrictSlug(dt); if(sl && fees[sl] != null && !isNaN(+fees[sl])) return +fees[sl]; }
+  return zone === "dhaka" ? ANBOBD_STORE.settings.dhakaFee : ANBOBD_STORE.settings.outsideFee;
+}
+/* P2: product rating — asol review-er gar (thakle), na hole DB rating. */
+function anboAvgRating(p){
+  var rv = reviewsFor(p);
+  if(rv.length){ var sum = 0, n = 0; rv.forEach(function(r){ if(r.rating>0){ sum += r.rating; n++; } }); if(n) return sum/n; }
+  return p.rating || 0;
+}
+/* Re-audit A11 (2026-11-21): FLASH_IDS [1,10,4,5] were dead demo IDs (real products are UUIDs) — the tile counted 0 while the section fell back to active products. One source of truth now: flash = live products with a real discount (oldPrice > price), capped at 4. P2: sale window-er baire thaka product flash-e asbe na (effPrice dekhe). */
+function flashList(){ return PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && effOldPrice(p) && effOldPrice(p) > effPrice(p); }).slice(0,4); }
 
 /* ---------- Product cards ---------- */
 function stockLine(p){
-  if(p.stockQty<=0) return '<span class="lowstock">❌ স্টক শেষ</span>';
-  if(p.stockQty<=5) return '<span class="lowstock">🔥 মাত্র '+p.stockQty+'টি বাকি — দ্রুত করুন!</span>';
-  if(p.stockQty<=15) return '<span style="color:#8a6d00;font-weight:700;font-size:.78rem">স্টক সীমিত ('+p.stockQty+'টি)</span>';
-  return '<span style="color:var(--teal);font-weight:700;font-size:.78rem">✓ স্টকে আছে</span>';
+  if(p.stockQty<=0) return '<span class="lowstock">'+t("stockOut")+'</span>';
+  if(p.stockQty<=5) return '<span class="lowstock">'+t("stockLow", {n:p.stockQty})+'</span>';
+  if(p.stockQty<=15) return '<span style="color:#8a6d00;font-weight:700;font-size:.78rem">'+t("stockLimited", {n:p.stockQty})+'</span>';
+  return '<span style="color:var(--teal);font-weight:700;font-size:.78rem">'+t("stockOk")+'</span>';
 }
 /* Pack label: "500 g · Jar" — shudhu ja set kora ache tai dekhay; khali thakle "" (kichu dekhabe na). */
 function packLabel(p){ if(!p) return ""; var parts=[]; if(p.packSize!=null && p.packSize!=="" && +p.packSize>0){ parts.push(String(p.packSize)+(p.unit?" "+p.unit:"")); } else if(p.unit){ parts.push(p.unit); } if(p.packaging){ parts.push(p.packaging); } return parts.join(" · "); }
@@ -1378,19 +1712,20 @@ function cardHTML(p, flash){
      jay — alada product page. data-view modal ar khole na; #product-<id>
      hash link ekhono modal khole (openProductFromHash, backward compat). */
   var h = '<article class="pcard">' +
-    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — বিস্তারিত দেখুন"><img loading="lazy" decoding="async" src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+' — '+escHtml(p.bn)+'"><span class="badge">−'+offPct(p)+'%</span><span class="soldtag">বিক্রি '+soldFmt(p.soldCount)+'</span></a>' +
+    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — বিস্তারিত দেখুন"><img loading="lazy" decoding="async" src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+' — '+escHtml(p.bn)+'">'+(offPct(p)>0?'<span class="badge">−'+offPct(p)+'%</span>':'')+'<span class="soldtag">'+t("cardSold", {n:soldFmt(p.soldCount)})+'</span></a>' +
     '<button class="wishbtn'+(wishlist[p.id]?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="উইশলিস্টে রাখুন">'+(wishlist[p.id]?'❤️':'🤍')+'</button>' +
+    '<button class="cmpbtn'+(isComparing(p.id)?' on':'')+'" data-compare="'+escHtml(p.id)+'" aria-label="তুলনায় যোগ করুন">⇄ তুলনা</button>' +
     '<div class="pbody"><div class="pcat">'+escHtml(catLabel(p.categoryId))+' • '+shopNameHtml(p)+'</div><h3 class="pname"><a href="/product.html?id='+encodeURIComponent(p.id)+'">'+escHtml(p.name)+'</a></h3>' +
     (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
     '<div>'+(p.isNew?' <span style="display:inline-flex;align-items:center;gap:4px;background:#fff3c4;color:#7a5b00;font-size:.7rem;font-weight:800;border-radius:99px;padding:2px 8px">NEW</span>':'')+'</div>' +
-    '<div class="stars">'+stars(p.rating)+' <span>• '+p.reviewCount+' রিভিউ</span></div>' +
-    '<div class="pmeta">'+(p.price>=2000?'<span>🚚 ফ্রি ডেলিভারি যোগ্য</span>':'')+'<span>💵 COD</span></div>' +
+    '<div class="stars">'+stars(p.rating)+' <span>• '+t("cardReviews", {n:p.reviewCount})+'</span></div>' +
+    '<div class="pmeta">'+(effPrice(p)>=2000?'<span>'+t("cardFreeDel")+'</span>':'')+'<span>'+t("cardCod")+'</span></div>' +
     stockLine(p) +
     '<div class="deldate">🚚 '+etaText("dhaka")+'</div>' +
-    '<div class="price"><b>'+fmt(p.price)+'</b><s>'+fmt(p.oldPrice)+'</s></div>';
+    '<div class="price"><b>'+fmt(effPrice(p))+'</b>'+(effOldPrice(p)>effPrice(p)?'<s>'+fmt(effOldPrice(p))+'</s>':'')+'</div>';
   /* Honest sold %: shudhu asol sold/stock theke hisab; sold 0 hole badge-i dekhabe na (kokhono hardcoded % na). */
   if(flash){ var soldN=+p.soldCount||0, totalN=soldN+(+p.stockQty||0); if(soldN>0 && totalN>0){ var claimed=Math.round(soldN/totalN*100); h += '<div class="stockbar"><i style="width:'+claimed+'%"></i></div><div class="stocktxt">🔥 '+claimed+'% বিক্রি হয়ে গেছে!</div>'; } }
-  h += '<div class="cardbtns"><button class="addbtn" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>🛒 কার্টে যোগ</button><button class="buybtn" data-buy="'+escHtml(p.id)+'">এখনই কিনুন</button></div></div></article>';
+  h += '<div class="cardbtns"><button class="addbtn" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>'+t("cardAdd")+'</button><button class="buybtn" data-buy="'+escHtml(p.id)+'">'+t("cardBuy")+'</button></div></div></article>';
   return h;
 }
 function filteredList(){
@@ -1398,19 +1733,20 @@ function filteredList(){
     if(p.status!=="active") return false;
     if(!catEnabled(p.categoryId)) return false; /* P1: disabled category-r product kothao dekhabe na. */
     if(activeCat!=="all" && p.categoryId!==activeCat) return false;
-    if(flashOnly && !(p.oldPrice && p.oldPrice > p.price)) return false; /* P1: Flash cube filter. */
+    if(flashOnly && !(effOldPrice(p) && effOldPrice(p) > effPrice(p))) return false; /* P1: Flash cube filter. */
     if(p.rating < minRating) return false;
-    if(priceChip==="u1000" && p.price>=1000) return false;
-    if(priceChip==="m" && (p.price<1000 || p.price>3000)) return false;
-    if(priceChip==="h" && p.price<=3000) return false;
-    if(extraFilter==="freedel" && p.price<2000) return false;
+    if(priceChip==="u1000" && effPrice(p)>=1000) return false;
+    if(priceChip==="m" && (effPrice(p)<1000 || effPrice(p)>3000)) return false;
+    if(priceChip==="h" && effPrice(p)<=3000) return false;
+    if(extraFilter==="freedel" && effPrice(p)<2000) return false;
     if(extraFilter==="instock" && p.stockQty<=0) return false;
     if(extraFilter==="lowstock" && (p.stockQty>5 || p.stockQty<=0)) return false;
-    if(query){ var sh = SL(p.sellerId); var hay=(p.name+" "+p.bn+" "+catLabel(p.categoryId)+" "+(sh?sh.name:"")).toLowerCase(); if(hay.indexOf(query)<0) return false; }
+    /* P2 (2026-11-23): search matches name + description + SKU + seller/shop name. Category label duitai (BN + EN) haystack-e — EN mode-eo Bangla query mile. */
+    if(query){ var sh = SL(p.sellerId); var hay=(p.name+" "+p.bn+" "+(p.desc||"")+" "+(p.sku||"")+" "+catLabel(p.categoryId)+" "+(CAT_LABELS_EN[p.categoryId]||"")+" "+(sh?sh.name:"")).toLowerCase(); if(hay.indexOf(query)<0) return false; }
     return true;
   });
-  if(sortBy==="low") list.sort(function(a,b){return a.price-b.price;});
-  else if(sortBy==="high") list.sort(function(a,b){return b.price-a.price;});
+  if(sortBy==="low") list.sort(function(a,b){return effPrice(a)-effPrice(b);});
+  else if(sortBy==="high") list.sort(function(a,b){return effPrice(b)-effPrice(a);});
   else if(sortBy==="rating") list.sort(function(a,b){return b.rating-a.rating || b.reviewCount-a.reviewCount;});
   else if(sortBy==="discount") list.sort(function(a,b){return offPct(b)-offPct(a);});
   else if(sortBy==="new") list.sort(function(a,b){return b.createdAt-a.createdAt;});
@@ -1419,14 +1755,14 @@ function filteredList(){
 }
 function renderProducts(){
   var grid = document.getElementById("productGrid"), emptyEl = document.getElementById("emptyState");
-  var noResultHTML = '<b>দুঃখিত, কিছু পাওয়া যায়নি 😔</b>অন্য নামে খুঁজে দেখুন, দামের ফিল্টার বদলান অথবা সব পণ্য দেখুন।<br><button id="resetFilters">সব ফিল্টার মুছে ফেলুন</button>';
-  var noLiveHTML = '<b>এখনো কোনো পণ্য লাইভ হয়নি 😔</b>এই মুহূর্তে বিক্রির জন্য কোনো অনুমোদিত পণ্য নেই — পরে আবার দেখুন।';
+  var noResultHTML = t("emptyNoResult");
+  var noLiveHTML = t("emptyNoLive");
   function bindReset(){ var rf = document.getElementById("resetFilters"); if(rf) rf.addEventListener("click", resetFilters); }
   if(catalogLoading){
     grid.innerHTML = "";
-    emptyEl.innerHTML = '<b>পণ্য লোড হচ্ছে…</b>অনলাইন ক্যাটালগ থেকে আসল পণ্য আনা হচ্ছে।';
+    emptyEl.innerHTML = '<b>'+t("resultLoading")+'</b>অনলাইন ক্যাটালগ থেকে আসল পণ্য আনা হচ্ছে।';
     emptyEl.style.display = "block";
-    document.getElementById("resultCount").textContent = "পণ্য লোড হচ্ছে…";
+    document.getElementById("resultCount").textContent = t("resultLoading");
     return;
   }
   var list = filteredList();
@@ -1437,10 +1773,32 @@ function renderProducts(){
     emptyEl.style.display = "block";
     bindReset();
   }
-  document.getElementById("resultCount").textContent = list.length + "টি পণ্য পাওয়া গেছে";
+  document.getElementById("resultCount").textContent = t("resultCount", {n:list.length});
 }
 function renderFlash(){ var list = flashList(); if(activeCat!=="all" && activeCat!=="flash") list = list.filter(function(p){ return p.categoryId===activeCat; }); var show = platformFlag("flashSale", true) && list.length>0; var sec = document.getElementById("flash"); if(sec) sec.style.display = show ? "" : "none"; var cta = document.getElementById("heroFlashCta"); if(cta) cta.style.display = show ? "" : "none"; document.getElementById("flashGrid").innerHTML = show ? list.map(function(p){return cardHTML(p,true);}).join("") : ""; }
-function renderUnder(){ var list = PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && p.price<999 && (activeCat==="all" || p.categoryId===activeCat); }); var sec = document.getElementById("under999"); if(sec) sec.style.display = list.length ? "" : "none"; document.getElementById("underGrid").innerHTML = list.map(function(p){return cardHTML(p,false);}).join(""); }
+function renderUnder(){ var list = PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && effPrice(p)<999 && (activeCat==="all" || p.categoryId===activeCat); }); var sec = document.getElementById("under999"); if(sec) sec.style.display = list.length ? "" : "none"; document.getElementById("underGrid").innerHTML = list.map(function(p){return cardHTML(p,false);}).join(""); }
+/* ============ P2 (2026-11-23): New arrivals / Best sellers / Top rated ============
+   Shudhu asol data — created_at desc / products.sold desc / asol review-er
+   gar rating desc (kompokkhe 1 review). Khali hole honest empty state,
+   kokhono fake rating/sales na. */
+function renderNewArrivals(){
+  var sec = document.getElementById("newArrivals"); if(!sec) return;
+  var list = PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId); }).slice().sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); }).slice(0,8);
+  document.getElementById("newGrid").innerHTML = list.map(function(p){return cardHTML(p,false);}).join("");
+  document.getElementById("newEmpty").style.display = list.length ? "none" : "block";
+}
+function renderBestSellers(){
+  var sec = document.getElementById("bestSellers"); if(!sec) return;
+  var list = PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && (p.soldCount||0) > 0; }).slice().sort(function(a,b){ return (b.soldCount||0)-(a.soldCount||0); }).slice(0,8);
+  document.getElementById("bestGrid").innerHTML = list.map(function(p){return cardHTML(p,false);}).join("");
+  document.getElementById("bestEmpty").style.display = list.length ? "none" : "block";
+}
+function renderTopRated(){
+  var sec = document.getElementById("topRated"); if(!sec) return;
+  var list = PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && reviewsFor(p).length > 0; }).slice().sort(function(a,b){ return anboAvgRating(b)-anboAvgRating(a); }).slice(0,8);
+  document.getElementById("topGrid").innerHTML = list.map(function(p){return cardHTML(p,false);}).join("");
+  document.getElementById("topEmpty").style.display = list.length ? "none" : "block";
+}
 function renderCats(){
   document.getElementById("catTiles").innerHTML = CATS.filter(function(c){ return c.id==="flash" || catEnabled(c.id); }).map(function(c){
     var n = c.id==="flash" ? flashList().length : PRODUCTS.filter(function(p){return p.categoryId===c.id && p.status==="active";}).length;
@@ -1491,7 +1849,7 @@ function renderVouchers(){
 function setCat(cat){
   activeCat = cat; flashOnly = false;
   document.querySelectorAll("#catNav button").forEach(function(b){ b.classList.toggle("on", b.dataset.cat===cat); });
-  var titles = {all:"আপনার জন্য বাছাই করা"}; CATS.forEach(function(c){ titles[c.id]=catLabel(c.id); });
+  var titles = {all:t("prodTitleAll")}; CATS.forEach(function(c){ titles[c.id]=catLabel(c.id); });
   document.getElementById("prodTitle").textContent = titles[cat] || titles.all;
   renderProducts(); renderFlash(); renderUnder();
 }
@@ -1500,7 +1858,7 @@ function setCat(cat){
 function setFlashFilter(){
   flashOnly = true; activeCat = "all";
   document.querySelectorAll("#catNav button").forEach(function(b){ b.classList.toggle("on", b.dataset.cat==="all"); });
-  document.getElementById("prodTitle").textContent = "⚡ ফ্ল্যাশ সেল — ছাড়ের পণ্য";
+  document.getElementById("prodTitle").textContent = t("prodTitleFlash");
   renderProducts();
   var el = document.getElementById("products"); if(el) el.scrollIntoView({behavior:"smooth", block:"start"});
 }
@@ -1509,12 +1867,14 @@ function resetFilters(){
   document.getElementById("searchInput").value=""; document.getElementById("sortSel").value="popular";
   document.getElementById("ratingSel").value="0"; document.getElementById("extraSel").value="all";
   document.querySelectorAll("#priceChips button").forEach(function(b){ b.classList.toggle("on", b.dataset.price==="all"); });
+  syncSearchUrl(); /* P2: ?q= URL thekeo sorano hobe. */
   setCat("all");
 }
 
 /* ---------- Cart / totals ---------- */
 function cartCount(){ var n=0; for(var k in cart) n+=cart[k]; return n; }
-function cartSubtotal(){ var t=0; for(var k in cart){ var p=P(k); if(p) t+=p.price*cart[k]; } return t; }
+/* P2: cart key "id" ba "id||variantLabel" — dam variant + sale window onujayi (cartUnitPrice). */
+function cartSubtotal(){ var t=0; for(var k in cart){ var p=cartProd(k); if(p) t+=cartUnitPrice(k)*cart[k]; } return t; }
 function findCouponAny(code){
   if(!code) return null;
   var all = ANBOBD_STORE.coupons.concat(ANBOBD_STORE.shopCoupons||[]);
@@ -1522,7 +1882,7 @@ function findCouponAny(code){
 }
 function couponEligibleSub(c){
   if(!c || !c.sellerId) return cartSubtotal();
-  var t=0; for(var k in cart){ var p=P(k); if(p && p.sellerId===c.sellerId) t += p.price*cart[k]; }
+  var t=0; for(var k in cart){ var p=cartProd(k); if(p && p.sellerId===c.sellerId) t += cartUnitPrice(k)*cart[k]; }
   return t;
 }
 /* Mega stacking (Admin Settings: mega_stacking_allowed, default OFF — Admin
@@ -1532,7 +1892,7 @@ function megaStackingBlocked(c){
   if(!c || !c.sellerId) return false;
   if(platformFlag("megaStacking", false)) return false;
   var hasSellerItem = false, allMega = true;
-  for(var k in cart){ var p = P(k); if(p && p.sellerId===c.sellerId){ hasSellerItem = true; if(!p.megaDeal) allMega = false; } }
+  for(var k in cart){ var p = cartProd(k); if(p && p.sellerId===c.sellerId){ hasSellerItem = true; if(!p.megaDeal) allMega = false; } }
   return hasSellerItem && allMega;
 }
 function promoDiscount(sub){
@@ -1549,7 +1909,8 @@ function promoDiscount(sub){
 function totals(){
   var sub = cartSubtotal(), pDisc = promoDiscount(sub);
   var c = promoCode ? findCouponAny(promoCode) : null;
-  var baseFee = zone==="dhaka" ? ANBOBD_STORE.settings.dhakaFee : ANBOBD_STORE.settings.outsideFee;
+  /* P2 (2026-11-23): delivery zones — settings key delivery_zone_<district-slug>_fee thakle setai fee; na thakle default Dhaka ৳60 / outside ৳120. */
+  var baseFee = anboZoneFee();
   var ship = sub===0 ? 0 : (freeDeliveryApplies(sub, zone) || (c && c.type==="freeship" && promoDiscountApplies()) ? 0 : baseFee);
   var discount = pDisc;
   var lDisc = 0;
@@ -1575,7 +1936,9 @@ function platformNum(key, dflt){ var c = anboPlatform(); if(!c) return dflt; var
    storefront-er kothao dekhabe na. */
 var CAT_SETTING_DEFAULTS = {electronics:"ইলেকট্রনিক্স", fashion:"ফ্যাশন", shoesbags:"জুতা ও ব্যাগ", home:"হোম ও কিচেন", beauty:"বিউটি", grocery:"গ্রোসারি", sports:"স্পোর্টস"};
 var CAT_KEY_SLUGS = {electronics:"electronics", fashion:"fashion", shoes_bags:"shoesbags", home_kitchen:"home", beauty:"beauty", grocery:"grocery", sports:"sports"};
-function catLabel(id){ var c = window.__anboPlatformSettings; if(c && c.catLabels && c.catLabels[id]) return c.catLabels[id]; if(CAT_SETTING_DEFAULTS[id]) return CAT_SETTING_DEFAULTS[id]; var cc = CAT(id); return cc ? cc.label : id; }
+/* P2: EN mode-e category label English default (Admin-set Bengali label
+   thakle BN mode-e setai dekhabe; EN-er jonno Admin-er alada label nei). */
+function catLabel(id){ if(ANBO_LANG === "en" && CAT_LABELS_EN[id]) return CAT_LABELS_EN[id]; var c = window.__anboPlatformSettings; if(c && c.catLabels && c.catLabels[id]) return c.catLabels[id]; if(CAT_SETTING_DEFAULTS[id]) return CAT_SETTING_DEFAULTS[id]; var cc = CAT(id); return cc ? cc.label : id; }
 function catEnabled(id){ if(id==="flash") return true; var c = window.__anboPlatformSettings; if(c && c.catEnabled && typeof c.catEnabled[id]==="boolean") return c.catEnabled[id]; return true; }
 /* ---------- P1: voucher expiry — coupon data-r `expires` theke ----------
    Hardcoded coupon-e Bengali date ("30 নভেম্বর 2026"); DB coupon-e ISO
@@ -1684,19 +2047,21 @@ function renderCart(){
   var box = document.getElementById("cartItems");
   if(t.count===0){ box.innerHTML = '<div class="cartempty"><div class="big">🛒</div>কার্ট খালি আছে।<br>পছন্দের পণ্য যোগ করে কেনাকাটা শুরু করুন!</div>'; }
   else box.innerHTML = Object.keys(cart).map(function(k){
-    var p = P(k);
+    var p = cartProd(k);
     if(!p) return ""; /* Buy Now drawer fix 2026-11-21: catalog na ele P(k) undefined — escHtml(p.name) throw kore AUTH IIFE-ke mere felto, ?checkout=1 handler install-i hoto na. Catalog ele porer render-e item fire asbe. */
-    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(p.price)+' × '+cart[k]+' = '+fmt(p.price*cart[k])+'</div><div>'+stockLine(p)+'</div><button class="rm" data-rm="'+p.id+'">মুছুন</button> <button class="rm" style="color:var(--teal)" data-save="'+p.id+'">💾 পরে কিনব (Save for Later)</button></div>' +
-    '<div class="qty"><button data-dec="'+p.id+'" aria-label="কমান">−</button><b>'+cart[k]+'</b><button data-inc="'+p.id+'" aria-label="বাড়ান">+</button></div></div>';
+    var vLabel = cartKeyVariant(k), uPrice = cartUnitPrice(k);
+    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+(vLabel?' <span style="color:var(--muted);font-size:.82rem">('+escHtml(vLabel)+')</span>':'')+'</div><div class="pr">'+fmt(uPrice)+' × '+cart[k]+' = '+fmt(uPrice*cart[k])+'</div><div>'+stockLine({stockQty:cartVariantStock(k)})+'</div><button class="rm" data-rm="'+escHtml(k)+'">মুছুন</button> <button class="rm" style="color:var(--teal)" data-save="'+escHtml(k)+'">💾 পরে কিনব (Save for Later)</button></div>' +
+    '<div class="qty"><button data-dec="'+escHtml(k)+'" aria-label="কমান">−</button><b>'+cart[k]+'</b><button data-inc="'+escHtml(k)+'" aria-label="বাড়ান">+</button></div></div>';
   }).join("");
   /* Save for Later */
   var sIds = Object.keys(savedLater), sBox = document.getElementById("savedBox");
   document.getElementById("savedCount").textContent = sIds.length;
   sBox.style.display = sIds.length ? "block":"none";
   document.getElementById("savedItems").innerHTML = sIds.map(function(k){
-    var p = P(k);
+    var p = cartProd(k);
     if(!p) return ""; /* catalog-e na thaka item skip — renderCart kokhono throw korbe na (uporer cart map-er motoi). */
-    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(p.price)+'</div><button class="rm" style="color:var(--teal)" data-unsave="'+p.id+'">🛒 কার্টে ফেরত নিন</button> <button class="rm" data-savedel="'+p.id+'">মুছুন</button></div></div>';
+    var vLabel2 = cartKeyVariant(k);
+    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+(vLabel2?' <span style="color:var(--muted);font-size:.82rem">('+escHtml(vLabel2)+')</span>':'')+'</div><div class="pr">'+fmt(cartUnitPrice(k))+'</div><button class="rm" style="color:var(--teal)" data-unsave="'+escHtml(k)+'">🛒 কার্টে ফেরত নিন</button> <button class="rm" data-savedel="'+escHtml(k)+'">মুছুন</button></div></div>';
   }).join("");
   renderWish();
   if(window.__anboPersistState) window.__anboPersistState();
@@ -1709,15 +2074,18 @@ function renderWish(){
   box.innerHTML = ids.map(function(k){
     var p = P(k);
     if(!p) return ""; /* catalog-e na thaka item skip — renderWish renderCart theke daka hoy, ekhane throw holeo AUTH IIFE morto. */
-    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(p.price)+' <s style="color:var(--muted)">'+fmt(p.oldPrice)+'</s></div><div>'+stockLine(p)+'</div><button class="rm" data-wishrm="'+p.id+'">সরিয়ে ফেলুন</button></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+p.id+'">🛒 কার্টে</button></div>';
+    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div><button class="rm" data-wishrm="'+p.id+'">সরিয়ে ফেলুন</button></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+p.id+'">🛒 কার্টে</button></div>';
   }).join("");
 }
 var toastTimer;
 function toast(msg){ var t=document.getElementById("toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("show");},2800); }
-function addToCart(id, qty){
+/* P2: variantLabel thakle cart key "id||label" — purono cart-e shudhu id thake (base variant). */
+function addToCart(id, qty, variantLabel){
   var p = P(id); qty = qty||1;
   if(!p || p.stockQty<=0){ toast("😔 দুঃখিত, এই পণ্যের স্টক শেষ!"); return; }
-  cart[id] = Math.min((cart[id]||0)+qty, p.stockQty);
+  var key = String(id), cap = p.stockQty;
+  if(variantLabel){ key = String(id) + "||" + String(variantLabel); cap = cartVariantStock(key); if(cap<=0){ toast("😔 দুঃখিত, এই ভ্যারিয়েন্টের স্টক শেষ!"); return; } }
+  cart[key] = Math.min((cart[key]||0)+qty, cap);
   renderCart();
   toast("✅ <b>"+escHtml(p.name)+"</b> কার্টে যোগ হয়েছে!");
 }
@@ -1726,6 +2094,93 @@ function toggleWish(id){
   else { wishlist[id]=true; toast("❤️ <b>"+escHtml(P(id).name)+"</b> উইশলিস্টে যোগ হয়েছে!"); }
   renderCart(); renderProducts(); renderFlash(); renderUnder();
   if(modalId===id) syncModalWish();
+}
+
+/* ============ P2 (2026-11-23): Product comparison (max 3) ============
+   Compare set localStorage-e ("anbobd-compare-v1") — guest + signed-in
+   duijonei use korte pare; product page thekeo same key. */
+var COMPARE_LS_KEY = "anbobd-compare-v1";
+function anboCompareIds(){ try{ var raw = localStorage.getItem(COMPARE_LS_KEY); var a = raw ? JSON.parse(raw) : []; return Array.isArray(a) ? a.filter(function(x){ return x; }).slice(0,3) : []; }catch(e){ return []; } }
+function anboSaveCompare(ids){ try{ localStorage.setItem(COMPARE_LS_KEY, JSON.stringify(ids.slice(0,3))); }catch(e){} }
+function isComparing(id){ return anboCompareIds().indexOf(String(id)) > -1; }
+function toggleCompare(id){
+  var ids = anboCompareIds(), i = ids.indexOf(String(id));
+  if(i > -1){ ids.splice(i, 1); toast("🤍 "+t("cmpRemoved")); }
+  else {
+    if(ids.length >= 3){ toast("⚠️ "+t("cmpMax")); return; }
+    ids.push(String(id)); toast("⇄ "+t("cmpAdded"));
+  }
+  anboSaveCompare(ids); renderCompareBar(); renderProducts(); renderFlash(); renderUnder(); renderNewArrivals(); renderBestSellers(); renderTopRated();
+}
+function renderCompareBar(){
+  var bar = document.getElementById("compareBar"); if(!bar) return;
+  var ids = anboCompareIds();
+  bar.classList.toggle("show", ids.length > 0);
+  var txt = document.getElementById("compareBarTxt"); if(txt) txt.textContent = t("cmpBar", {n:ids.length});
+}
+function openCompare(){
+  var ids = anboCompareIds();
+  var body = document.getElementById("compareBody");
+  if(!ids.length){ body.innerHTML = '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("cmpEmpty")+'</p>'; }
+  else {
+    var ps = ids.map(function(id){ return P(id); }).filter(Boolean);
+    if(!ps.length){ body.innerHTML = '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("cmpEmpty")+'</p>'; }
+    else {
+      var rows = [
+        { k:"cmpRowPrice", fn:function(p){ return "<b>"+fmt(effPrice(p))+"</b>"; } },
+        { k:"cmpRowOld", fn:function(p){ return effOldPrice(p)>effPrice(p) ? "<s>"+fmt(effOldPrice(p))+"</s>" : "—"; } },
+        { k:"cmpRowStock", fn:function(p){ return p.stockQty>0 ? String(p.stockQty)+"টি" : "❌"; } },
+        { k:"cmpRowCat", fn:function(p){ return escHtml(catLabel(p.categoryId)); } },
+        { k:"cmpRowShop", fn:function(p){ var s = SL(p.sellerId); return s ? escHtml(s.name) : "—"; } },
+        { k:"cmpRowRating", fn:function(p){ var a = anboAvgRating(p); return a>0 ? stars(a)+" ("+a.toFixed(1)+")" : t("cmpNoRating"); } },
+        { k:"cmpRowPack", fn:function(p){ return packLabel(p) ? escHtml(packLabel(p)) : "—"; } }
+      ];
+      var head = '<tr><th></th>' + ps.map(function(p){ return '<th><img src="'+safeImgFor(p)+'" style="width:56px;height:56px;object-fit:cover;border-radius:10px;display:block;margin-bottom:6px" alt=""><a href="/product.html?id='+encodeURIComponent(p.id)+'" style="color:inherit">'+escHtml(p.name)+'</a><br><button class="btn-sec" type="button" data-compare-rm="'+escHtml(p.id)+'" style="margin-top:6px">✕ '+t("cmpRowRemove")+'</button></th>'; }).join("") + '</tr>';
+      var bodyRows = rows.map(function(r){ return '<tr><th>'+t(r.k)+'</th>' + ps.map(function(p){ return '<td>'+r.fn(p)+'</td>'; }).join("") + '</tr>'; }).join("");
+      var addRow = '<tr><th></th>' + ps.map(function(p){ return '<td><button class="addbtn" type="button" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>'+t("cmpRowAdd")+'</button></td>'; }).join("") + '</tr>';
+      body.innerHTML = '<div style="overflow-x:auto"><table class="compare-table">'+head+bodyRows+addRow+'</table></div>';
+    }
+  }
+  openModalEl("compareModal");
+}
+/* P2: shared wishlist — #wishlist=<id1>,<id2> link theke read-only view. */
+function openSharedWishlist(ids){
+  var body = document.getElementById("sharedWishBody");
+  var live = (ids||[]).map(function(id){ return P(id); }).filter(Boolean);
+  if(!live.length){ body.innerHTML = '<p style="color:var(--muted);margin:0;line-height:1.6">এই উইশলিস্টের কোনো পণ্যই এখন লাইভ নেই — হয় পণ্য সরিয়ে নেওয়া হয়েছে, নয়তো এখনো অনুমোদিত হয়নি।</p>'; }
+  else {
+    body.innerHTML = live.map(function(p){
+      return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>🛒 কার্টে</button></div>';
+    }).join("");
+  }
+  openModalEl("sharedWishModal");
+}
+function shareWishlist(){
+  var ids = Object.keys(wishlist).filter(function(id){ return !!P(id); });
+  if(!ids.length){ toast("🤍 "+t("wishEmptyShare")); return; }
+  var link = location.origin + "/#wishlist=" + ids.map(encodeURIComponent).join(",");
+  function done(){ toast(t("wishShared")); }
+  function fail(){ toast("⚠️ লিংক কপি করা যায়নি — লিংকটি হাতে কপি করুন: " + link); }
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(done, function(){ fallbackCopy(link); done(); }); }
+  else { if(fallbackCopy(link)) done(); else fail(); }
+}
+/* P2: search history — localStorage, max 8, clearable. */
+var SEARCH_HIST_KEY = "anbobd-search-history-v1";
+function anboSearchHistory(){ try{ var a = JSON.parse(localStorage.getItem(SEARCH_HIST_KEY) || "[]"); return Array.isArray(a) ? a : []; }catch(e){ return []; } }
+function anboSaveSearch(q){
+  q = String(q||"").trim(); if(!q) return;
+  var h = anboSearchHistory().filter(function(x){ return x.toLowerCase() !== q.toLowerCase(); });
+  h.unshift(q); h = h.slice(0, 8);
+  try{ localStorage.setItem(SEARCH_HIST_KEY, JSON.stringify(h)); }catch(e){}
+}
+function anboClearSearchHistory(){ try{ localStorage.removeItem(SEARCH_HIST_KEY); }catch(e){} showSuggest(); }
+/* P2: search query URL-e (?q=...) — share/reload kora jay. */
+function syncSearchUrl(){
+  try{
+    var u = new URL(location.href);
+    if(query) u.searchParams.set("q", query); else u.searchParams.delete("q");
+    history.replaceState(null, "", u.pathname + (u.search ? u.search : "") + u.hash);
+  }catch(e){}
 }
 
 /* ---------- Drawers / modals ---------- */
@@ -1817,11 +2272,13 @@ function openModal(id){
   document.getElementById("mImg").alt = p.name+" — "+p.bn;
   document.getElementById("mCat").textContent = catLabel(p.categoryId)+" • "+(SL(p.sellerId) ? SL(p.sellerId).name : "No brand");
   document.getElementById("mName").textContent = p.name+" — "+p.bn;
-  document.getElementById("mStars").innerHTML = stars(p.rating)+" <span>• "+(p.reviewCount>0 ? p.reviewCount+"টি রিভিউ" : "এখনো কোনো রিভিউ নেই")+" • "+soldFmt(p.soldCount)+" বিক্রি</span>";
+  document.getElementById("mStars").innerHTML = stars(p.rating)+" <span>• "+(p.reviewCount>0 ? t("cardReviews", {n:p.reviewCount}) : "এখনো কোনো রিভিউ নেই")+" • "+t("cardSold", {n:soldFmt(p.soldCount)})+"</span>";
   document.getElementById("mDesc").textContent = p.desc;
   document.getElementById("mSpecs").innerHTML = (packLabel(p) ? "📦 <b>পরিমাণ:</b> "+escHtml(packLabel(p))+"<br>" : "") + "📋 <b>স্পেসিফিকেশন:</b><br>• "+p.specs.map(function(s){ return escHtml(s); }).join("<br>• ")+"<br>🛡️ "+escHtml(p.warranty)+"<br>🏷️ SKU: "+escHtml(p.sku);
-  document.getElementById("mPrice").textContent = fmt(p.price); document.getElementById("mOld").textContent = fmt(p.oldPrice);
-  document.getElementById("mOff").textContent = "−"+offPct(p)+"% ছাড়";
+  document.getElementById("mPrice").textContent = fmt(effPrice(p));
+  var mOldEl = document.getElementById("mOld"), mOffEl = document.getElementById("mOff");
+  mOldEl.textContent = fmt(effOldPrice(p)); mOldEl.style.display = effOldPrice(p)>effPrice(p) ? "" : "none";
+  mOffEl.textContent = "−"+offPct(p)+"% ছাড়"; mOffEl.style.display = offPct(p)>0 ? "" : "none";
   document.getElementById("mStock").innerHTML = stockLine(p);
   document.getElementById("mDelivery").textContent = "🚚 আজ অর্ডার করলে — "+etaText("dhaka")+" • ঢাকার বাইরে "+etaDate(3)+" এর মধ্যে";
   var s = SL(p.sellerId) || { name:"AnboBD Seller", area:"বাংলাদেশ", rating:0 };
@@ -1872,8 +2329,9 @@ function openModal(id){
 /* ---------- Checkout (Guest, full total upfront) ---------- */
 function fillCheckoutSummary(){
   var t = totals();
-  var lines = Object.keys(cart).map(function(k){ var p=P(k); return "• "+escHtml(p.name)+" × "+cart[k]+" — "+fmt(p.price*cart[k]); }).join("<br>");
-  document.getElementById("coSummary").innerHTML = "<b>🧾 অর্ডার সারাংশ</b><br>"+lines+"<br>সাবটোটাল: "+fmt(t.sub)+(t.discount>0?"<br>ছাড়: −"+fmt(t.discount):"")+(t.loyaltyDisc>0?"<br>Loyalty ছাড়: −"+fmt(t.loyaltyDisc):"")+"<br>ডেলিভারি: "+(t.ship===0?"FREE":fmt(t.ship))+"<br><b>সর্বমোট: "+fmt(t.total)+"</b>";
+  var lines = Object.keys(cart).map(function(k){ var p=cartProd(k); if(!p) return ""; var v=cartKeyVariant(k); return "• "+escHtml(p.name)+(v?" ("+escHtml(v)+")":"")+" × "+cart[k]+" — "+fmt(cartUnitPrice(k)*cart[k]); }).join("<br>");
+  var slotSel = ""; try{ var se = document.querySelector('input[name="slot"]:checked'); if(se && se.value !== "anytime") slotSel = "<br>📅 ডেলিভারি সময়: <b>"+escHtml(anboSlotLabel(se.value))+"</b>"; }catch(e){}
+  document.getElementById("coSummary").innerHTML = "<b>🧾 অর্ডার সারাংশ</b><br>"+lines+"<br>সাবটোটাল: "+fmt(t.sub)+(t.discount>0?"<br>ছাড়: −"+fmt(t.discount):"")+(t.loyaltyDisc>0?"<br>Loyalty ছাড়: −"+fmt(t.loyaltyDisc):"")+"<br>ডেলিভারি: "+(t.ship===0?"FREE":fmt(t.ship))+slotSel+"<br><b>সর্বমোট: "+fmt(t.total)+"</b>";
   document.getElementById("coEta").textContent = "📅 " + etaText(zone) + " — অর্ডারের সময় এই তারিখই প্রযোজ্য থাকবে";
   document.getElementById("coTotal").textContent = fmt(t.total);
   /* Decision 7 — loyalty redeem checkbox (signed-in customers only, balance
@@ -2031,12 +2489,12 @@ async function anboCancelOrder(orderId, btn){
 function anboInvoiceHtml(o){
   var rows = (o.items||[]).map(function(it){
     var sh = it.sellerId ? SL(it.sellerId) : null;
-    return '<tr><td style="padding:8px 4px;border-bottom:1px solid var(--line)">'+escHtml(it.name)+(sh ? '<br><span style="color:var(--muted);font-size:.8rem">🏪 '+escHtml(sh.name)+'</span>' : '')+'</td><td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--line)">'+it.qty+'</td><td style="text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)">'+fmt(it.lineTotal)+'</td></tr>';
+    return '<tr><td style="padding:8px 4px;border-bottom:1px solid var(--line)">'+escHtml(it.name)+(it.variant ? ' <span style="color:var(--muted);font-size:.85rem">('+escHtml(it.variant)+')</span>' : '')+(sh ? '<br><span style="color:var(--muted);font-size:.8rem">🏪 '+escHtml(sh.name)+'</span>' : '')+'</td><td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--line)">'+it.qty+'</td><td style="text-align:right;padding:8px 4px;border-bottom:1px solid var(--line)">'+fmt(it.lineTotal)+'</td></tr>';
   }).join("");
   var a = o.amounts || {};
   return '<div style="font-family:inherit">' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;border-bottom:2px solid var(--ink);padding-bottom:12px;margin-bottom:14px"><div><div style="font-family:\'Bricolage Grotesque\',sans-serif;font-size:1.5rem;font-weight:800">AnboBD</div><div style="font-size:.85rem;color:var(--muted)">অনলাইন শপিং — ঢাকা, বাংলাদেশ<br>হটলাইন: 09638-555555 • support@anbobd.com</div></div><div style="text-align:right"><b style="font-size:1.1rem">ইনভয়েস</b><br>অর্ডার: '+escHtml(o.id)+'<br>তারিখ: '+escHtml((o.placedAt||"").slice(0,10))+'<br>স্ট্যাটাস: '+escHtml(((FLOW_META[o.status]||{}).label)||o.status)+'</div></div>' +
-    '<div style="line-height:1.7;font-size:.92rem;margin-bottom:14px"><b>ক্রেতা:</b> '+escHtml(o.customer.name||"")+'<br>📱 '+escHtml(o.customer.phone||"")+'<br>📍 '+escHtml(o.customer.address||"")+', '+escHtml(o.customer.district||"")+(o.customer.note?'<br>📝 '+escHtml(o.customer.note):'')+'</div>' +
+    '<div style="line-height:1.7;font-size:.92rem;margin-bottom:14px"><b>ক্রেতা:</b> '+escHtml(o.customer.name||"")+'<br>📱 '+escHtml(o.customer.phone||"")+'<br>📍 '+escHtml(o.customer.address||"")+', '+escHtml(o.customer.district||"")+(o.customer.note?'<br>📝 '+escHtml(o.customer.note):'')+(o.deliverySlot && o.deliverySlot!=="anytime"?'<br>📅 ডেলিভারি স্লট: '+escHtml(anboSlotLabel(o.deliverySlot)):'')+'</div>' +
     '<table style="width:100%;border-collapse:collapse;font-size:.92rem"><thead><tr style="border-bottom:1.5px solid var(--line)"><th style="text-align:left;padding:8px 4px">পণ্য</th><th style="text-align:center;padding:8px 4px">পরিমাণ</th><th style="text-align:right;padding:8px 4px">মোট</th></tr></thead><tbody>'+rows+'</tbody></table>' +
     '<div style="text-align:right;line-height:1.9;font-size:.92rem;margin-top:12px;border-top:1.5px solid var(--line);padding-top:10px">সাবটোটাল: '+fmt(a.subtotal||0)+'<br>'+((a.discount||0)>0?'ছাড়: −'+fmt(a.discount)+'<br>':'')+'ডেলিভারি: '+((a.deliveryFee||0)===0?'FREE':fmt(a.deliveryFee))+'<br><b style="font-size:1.1rem">সর্বমোট: '+fmt(a.total||0)+'</b></div>' +
     '<div style="font-size:.9rem;color:var(--muted);margin-top:12px;line-height:1.7">💵 পেমেন্ট: '+escHtml(o.payment.method||"")+(o.payment.transactionId?'<br>📱 Transaction ID: <b>'+escHtml(o.payment.transactionId)+'</b>':'')+'<br>ধন্যবাদ — AnboBD-তে কেনাকাটা করার জন্য।</div>' +
@@ -2123,6 +2581,34 @@ function loyaltyBalance(){
   var earned = Math.floor(delTotal / 100) * cfg.per100;
   return { earned: earned, spent: spent, balance: Math.max(0, earned - spent) };
 }
+/* ============ P2 (2026-11-23): Saved payment number (manual only) ============
+   Nijer sender number per method (bKash/Nagad/Rocket), per account,
+   localStorage-e. Platform number (01710370902) kokhono save kora hoy na —
+   eta sender-er nijer number, Admin-er number na. Card-er kono storage nei. */
+function anboPayMemKey(){ return "anbobd-pay-memory-" + (window.__anboCurrentUser ? window.__anboCurrentUser.id : "guest"); }
+function anboPayMem(){ try{ var a = JSON.parse(localStorage.getItem(anboPayMemKey()) || "{}"); return (a && typeof a === "object") ? a : {}; }catch(e){ return {}; } }
+function anboSavePayNumber(method, num){
+  if(!method || !/^01[3-9]\d{8}$/.test(String(num||"").trim())) return;
+  if(String(num).trim() === "01710370902") return; /* platform number save kora jabe na */
+  var m = anboPayMem(); m[method] = String(num).trim();
+  try{ localStorage.setItem(anboPayMemKey(), JSON.stringify(m)); }catch(e){}
+}
+function anboForgetPayNumber(method){
+  var m = anboPayMem(); delete m[method];
+  try{ localStorage.setItem(anboPayMemKey(), JSON.stringify(m)); }catch(e){}
+  var ps = document.getElementById("coPaySender"); if(ps) ps.value = "";
+  var fb = document.getElementById("coForgetPay"); if(fb) fb.style.display = "none";
+  var cb = document.getElementById("coSavePay"); if(cb) cb.checked = false;
+}
+function anboPrefillPaySender(){
+  var payEl = document.querySelector('input[name="pay"]:checked');
+  var ps = document.getElementById("coPaySender"), fb = document.getElementById("coForgetPay");
+  if(!ps) return;
+  var method = payEl ? payEl.value : "";
+  var saved = (method && (method==="bKash" || method==="Nagad" || method==="Rocket")) ? (anboPayMem()[method] || "") : "";
+  if(saved && !ps.value) ps.value = saved;
+  if(fb) fb.style.display = saved ? "" : "none";
+}
 function syncManualPay(){
   var payEl = document.querySelector('input[name="pay"]:checked');
   var box = document.getElementById("manualPayBox");
@@ -2130,6 +2616,7 @@ function syncManualPay(){
   var manual = payEl && (payEl.value==="bKash" || payEl.value==="Nagad" || payEl.value==="Rocket");
   box.style.display = manual ? "grid" : "none";
   if(!manual) return;
+  anboPrefillPaySender();
   var method = payEl.value;
   var num = platformPayNumber(method);
   var info = document.getElementById("platformPayInfo");
@@ -2208,6 +2695,8 @@ function checkoutSubmit(e){
   }
   var note = document.getElementById("coNote").value.trim();
   var t = totals();
+  /* P2: delivery slot — radio theke; order object + meta item-e jay (DB column thakle saveOrder-e jabe, na thakle local record + success screen). */
+  var slot = "anytime"; try{ var se2 = document.querySelector('input[name="slot"]:checked'); if(se2) slot = se2.value; }catch(e){}
   /* P1: "এই ঠিকানাটি সেভ করুন" — signed-in user hole checkout-er thikana
      profiles.address-e jog hobe (notun thikana holei; duplicate check kore).
      Save fail hole order-e kono badha nei — Account → আমার ঠিকানা theke
@@ -2225,11 +2714,11 @@ function checkoutSubmit(e){
   var orderId = "#ANBO" + Math.floor(100000 + Math.random()*900000);
   var order = {
     id: orderId,
-    items: Object.keys(cart).map(function(k){ var p=P(k); return { productId:p.id, sku:p.sku, name:p.name, qty:cart[k], unitPrice:p.price, lineTotal:p.price*cart[k], sellerId:p.sellerId }; }),
+    items: Object.keys(cart).map(function(k){ var p=cartProd(k); var it = { productId:p.id, sku:p.sku, name:p.name, qty:cart[k], unitPrice:cartUnitPrice(k), lineTotal:cartUnitPrice(k)*cart[k], sellerId:p.sellerId }; var v=cartKeyVariant(k); if(v) it.variant = v; return it; }),
     customer: { name:name, phone:phone, address:addr, district:dist, note:note },
     payment: { method:pay, status: pay==="ক্যাশ অন ডেলিভারি" ? "Pay on delivery" : (isManual ? "pending" : "Pending"), transactionId: isManual ? trxId : null, senderNumber: isManual ? paySender : null },
     amounts: { subtotal:t.sub, discount:t.discount, deliveryFee:t.ship, total:t.total },
-    promoCode: (loyaltyRedeem ? "LOYALTY100" : promoCode), zone: zone, status: "AwaitingAdmin",
+    promoCode: (loyaltyRedeem ? "LOYALTY100" : promoCode), zone: zone, deliverySlot: slot, status: "AwaitingAdmin",
     statusHistory: [{ status:"AwaitingAdmin", at:new Date().toISOString(), note:"অর্ডার গৃহীত — Admin যাচাইয়ে পাঠানো হয়েছে" }],
     placedAt: new Date().toISOString(),
     estimatedDelivery: zone==="dhaka" ? etaDate(1) : etaDate(3),
@@ -2249,6 +2738,8 @@ function checkoutSubmit(e){
     : Promise.resolve(null);
   savePromise.then(function(saved){
     order.onlineSaved = !!saved;
+    /* P2: saved payment number — manual payment + "মনে রাখুন" checkbox thakle nijer sender number save (per method, per account). */
+    if(isManual && document.getElementById("coSavePay") && document.getElementById("coSavePay").checked) anboSavePayNumber(pay, paySender);
     if(window.__anboPersistState) window.__anboPersistState();
     if(btn){ btn.disabled = false; btn.textContent = "✅ অর্ডার কনফার্ম করুন"; }
     var syncEl = document.getElementById("orderSyncStatus");
@@ -2277,7 +2768,7 @@ function finishCheckoutUI(name, phone, addr, dist, pay, isManual, trxId, paySend
   order.items.forEach(function(it){ var p=P(it.productId); if(p){ p.stockQty = Math.max(0, p.stockQty - it.qty); window.__anboReservedStock[order.id].push({ id: it.productId, qty: it.qty }); } });
   lastOrder = order;
   document.getElementById("orderSummary").innerHTML =
-    "অর্ডার নম্বর: <b>"+order.id+"</b><br>নাম: "+escHtml(name)+" • "+escHtml(phone)+"<br>ঠিকানা: "+escHtml(addr)+", "+escHtml(dist)+"<br>আইটেম: "+order.items.map(function(i){return escHtml(i.name)+" × "+i.qty;}).join(", ")+"<br>পেমেন্ট: <b>"+pay+"</b>"+(isManual ? "<br>Transaction ID: <b>"+escHtml(trxId)+"</b> (প্রেরকের নম্বর: "+escHtml(paySender)+")<br>⏳ <b>পেমেন্ট যাচাইয়ের অপেক্ষায়:</b> Admin ট্রান্সাকশন ID মিলিয়ে যাচাই করে কনফার্ম করলেই অর্ডারটি Seller-এর কাছে যাবে — ততক্ষণ অর্ডার AwaitingAdmin অবস্থায় থাকবে।" : "")+"<br>সর্বমোট: <b>"+fmt(t.total)+"</b>"+(t.discount>0?" (ছাড় "+fmt(t.discount)+" সহ)":"")+"<br>📅 আনুমানিক ডেলিভারি: <b>"+order.estimatedDelivery+"</b>";
+    "অর্ডার নম্বর: <b>"+order.id+"</b><br>নাম: "+escHtml(name)+" • "+escHtml(phone)+"<br>ঠিকানা: "+escHtml(addr)+", "+escHtml(dist)+"<br>📅 ডেলিভারি সময়: <b>"+escHtml(anboSlotLabel(order.deliverySlot||"anytime"))+"</b><br>আইটেম: "+order.items.map(function(i){return escHtml(i.name)+(i.variant?" ("+escHtml(i.variant)+")":"")+" × "+i.qty;}).join(", ")+"<br>পেমেন্ট: <b>"+pay+"</b>"+(isManual ? "<br>Transaction ID: <b>"+escHtml(trxId)+"</b> (প্রেরকের নম্বর: "+escHtml(paySender)+")<br>⏳ <b>পেমেন্ট যাচাইয়ের অপেক্ষায়:</b> Admin ট্রান্সাকশন ID মিলিয়ে যাচাই করে কনফার্ম করলেই অর্ডারটি Seller-এর কাছে যাবে — ততক্ষণ অর্ডার AwaitingAdmin অবস্থায় থাকবে।" : "")+"<br>সর্বমোট: <b>"+fmt(t.total)+"</b>"+(t.discount>0?" (ছাড় "+fmt(t.discount)+" সহ)":"")+"<br>📅 আনুমানিক ডেলিভারি: <b>"+order.estimatedDelivery+"</b>";
   document.getElementById("etaTxt").textContent = "আনুমানিক ডেলিভারি: " + order.estimatedDelivery;
   cart = {}; promoCode = null; loyaltyRedeem = false; document.getElementById("promoInput").value = "";
   document.getElementById("checkoutForm").classList.remove("open");
@@ -2312,7 +2803,7 @@ function renderTracking(order){
   var flow = ANBOBD_STORE.orderFlow, idx = flow.indexOf(order.status);
   var labels = { AwaitingAdmin:"অর্ডার গৃহীত — Admin যাচাইয়ে আছে", AdminConfirmed:"Admin কনফার্ম করেছে — Seller-এর কাছে পাঠানো হয়েছে", Packed:"Seller প্যাক করেছে", Shipped:"Seller পাঠিয়ে দিয়েছে — কুরিয়ারের পথে", Delivered:"Delivered — ডেলিভারি সম্পন্ন" };
   var subs = { AwaitingAdmin:"AnboBD Admin অর্ডারটি যাচাই করছে", AdminConfirmed:"Seller অর্ডারটি পেয়ে গেছে", Packed:"Seller পণ্য প্যাক করে প্রস্তুত করেছে", Shipped:"কুরিয়ার ফোন করবে", Delivered:"পণ্য হাতে পেয়েছেন" };
-  var html = '<div class="sumbox" style="background:var(--surface2);border-radius:14px;padding:13px 15px;font-size:.92rem">অর্ডার: <b>'+escHtml(order.id)+'</b> • '+escHtml(order.customer.district)+' • সর্বমোট <b>'+fmt(order.amounts.total)+'</b><br>📅 আনুমানিক ডেলিভারি: <b>'+escHtml(order.estimatedDelivery)+'</b> • পেমেন্ট: '+escHtml(order.payment.method)+'</div>';
+  var html = '<div class="sumbox" style="background:var(--surface2);border-radius:14px;padding:13px 15px;font-size:.92rem">অর্ডার: <b>'+escHtml(order.id)+'</b> • '+escHtml(order.customer.district)+(order.deliverySlot && order.deliverySlot!=="anytime" ? ' • 📅 স্লট: '+escHtml(anboSlotLabel(order.deliverySlot)) : '')+' • সর্বমোট <b>'+fmt(order.amounts.total)+'</b><br>📅 আনুমানিক ডেলিভারি: <b>'+escHtml(order.estimatedDelivery)+'</b> • পেমেন্ট: '+escHtml(order.payment.method)+'</div>';
   if(order.payment && order.payment.transactionId){
     /* Payment label keys off payment_status (anboPayStatus), NOT the order
        status — a Cancelled order must never read as "verified". */
@@ -2336,6 +2827,13 @@ function renderTracking(order){
     } else {
       html += '<p style="color:var(--muted);font-weight:700;margin-top:14px">↩️ রিটার্ন আবেদন এখন বন্ধ আছে (Admin Settings) — সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>';
     }
+    /* P2 (2026-11-23): Dispute — Delivered order-e Admin-er kache abedon (disputes table; Admin side alada builder). */
+    var _filed = window.__anboDisputesFiled && (window.__anboDisputesFiled[order.id] || (order.supabaseId && window.__anboDisputesFiled[order.supabaseId]));
+    html += '<div id="dispBox" style="margin-top:14px;border-top:1.5px dashed var(--line);padding-top:12px">'
+      + '<b>⚖️ Dispute</b><p style="color:var(--muted);margin:6px 0 10px;line-height:1.6">ডেলিভারির পর পণ্য বা অর্ডার নিয়ে সমস্যা থাকলে (ভুল পণ্য, ক্ষতিগ্রস্ত পণ্য, বর্ণনার সঙ্গে না মিললে) এখানে Dispute জানান — Admin যাচাই করে সমাধান জানাবে।</p>'
+      + (_filed ? '<p style="color:var(--teal);font-weight:800">✅ এই অর্ডারের জন্য ইতিমধ্যে একটি Dispute জমা দেওয়া হয়েছে — Admin review করছে।</p>'
+      : '<button class="btn-sec" type="button" id="dispStartBtn">⚖️ Dispute জানান</button><div id="dispFormWrap" style="margin-top:10px"></div>')
+      + '</div>';
   }
   if(order.status==="Cancelled"){ html += '<p style="color:var(--danger);font-weight:800">❌ এই অর্ডারটি Cancelled (বাতিল) হয়েছে। সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>'; }
   else html += '<div class="timeline">' + flow.map(function(st,i){
@@ -2344,6 +2842,8 @@ function renderTracking(order){
   document.getElementById("trackResult").innerHTML = html;
   var rb = document.getElementById("retStartBtn");
   if(rb){ rb.addEventListener("click", function(){ anboStartReturn(order); }); }
+  var db2 = document.getElementById("dispStartBtn");
+  if(db2){ db2.addEventListener("click", function(){ anboStartDispute(order); }); }
 }
 
 /* P1-13 — Return আবেদন: order number + phone diye track kora order (guest COD
@@ -2423,6 +2923,69 @@ async function anboStartReturn(order){
   });
 }
 
+/* P2 (2026-11-23) — Dispute form (track modal-er vitore, return-er motoi).
+   disputes table-e insert: order_id, customer_id, shop_id, reason,
+   status "open". Table na thakle (42P01) honest "not available yet" note —
+   kokhono fake success na. */
+window.__anboDisputesFiled = window.__anboDisputesFiled || {};
+async function anboStartDispute(order){
+  var wrap = document.getElementById("dispFormWrap");
+  var btn = document.getElementById("dispStartBtn");
+  if(!wrap || !order) return;
+  if(btn) btn.disabled = true;
+  var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
+  if(!sb){ wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">অনলাইন সংযোগ নেই — Dispute-এর জন্য হটলাইনে কল করুন: 09638-555555</p>'; return; }
+  var supId = order.supabaseId || (anboIsUuid(order.id) ? order.id : null);
+  /* Agei dispute ache kina — best effort (table na thakle skip). */
+  if(supId){
+    try{
+      var ex = await sb.from("disputes").select("id,status").eq("order_id", supId).limit(1);
+      if(!ex.error && ex.data && ex.data.length){
+        wrap.innerHTML = '<p style="color:var(--teal);font-weight:800">ℹ️ এই অর্ডারের জন্য ইতিমধ্যে একটি Dispute আছে — Admin review করছে।</p>';
+        window.__anboDisputesFiled[order.id] = true; if(order.supabaseId) window.__anboDisputesFiled[order.supabaseId] = true;
+        return;
+      }
+    }catch(e){}
+  }
+  var shopId = null;
+  var it0 = (order.items || []).filter(function(it){ return it && !it.meta; })[0];
+  if(it0 && anboIsUuid(it0.sellerId)) shopId = it0.sellerId;
+  wrap.innerHTML = '<form id="dispForm" style="display:grid;gap:10px">'
+    + '<div class="fld"><label for="dispReason">Dispute-এর কারণ *</label><select id="dispReason" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink)">'
+    + '<option value="ভুল পণ্য এসেছে">ভুল পণ্য এসেছে</option><option value="ক্ষতিগ্রস্ত / ভাঙা পণ্য">ক্ষতিগ্রস্ত / ভাঙা পণ্য এসেছে</option><option value="ছবি / বর্ণনার সঙ্গে মেলেনি">ছবি / বর্ণনার সঙ্গে মেলেনি</option><option value="পণ্যের মান ভালো নয়">পণ্যের মান ভালো নয়</option><option value="অন্যান্য">অন্যান্য</option></select></div>'
+    + '<div class="fld"><label for="dispNote">বিস্তারিত লিখুন (ঐচ্ছিক)</label><textarea id="dispNote" rows="3" placeholder="যেমন: প্যাকেট খোলা ছিল…" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink)"></textarea></div>'
+    + '<div class="login-err" id="dispErr"></div>'
+    + '<div><button class="checkout" type="submit" style="margin:0">Dispute পাঠান →</button></div>'
+    + '<p style="font-size:.85rem;color:var(--muted);margin:0;line-height:1.6">Dispute-টি Admin review করবে — সমাধান হলে অ্যাকাউন্টের মেসেজে জানানো হবে।</p></form>';
+  document.getElementById("dispForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var errEl = document.getElementById("dispErr");
+    var reasonSel = document.getElementById("dispReason").value;
+    var note = String(document.getElementById("dispNote").value || "").trim();
+    var reason = reasonSel + (note ? " — " + note : "");
+    errEl.textContent = "";
+    var u = window.__anboCurrentUser;
+    var payload = { order_id: supId, reason: reason, status: "open" };
+    if(shopId) payload.shop_id = shopId;
+    if(u && anboIsUuid(u.id)) payload.customer_id = u.id;
+    try{
+      var r = await sb.from("disputes").insert(payload);
+      if(r.error) throw r.error;
+      window.__anboDisputesFiled[order.id] = true; if(order.supabaseId) window.__anboDisputesFiled[order.supabaseId] = true;
+      wrap.innerHTML = '<p style="color:var(--teal);font-weight:800">✅ Dispute জমা দেওয়া হয়েছে — Admin যাচাই করে জানাবে। অর্ডার নম্বর: ' + escHtml(order.id) + '</p>';
+      if(btn) btn.style.display = "none";
+      if(window.renderAccount && window.__anboCurrentUser) renderAccount();
+    }catch(err){
+      var msg = (err && err.message) || String(err||"");
+      if(/42P01|Could not find the table/i.test(msg)){
+        errEl.textContent = "⚖️ Dispute এখনো চালু হয়নি — Admin-এর সঙ্গে যোগাযোগ করুন (হটলাইন 09638-555555)";
+      } else {
+        errEl.textContent = "⚠️ Dispute পাঠানো যায়নি — " + msg + " প্রয়োজনে হটলাইনে কল করুন: 09638-555555";
+      }
+    }
+  });
+}
+
 /* ---------- Search suggestions (live) ---------- */
 var suggestEl = document.getElementById("searchSuggest"), searchInput = document.getElementById("searchInput");
 function hideSuggest(){ suggestEl.classList.remove("open"); searchInput.setAttribute("aria-expanded","false"); }
@@ -2430,11 +2993,15 @@ function showSuggest(){
   var q = searchInput.value.trim().toLowerCase();
   var html = "";
   if(!q){
-    html = '<div class="shead">🔥 জনপ্রিয় সার্চ</div>' + ANBOBD_STORE.popularSearches.map(function(s){ return '<button type="button" data-sugq="'+s+'"><span style="font-size:1.05rem">🔍</span><span class="sn">'+s+'</span></button>'; }).join("");
+    /* P2 (2026-11-23): samprotik search (localStorage, max 8) + janapriya search. Kono fake suggestion na. */
+    var hist = anboSearchHistory();
+    var histHtml = hist.length ? '<div class="shead">'+t("histTitle")+'<button type="button" class="histclear" data-hist-clear>মুছুন</button></div>' + hist.map(function(s){ return '<button type="button" data-hist="'+escHtml(s)+'"><span style="font-size:1.05rem">🕘</span><span class="sn">'+escHtml(s)+'</span></button>'; }).join("") : "";
+    html = histHtml + '<div class="shead">'+t("popTitle")+'</div>' + ANBOBD_STORE.popularSearches.map(function(s){ return '<button type="button" data-sugq="'+s+'"><span style="font-size:1.05rem">🔍</span><span class="sn">'+s+'</span></button>'; }).join("");
   } else {
-    /* P1: seller-name search — haystack-e dokan-er naam-o ache; query
-       dokan-er naam-e mile gele dokan-er row-o dekhabe (/shop?id=). */
-    var m = PRODUCTS.filter(function(p){ if(p.status!=="active") return false; if(!catEnabled(p.categoryId)) return false; var sh=SL(p.sellerId); return (p.name+" "+p.bn+" "+catLabel(p.categoryId)+" "+(sh?sh.name:"")).toLowerCase().indexOf(q)>-1; }).slice(0,6);
+    /* P2: seller-name search — haystack-e dokan-er naam-o ache; query
+       dokan-er naam-e mile gele dokan-er row-o dekhabe (/shop?id=).
+       Haystack: name + description + SKU + category (BN + EN) + shop name. */
+    var m = PRODUCTS.filter(function(p){ if(p.status!=="active") return false; if(!catEnabled(p.categoryId)) return false; var sh=SL(p.sellerId); return (p.name+" "+p.bn+" "+(p.desc||"")+" "+(p.sku||"")+" "+catLabel(p.categoryId)+" "+(CAT_LABELS_EN[p.categoryId]||"")+" "+(sh?sh.name:"")).toLowerCase().indexOf(q)>-1; }).slice(0,6);
     var shops = ANBOBD_STORE.sellers.filter(function(s){ return s && anboIsUuid(s.id) && (s.status||"approved")==="approved" && !s._placeholder && (s.name||"").toLowerCase().indexOf(q)>-1; }).slice(0,2);
     if(!m.length && !shops.length){ hideSuggest(); return; }
     html = (shops.length ? '<div class="shead">দোকান</div>' + shops.map(function(s){ return '<button type="button" data-shopsug="'+escHtml(s.id)+'"><span style="flex:1;min-width:0"><span class="sn">🏪 '+escHtml(s.name)+'</span><span class="sp">'+escHtml(s.area||"বাংলাদেশ")+'</span></span><span class="stag">দোকান দেখুন</span></button>'; }).join("") : "") +
@@ -2450,13 +3017,21 @@ document.addEventListener("click", function(e){
   var buy = e.target.closest("[data-buy]"); if(buy){ addToCart(buy.dataset.buy); openCart(); return; }
   var wish = e.target.closest("[data-wish]"); if(wish){ toggleWish(wish.dataset.wish); return; }
   var view = e.target.closest("[data-view]"); if(view){ location.href = "/product.html?id=" + encodeURIComponent(view.dataset.view); return; } /* Product page (2026-11-21): recent/recommended-er data-view click-o alada product page-e jay; modal khole shudhu #product- hash link-e. */
-  var inc = e.target.closest("[data-inc]"); if(inc){ var p=P(inc.dataset.inc); cart[inc.dataset.inc]=Math.min(cart[inc.dataset.inc]+1, p?p.stockQty:99); renderCart(); return; }
+  var inc = e.target.closest("[data-inc]"); if(inc){ var ik=inc.dataset.inc; cart[ik]=Math.min((cart[ik]||0)+1, cartVariantStock(ik)||99); renderCart(); return; }
   var dec = e.target.closest("[data-dec]"); if(dec){ var id=dec.dataset.dec; cart[id]--; if(cart[id]<=0) delete cart[id]; renderCart(); return; }
   var rm = e.target.closest("[data-rm]"); if(rm){ delete cart[rm.dataset.rm]; renderCart(); return; }
   var sv = e.target.closest("[data-save]"); if(sv){ var id2=sv.dataset.save; savedLater[id2]=(savedLater[id2]||0)+(cart[id2]||0); delete cart[id2]; renderCart(); toast("💾 পরে কেনার জন্য সরিয়ে রাখা হয়েছে (Save for Later)"); return; }
-  var us = e.target.closest("[data-unsave]"); if(us){ var id3=us.dataset.unsave; cart[id3]=(cart[id3]||0)+(savedLater[id3]||1); delete savedLater[id3]; renderCart(); toast("🛒 কার্টে ফেরত নেওয়া হয়েছে"); return; }
+  var us = e.target.closest("[data-unsave]"); if(us){ var id3=us.dataset.unsave; cart[id3]=Math.min((cart[id3]||0)+(savedLater[id3]||1), cartVariantStock(id3)||99); delete savedLater[id3]; renderCart(); toast("🛒 কার্টে ফেরত নেওয়া হয়েছে"); return; }
   var sd = e.target.closest("[data-savedel]"); if(sd){ delete savedLater[sd.dataset.savedel]; renderCart(); return; }
   var wrm = e.target.closest("[data-wishrm]"); if(wrm){ toggleWish(wrm.dataset.wishrm); return; }
+  /* P2: compare / wishlist share / search history */
+  var cp = e.target.closest("[data-compare]"); if(cp){ toggleCompare(cp.dataset.compare); return; }
+  var cpo = e.target.closest("[data-compare-open]"); if(cpo){ openCompare(); return; }
+  var cpc = e.target.closest("[data-compare-clear]"); if(cpc){ anboSaveCompare([]); renderCompareBar(); renderProducts(); renderFlash(); renderUnder(); renderNewArrivals(); renderBestSellers(); renderTopRated(); return; }
+  var cprm = e.target.closest("[data-compare-rm]"); if(cprm){ var cids = anboCompareIds().filter(function(x){ return x !== String(cprm.dataset.compareRm); }); anboSaveCompare(cids); renderCompareBar(); openCompare(); renderProducts(); renderFlash(); renderUnder(); renderNewArrivals(); renderBestSellers(); renderTopRated(); return; }
+  var sw = e.target.closest("#shareWishBtn"); if(sw){ shareWishlist(); return; }
+  var hs = e.target.closest("[data-hist]"); if(hs){ searchInput.value = hs.dataset.hist; query = hs.dataset.hist.toLowerCase(); hideSuggest(); syncSearchUrl(); renderProducts(); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
+  var hc = e.target.closest("[data-hist-clear]"); if(hc){ e.stopPropagation(); anboClearSearchHistory(); return; }
   var tile = e.target.closest("[data-tile]"); if(tile){ if(tile.dataset.tile==="flash"){ setFlashFilter(); return; } setCat(tile.dataset.tile); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
   var bn = e.target.closest("[data-banner]"); if(bn){ if(!liveCatCount(bn.dataset.banner)){ toast("এই ক্যাটাগরিতে এখনো কোনো পণ্য লাইভ নেই — শীঘ্রই আসছে।"); return; } setCat(bn.dataset.banner); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
   var shs = e.target.closest("[data-shopsug]"); if(shs){ hideSuggest(); location.href = "/shop?id=" + encodeURIComponent(shs.dataset.shopsug); return; }
@@ -2465,7 +3040,7 @@ document.addEventListener("click", function(e){
     else { openCart(); document.getElementById("promoInput").value = code; applyPromo(); }
     return; }
   var sug = e.target.closest("[data-sug]"); if(sug){ hideSuggest(); openModal(sug.dataset.sug); return; }
-  var sugq = e.target.closest("[data-sugq]"); if(sugq){ searchInput.value = sugq.dataset.sugq; query = sugq.dataset.sugq.toLowerCase(); hideSuggest(); renderProducts(); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
+  var sugq = e.target.closest("[data-sugq]"); if(sugq){ searchInput.value = sugq.dataset.sugq; query = sugq.dataset.sugq.toLowerCase(); anboSaveSearch(sugq.dataset.sugq); syncSearchUrl(); hideSuggest(); renderProducts(); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
   /* ---------- P1: order cancel / invoice / address book / notifications ---------- */
   var co = e.target.closest("[data-cancel-order]"); if(co){ anboCancelOrder(co.dataset.cancelOrder, co); return; }
   var iv = e.target.closest("[data-invoice-order]"); if(iv){ openInvoice(iv.dataset.invoiceOrder); return; }
@@ -2490,8 +3065,8 @@ document.addEventListener("click", function(e){
   if(!e.target.closest(".searchwrap")) hideSuggest();
 });
 document.getElementById("catNav").addEventListener("click", function(e){ var b=e.target.closest("[data-cat]"); if(b) setCat(b.dataset.cat); });
-document.getElementById("searchForm").addEventListener("submit", function(e){ e.preventDefault(); hideSuggest(); document.getElementById("products").scrollIntoView({behavior:"smooth"}); });
-searchInput.addEventListener("input", function(e){ query = e.target.value.trim().toLowerCase(); renderProducts(); showSuggest(); });
+document.getElementById("searchForm").addEventListener("submit", function(e){ e.preventDefault(); anboSaveSearch(searchInput.value); syncSearchUrl(); hideSuggest(); document.getElementById("products").scrollIntoView({behavior:"smooth"}); });
+searchInput.addEventListener("input", function(e){ query = e.target.value.trim().toLowerCase(); renderProducts(); showSuggest(); syncSearchUrl(); });
 searchInput.addEventListener("focus", showSuggest);
 document.getElementById("priceChips").addEventListener("click", function(e){ var b=e.target.closest("[data-price]"); if(!b) return; priceChip=b.dataset.price; document.querySelectorAll("#priceChips button").forEach(function(x){x.classList.toggle("on", x===b);}); renderProducts(); });
 document.getElementById("sortSel").addEventListener("change", function(e){ sortBy=e.target.value; renderProducts(); });
@@ -2512,6 +3087,13 @@ function ensureDrawers(){
   document.querySelectorAll('input[name="zone"]').forEach(function(r){ r.addEventListener("change", function(){ zone = r.value; renderCart(); }); });
   document.querySelectorAll('input[name="pay"]').forEach(function(r){ r.addEventListener("change", syncManualPay); });
   syncManualPay();
+  /* P2: district bodle delivery-zone fee bodlay (fillCheckoutSummary + renderCart); slot bodle summary-r slot line bodlay. */
+  var coDist = document.getElementById("coDist");
+  if(coDist) coDist.addEventListener("change", function(){ fillCheckoutSummary(); renderCart(); });
+  document.querySelectorAll('input[name="slot"]').forEach(function(r){ r.addEventListener("change", function(){ fillCheckoutSummary(); }); });
+  var fp = document.getElementById("coForgetPay");
+  if(fp) fp.addEventListener("click", function(){ var pe = document.querySelector('input[name="pay"]:checked'); anboForgetPayNumber(pe ? pe.value : ""); });
+  if(window.applyLang) applyLang(); /* P2: cloned drawer-er data-i18n apply. */
   document.querySelectorAll('input[name="pay"]').forEach(function(r){ r.addEventListener("change", syncManualPay); });
   document.getElementById("promoBtn").addEventListener("click", applyPromo);
   document.getElementById("toCheckoutBtn").addEventListener("click", function(){
@@ -2694,8 +3276,9 @@ function syncHeroText(){
   if(t && typeof st.heroTitle === "string" && st.heroTitle.trim()) t.textContent = st.heroTitle.trim();
   if(l && typeof st.heroLead === "string" && st.heroLead.trim()) l.textContent = st.heroLead.trim();
 }
-window.__anboRender = function(){ syncFreeDeliveryText(); syncHeroText(); syncCatNav(); syncTopPromo(); renderCats(); renderBanners(); syncSearchCopy(); renderVouchers(); renderFlash(); renderProducts(); renderUnder(); renderCart(); renderRecent(); renderNotifs(); /* Buy Now drawer fix 2 (2026-11-21): catalog ele recent row-o abar render hobe — na hole guard-er jonno prothom load-e row khali theke jeto. */ if(window.renderShopCoupons) window.renderShopCoupons(); if(window.renderMega) window.renderMega(); var pcs = document.getElementById("prodCountStat"); if(pcs) pcs.textContent = PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId); }).length + "+"; };
+window.__anboRender = function(){ syncFreeDeliveryText(); syncHeroText(); syncCatNav(); syncTopPromo(); renderCats(); renderBanners(); syncSearchCopy(); renderVouchers(); renderFlash(); renderProducts(); renderUnder(); renderNewArrivals(); renderBestSellers(); renderTopRated(); renderCart(); renderRecent(); renderNotifs(); /* Buy Now drawer fix 2 (2026-11-21): catalog ele recent row-o abar render hobe — na hole guard-er jonno prothom load-e row khali theke jeto. */ if(window.renderShopCoupons) window.renderShopCoupons(); if(window.renderMega) window.renderMega(); var pcs = document.getElementById("prodCountStat"); if(pcs) pcs.textContent = PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId); }).length + "+"; };
 window.__anboRender();
+applyLang(); /* P2: language switcher — prothom load-e saved choice apply. */
 </script>
 
 <script>
@@ -2782,7 +3365,11 @@ function anboMapProductRow(r){
     warranty:r.warranty||"", img:(imgs.length?imgs[0]:""), images:imgs, desc:r.desc||r.description||"",
     specs:Array.isArray(r.specs)?r.specs:[], bundleWith:Array.isArray(r.bundle_with)?r.bundle_with:[],
     packSize:(r.pack_size!=null && r.pack_size!==""?Number(r.pack_size):(r.packSize!=null?Number(r.packSize):null)), unit:r.unit||r.pack_unit||"", packaging:r.packaging||"",
-    createdAt:typeof r.created_at==="number"?r.created_at:0, megaDeal:!!(r.mega_deal||r.megaDeal) };
+    /* P2: created_at ISO string-o parse hoy (age shudhu number nile 0 hoto — "New arrivals" sort kaj korto na). Variants + sale window — column na thakle khali/null, ager motoi. */
+    createdAt: r.created_at ? (typeof r.created_at==="number" ? r.created_at : (Date.parse(r.created_at)||0)) : 0,
+    variants: Array.isArray(r.variants) ? r.variants : [],
+    saleStart: r.sale_start||r.saleStart||null, saleEnd: r.sale_end||r.saleEnd||null,
+    megaDeal:!!(r.mega_deal||r.megaDeal) };
 }
 function anboMapCouponRow(r){
   if(!r || !r.code) return null;
@@ -2820,6 +3407,7 @@ function anboOrderFromRow(row, user){
     payment: { method:(row.payment_method==="COD" ? "ক্যাশ অন ডেলিভারি" : (row.payment_method||"")), status:row.payment_status||"", transactionId:row.transaction_id||null, senderNumber:(meta&&meta.senderNumber)||null },
     amounts: amounts,
     promoCode: row.promo_code||null, zone: (meta&&meta.zone)||"", status: row.status||"AwaitingAdmin",
+    deliverySlot: (meta&&meta.deliverySlot)||(row.delivery_slot||"anytime"),
     statusHistory: [], placedAt: row.created_at||new Date().toISOString(),
     estimatedDelivery: (meta&&meta.estimatedDelivery)||"", source:"supabase", userId: row.customer_id||null, userEmail: user ? user.email : "" };
 }
@@ -2864,7 +3452,9 @@ var ANBOBD_DB = {
       /* P1 (category settings, Admin contract — key names EXACT):
          category_<slug>_label / category_<slug>_enabled — DB row theke ase
          (niche). Default label Bangla, default enabled=true. */
-      catLabels:{}, catEnabled:{} };
+      catLabels:{}, catEnabled:{},
+      /* P2 (2026-11-23): delivery zones — Admin contract: delivery_zone_<district-slug>_fee. Na thakle default fee. */
+      zoneFees:{} };
     var dbKeys = {}; /* kon key asol DB row theke eseche — DB value localStorage-er cheye age pay */
     function toBool(v, d){ if(typeof v==="boolean") return v; if(v==="true") return true; if(v==="false") return false; return d; }
     try{
@@ -2915,6 +3505,9 @@ var ANBOBD_DB = {
         if(row.key==="category_beauty_enabled") out.catEnabled.beauty=toBool(v,true);
         if(row.key==="category_grocery_enabled") out.catEnabled.grocery=toBool(v,true);
         if(row.key==="category_sports_enabled") out.catEnabled.sports=toBool(v,true);
+        /* P2 (2026-11-23): delivery zones — Admin contract: delivery_zone_<district-slug>_fee (number). Na thakle default fee. */
+        var zm = String(row.key||"").match(/^delivery_zone_(.+)_fee$/);
+        if(zm && !isNaN(+v)) out.zoneFees[zm[1]] = +v;
         }); }
       }catch(e){}
     }
@@ -3023,6 +3616,7 @@ var ANBOBD_DB = {
     var metaItem = { meta:true, productId:null, sku:"", name:"", qty:0, unitPrice:0, lineTotal:0, sellerId:null,
       localId: order.id, amounts: order.amounts, note: order.customer.note||"",
       senderNumber: order.payment.senderNumber||null, zone: order.zone||"",
+      deliverySlot: order.deliverySlot||"anytime",
       estimatedDelivery: order.estimatedDelivery||"" };
     /* DB check constraint orders_payment_method_check শুধুমাত্র 'COD', 'bKash',
        'Nagad', 'Card' মানে — 'Rocket' যোগ করতে SQL migration লাগবে (নিচে দেখুন)।
@@ -3046,6 +3640,7 @@ var ANBOBD_DB = {
       payment_method: dbPayMethod, payment_status: order.payment.status,
       transaction_id: order.payment.transactionId||null,
       total: order.amounts.total,
+      delivery_slot: order.deliverySlot||"anytime",
       promo_code: order.promoCode||null, status: order.status,
       items: order.items.concat([metaItem])
     };
@@ -3241,6 +3836,7 @@ function applyPlatformSettings(){
   if(window.renderProducts) renderProducts();
   if(window.renderMega) renderMega();
   if(window.renderCart) renderCart();
+  if(window.applyLang) applyLang(); /* P2: settings load-er por hero override check kore language apply. */
 }
 window.applyPlatformSettings = applyPlatformSettings;
 ANBOBD_DB.loadMegaRequests = async function(shopId){
@@ -3621,7 +4217,7 @@ function refreshPanels(){
   var u = window.__anboCurrentUser || null;
   var role = (u && u.role) ? String(u.role).trim().toLowerCase() : "";
   var ab = document.getElementById("accountBtn");
-  if(ab) ab.textContent = window.__anboAuthPending ? "👤 …" : (u ? "👤 "+u.name.split(" ")[0]+" • "+(role==="seller"?"Seller":role==="admin"?"Admin":"Customer") : "👤 লগইন / সাইন আপ");
+  if(ab) ab.textContent = window.__anboAuthPending ? "👤 …" : (u ? "👤 "+u.name.split(" ")[0]+" • "+(role==="seller"?"Seller":role==="admin"?"Admin":"Customer") : t("loginSignup"));
   /* Footer: Seller Center / Admin Panel বোতাম শুধু matching logged-in role দেখবে — guest/customer-এর জন্য সবসময় hidden */
   var fsb = document.getElementById("footSellerBtn");
   if(fsb){ var showSeller = (role==="seller"); fsb.hidden = !showSeller; fsb.style.display = showSeller ? "block" : "none"; }
@@ -3752,15 +4348,17 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var mine = ANBOBD_STORE.orders.filter(function(o){ return o.userId === u.id; });
     document.getElementById("auMyOrders").innerHTML = mine.length ? mine.slice().reverse().map(function(o){
       var fm = FLOW_META[o.status] || { label:o.status, cls:"st-wait" };
+      var filed = window.__anboDisputesFiled && (window.__anboDisputesFiled[o.id] || (o.supabaseId && window.__anboDisputesFiled[o.supabaseId]));
       return '<div class="ocard"><div class="ohead"><span class="oid">' + o.id + '</span><span class="st ' + fm.cls + '">' + fm.label + '</span><span style="margin-left:auto;font-weight:800">' + fmt(o.amounts.total) + '</span></div>' +
-        '<div class="oitems">' + o.items.map(function(it){ return "• " + esc(it.name) + " × " + it.qty + " — " + fmt(it.lineTotal); }).join("<br>") + '</div>' +
-        '<div class="ocust">📅 আনুমানিক ডেলিভারি: ' + o.estimatedDelivery + ' • 💵 ' + o.payment.method + (o.payment.transactionId ? '<br>📱 Transaction ID: <b>' + esc(o.payment.transactionId) + '</b> — ' + anboPayLabel(o) : '') + '</div>' +
-        '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">📦 ট্র্যাক করুন</button>' + ' <button class="btn-sec" data-invoice-order="' + o.id + '">🧾 ইনভয়েস</button>' + (o.status === "AwaitingAdmin" ? ' <button class="btn-sec" data-cancel-order="' + o.id + '">❌ বাতিল করুন</button>' : '') + (o.status === "Delivered" ? ' <button class="btn-sec" data-return-order="' + o.id + '">↩️ Return আবেদন</button>' + reviewBtnsFor(o, u) : '') + '</div></div>';
+        '<div class="oitems">' + o.items.map(function(it){ return "• " + esc(it.name) + (it.variant ? " (" + esc(it.variant) + ")" : "") + " × " + it.qty + " — " + fmt(it.lineTotal); }).join("<br>") + '</div>' +
+        '<div class="ocust">📅 আনুমানিক ডেলিভারি: ' + o.estimatedDelivery + (o.deliverySlot && o.deliverySlot !== "anytime" ? ' • 📅 স্লট: ' + esc(anboSlotLabel(o.deliverySlot)) : '') + ' • 💵 ' + o.payment.method + (o.payment.transactionId ? '<br>📱 Transaction ID: <b>' + esc(o.payment.transactionId) + '</b> — ' + anboPayLabel(o) : '') + '</div>' +
+        '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">📦 ট্র্যাক করুন</button>' + ' <button class="btn-sec" data-invoice-order="' + o.id + '">🧾 ইনভয়েস</button>' + (o.status === "AwaitingAdmin" ? ' <button class="btn-sec" data-cancel-order="' + o.id + '">❌ বাতিল করুন</button>' : '') + (o.status === "Delivered" ? ' <button class="btn-sec" data-return-order="' + o.id + '">↩️ Return আবেদন</button>' + ' <button class="btn-sec" data-dispute-order="' + o.id + '"' + (filed ? ' disabled' : '') + '>' + (filed ? '⚖️ Dispute জমা দেওয়া হয়েছে' : '⚖️ Dispute') + '</button>' + reviewBtnsFor(o, u) : '') + '</div></div>';
     }).join("") : (window.__anboMyOrdersLoaded ? '<p style="color:var(--muted);margin:0;line-height:1.6">এখনো কোনো অর্ডার নেই — কেনাকাটা করে অর্ডার করলেই তা এখানে দেখা যাবে।</p>' : '<p style="color:var(--muted);margin:0;line-height:1.6">… লোড হচ্ছে</p>');
     var lbEl = document.getElementById("auLoyalty");
     if(lbEl){ var lb3 = loyaltyBalance(), cfg3 = loyaltyCfg(); lbEl.innerHTML = '<div class="ocard"><div style="font-size:1.05rem"><b>'+lb3.balance+' point</b> <span style="color:var(--muted);font-size:.85rem">(earned '+lb3.earned+' · used '+lb3.spent+')</span></div><div style="font-size:.88rem;color:var(--muted);margin-top:4px">Delivered order e proti ৳100 e '+cfg3.per100+' point — '+cfg3.points+' point = ৳'+cfg3.value+' discount, checkout e use kora jay.</div></div>'; }
     var msgEl = document.getElementById("auMessages");
     if(msgEl){ msgEl.innerHTML = '<p style="color:var(--muted);margin:0">লোড হচ্ছে…</p>'; loadCustomerMessages(u); }
+    loadMyDisputes(u); /* P2: Dispute file kora order-der button state. */
     var sf2 = document.getElementById("auSupportForm"); if(sf2 && !sf2.__bound){ sf2.__bound = true; sf2.addEventListener("submit", function(e){ e.preventDefault(); submitSupportTicket(u); }); }
     var ef2 = document.getElementById("auEditForm"); if(ef2 && !ef2.__bound){ ef2.__bound = true; ef2.addEventListener("submit", function(e){ e.preventDefault(); saveProfileEdit(u); }); }
     var pf2 = document.getElementById("auPassForm"); if(pf2 && !pf2.__bound){ pf2.__bound = true; pf2.addEventListener("submit", function(e){ e.preventDefault(); changeAccountPassword(u); }); }
@@ -3786,6 +4384,27 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       renderNotifs();
       el.innerHTML = r.data.map(function(m){ return '<div class="ocard"><div style="font-size:.88rem;color:var(--muted)">' + escHtml(m.created_at ? String(m.created_at).slice(0, 10) : "") + ' · AnboBD Admin</div><p style="margin:6px 0 0;line-height:1.6">' + escHtml(m.message || "") + '</p></div>'; }).join("");
     }catch(e){ el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; }
+  }
+  /* P2 (2026-11-23): Dispute file kora order — My Orders-er Dispute button
+     "জমা দেওয়া হয়েছে" dekhabe. Table na thakle / RLS block hole chupchap
+     skip (button thakbe, form-e gele honest note dekhabe). */
+  async function loadMyDisputes(u){
+    if(!u || !anboIsUuid(u.id)) return;
+    var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
+    if(!sb) return;
+    try{
+      var r = await sb.from("disputes").select("order_id").eq("customer_id", u.id);
+      if(r.error || !r.data) return;
+      var marked = false;
+      (r.data||[]).forEach(function(row){
+        if(row.order_id && !window.__anboDisputesFiled[row.order_id]){ window.__anboDisputesFiled[row.order_id] = true; marked = true; }
+      });
+      if(marked){
+        ANBOBD_STORE.orders.forEach(function(o){ if(o.supabaseId && window.__anboDisputesFiled[o.supabaseId]) window.__anboDisputesFiled[o.id] = true; });
+        var mine = document.getElementById("auMyOrders");
+        if(mine && window.__anboCurrentUser) renderAccount();
+      }
+    }catch(e){}
   }
 
   /* P1-20 (2026-11-21): customer support ticket — support_tickets e lekhe.
@@ -3940,6 +4559,14 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       var o2 = ANBOBD_STORE.orders.filter(function(x){ return x.id === rt.getAttribute("data-return-order"); })[0];
       closeAll();
       if(o2){ openModalEl("trackModal"); document.getElementById("trackInput").value = o2.id; renderTracking(o2); anboStartReturn(o2); }
+      return;
+    }
+    /* P2: Dispute — Delivered order theke track modal khule dispute form. */
+    var dp = e.target.closest("[data-dispute-order]");
+    if(dp){
+      var o3 = ANBOBD_STORE.orders.filter(function(x){ return x.id === dp.getAttribute("data-dispute-order"); })[0];
+      closeAll();
+      if(o3){ openModalEl("trackModal"); document.getElementById("trackInput").value = o3.id; renderTracking(o3); anboStartDispute(o3); }
       return;
     }
     var rvb = e.target.closest("[data-review-product]");
@@ -4114,7 +4741,24 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         })();
       }
       var sq = params.get("q");
-      if(sq){ var si = document.getElementById("searchInput"); if(si){ si.value = sq; query = sq.trim().toLowerCase(); renderProducts(); var pe = document.getElementById("products"); if(pe) pe.scrollIntoView({behavior:"smooth"}); } }
+      if(sq){ var si = document.getElementById("searchInput"); if(si){ si.value = sq; query = sq.trim().toLowerCase(); anboSaveSearch(sq); renderProducts(); var pe = document.getElementById("products"); if(pe) pe.scrollIntoView({behavior:"smooth"}); } }
+      /* P2: #compare — product page theke tulona khulte. */
+      if(String(location.hash || "") === "#compare"){
+        var triesC = 0;
+        (function openCompareWhenReady(){
+          if(typeof openCompare === "function"){ openCompare(); return; }
+          if(triesC++ < 20){ setTimeout(openCompareWhenReady, 500); }
+        })();
+      }
+      /* P2: #wishlist=<id1>,<id2> — shared wishlist view (read-only); catalog load howar por khulbe. */
+      if(String(location.hash || "").indexOf("#wishlist=") === 0){
+        var wids = decodeURIComponent(String(location.hash).slice("#wishlist=".length)).split(",").map(function(s){ return s.trim(); }).filter(Boolean);
+        var triesSh = 0;
+        (function openSharedWhenReady(){
+          if(typeof catalogLoading !== "undefined" && catalogLoading){ if(triesSh++ < 40){ setTimeout(openSharedWhenReady, 500); return; } }
+          if(typeof openSharedWishlist === "function") openSharedWishlist(wids);
+        })();
+      }
       if(params.get("checkout") === "1"){
         var tries = 0;
         (function openWhenReady(){
