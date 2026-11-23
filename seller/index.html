@@ -2316,6 +2316,64 @@
       return false;
     }
   }
+  /* Master propagation (2026-11-23): seller advance sudhu sub_orders
+     likhto, orders (master) AdminConfirmed-e atke thakto — customer
+     kokhono Delivered dekhto na, return form-o ashto na. Tai sub-order
+     save howar por master-o egiye dewa hoy — sudhu Packed/Shipped/
+     Delivered (master status check-e ReadyToShip nei, tai Prepare step
+     master chhobe na). Multi-seller safety: master-er sob sub-order
+     notun status-e (ba tar cheye egiye) na thakle master egobe na. */
+  var MASTER_RANK = { "AwaitingAdmin":0, "AdminConfirmed":1, "ReadyToShip":2, "Packed":3, "Shipped":4, "Delivered":5 };
+  var MASTER_PROPAGATE = { "Packed":"Packed", "Shipped":"Shipped", "Delivered":"Delivered" };
+  async function sbPropagateMasterStatus(o, displayStatus){
+    if (!supabaseConnected || !supabase || !o || !o.id) return;
+    var dbStatus = MASTER_PROPAGATE[displayStatus];
+    if (!dbStatus) return; /* Ready to Ship / onno step master chhobe na */
+    /* Master already egiye thakle (onno seller / ager advance) kichu korar nei. */
+    if (o.masterStatus && MASTER_RANK[o.masterStatus] != null && MASTER_RANK[o.masterStatus] >= MASTER_RANK[dbStatus]) return;
+    try {
+      /* Sibling sub-order gulo: sobai notun status-e (ba egiye) ache kina.
+         RLS-e seller sudhu nijer shop-er row dekhte pay, tai master-er
+         items theke kotogulo alada dokan (sub-order) thakar kotha seta
+         gune miliye newa hoy — kom row dekhle jachai osompurno, master
+         egobe na. Read fail hole master update skip — sub-order-e badha noy. */
+      var sib = await supabase.from('sub_orders').select('id,status').eq('order_id', o.id);
+      if (sib.error || !sib.data) return;
+      var rows = sib.data;
+      if (!rows.length) return;
+      var expected = 0;
+      try {
+        var mo = await supabase.from('orders').select('id,status,items').eq('id', o.id).single();
+        if (mo.error || !mo.data) return;
+        if (MASTER_RANK[mo.data.status] != null && MASTER_RANK[mo.data.status] >= MASTER_RANK[dbStatus]) { o.masterStatus = mo.data.status; return; }
+        var seen = {};
+        (Array.isArray(mo.data.items) ? mo.data.items : []).forEach(function(it){
+          if (!it || it.meta) return;
+          var sid = it.sellerId != null ? String(it.sellerId) : (it.shop_id != null ? String(it.shop_id) : (it.seller_id != null ? String(it.seller_id) : ""));
+          if (sid && !seen[sid]) { seen[sid] = true; expected++; }
+        });
+      } catch(e){ return; }
+      if (expected > 0 && rows.length < expected) return; /* onno dokan-er sub-order dekha jachche na — jachai osompurno */
+      for (var i = 0; i < rows.length; i++) {
+        var st = String(rows[i].status || "");
+        if (st === "Cancelled") return; /* cancel howa order master egobe na */
+        if (MASTER_RANK[st] == null || MASTER_RANK[st] < MASTER_RANK[dbStatus]) return;
+      }
+      var up = await supabase.from('orders').update({ status: dbStatus }).eq('id', o.id).select('id');
+      if (up.error) {
+        toast("Master order " + (o.localId || o.id) + " online e update hoy ni — " + (up.error.message || "database error") + " · Sub-order save hoyeche, kintu customer ekhono " + dbStatus + " dekhbe na. Admin ke janaben.");
+        return false;
+      }
+      if (!up.data || !up.data.length) {
+        toast("Master order " + (o.localId || o.id) + " update hoy ni (permission nei mone hochche) — sub-order save hoyeche, kintu customer ekhono " + dbStatus + " dekhbe na. Admin ke janaben.");
+        return false;
+      }
+      o.masterStatus = dbStatus;
+      return true;
+    } catch(e) {
+      return; /* master propagate fail: sub-order-er kaj-e badha noy */
+    }
+  }
   async function advanceOrder(id){
     var s = me(); if (!s) return;
     var o = ownOrders().filter(function(x){ return String(x.id)===String(id) || String(x.subId)===String(id); })[0]; if (!o) return;
@@ -2325,7 +2383,7 @@
     if (o.status==="Packed" && !o.trackingId) {
       openModal('<h2>Ship — Tracking ID din</h2><div class="msub">' + esc(o.subId || id) + ' courier e diye tracking ID ta likhun</div><div class="field"><label>Courier tracking ID</label><input id="trkId" placeholder="e.g. PTH-882910" /></div><p class="err" id="trkErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="trkCancel" type="button">Cancel</button><button class="btn" id="trkGo" type="button">Confirm Shipped</button></div>', function(){
         $("trkCancel").addEventListener("click", closeModal);
-        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; var saved = await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); if (saved !== false) toast(id + " shipped — Tracking: " + v); });
+        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; var saved = await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); if (saved !== false) { toast(id + " shipped — Tracking: " + v); await sbPropagateMasterStatus(o, "Shipped"); } });
       });
       return;
     }
@@ -2338,6 +2396,7 @@
       else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
       else if (o.status === "Delivered") { toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
       else toast(id + " ekhon " + o.status);
+      await sbPropagateMasterStatus(o, o.status);
     }
     renderAll();
     closeDrawer();
