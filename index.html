@@ -2553,6 +2553,20 @@ async function anboCancelOrder(orderId, btn){
      .select("id") dewa hoyeche karon RLS-blocked UPDATE 200 + 0 row dey,
      error dey na — khali data manei row flip hoy ni (Admin resend-er motoi). */
   var subWarn = false, subErr = "";
+  /* P3 fix (2026-11-23): guest-er cancel — anon-er orders/sub_orders UPDATE
+     policy nei, tai direct write 0 row flip koreo "success" dekhabe (fake
+     success). Guest hole SECURITY DEFINER RPC anbo_cancel_order diye cancel
+     hobe (phone-verified, master + sub-order ek sathe, AwaitingAdmin holei).
+     Signed-in owner-er direct path ager motoi (live-proven). */
+  var useRpc = !window.__anboCurrentUser && anboIsUuid(oid);
+  if(useRpc){
+    try{
+      var rc = await sb.rpc('anbo_cancel_order', { p_order_id: oid, p_phone: (o.customer && o.customer.phone) || "" });
+      if(rc.error){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml(rc.error.message || "database error")+")"); return; }
+      if(!rc.data){ fail("ডাটাবেসে লেখা যায়নি (অর্ডারটি বাতিল করা যায়নি — ফোন নম্বর মেলেনি বা Admin ইতিমধ্যে কনফার্ম করেছে)"); return; }
+    }catch(e){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml((e && e.message) ? e.message : "exception")+")"); return; }
+  }
+  if(!useRpc){
   /* P3 (2026-11-23): order-er kono sub-order row na thakle cascade-e kichu
      update korar nei — seta failure na, warning toast-o asbe na. Age row
      ache kina check kori; row thaklei update chole. Select fail hole
@@ -2563,14 +2577,21 @@ async function anboCancelOrder(orderId, btn){
   else {
     try{ var r2 = await sb.from("sub_orders").update({ status:"Cancelled" }).eq("order_id", oid).select("id"); if(r2.error || !r2.data || !r2.data.length){ subWarn = true; if(r2.error) subErr = " (DB: " + escHtml((r2.error.code ? r2.error.code + " — " : "") + (r2.error.message || "database error")) + ")"; } }catch(e){ subWarn = true; subErr = " (DB: " + escHtml((e && e.message) ? e.message : "exception") + ")"; }
   }
-  var r1 = await sb.from("orders").update({ status:"Cancelled" }).eq("id", oid);
-  if(r1.error){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml(r1.error.message || "database error")+")"); return; }
+  /* P3 fix: master update-o .select("id") diye verify — RLS-blocked UPDATE
+     200 + 0 row dey, error dey na; khali data manei row flip hoy ni, tai
+     seta fail (age ekhane fake success hoto). */
+  var r1 = await sb.from("orders").update({ status:"Cancelled" }).eq("id", oid).select("id");
+  if(r1.error || !r1.data || !r1.data.length){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml((r1.error && r1.error.message) || "অর্ডারটি খুঁজে পাওয়া যায়নি")+")"); return; }
+  }
   o.status = "Cancelled"; if(window.__anboPersistState) window.__anboPersistState();
   /* P1 follow-up (2026-11-23): undo this session's optimistic stock reservation (see finishCheckoutUI) — the order never sold, so stock returns. Only reservations made in THIS session exist in __anboReservedStock, so a cancel days later cannot inflate stock. */
   var resv = (window.__anboReservedStock || {})[orderId];
   if(resv){ resv.forEach(function(rv){ var p = P(rv.id); if(p) p.stockQty = (p.stockQty || 0) + rv.qty; }); delete window.__anboReservedStock[orderId]; if(window.__anboRender) window.__anboRender(); }
   toast("✅ অর্ডার <b>"+escHtml(orderId)+"</b> বাতিল হয়েছে"+(subWarn?" — সেলারের কপি আপডেট হয়নি (সেলারের কাছে এখনো pending দেখাতে পারে), Admin Orders থেকে ঠিক করে নেবে"+subErr:""));
   if(window.renderAccount) renderAccount();
+  /* P3 fix: Track modal-e ei order khola thakle view refresh koro — guest-er
+     khetre Track-i ekmatro view, My Orders nei. */
+  try{ var tr = document.getElementById("trackResult"); if(tr && tr.innerHTML.indexOf(o.id) !== -1) renderTracking(o); }catch(e){}
 }
 /* P3 (2026-11-23): Buy again — Delivered order-er item-gulo ager poriman-e
    cart-e firiye dao, AJKER dam-e (dam cart-e save hoy na — cartUnitPrice
@@ -2934,6 +2955,14 @@ function renderTracking(order){
     html += '<div class="paystatus">📱 <b>ম্যানুয়াল পেমেন্ট ('+escHtml(order.payment.method)+')</b> — Transaction ID: <b>'+escHtml(order.payment.transactionId)+'</b>'+(order.payment.senderNumber ? ' • প্রেরকের নম্বর: '+escHtml(order.payment.senderNumber) : '')+'<br>'+_payTxt+'</div>';
   } else if(order.payment && order.payment.method==="ক্যাশ অন ডেলিভারি"){
     html += '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">💵 ক্যাশ অন ডেলিভারি — পণ্য হাতে পেয়ে কুরিয়ারকে <b>'+fmt(order.amounts.total)+'</b> পরিশোধ করুন।</div>';
+  }
+  /* P3 fix (2026-11-23): Track modal-e cancel — guest order My Orders-e
+     kokhono ase na, tai Track-i ekmatro poth. Sudhu AwaitingAdmin holei
+     button (Admin confirm korle ar cancel cholbe na). anboCancelOrder
+     reuse — document-level [data-cancel-order] delegation (My Orders-er
+     motoi two-step confirm + cascade + honest error). */
+  if(order.status === "AwaitingAdmin"){
+    html += '<div style="margin-top:14px"><button class="btn-sec" type="button" data-cancel-order="'+escHtml(order.id)+'">❌ বাতিল করুন</button><p style="font-size:.85rem;color:var(--muted);margin:6px 0 0;line-height:1.6">Admin কনফার্ম করার আগ পর্যন্ত বাতিল করা যাবে — বাতিল হলে সেলারের কাছেও আপডেট যাবে।</p></div>';
   }
   /* P1-13 — Return আবেদন (Delivered order, delivery-r return window-er moddhe;
      window + on/off Admin Settings theke: returns_enabled / return_window_days). */
@@ -3705,14 +3734,21 @@ var ANBOBD_DB = {
         }
       }
     }catch(e){ anboDbErr("পণ্যের তালিকা অনলাইন থেকে লোড করা যায়নি", e); }
-    /* coupons — DB row থাকলে hardcoded fallback-এর বদলে DB row */
+    /* coupons — DB row hardcoded platform voucher-er PORIPUROK, bodli na.
+       P3 fix (2026-11-23): age DB-te ekta row thaklei hardcoded ANBO10 /
+       MEGA150 / NEW200 / FREEDEL store theke muche jeto — collected list-e
+       terms asto na, apply-o hoto na. Ekhon DB row merge hoy (same code
+       thakle DB row jite — Admin-er edit-i source of truth). */
     try{
       var cp = await sb.from('coupons').select('*');
       if(cp.error) throw cp.error;
       if(cp.data && cp.data.length){
         var plat = [], shopC = [];
         cp.data.forEach(function(r){ var c = anboMapCouponRow(r); if(!c) return; (c.sellerId ? shopC : plat).push(c); });
-        ANBOBD_STORE.coupons.length = 0; plat.forEach(function(c){ ANBOBD_STORE.coupons.push(c); });
+        plat.forEach(function(c){
+          var ex = ANBOBD_STORE.coupons.filter(function(x){ return x.code === c.code; })[0];
+          if(ex){ for(var k in c) ex[k] = c[k]; } else ANBOBD_STORE.coupons.push(c);
+        });
         ANBOBD_STORE.shopCoupons.length = 0; shopC.forEach(function(c){ ANBOBD_STORE.shopCoupons.push(c); });
       }
     }catch(e){ anboDbErr("কুপন অনলাইন থেকে লোড করা যায়নি", e); }
@@ -4181,22 +4217,32 @@ ANBOBD_DB.findOrderForTracking = async function(rawId, phone){
   var hasId = !!id;
   try{
     if(anboIsUuid(id)){
+      /* P3 fix (2026-11-23): UUID + phone — direct orders query RLS-e block
+         hoy (onno customer-er row signed-in user-o porte pare na, anon to
+         parbei na), tai live-e UUID + thik phone-eo not-found asto. ANBO
+         branch-er motoi SECURITY DEFINER RPC anbo_track_order diye khujo —
+         RPC-ti (extended) orders.id = p_local_id milay, phone check ager
+         motoi server-side-e hoy. Phone chara RPC dakbo na — tokhon sudhu
+         ei session/account-er nijer order (nicher local path). */
+      if(normPhone){
+        try{
+          var rpcU = await sb.rpc('anbo_track_order', { p_local_id: id, p_phone: normPhone });
+          if(!rpcU.error && rpcU.data && rpcU.data.length) return this._adoptTrackedOrder(rpcU.data[0]);
+        }catch(e){ console.warn("Track-order RPC unavailable:", e); }
+        return null;
+      }
       var q = sb.from('orders').select('*').eq('id', id);
-      if(normPhone) q = q.eq('customer_phone', normPhone);
       var r = await q.limit(1);
       if(!r.error && r.data && r.data.length){
-        /* P3 (2026-11-23): UUID branch-eo ANBO branch-er moto phone check —
-           phone type kora thakle seta miltei hobe (upore query-tei filter);
-           phone NA type korle shudhu ei session/account-er nijer order
-           ferot jabe — onno customer-er order kokhono na. */
-        if(normPhone) return this._adoptTrackedOrder(r.data[0]);
+        /* Phone deoa hoy ni — sudhu ei session/account-er nijer order
+           ferot jabe; onno customer-er order kokhono na. */
         var row = r.data[0];
         var local = ANBOBD_STORE.orders.filter(function(o){ return String(o.supabaseId||"")===String(row.id); })[0];
         if(local && isOwnSessionOrder(local)) return local;
         var cu = window.__anboCurrentUser;
         if(cu && row.customer_id && String(row.customer_id)===String(cu.id)) return this._adoptTrackedOrder(row);
-        return null;
       }
+      return null;
     }
     /* NEW ANBO-number branch: "#ANBO366551" sudhu items jsonb-er meta.localId-te
        thake (orders table-e er kono column nei), ar orders table-e anon SELECT
@@ -4616,7 +4662,9 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     if(!codes.length){ el.innerHTML = '<p class="muted" style="font-size:.9rem;margin:0">এখনো কোনো ভাউচার সংগ্রহ করেননি — ভাউচার সেকশন থেকে সংগ্রহ করুন।</p>'; return; }
     el.innerHTML = codes.map(function(code){
       var c = findCouponAny(code);
-      var terms = c ? voucherTerms(c) : "";
+      /* P3 fix: terms khali hole desc fallback — kono collected voucher-i
+         sudhu code hisebe dekhabe na (shop coupon-er expiry/max na thakleo). */
+      var terms = c ? (voucherTerms(c) || (c.desc || "")) : "";
       var lbl = c ? (c.label||c.code) : code;
       return '<div class="ocard"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><b>'+escHtml(lbl)+'</b><span class="vcode">'+escHtml(code)+'</span></div>'+(terms?'<div style="font-size:.85rem;color:var(--muted);margin-top:4px">'+escHtml(terms)+'</div>':'')+'<div style="margin-top:8px"><button class="btn-sec" type="button" data-voucher="'+escHtml(code)+'">কার্টে প্রয়োগ করুন</button></div></div>';
     }).join("");
