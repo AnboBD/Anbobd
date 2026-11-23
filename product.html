@@ -361,17 +361,16 @@ function freeDeliveryText(){
 var LS_PREFIX = "anbobd-state-";
 function cartStateKey(){
   /* Signed-in session thakle storefront loadState(user.id) use kore; tai
-     ekhaneo Supabase session token theke user id ber kori. Na pele "guest". */
+     ekhaneo Supabase session token theke user id ber kori. Na pele "guest".
+     Storefront-er Supabase client-er storageKey "anbobd-storefront-auth"
+     (index.html) — default "sb-<ref>-auth-token" key ar bebohar hoy na,
+     tai oita porle sob somoy "guest" ashto. */
   try{
-    var url = ANBOBD_SUPABASE.url || "";
-    var ref = url.replace(/^https?:\/\//, "").split(".")[0];
-    if(ref){
-      var raw = localStorage.getItem("sb-" + ref + "-auth-token");
-      if(raw){
-        var sess = JSON.parse(raw);
-        var uid = (sess && sess.user && sess.user.id) || (sess && sess.currentSession && sess.currentSession.user && sess.currentSession.user.id);
-        if(uid) return String(uid);
-      }
+    var raw = localStorage.getItem("anbobd-storefront-auth");
+    if(raw){
+      var sess = JSON.parse(raw);
+      var uid = (sess && sess.user && sess.user.id) || (sess && sess.currentSession && sess.currentSession.user && sess.currentSession.user.id);
+      if(uid) return String(uid);
     }
   }catch(e){}
   return "guest";
