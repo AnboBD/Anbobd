@@ -1210,7 +1210,10 @@ function sbConfirmOrder(o){
   ensureSubOrders(o, "AdminConfirmed");
 }
 initSupabase();
-sbSettingsLoad(); /* Decision 6/7: DB settings (platform numbers, loyalty) load — localStorage fallback already applied. */
+/* Boot-order fix (2026-11-23): sbSettingsLoad() used to be called here, before
+   SETTINGS_SYNC_DEFS existed — it threw on undefined and died silently every
+   boot, so DB settings never loaded. It is now called after the settings
+   definitions (see below). */
 
 /* ==================== DATA — starts EMPTY. Nothing is seeded: every figure in
    this panel is derived from records the owner, sellers and customers actually
@@ -1258,7 +1261,10 @@ var sellerCoupons = [];
 /* Commission rules — three layers (Daraz/Amazon style): Global default → Per-category → Per-seller override. Effective rate = seller override if set, else category rate, else global. History is kept so past settlements never change retroactively. */
 var CATEGORY_COMMISSION = {electronics:10, fashion:12, shoesbags:11, home:10, beauty:10, grocery:8};
 var COMMISSION_HISTORY = [];
-loadLocalSettings();
+/* Boot-order fix (2026-11-23): loadLocalSettings() used to be called here,
+   before `var settings` existed — it threw on undefined and died silently
+   every boot, so localStorage settings never applied. It is now called after
+   the settings definitions (see below). */
 function effectiveCommissionRate(sellerObj, catKey){ if(!sellerObj) return settings?settings.defaultCommission:10; /* Re-audit fix (2026-11-21): a stored rate of 0 is the old DB default, never a deliberate 0% override — treat it as unset so the category/global rate applies. */ if(sellerObj.commissionRate!=null && sellerObj.commissionRate>0) return sellerObj.commissionRate; if(catKey && CATEGORY_COMMISSION[catKey]!=null) return CATEGORY_COMMISSION[catKey]; return settings?settings.defaultCommission:10; }
 /* Payout requests — seller ASKS, admin DECIDES (Approve / Hold / Mark Paid). Admin never invents a seller payout and never edits a seller's earnings; wallet balance is derived below. */
 var payoutRequests = [];
@@ -1471,9 +1477,23 @@ async function sbSettingsLoad(){
       d.set(sbSettingsVal(row.value));
       if (JSON.stringify(d.get()) !== before) changed = true;
     });
-    if (changed) saveLocalSettings().catch(function(){}); /* no toast gated on this; a sync failure already toasted via settingsSyncFailed */
+    if (changed){
+      saveLocalSettings().catch(function(){}); /* no toast gated on this; a sync failure already toasted via settingsSyncFailed */
+      /* Boot-order fix (2026-11-23): if the Settings view is already open when
+         the DB load lands, re-render it so the loaded values actually show. */
+      if (typeof currentView !== "undefined" && currentView === "settings" && typeof renderCurrent === "function") renderCurrent();
+    }
   }catch(e){ sbWarn("settings", e); }
 }
+
+/* Boot-order fix (2026-11-23): BOTH settings loads run HERE, after the
+   definitions they need (`var settings`, SETTINGS_SYNC_DEFS, sbSettingsVal,
+   saveLocalSettings). Called earlier (L1213/L1261) they threw on undefined
+   inside their silent try/catch blocks, so the panel showed hardcoded
+   defaults after every reload even though saves reached localStorage + the
+   DB. Order: localStorage first, then DB on top. */
+loadLocalSettings();
+sbSettingsLoad().catch(function(){});
 
 /* ---- Returns, courier, support, reviews, approvals, activity ---- */
 var returnRequests = [];
