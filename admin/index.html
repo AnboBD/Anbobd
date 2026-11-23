@@ -1100,7 +1100,7 @@ function uuidSellerGroups(o){
    rows) saw nothing. ensureSubOrders() updates the existing rows, or
    INSERTs the missing ones (real columns only, UUID shops only); a blocked
    insert is shown loudly with sbSaveFailed + a toast, never swallowed. */
-function ensureSubOrders(o, targetStatus){
+function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the drawer "Seller ke pathao" button: the master-confirm flow already toasts, so updateExisting toasts a success only when loud. */
   if (!o || !sbReady()) return;
   var orderId = o.supabaseId || o.id;
   var groups = uuidSellerGroups(o);
@@ -1144,18 +1144,44 @@ function ensureSubOrders(o, targetStatus){
   function afterWrite(){
     o._subs = null; /* getSubOrders() rebuilds from _realSubs next render */
     if (targetStatus === "AdminConfirmed") o.sentToSeller = true;
+    /* 2026-11-23: re-derive the seller-status line from the fresh rows —
+       the warning is computed at load time and was never refreshed after a
+       resend, so the drawer showed the "ekhono jay ni" warning next to a
+       "✓ Yes" flag. Only recompute on a PROVEN write (afterWrite runs
+       only after the row-count check passes). */
+    if (orderSentToSeller(o)){
+      if (o.status === "confirmed") o.sellerStatus = "Sent to seller — waiting for seller to pack";
+      else if (o.status === "packed") o.sellerStatus = "Seller packed — ready for rider pickup";
+      else if (o.status === "shipped") o.sellerStatus = "Seller handed to rider — in transit";
+      else if (o.status === "delivered") o.sellerStatus = "Seller shipped · Delivered";
+    } else if (o.status === "confirmed" || o.status === "packed" || o.status === "shipped" || o.status === "delivered"){
+      o.sellerStatus = "⚠ Sub-order ekhono seller er kache jay ni — 'Seller ke pathao' chap dao";
+    }
     renderAll();
     if ($("#orderDrawer").classList.contains("show")) openOrder(o.id);
   }
   function updateExisting(){
     /* Per-row update: alongside the status, (re)write each row's real
        commission_rate / commission_amount / seller_earning so rows stored
-       earlier with 0.00 get repaired when Admin confirms / resends. */
+       earlier with 0.00 get repaired when Admin confirms / resends.
+       2026-11-23 ROOT CAUSE (live-verified on #ANBO426233): an UPDATE that
+       matches 0 rows SUCCEEDS SILENTLY — PostgREST returns 200 with empty
+       data and no error. The Admin has NO UPDATE policy on sub_orders
+       (only update_seller, which the admin — not the seller — never
+       satisfies), so the resend flipped the drawer in-session and reverted
+       on reload, with no toast at all. The update MUST ask for the updated
+       rows back (.select("id")) and treat 0 rows as a FAILURE: honest
+       toast, NO local flip, NO afterWrite(). The durable fix is the
+       Supabase policy "sub_orders admin update" (see the SQL bundle);
+       until it exists, this at least fails loudly instead of lying. */
+    var noRowErr = function(){ return new Error("Sub-order update hoy ni — 0 row matched. Hoy row khuje pay ni, noy Admin UPDATE policy nei (Supabase dashboard e 'sub_orders admin update' policy lagbe)."); };
     var subs = (o._realSubs || []).slice();
     if (!subs.length){
-      sb.from("sub_orders").update({ status: targetStatus }).eq("order_id", orderId).then(function(r){
+      sb.from("sub_orders").update({ status: targetStatus }).eq("order_id", orderId).select("id").then(function(r){
         if (r && r.error){ sbSaveFailed("sub_orders", r.error); return; }
+        if (!r || !r.data || !r.data.length){ sbSaveFailed("sub_orders", noRowErr()); return; }
         afterWrite();
+        if (loud) toast("✓ Sub-order pathano hoyeche — <b>" + esc(o.localId || o.id) + "</b> ekhon Seller Center e dekhabe.");
       }).catch(function(e){ sbSaveFailed("sub_orders", e); });
       return;
     }
@@ -1164,7 +1190,11 @@ function ensureSubOrders(o, targetStatus){
       rs._pendingCommission = c;
       var q = sb.from("sub_orders").update({ status: targetStatus, commission_rate: c.rate, commission_amount: c.amount, seller_earning: c.earning });
       q = rs.subId ? q.eq("id", rs.subId) : q.eq("order_id", orderId).eq("shop_id", rs.shopId);
-      return q.then(function(r){ return (r && r.error) ? r.error : null; }).catch(function(e){ return e; });
+      return q.select("id").then(function(r){
+        if (r && r.error) return r.error;
+        if (!r || !r.data || !r.data.length) return noRowErr();
+        return null;
+      }).catch(function(e){ return e; });
     });
     Promise.all(jobs).then(function(errs){
       var firstErr = null;
@@ -1176,6 +1206,7 @@ function ensureSubOrders(o, targetStatus){
         delete rs._pendingCommission;
       });
       afterWrite();
+      if (loud) toast("✓ Sub-order pathano hoyeche — <b>" + esc(o.localId || o.id) + "</b> ekhon Seller Center e dekhabe.");
     }).catch(function(e){ sbSaveFailed("sub_orders", e); });
   }
   function insertMissing(){
@@ -2408,7 +2439,7 @@ function openOrder(id){
   var pno = $("#drawerPayNo"); if (pno) pno.addEventListener("click", function(){ askConfirm("Reject this payment?", "Order " + displayId + " seller er kache pathano hobe na jotokkhon na customer sothik payment kore.", function(){ setPaymentStatus(o.id, "rejected"); }); });
   var cb = $("#drawerCancel"); if (cb) cb.addEventListener("click", function(){ askConfirm("Cancel order "+displayId+"?", "The customer will see the order as cancelled and any prepaid amount must be refunded.", function(){ setOrderStatus(o.id, "cancelled"); closeDrawer(); }); });
   var dp = $("#drawerPrint"); if (dp) dp.addEventListener("click", function(){ printOrderInvoice(o); });
-  var rsb = $("#drawerSendSubs"); if (rsb) rsb.addEventListener("click", function(){ ensureSubOrders(o, "AdminConfirmed"); });
+  var rsb = $("#drawerSendSubs"); if (rsb) rsb.addEventListener("click", function(){ ensureSubOrders(o, "AdminConfirmed", true); });
 }
 function closeDrawer(){ $("#orderDrawer").classList.remove("show"); $("#drawerOverlay").classList.remove("show"); }
 $("#drawerOverlay").addEventListener("click", closeDrawer);
