@@ -1425,6 +1425,13 @@ function settingsSyncFailed(e){
    are written in parallel; the returned promise resolves only when every
    write is confirmed. Syncs are serialized so two overlapping saves can't
    both see a missing row and both try to insert the same key. */
+/* Clobber guard (2026-11-23): set to true only after sbSettingsLoad()
+   completes a successful DB read. Until then, in-memory string fields may
+   still be "" (never loaded from the DB yet) while the DB holds real
+   values — a full sync would wipe them. Live proof: a fee-test save from
+   a fresh profile overwrote the platform payment numbers with "".
+   runSettingsSync() skips empty-over-nonempty writes while this is false. */
+var settingsDbLoaded = false;
 var _settingsSyncChain = Promise.resolve();
 function sbSettingsSync(){
   var p = _settingsSyncChain.then(function(){ return runSettingsSync(); });
@@ -1437,9 +1444,9 @@ async function runSettingsSync(){
   var keys = rows.map(function(r){ return r.key; });
   var existing = {};
   try{
-    var chk = await sb.from("settings").select("key").in("key", keys);
+    var chk = await sb.from("settings").select("key,value").in("key", keys);
     if (chk.error) throw chk.error;
-    (chk.data || []).forEach(function(row){ existing[row.key] = true; });
+    (chk.data || []).forEach(function(row){ existing[row.key] = row.value; });
   }catch(e){
     settingsSyncFailed(e);
     throw e;
@@ -1447,7 +1454,15 @@ async function runSettingsSync(){
   /* allSettled-style: every row is attempted even if others fail. */
   var results = await Promise.all(rows.map(function(r){
     var val = JSON.stringify(r.value);
-    var q = existing[r.key]
+    /* Clobber guard (2026-11-23): before the first successful DB load this
+       session, an in-memory "" may just mean "never loaded" — never let it
+       overwrite a real DB value. After the load runs once, empty writes are
+       deliberate clears and go through normally. */
+    if (!settingsDbLoaded && (r.value === "" || r.value === null || r.value === undefined)){
+      var prev = sbSettingsVal(existing[r.key]);
+      if (typeof prev === "string" && prev !== "") return Promise.resolve({ key: r.key, error: null });
+    }
+    var q = existing[r.key] !== undefined
       ? sb.from("settings").update({ value: val }).eq("key", r.key)
       : sb.from("settings").insert({ key: r.key, value: val });
     return Promise.resolve(q).then(
@@ -1477,6 +1492,11 @@ async function sbSettingsLoad(){
       d.set(sbSettingsVal(row.value));
       if (JSON.stringify(d.get()) !== before) changed = true;
     });
+    /* Clobber guard (2026-11-23): the DB read succeeded and its rows were
+       applied, so in-memory values are now known-good — later syncs may
+       write empty values (deliberate clears). Set only here, never on a
+       failed/empty read. */
+    settingsDbLoaded = true;
     if (changed){
       saveLocalSettings().catch(function(){}); /* no toast gated on this; a sync failure already toasted via settingsSyncFailed */
       /* Boot-order fix (2026-11-23): if the Settings view is already open when
