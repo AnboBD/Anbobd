@@ -3656,21 +3656,76 @@ $("#staffModalWrap").addEventListener("click", function(e){ if(e.target===this) 
    person is written to profiles (with their role) and to the staff link table.
    Real columns only: profiles {id, full_name, email, phone, role},
    staff {user_id, role}. Neither table has a status column, so
-   Invited/Suspended is session-only until the schema gains one. */
+   Invited/Suspended is session-only until the schema gains one.
+   Staff-account fix (2026-11-23, same defect as the Register-seller modal):
+   the old chain signed the throwaway client OUT right after signUp and then
+   wrote the profiles row with `sb` — the ADMIN's client. profiles insert_own
+   only allows inserting your OWN row (id = auth.uid()), so the admin client
+   writing id = <new staff id> was rejected with a 42501 RLS violation that
+   sbInsert only console.warned — while the caller had already pushed the
+   local staff row and toasted "Account created", leaving a fake staff member
+   who could never sign in. Fixed chain — same pattern as the Register-seller
+   fix: (1) signUp on the throwaway client and KEEP its session
+   (belt-and-braces setSession, like staff creation in Seller Center);
+   (2) the profiles write goes through `tmp` AS the new staff user, so
+   insert_own passes; the staff link row is written with the admin client
+   (staff_admin_all covers admin inserts — the new user is not a shop
+   owner, so `tmp` could not insert it); (3) tmp signs out only at the
+   very end, in `finally`, so the admin session is never touched. Any
+   failure throws — the caller shows the real error and creates NO local
+   row. Returns {ok:true, uid} on success. */
 async function sbCreateStaffAccount(data, pw){
-  if (!sbReady()) return;
+  if (!sbReady()) throw new Error("Database connect hoy ni — abar try koro");
+  var tmp = null;
   try{
-    var tmp = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, { auth: { persistSession: false, storageKey: "anbobd-staff-signup" } });
+    tmp = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, { auth: { persistSession: false, storageKey: "anbobd-staff-signup" } });
     var uid = null;
     if (pw){
       var res = await tmp.auth.signUp({ email: data.email, password: pw, options: { data: { name: data.name, role: sbProfileRole(data.role) } } });
-      if (res.error) sbWarn("auth.signUp(staff)", res.error);
-      uid = res.data && res.data.user && res.data.user.id;
-      try{ await tmp.auth.signOut(); }catch(e2){}
+      if (res.error){
+        var em = String(res.error.message || "");
+        if (/already registered|already exists|user already/i.test(em)){
+          /* Orphan account: Auth exists but no profile/staff row was ever
+             created, because the old chain died at the profiles insert.
+             Sign in AS that account on the throwaway client with the
+             password the admin just typed, then complete profile + staff
+             creation below — but only if this user has no staff row yet
+             (checked right after). */
+          var si = await tmp.auth.signInWithPassword({ email: data.email, password: pw });
+          if (si.error || !si.data || !si.data.user) throw new Error("Ei email diye account agei ache, kintu deoa password diye sign in kora jay ni — thik password dao");
+          uid = si.data.user.id;
+        } else { throw res.error; }
+      } else {
+        uid = res.data && res.data.user && res.data.user.id;
+        if (!uid) throw new Error("Auth account toiri hoy ni — abar try koro");
+        /* signUp er session tmp client e in-memory thake (persistSession:
+           false holeo) — tobu setSession diye nischit kora holo, na hole
+           anon hoye profiles insert RLS e atke jeto. Session na thakle
+           sign-in diye session toiri koro (Confirm email OFF, tai eta
+           sudhu safety net). */
+        if (res.data && res.data.session){ try{ await tmp.auth.setSession({ access_token: res.data.session.access_token, refresh_token: res.data.session.refresh_token }); }catch(e2){} }
+        else { var si2 = await tmp.auth.signInWithPassword({ email: data.email, password: pw }); if (si2.error || !si2.data || !si2.data.user) throw new Error("Auth account toiri hoyeche kintu session pelam na — abar try koro"); }
+      }
     }
-    if (uid) await sbInsert("profiles", { id: uid, full_name: data.name, email: data.email, phone: data.phone, role: sbProfileRole(data.role) });
-    if (uid) await sbInsert("staff", { user_id: uid, role: sbProfileRole(data.role) });
-  }catch(e){ sbWarn("staff", e); }
+    if (!uid) throw new Error("Staff account toiri hoy ni — password dao");
+    /* Ei user er staff row agei thakle notun kore create kora jabe na —
+       admin client diye check (admin sob staff row dekhte pare). */
+    var ex = await sb.from("staff").select("id").eq("user_id", uid).maybeSingle();
+    if (ex.error) throw ex.error;
+    if (ex.data) throw new Error("Ei staff er record agei ache — notun kore create kora jabe na");
+    var pr = await tmp.from("profiles").upsert({ id: uid, full_name: data.name, email: data.email, phone: data.phone, role: sbProfileRole(data.role) }, { onConflict: "id" }).select("id");
+    if (pr.error) throw pr.error;
+    if (!pr.data || !pr.data.length) throw new Error("Profile row toiri hoy ni — database theke row fire asheni");
+    var sr = await sb.from("staff").insert({ user_id: uid, role: sbProfileRole(data.role) }).select("id");
+    if (sr.error) throw sr.error;
+    if (!sr.data || !sr.data.length) throw new Error("Staff row toiri hoy ni — database theke row fire asheni");
+    return { ok: true, uid: uid };
+  }finally{
+    /* Throwaway client ke ekhanei sign out koro — age signUp er porpori
+       sign out kora hoto, tai profiles insert anon hoye RLS e atke jeto.
+       Admin er nijer session e haat dewa hoy na. */
+    try{ if (tmp) await tmp.auth.signOut(); }catch(e2){}
+  }
 }
 function sbSyncStaffRow(s){
   if (!sbReady() || !s || !s.supabaseId) return;
@@ -3680,7 +3735,7 @@ function sbSyncStaffRow(s){
      schema, so Suspended/Invited does not persist to Postgres yet — it
      applies for this session and is written to the activity log. */
 }
-$("#staffForm").addEventListener("submit", function(e){
+$("#staffForm").addEventListener("submit", async function(e){
   e.preventDefault();
   var id = $("#sfId").value;
   var data = {name:$("#sfName").value.trim(), email:$("#sfEmail").value.trim(), phone:$("#sfPhone").value.trim()||"—", role:$("#sfRole").value, status:$("#sfStatus").value};
@@ -3698,9 +3753,17 @@ $("#staffForm").addEventListener("submit", function(e){
     toast('<span class="lime">✓ Saved</span> — '+esc(s.name)+" is now "+s.role+(newPw ? (sbReady() ? " · password saved for offline fallback only — use 'Send password reset email' to change their real sign-in password" : " · password updated") : ""));
   } else {
     if(staff.some(function(x){ return x.email.toLowerCase()===data.email.toLowerCase(); })){ toast("⚠ <b>"+esc(data.email)+"</b> is already a staff member"); return; }
+    /* DB first: the Auth account + profile + staff rows must exist before
+       the local row is shown — age fake success toast diye local row push
+       kora hoto, kintu profiles insert RLS e fail korle oi staff kokhono
+       sign in korte parto na. Fail korle ashol error dekhiye modal khula
+       thakbe, kono local row toiri hobe na. */
+    var created = null;
+    try{ created = await sbCreateStaffAccount(data, newPw); }
+    catch(err){ sbSaveFailed("Staff account", err); return; }
+    if (!created || !created.ok || !created.uid){ sbSaveFailed("Staff account", new Error("Staff account toiri hoy ni — abar try koro")); return; }
     var nid = staff.reduce(function(a,x){ return Math.max(a, parseInt(x.id,10)||0); },0)+1;
-    staff.push({id:nid, name:data.name, email:data.email, phone:data.phone, role:data.role, status:data.status, passwordHash:hashPw(newPw), last:data.status==="invited"?"Account created — not yet active":"Today", joined:monthLabel()});
-    sbCreateStaffAccount(data, newPw);
+    staff.push({id:nid, supabaseId:created.uid, name:data.name, email:data.email, phone:data.phone, role:data.role, status:data.status, passwordHash:hashPw(newPw), last:data.status==="invited"?"Account created — not yet active":"Today", joined:monthLabel()});
     logActivity("Created staff account for "+data.name+" ("+data.role+")");
     toast('<span class="lime">✓ Account created</span> — '+esc(data.name)+" added as "+data.role+". Login: tar email + je password set korle."+(data.status!=="active"?" Status "+data.status+" — active na korle login korte parbe na.":""));
   }
