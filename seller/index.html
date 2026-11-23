@@ -540,6 +540,7 @@
       </div>
       <span class="status-pill" id="pendPill">Application Under Review</span>
       <h1 id="pendShopName">Your shop</h1>
+      <div style="margin:.1rem 0 .5rem"><span class="badge-verified badge-pending" id="pendKycBadge">KYC Pending</span></div>
       <p class="lead" id="pendLead">Your application has been received. The AnboBD Admin team will verify your NID copy and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.</p>
       <ul class="timeline" id="pendTimeline">
         <li class="done"><span class="tdot">✓</span><div><div class="tt">Application submitted</div><div class="ts" id="pendSubmittedAt">Received</div></div></li>
@@ -576,6 +577,7 @@
       </ul>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.4rem">
         <button class="btn" id="checkStatusBtn" type="button">Check Approval Status</button>
+        <a class="btn ghost" id="pendViewShopLink" href="#" target="_blank" rel="noopener">🏪 আমার দোকান দেখুন</a>
         <button class="btn ghost" id="pendLogoutBtn" type="button">Logout</button>
       </div>
       <p style="font-size:.84rem;color:var(--muted);margin:1rem 0 0">Application reference: <b id="pendRef" style="color:var(--ink)">—</b> · Keep this reference for any support query about your application.</p>
@@ -1393,6 +1395,20 @@
       ? "Your application was rejected or your shop was suspended by AnboBD Admin. Product listing, coupons and orders stay locked. Contact AnboBD seller support if you think this is a mistake — a new application needs a fresh review."
       : "Your application has been received. The AnboBD Admin team will verify your NID copy and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.";
     $("pendShopName").textContent = s.shop;
+    /* P1 follow-up (2026-11-23): KYC chip on the pending page too — same
+       shops.kyc_status mapping as the dashboard badge (syncShopUI). */
+    var pkb = $("pendKycBadge");
+    if (pkb) {
+      var pks = String(s.kycStatus || "pending").toLowerCase();
+      pkb.textContent = pks === "approved" ? "KYC Verified" : (pks === "rejected" ? "KYC Rejected" : "KYC Pending");
+      pkb.classList.toggle("badge-pending", pks !== "approved" && pks !== "rejected");
+      pkb.classList.toggle("badge-rejected", pks === "rejected");
+    }
+    /* P1 follow-up (2026-11-23): "View my shop" on the pending page — same
+       /shop?id= URL contract as the dashboard links. A pending shop is not
+       live yet, so the shop page honestly shows "not found" — correct. */
+    var pvsl = $("pendViewShopLink");
+    if (pvsl) pvsl.href = "/shop?id=" + encodeURIComponent(s.shopId || "");
     $("pendRef").textContent = String(s.shopId || s.id).replace("SEL-", "APP-");
     $("pendSubmittedAt").textContent = "Received · " + fmtDate(s.appliedOn);
     $("pendSummary").innerHTML =
