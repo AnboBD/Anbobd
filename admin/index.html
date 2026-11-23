@@ -892,14 +892,14 @@ async function sbLoadAll(){
     staff = staff.filter(function(m){ return !!m.role; });
   }
   if (staffRows && staffRows.length && !staff.length){
-    /* staff table is only {id, user_id, role, created_at} — identity comes
-       from profiles via user_id. Seller shop-staff rows also live here;
-       the admin-role filter keeps them out of the Admin staff list. */
+    /* Staff rows carry role + status — identity comes from profiles via
+       user_id. Seller shop-staff rows also live here; the admin-role
+       filter keeps them out of the Admin staff list. */
     var profById = {};
     (profs || []).forEach(function(pw){ profById[pw.id] = pw; });
     staff = staffRows.map(function(rw){
       var pr = profById[rw.user_id] || {};
-      return { id: rw.user_id || rw.id, supabaseId: rw.user_id || rw.id, name: pr.full_name || pr.name || "Staff", email: pr.email || "", phone: pr.phone || "—", role: sbAdminRole(rw.role), status: "active", last: "From Supabase", joined: sbDateLabel(rw.created_at) };
+      return { id: rw.user_id || rw.id, supabaseId: rw.user_id || rw.id, name: pr.full_name || pr.name || "Staff", email: pr.email || "", phone: pr.phone || "—", role: sbAdminRole(rw.role), status: rw.status || "active", last: "From Supabase", joined: sbDateLabel(rw.created_at) };
     }).filter(function(m){ return !!m.role; });
   }
   var shopRows = await fetchTable("shops");
@@ -3635,7 +3635,7 @@ function renderStaff(){
           + '</span></td></tr>';
       }).join("") : '<tr><td colspan="6"><div class="empty"><b>No staff match</b>Try a different search or role.</div></td></tr>')
     + '</tbody></table></div>'
-    + '<p class="note" style="margin:12px 0 18px">Ei list e sudhu AnboBD INTERNAL staff — seller er shop staff ekhane ASHE NA, tara Seller Center er Team e thake. Role enforcement asol: login korle menu thekei nishedh page gayeb hoy (jemon Order Manager Finance/Settings dekhbei na, Support Products/Finance dekhbe na). Only a Super Admin can add staff, change roles or suspend accounts. Changing a role updates that person\'s permissions on their next page load. <b>Note:</b> Suspended/Invited status database e save hoy na ekhono — profiles/staff table e status column nai — tai suspend ei session er jonno kaj kore ar activity log e record thake; sthayi korte status column lagbe.</p>'
+    + '<p class="note" style="margin:12px 0 18px">Ei list e sudhu AnboBD INTERNAL staff — seller er shop staff ekhane ASHE NA, tara Seller Center er Team e thake. Role enforcement asol: login korle menu thekei nishedh page gayeb hoy (jemon Order Manager Finance/Settings dekhbei na, Support Products/Finance dekhbe na). Only a Super Admin can add staff, change roles or suspend accounts. Changing a role updates that person\'s permissions on their next page load. <b>Note:</b> Suspended/Invited status database e save hoy — profiles.status ar staff.status duto tei lekha hoy — tai suspend reload er poreo thake, ar suspended staff login korte pare na.</p>'
     + '<div class="card" style="margin-bottom:16px"><h3>Roles — who does what</h3><p class="hint">Five fixed roles keep it simple. Nobody gets a permission their role does not list.</p><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px">'+roleCards+'</div></div>'
     + '<div class="card"><h3>Permission matrix</h3><p class="hint">Exactly what each role can open in this admin panel</p><div class="table-card" style="border:none"><table class="perm-table"><thead><tr><th>Permission</th>'+Object.keys(ROLE_PERMS).map(function(r){ return '<th>'+r+'</th>'; }).join("")+'</tr></thead><tbody>'+permRows+'</tbody></table></div></div>';
 
@@ -3686,9 +3686,10 @@ $("#staffModalWrap").addEventListener("click", function(e){ if(e.target===this) 
 /* Staff account on Supabase: the auth user is created with supabase.auth.signUp
    on a throwaway client (so the owner's own session is not replaced), then the
    person is written to profiles (with their role) and to the staff link table.
-   Real columns only: profiles {id, full_name, email, phone, role},
-   staff {user_id, role}. Neither table has a status column, so
-   Invited/Suspended is session-only until the schema gains one.
+   Real columns only: profiles {id, full_name, email, phone, role, status},
+   staff {user_id, role, status}. Both tables have a status column, so
+   Invited/Suspended persists to Postgres (status is written by
+   sbSyncStaffRow on edit/suspend — see there).
    Staff-account fix (2026-11-23, same defect as the Register-seller modal):
    the old chain signed the throwaway client OUT right after signUp and then
    wrote the profiles row with `sb` — the ADMIN's client. profiles insert_own
@@ -3745,10 +3746,10 @@ async function sbCreateStaffAccount(data, pw){
     var ex = await sb.from("staff").select("id").eq("user_id", uid).maybeSingle();
     if (ex.error) throw ex.error;
     if (ex.data) throw new Error("Ei staff er record agei ache — notun kore create kora jabe na");
-    var pr = await tmp.from("profiles").upsert({ id: uid, full_name: data.name, email: data.email, phone: data.phone, role: sbProfileDbRole(data.role) }, { onConflict: "id" }).select("id");
+    var pr = await tmp.from("profiles").upsert({ id: uid, full_name: data.name, email: data.email, phone: data.phone, role: sbProfileDbRole(data.role), status: data.status }, { onConflict: "id" }).select("id");
     if (pr.error) throw pr.error;
     if (!pr.data || !pr.data.length) throw new Error("Profile row toiri hoy ni — database theke row fire asheni");
-    var sr = await sb.from("staff").insert({ user_id: uid, role: sbProfileRole(data.role) }).select("id");
+    var sr = await sb.from("staff").insert({ user_id: uid, role: sbProfileRole(data.role), status: data.status }).select("id");
     if (sr.error) throw sr.error;
     if (!sr.data || !sr.data.length) throw new Error("Staff row toiri hoy ni — database theke row fire asheni");
     return { ok: true, uid: uid };
@@ -3761,20 +3762,17 @@ async function sbCreateStaffAccount(data, pw){
 }
 function sbSyncStaffRow(s){
   if (!sbReady() || !s || !s.supabaseId) return;
-  /* The staff row carries the granular role and is admin-writable
-     (staff_admin_all) — that update always runs. The profiles row is NOT
-     admin-writable for another user (update_own rejects it), so
-     name/phone/role in profiles can only be updated when this IS the
-     signed-in admin's own row; for anyone else the profiles update is
-     skipped entirely — never attempted as if it succeeded. The caller
-     says so in its toast when name/phone actually changed. */
-  sbUpdate("staff", "user_id", s.supabaseId, { role: sbProfileRole(s.role) });
-  if (String(s.supabaseId) === String(currentUserId)){
-    sbUpdate("profiles", "id", s.supabaseId, { full_name: s.name, phone: s.phone, role: sbProfileDbRole(s.role) });
-  }
-  /* NOTE: neither profiles nor staff has a status column in the live
-     schema, so Suspended/Invited does not persist to Postgres yet — it
-     applies for this session and is written to the activity log. */
+  /* The staff row carries the granular role and status and is
+     admin-writable (staff_admin_all) — that update always runs. The
+     profiles row is admin-writable too ("profiles admin update" policy
+     using the anbo_is_admin() helper), so name/phone/role/status in
+     profiles are updated for EVERY staff row, not just the signed-in
+     admin's own row. */
+  sbUpdate("staff", "user_id", s.supabaseId, { role: sbProfileRole(s.role), status: s.status });
+  sbUpdate("profiles", "id", s.supabaseId, { full_name: s.name, phone: s.phone, role: sbProfileDbRole(s.role), status: s.status });
+  /* NOTE: status now persists to Postgres — profiles.status and
+     staff.status both carry it — so Suspended/Invited survives reloads
+     and the sign-in gate blocks a suspended staff member. */
 }
 $("#staffForm").addEventListener("submit", async function(e){
   e.preventDefault();
@@ -3787,17 +3785,14 @@ $("#staffForm").addEventListener("submit", async function(e){
   if(id){
     var s = staff.filter(function(x){ return String(x.id)===String(id) || x.id===parseInt(id,10); })[0];
     if (!s){ toast("⚠ Staff record paowa jay ni"); return; }
-    var oldName = s.name, oldPhone = s.phone;
     Object.keys(data).forEach(function(k){ s[k]=data[k]; });
     if(newPw) s.passwordHash = hashPw(newPw);
     sbSyncStaffRow(s);
     logActivity("Updated staff account " + s.name + " (" + s.role + ")");
-    /* Name/phone live in profiles, which the admin can only update for
-       their OWN row (update_own) — for another staff member a name/phone
-       change is session-only, so say so instead of claiming it saved.
-       The role itself always persists via the staff row. */
-    var profNote = (String(s.supabaseId) !== String(currentUserId) && (oldName !== data.name || oldPhone !== data.phone)) ? " — name/phone database e save hoy ni (onno staff er profile bodlano jay na); role update hoyeche." : "";
-    toast('<span class="lime">✓ Saved</span> — '+esc(s.name)+" is now "+s.role+(newPw ? (sbReady() ? " · password saved for offline fallback only — use 'Send password reset email' to change their real sign-in password" : " · password updated") : "")+profNote);
+    /* Name/phone/role/status live in profiles + staff, and the admin
+       update policy covers every staff row — so an edit here persists
+       for anyone, not just the signed-in admin's own row. */
+    toast('<span class="lime">✓ Saved</span> — '+esc(s.name)+" is now "+s.role+(newPw ? (sbReady() ? " · password saved for offline fallback only — use 'Send password reset email' to change their real sign-in password" : " · password updated") : ""));
   } else {
     if(staff.some(function(x){ return x.email.toLowerCase()===data.email.toLowerCase(); })){ toast("⚠ <b>"+esc(data.email)+"</b> is already a staff member"); return; }
     /* DB first: the Auth account + profile + staff rows must exist before
@@ -4505,7 +4500,7 @@ async function sbFetchMember(user){
        display role comes from the staff table row. Without this, a
        Manager created by sbCreateStaffAccount would be rejected here. */
     if (!profRole && prof.role === "staff") profRole = await sbGranularRoleForStaff(user.id);
-    return { id: user.id, supabaseId: user.id, name: prof.full_name || prof.name || meta.name || user.email, email: prof.email || user.email, phone: prof.phone || "—", role: profRole, status: "active", last: "Now · signed in", joined: sbDateLabel(prof.created_at) };
+    return { id: user.id, supabaseId: user.id, name: prof.full_name || prof.name || meta.name || user.email, email: prof.email || user.email, phone: prof.phone || "—", role: profRole, status: prof.status || "active", last: "Now · signed in", joined: sbDateLabel(prof.created_at) };
   }
   /* No profile row: the owner account was created in the Supabase dashboard
      and has no profiles row (verified: profiles is empty). Bootstrap rule —
