@@ -600,6 +600,7 @@
       </div>
       <nav class="side" id="sideNav">
         <button data-view="dashboard" class="on" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
+        <button data-view="analytics" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M8 16v-5M12 16V7M16 16v-3"/></svg>Analytics</button>
         <button data-view="products" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>My Products</button>
         <button data-view="orders" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 5H5L6 3z"/><path d="M5 8h14v13H5z"/><path d="M9 12h6"/></svg>My Orders<span class="pill hidden" id="pendingPill">0</span></button>
         <button data-view="reviews" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Reviews</button>
@@ -635,6 +636,7 @@
 
       <!-- DASHBOARD -->
       <section id="view-dashboard">
+        <div id="kycRerequestBanner"></div>
         <div id="lowStockStrip"></div>
         <div id="notifCard" style="margin-bottom:1rem"></div>
         <div id="onboardCard"></div>
@@ -663,6 +665,45 @@
         </div>
       </section>
 
+      <!-- ANALYTICS -->
+      <section id="view-analytics" class="hidden">
+        <div id="analyticsStaffNote"></div>
+        <div class="filter-row">
+          <div class="chip-row" id="analyticsChips">
+            <button class="fchip" data-days="7" type="button">7 din</button>
+            <button class="fchip on" data-days="30" type="button">30 din</button>
+            <button class="fchip" data-days="90" type="button">90 din</button>
+          </div>
+          <input id="anStart" type="date" aria-label="Start date" style="border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:var(--surface)" />
+          <span style="color:var(--muted)">–</span>
+          <input id="anEnd" type="date" aria-label="End date" style="border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:var(--surface)" />
+          <button class="btn ghost" id="anApply" type="button">Apply</button>
+          <button class="btn ghost" id="anClear" type="button">Clear</button>
+        </div>
+        <div class="grid-stats" id="analyticsKpis" style="grid-template-columns:repeat(4,1fr)"></div>
+        <div class="card">
+          <h3>Sales by day</h3>
+          <div class="csub" id="analyticsRangeLbl"></div>
+          <div id="analyticsChart"></div>
+        </div>
+        <div class="cols-2">
+          <div class="card">
+            <h3>Top products</h3>
+            <div class="csub">Unit ar revenue onujayi — sudhu apnar shop</div>
+            <div id="analyticsTop"></div>
+          </div>
+          <div class="card">
+            <h3>Category split</h3>
+            <div class="csub">Category onujayi revenue</div>
+            <div id="analyticsCat"></div>
+          </div>
+        </div>
+        <div class="empty hidden" id="analyticsEmpty">
+          <div class="et">Ei somoykale kono sale nei</div>
+          <div>Ei date range e kono confirmed order nei — range bodle dekhun, ba product live ache kina check korun.</div>
+        </div>
+      </section>
+
       <!-- PRODUCTS -->
       <section id="view-products" class="hidden">
         <div class="filter-row">
@@ -677,11 +718,26 @@
             <option value="">All status</option><option>Active</option><option>Paused</option><option>Pending Approval</option><option>Rejected</option>
           </select>
           <div class="spacer" style="flex:1"></div>
+          <button class="btn ghost" id="exportProductsBtn" type="button">Export CSV</button>
+          <button class="btn ghost" id="importProductsBtn" type="button">Import CSV</button>
           <button class="btn" id="addProductBtn" type="button">+ Add Product</button>
+        </div>
+        <div id="bulkBar" class="hidden" style="display:flex;gap:.6rem;align-items:center;flex-wrap:wrap;background:var(--brand-soft);border:1px solid var(--brand);border-radius:12px;padding:.6rem .8rem;margin-bottom:1rem">
+          <b id="bulkCount">0 selected</b>
+          <select id="bulkAction" aria-label="Bulk action" style="border:1.5px solid var(--line);border-radius:10px;padding:.45rem .6rem;background:var(--surface)">
+            <option value="price_pct">Price — % change</option>
+            <option value="price_fixed">Price — fixed amount change</option>
+            <option value="stock">Stock set</option>
+            <option value="activate">Activate</option>
+            <option value="pause">Pause</option>
+          </select>
+          <input id="bulkValue" type="number" step="any" placeholder="e.g. 10 / -50 / 20" aria-label="Bulk value" style="border:1.5px solid var(--line);border-radius:10px;padding:.45rem .6rem;background:var(--surface);width:170px" />
+          <button class="btn sm" id="bulkApplyBtn" type="button">Apply</button>
+          <button class="btn ghost sm" id="bulkClearBtn" type="button">Clear</button>
         </div>
         <div class="card" style="padding:.4rem 1rem">
           <div class="tbl-wrap"><table class="tbl-products">
-            <thead><tr><th>Product</th><th>Price</th><th>Stock</th><th>Sold</th><th>Commission</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th style="width:34px"><input type="checkbox" id="prodSelectAll" aria-label="Select all products" /></th><th>Product</th><th>Price</th><th>Stock</th><th>Sold</th><th>Commission</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="productsBody"></tbody>
           </table></div>
           <div class="empty hidden" id="productsEmpty">
@@ -858,6 +914,11 @@
             <tbody id="permMatrixBody"></tbody>
           </table></div>
         </div>
+        <div class="card" style="margin-top:1.2rem">
+          <h3>Staff activity</h3>
+          <div class="csub">Staff ra ei panel theke ki ki koreche — sudhu staff account er kaj ekhane log hoy</div>
+          <div id="staffActivityList"></div>
+        </div>
       </section>
 
       <!-- SETTINGS -->
@@ -890,6 +951,7 @@
             <button class="btn ghost" id="vacationBtn" type="button">Vacation mode: Off</button>
           </form>
         </div>
+        <div id="kycRerequestBannerSettings"></div>
         <div class="card" style="margin-top:1rem">
           <h3>KYC Documents</h3>
           <div class="csub">Registration er somoy deya NID er copy (আবশ্যক) ar trade licence er copy (ঐচ্ছিক) — Admin notun kore chaile ekhan thekei bodle / re-upload kore dite parben</div>
@@ -909,6 +971,55 @@
               <div class="doc-status" id="kycTradeStatus"></div>
             </div>
           </div>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>Shop URL / Slug</h3>
+          <div class="csub">Apnar shop er public link er slug — chhoto akkhor, number ar hyphen (-) sudhu</div>
+          <div class="field"><label for="setSlug">Shop slug</label><input id="setSlug" placeholder="e.g. hunny-house" /></div>
+          <div class="field"><label>Public shop link</label><div><a id="shopPublicLink" href="#" target="_blank" rel="noopener">—</a></div><div class="hint">Slug bodlale purono link o kaj korbe — shop ID diyeo shop khola jay (/shop?id=...).</div></div>
+          <p class="err" id="slugErr"></p>
+          <button class="btn" type="button" id="saveSlugBtn">Save Slug</button>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>Delivery settings</h3>
+          <div class="csub">Ei shop er delivery fee ar free-delivery limit — khali rakhle platform er default cholbe (Dhaka ৳60, Dhaka-r baire ৳120; Dhaka-y ৳2000+ free)</div>
+          <div class="field"><label for="setDeliveryFee">Delivery fee override (৳) — khali mane platform default</label><input id="setDeliveryFee" type="number" min="0" step="1" placeholder="e.g. 50" /></div>
+          <div class="field"><label for="setFreeDeliveryThreshold">Free delivery threshold (৳) — khali mane platform default</label><input id="setFreeDeliveryThreshold" type="number" min="0" step="1" placeholder="e.g. 1500" /></div>
+          <p class="err" id="deliveryErr"></p>
+          <div id="deliveryNote" class="hint"></div>
+          <button class="btn" type="button" id="saveDeliveryBtn">Save Delivery Settings</button>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>Notification preferences</h3>
+          <div class="csub">Kon notification paben — bondho korle bell ar dashboard theke oi dhoroner notification asbe na</div>
+          <div id="notifPrefsList"></div>
+          <p class="err" id="notifErr"></p>
+          <div id="notifNote" class="hint"></div>
+          <button class="btn" type="button" id="saveNotifBtn">Save Notification Preferences</button>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>Low-stock alert</h3>
+          <div class="csub">Stock ei sonkhar niche namlei dashboard e "stock kom" hisebe dekhabe</div>
+          <div class="field"><label for="setLowStock">Low-stock threshold</label><input id="setLowStock" type="number" min="1" step="1" value="5" /></div>
+          <p class="err" id="lowStockErr"></p>
+          <div id="lowStockNote" class="hint"></div>
+          <button class="btn" type="button" id="saveLowStockBtn">Save Threshold</button>
+        </div>
+        <div class="card" style="margin-top:1rem">
+          <h3>Login &amp; security</h3>
+          <div class="csub">Apnar account er password ar email ekhan theke bodlan</div>
+          <h4 style="margin:.4rem 0 .6rem;font-size:.95rem">Change password</h4>
+          <div class="field"><label for="curPw">Current password</label><input id="curPw" type="password" autocomplete="current-password" /></div>
+          <div class="field"><label for="newPw">New password (kompokkhe 8 akkhor)</label><input id="newPw" type="password" autocomplete="new-password" /></div>
+          <div class="field"><label for="newPw2">New password (abar)</label><input id="newPw2" type="password" autocomplete="new-password" /></div>
+          <p class="err" id="pwErr"></p>
+          <button class="btn" type="button" id="changePwBtn">Change Password</button>
+          <hr style="border:0;border-top:1px solid var(--line);margin:1.3rem 0" />
+          <h4 style="margin:.4rem 0 .6rem;font-size:.95rem">Change email</h4>
+          <div class="field"><label for="newEmail">New email</label><input id="newEmail" type="email" /></div>
+          <div class="hint">Notun email next sign-in theke karjokor hobe. Confirm-email OFF ache, tobe Supabase setting onujayi confirmation mail aste pare.</div>
+          <p class="err" id="emailErr"></p>
+          <button class="btn" type="button" id="changeEmailBtn">Change Email</button>
         </div>
         <div class="card" style="margin-top:1rem">
           <h3>🔐 Two-factor authentication (2FA)</h3>
@@ -1030,6 +1141,21 @@
   var roleBlocked = false; /* set when the signed-in account is not a seller (e.g. an Admin/owner account) */
   var staffLoginBlocked = ""; /* Decision 7: staff login keno block holo, setar karon */
   var orderFilter = "All", orderQuery = "", currentView = "dashboard";
+  /* P2 (2026-11-23): notun column/table er uposthiti — load er somoy probe
+     kore bosano hoy; false mane column/table ekhono database e nei, tokhon
+     UI te sotyi kotha ("ekhono chalu hoy ni") dekhano hoy, vul save noy. */
+  var DB_HAS = { variants: null, saleStart: null, saleEnd: null, couponPerCustomer: null, staffActivity: null };
+  var COUPON_SCOPES = ["Shop-wide (sob product)", "Electronics only", "Fashion only", "Beauty only", "Home & Living only", "Grocery only", "Sports only"];
+  /* Notification toggle er type — sellerNotifItems() er item gulor sathe mile. */
+  var NOTIF_TYPES = [
+    { key: "new_order", label: "Notun order" },
+    { key: "payment_confirmed", label: "Payment confirmed" },
+    { key: "return_requested", label: "Return requested" },
+    { key: "review_received", label: "Review eseche" },
+    { key: "campaign_approved", label: "Campaign approved" }
+  ];
+  var analyticsRange = { days: 30, start: "", end: "" };
+  var bulkSelected = {};
 
   function sellerById(id){ for (var i=0;i<DB.sellers.length;i++) if (String(DB.sellers[i].id)===String(id)) return DB.sellers[i]; return null; }
   function sellerByEmail(em){ em = String(em||"").toLowerCase(); for (var i=0;i<DB.sellers.length;i++) if (DB.sellers[i].email===em) return DB.sellers[i]; return null; }
@@ -1049,6 +1175,24 @@
   function ownReturns(){ var s = me(); return s ? s.returns : []; }
   function ownReviews(){ var s = me(); return s ? (s.reviews || []) : []; }
   function ownStaff(){ var s = me(); return s ? s.staff : []; }
+  function ownStaffActivity(){ var s = me(); return s ? (s.staffActivity || []) : []; }
+  function lowStockThreshold(){ var s = me(); var t = s && s.lowStockThreshold != null ? Number(s.lowStockThreshold) : 5; return (isFinite(t) && t > 0) ? Math.floor(t) : 5; }
+  function notifPref(type){ var s = me(); if (!s) return true; if (!s.notifPrefs || s.notifPrefs[type] == null) return true; return s.notifPrefs[type] !== false; }
+  function toDatetimeLocal(iso){ if (!iso) return ""; var d = new Date(iso); if (isNaN(d.getTime())) return ""; return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
+  /* P2 (2026-11-23): staff er kaj er log — sudhu staff account er kaj
+     log hoy (owner er kaj Admin activity log e alada vabe thake). Table
+     na thakle chupchap skip — kono fake entry banano hoy na. */
+  async function logStaffActivity(action, detail){
+    var s = me(); if (!s || !s.isStaff) return;
+    if (!supabaseConnected || !supabase) return;
+    if (DB_HAS.staffActivity === false) return;
+    try {
+      var ins = await supabase.from('staff_activity').insert({ shop_id: s.shopId, staff_user_id: s.staffUserId || s.id, staff_email: s.email || "", action: action, detail: String(detail || "").slice(0, 500) });
+      if (ins.error) { if (ins.error.code === "42P01" || ins.error.code === "42703") DB_HAS.staffActivity = false; return; }
+      s.staffActivity = s.staffActivity || [];
+      s.staffActivity.unshift({ id: "local-" + Date.now(), staffEmail: s.email || "", action: action, detail: String(detail || "").slice(0, 500), date: fmtDate(new Date().toISOString()) });
+    } catch(e){}
+  }
   function prodById(id){ var l = ownProducts(); for (var i=0;i<l.length;i++) if (String(l[i].id)===String(id)) return l[i]; return null; }
   function orderTotal(o){ if (o && typeof o._total === "number" && o._total) return o._total; var t=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p) t += p.price*(it.qty||1); else if (it.price) t += Number(it.price)*(it.qty||1); }); return t; }
   /* Earning = subtotal − commission (Admin er formula). Ager 1.5%
@@ -1175,7 +1319,7 @@
   function mapProductRow(r){
     var st = String(r.status || "pending").toLowerCase();
     var imgs = (Array.isArray(r.images) && r.images.length) ? r.images.filter(function(u){ return !!u; }).slice() : (r.image_url ? [r.image_url] : []);
-    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", desc: r.description || r.desc || "", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved"), images: imgs, imageUrl: imgs.length ? imgs[0] : (r.image_url || ""), packSize: (r.pack_size != null && r.pack_size !== "" ? Number(r.pack_size) : (r.packSize != null ? Number(r.packSize) : null)), unit: r.unit || r.pack_unit || "", packaging: r.packaging || "" };
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || r.title || "", sku: r.sku || "", cat: r.category || r.cat || "Electronics", category: r.category || r.cat || "Electronics", desc: r.description || r.desc || "", price: Number(r.price || 0), oldPrice: r.old_price != null ? Number(r.old_price) : (r.oldPrice || null), stock: Number(r.stock || 0), sold: Number(r.sold || 0), status: st === "paused" ? "Paused" : "Active", approval: (st === "pending") ? "Pending Approval" : (st === "rejected" ? "Rejected" : "Approved"), images: imgs, imageUrl: imgs.length ? imgs[0] : (r.image_url || ""), packSize: (r.pack_size != null && r.pack_size !== "" ? Number(r.pack_size) : (r.packSize != null ? Number(r.packSize) : null)), unit: r.unit || r.pack_unit || "", packaging: r.packaging || "", variants: Array.isArray(r.variants) ? r.variants : [], saleStart: r.sale_start || "", saleEnd: r.sale_end || "" };
   }
   /* Pack label: "500 g · Jar" — shudhu ja set kora ache tai dekhay; khali thakle "" (kichu dekhabe na). */
   function packLabel(p){ if(!p) return ""; var parts=[]; if(p.packSize != null && p.packSize !== "" && +p.packSize > 0){ parts.push(String(p.packSize) + (p.unit ? " " + p.unit : "")); } else if(p.unit){ parts.push(p.unit); } if(p.packaging){ parts.push(p.packaging); } return parts.join(" · "); }
@@ -1185,7 +1329,7 @@
     var expMs = expStr ? Date.parse(expStr) : NaN;
     /* Meyad sesh coupon kokhono Live hobe na — past expiry hole Expired. */
     var cStatus = rawSt === "paused" ? "Paused" : (rawSt === "pending" ? "Pending Approval" : ((!isNaN(expMs) && expMs <= Date.now()) ? "Expired" : "Live"));
-    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, code: r.code || "", type: (String(r.type || r.discount_type || "Percent").toLowerCase().indexOf("flat") > -1 ? "Flat" : "Percent"), value: Number(r.value != null ? r.value : (r.discount_value || 0)), min: Number(r.min_order != null ? r.min_order : (r.min || 0)), cap: Number(r.max_cap != null ? r.max_cap : (r.max_discount != null ? r.max_discount : (r.cap || 0))), scope: r.scope || "Shop-wide (sob product)", expiry: expStr, limit: Number(r.usage_limit || r.limit || 200), used: Number(r.used_count || r.used || 0), status: cStatus };
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, code: r.code || "", type: (String(r.type || r.discount_type || "Percent").toLowerCase().indexOf("flat") > -1 ? "Flat" : "Percent"), value: Number(r.value != null ? r.value : (r.discount_value || 0)), min: Number(r.min_order != null ? r.min_order : (r.min || 0)), cap: Number(r.max_cap != null ? r.max_cap : (r.max_discount != null ? r.max_discount : (r.cap || 0))), scope: r.scope || "Shop-wide (sob product)", expiry: expStr, limit: Number(r.usage_limit || r.limit || 200), used: Number(r.used_count || r.used || 0), status: cStatus, perCustomerLimit: (r.per_customer_limit != null ? Number(r.per_customer_limit) : null) };
   }
   /* sub_orders er asol status column (DB values: AwaitingAdmin,
      AdminConfirmed, ReadyToShip, Packed, Shipped, Delivered, Cancelled).
@@ -1258,7 +1402,7 @@
     else payVis = r.pay_visibility || "";
     var masterCancelled = String(m.status || "").toLowerCase().indexOf("cancel") > -1;
     var status = masterCancelled ? "Cancelled" : subOrderStatusLabel(r.status);
-    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, localId: localId, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: m.customer_name || r.customer_name || r.customer || "", phone: m.customer_phone || r.customer_phone || r.phone || "", district: m.district || r.district || "", shipAddress: m.address || m.ship_address || r.ship_address || r.address || "", items: items, status: status, masterStatus: m.status || "", commissionRate: effRate, trackingId: r.tracking_id || m.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: payVis, payment: payMethod, paymentStatus: m.payment_status || "", _total: subtotal, _earning: earning, deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false };
+    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, localId: localId, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: m.customer_name || r.customer_name || r.customer || "", phone: m.customer_phone || r.customer_phone || r.phone || "", district: m.district || r.district || "", shipAddress: m.address || m.ship_address || r.ship_address || r.address || "", items: items, status: status, masterStatus: m.status || "", commissionRate: effRate, trackingId: r.tracking_id || m.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: payVis, payment: payMethod, paymentStatus: m.payment_status || "", _total: subtotal, _earning: earning, deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false, createdAt: r.created_at || m.created_at || null, txnId: m.transaction_id || r.transaction_id || "" };
   }
   function mapMegaRow(r){
     return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : "Pending Approval")), adminNote: r.admin_note || "Admin er review er opekkhay ache." };
@@ -1281,7 +1425,7 @@
       if (pids.length) {
         var rv = await supabase.from('reviews').select('*').in('product_id', pids).order('created_at', { ascending: false });
         if (!rv.error && rv.data) sellerObj.reviews = rv.data.map(function(r){
-          return { id: r.id, pid: r.product_id || r.productId, rating: Number(r.rating || 0), comment: r.comment || r.text || r.review || r.body || "", customer: r.customer_name || r.name || r.reviewer || r.customer || "Customer", date: r.created_at ? fmtDate(r.created_at) : "" };
+          return { id: r.id, pid: r.product_id || r.productId, rating: Number(r.rating || 0), comment: r.comment || r.text || r.review || r.body || "", customer: r.customer_name || r.name || r.reviewer || r.customer || "Customer", date: r.created_at ? fmtDate(r.created_at) : "", createdAt: r.created_at || "" };
         }).filter(function(r){ return !!String(r.comment).trim(); });
       } else sellerObj.reviews = [];
     } catch(e){}
@@ -1305,10 +1449,22 @@
     try { var po = await supabase.from('payouts').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!po.error && po.data) sellerObj.payouts = po.data.map(function(r){ var pst = String(r.status || "pending").toLowerCase(); return { date: r.created_at ? fmtDate(r.created_at) : "", method: r.method || sellerObj.payMethod, account: maskAccount(r.account || sellerObj.payAccount), amount: Number(r.amount || 0), status: (pst === "paid" ? "Paid" : (pst === "approved" ? "Approved" : "Processing")) }; }); } catch(e){}
     try { var rt = await supabase.from('returns').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!rt.error && rt.data) sellerObj.returns = rt.data.map(mapReturnRow); } catch(e){}
     try { var stf = await supabase.from('staff').select('*').eq('shop_id', shopId); if (!stf.error && stf.data) sellerObj.staff = stf.data.map(function(r){ return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || "", email: r.email || "", phone: r.phone || "", role: r.role || "Order Staff", active: r.active !== false, joined: r.created_at ? monthYear(r.created_at) : "", color: ROLE_COLORS[r.role] || "#0b7a55" }; }); } catch(e){}
+    /* P2 (2026-11-23): notun column/table er capability probe — column na
+       thakle select 42703 error dey; tokhon flag false hoy ar UI sotyi
+       kotha ("ekhono chalu hoy ni") dekhay. Probe sudhu ekbar, load er somoy.
+       Row na thakleo query success hole column ache bole dhora hoy. */
+    try { var pv1 = await supabase.from('products').select('id,variants').eq('shop_id', shopId).limit(1); DB_HAS.variants = !pv1.error; } catch(e){ DB_HAS.variants = false; }
+    try { var pv2 = await supabase.from('products').select('id,sale_start,sale_end').eq('shop_id', shopId).limit(1); DB_HAS.saleStart = !pv2.error; DB_HAS.saleEnd = !pv2.error; } catch(e){ DB_HAS.saleStart = false; DB_HAS.saleEnd = false; }
+    try { var pc1 = await supabase.from('coupons').select('id,per_customer_limit').eq('shop_id', shopId).limit(1); DB_HAS.couponPerCustomer = !pc1.error; } catch(e){ DB_HAS.couponPerCustomer = false; }
+    try {
+      var sa = await supabase.from('staff_activity').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }).limit(50);
+      if (!sa.error && sa.data) { DB_HAS.staffActivity = true; sellerObj.staffActivity = sa.data.map(function(r){ return { id: r.id, staffEmail: r.staff_email || "", action: r.action || "", detail: r.detail || "", date: r.created_at ? fmtDate(r.created_at) : "" }; }); }
+      else DB_HAS.staffActivity = false;
+    } catch(e){ DB_HAS.staffActivity = false; }
   }
   function sellerFromShopRow(profile, shop, authUser){
     var status = String(shop.status || "pending").toLowerCase();
-    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", nidCopyUrl: shop.nid_copy_url || "", tradeCopyUrl: shop.trade_licence_copy_url || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, kycStatus: shop.kyc_status || "pending", vacation: !!shop.vacation, logoUrl: shop.logo_url || "", bannerUrl: shop.banner_url || "", balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [], reviews: [] };
+    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", nidCopyUrl: shop.nid_copy_url || "", tradeCopyUrl: shop.trade_licence_copy_url || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, kycStatus: shop.kyc_status || "pending", vacation: !!shop.vacation, logoUrl: shop.logo_url || "", bannerUrl: shop.banner_url || "", slug: shop.slug || "", deliveryFee: (shop.delivery_fee != null ? Number(shop.delivery_fee) : null), freeDeliveryThreshold: (shop.free_delivery_threshold != null ? Number(shop.free_delivery_threshold) : null), notifPrefs: (shop.notif_prefs && typeof shop.notif_prefs === "object" && !Array.isArray(shop.notif_prefs)) ? shop.notif_prefs : {}, lowStockThreshold: (shop.low_stock_threshold != null ? Number(shop.low_stock_threshold) : 5), kycRerequest: shop.kyc_rerequest || null, hasDeliveryCols: ('delivery_fee' in shop), hasNotifPrefsCol: ('notif_prefs' in shop), hasLowStockCol: ('low_stock_threshold' in shop), hasKycRerequestCol: ('kyc_rerequest' in shop), balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [], reviews: [], staffActivity: [] };
   }
   async function loadCurrentSellerFromSupabase(authUser){
     if (!supabaseConnected || !supabase || !authUser) return null;
@@ -1803,7 +1959,7 @@
   $("checkStatusBtn").addEventListener("click", async function(){
     var s = me(); if (!s) { showLogin(); return; }
     if (supabaseConnected && supabase && s.shopId) {
-      try { var chk = await supabase.from('shops').select('*').eq('id', s.shopId).single(); if (!chk.error && chk.data) { var fresh = sellerFromShopRow({ full_name: s.owner, email: s.email, phone: s.phone }, chk.data, { id: s.id, email: s.email }); fresh.products = s.products; fresh.orders = s.orders; fresh.coupons = s.coupons; fresh.campSubs = s.campSubs; fresh.returns = s.returns; fresh.payouts = s.payouts; fresh.staff = s.staff; var ix = DB.sellers.indexOf(s); if (ix > -1) DB.sellers[ix] = fresh; s = fresh; if (s.status === "approved") await loadSellerDataFromSupabase(s); } } catch(e){}
+      try { var chk = await supabase.from('shops').select('*').eq('id', s.shopId).single(); if (!chk.error && chk.data) { var fresh = sellerFromShopRow({ full_name: s.owner, email: s.email, phone: s.phone }, chk.data, { id: s.id, email: s.email }); fresh.products = s.products; fresh.orders = s.orders; fresh.coupons = s.coupons; fresh.campSubs = s.campSubs; fresh.returns = s.returns; fresh.payouts = s.payouts; fresh.staff = s.staff; fresh.staffActivity = s.staffActivity; fresh.reviews = s.reviews; var ix = DB.sellers.indexOf(s); if (ix > -1) DB.sellers[ix] = fresh; s = fresh; if (s.status === "approved") await loadSellerDataFromSupabase(s); } } catch(e){}
     }
     if (s.status === "approved") { enterApp(); toast("Congratulation! Apnar shop approve hoyeche — Seller Center khule geche"); }
     else if (s.status === "suspended") { toast("Apnar application ti Admin reject / suspend koreche — seller support e jogajog korun"); }
@@ -1840,11 +1996,22 @@
     var lp = $("logoPreview"); if (lp) lp.textContent = initials(s.shop);
     var lt = $("setLogoText"); if (lt) lt.value = initials(s.shop);
     var vb = $("vacationBtn"); if (vb) { vb.textContent = "Vacation mode: " + (s.vacation ? "On" : "Off"); vb.classList.toggle("amber", !!s.vacation); }
+    /* P2 (2026-11-23): slug / delivery / notif / low-stock settings — shop row theke. */
+    var sl = $("setSlug"); if (sl) sl.value = s.slug || "";
+    var spl = $("shopPublicLink"); if (spl) { spl.href = "/shop?id=" + encodeURIComponent(s.shopId || ""); spl.textContent = "/shop?id=" + encodeURIComponent(s.shopId || ""); }
+    var df = $("setDeliveryFee"); if (df) df.value = (s.deliveryFee != null ? s.deliveryFee : "");
+    var ft = $("setFreeDeliveryThreshold"); if (ft) ft.value = (s.freeDeliveryThreshold != null ? s.freeDeliveryThreshold : "");
+    var dn = $("deliveryNote"); if (dn) dn.textContent = s.hasDeliveryCols ? "" : "Delivery settings ekhono database e chalu hoy ni (shops.delivery_fee / shops.free_delivery_threshold column nei) — save korle kaj korbe na.";
+    var ls = $("setLowStock"); if (ls) ls.value = lowStockThreshold();
+    var ln = $("lowStockNote"); if (ln) ln.textContent = s.hasLowStockCol ? "" : "Low-stock threshold ekhono database e chalu hoy ni (shops.low_stock_threshold column nei) — save korle kaj korbe na.";
+    renderNotifPrefs();
+    renderKycRerequest();
   }
 
   /* ================= NAV ================= */
   var VIEW_META = {
     dashboard: ["Dashboard","Sudhu amar shop — platform total ekhane nei"],
+    analytics: ["Analytics","Bikri, top product ar category hisab — sudhu apnar shop"],
     products: ["My Products","Product add, edit, stock ar price manage korun"],
     orders: ["My Orders","Admin confirm korar por order apnar kache ashe — apni sudhu ship koren"],
     reviews: ["Reviews","Customer ra apnar product e ki review diyeche — sudhu apnar shop-er review"],
@@ -1861,7 +2028,7 @@
   });
   /* Decision 7 — staff permission gating: staff sudhu tar role er view
      khulte parbe; Team & Staff shudhu owner er. */
-  var STAFF_VIEW_PERM = { dashboard: null, products: "Product add / edit", orders: "Order manage", coupons: "Product add / edit", campaigns: "Product add / edit", returns: "Returns & refunds", payouts: "Payout request", team: null, settings: "Shop settings", reviews: "Product add / edit" };
+  var STAFF_VIEW_PERM = { dashboard: null, analytics: null, products: "Product add / edit", orders: "Order manage", coupons: "Product add / edit", campaigns: "Product add / edit", returns: "Returns & refunds", payouts: "Payout request", team: null, settings: "Shop settings", reviews: "Product add / edit" };
   function staffCanView(v){
     var s = me(); if (!s || !s.isStaff) return true;
     if (v === "team") return false;
@@ -1886,7 +2053,7 @@
     if (!staffCanView(v)){ toast("Ei view ta apnar role (" + (me() ? me().staffRole : "") + ") er jonno noy."); v = "dashboard"; }
     currentView = v;
     document.querySelectorAll("#sideNav button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-view")===v); });
-    ["dashboard","products","orders","reviews","coupons","campaigns","returns","payouts","team","settings"].forEach(function(x){ $("view-"+x).classList.toggle("hidden", x!==v); });
+    ["dashboard","analytics","products","orders","reviews","coupons","campaigns","returns","payouts","team","settings"].forEach(function(x){ $("view-"+x).classList.toggle("hidden", x!==v); });
     $("viewTitle").textContent = VIEW_META[v][0]; $("viewSub").textContent = VIEW_META[v][1];
     $("sidebar").classList.remove("open");
     window.scrollTo(0,0);
@@ -1896,16 +2063,25 @@
   function sellerNotifItems(){
     var items = [];
     var r = ownOrders().filter(function(o){return o.status==="Ready to Ship"||o.status==="Packed";});
-    if(r.length) items.push({ t: r.length + " ta order ship korte hobe", sub: r.slice(0,3).map(function(o){ return o.id; }).join(", "), view: "orders" });
+    if(r.length) items.push({ t: r.length + " ta order ship korte hobe", sub: r.slice(0,3).map(function(o){ return o.id; }).join(", "), view: "orders", type: "new_order" });
     var w = ownOrders().filter(function(o){return o.status==="Awaiting Admin";});
-    if(w.length) items.push({ t: w.length + " ta order Admin confirmation er opekkhay", sub: w.slice(0,3).map(function(o){ return o.id; }).join(", "), view: "orders" });
-    var low = ownProducts().filter(function(x){return x.stock>0 && x.stock<10;});
-    if(low.length) items.push({ t: low.length + " ta product er stock kom (<10)", sub: low.slice(0,3).map(function(x){ return x.name + " (" + x.stock + ")"; }).join(", "), view: "products" });
+    if(w.length) items.push({ t: w.length + " ta order Admin confirmation er opekkhay", sub: w.slice(0,3).map(function(o){ return o.id; }).join(", "), view: "orders", type: "new_order" });
+    var low = ownProducts().filter(function(x){return x.stock>0 && x.stock<lowStockThreshold();});
+    if(low.length) items.push({ t: low.length + " ta product er stock kom (<" + lowStockThreshold() + ")", sub: low.slice(0,3).map(function(x){ return x.name + " (" + x.stock + ")"; }).join(", "), view: "products" });
     var ret = ownReturns().filter(function(x){return x.status==="Return Requested";});
-    if(ret.length) items.push({ t: ret.length + " ta return request er siddhanto baki", sub: ret.slice(0,3).map(function(x){ return x.id; }).join(", "), view: "returns" });
+    if(ret.length) items.push({ t: ret.length + " ta return request er siddhanto baki", sub: ret.slice(0,3).map(function(x){ return x.id; }).join(", "), view: "returns", type: "return_requested" });
     var camp = ownSubs().filter(function(x){ return x.status==="Pending Approval"; });
-    if(camp.length) items.push({ t: camp.length + " ta Mega Sale request Admin approval er opekkhay", sub: "", view: "campaigns" });
-    return items;
+    if(camp.length) items.push({ t: camp.length + " ta Mega Sale request Admin approval er opekkhay", sub: "", view: "campaigns", type: "campaign_approved" });
+    /* P2 (2026-11-23): payment-confirmed + review + campaign-approved notification. */
+    var pc = ownOrders().filter(function(o){ return o.paymentStatus === "confirmed" && (o.status === "Admin Confirmed" || o.status === "Ready to Ship" || o.status === "Packed"); });
+    if(pc.length) items.push({ t: pc.length + " ta order er payment confirmed — ship korte hobe", sub: pc.slice(0,3).map(function(o){ return o.id; }).join(", "), view: "orders", type: "payment_confirmed" });
+    var sevenDaysAgo = Date.now() - 7*24*60*60*1000;
+    var rv7 = (me() ? (me().reviews || []) : []).filter(function(r){ return r.createdAt && Date.parse(r.createdAt) >= sevenDaysAgo; });
+    if(rv7.length) items.push({ t: rv7.length + " ta notun review eseche (sesh 7 din)", sub: rv7.slice(0,3).map(function(r){ return (r.customer || "Customer") + " ★" + r.rating; }).join(", "), view: "reviews", type: "review_received" });
+    var campOk = ownSubs().filter(function(x){ return x.status === "Approved"; });
+    if(campOk.length) items.push({ t: campOk.length + " ta Mega Sale submission Admin approve koreche", sub: "", view: "campaigns", type: "campaign_approved" });
+    /* Notification preference bondho thakle oi dhoroner item asbe na. */
+    return items.filter(function(n){ return !n.type || notifPref(n.type); });
   }
   function renderBellPanel(){
     var p = $("bellPanel"); if(!p) return;
@@ -1985,13 +2161,13 @@
       return '<div class="stat"><div class="lbl"><span class="ic" style="background:' + x.bg + '">' + x.ic + '</span>' + x.lbl + '</div><div class="val">' + x.val + '</div><div class="delta">' + x.delta + '</div></div>';
     }).join("");
 
-    var lowCount = products.filter(function(p){ return p.stock < 10; }).length;
+    var lowCount = products.filter(function(p){ return p.stock < lowStockThreshold(); }).length;
     var todos = [
       { v: ready, l:"ta order Ready to Ship — Admin confirm koreche, ekhon ship korun", view:"orders" },
       { v: awaiting, l:"ta order Awaiting Admin — Admin confirm korlei apnar kache asbe", view:"orders" },
       { v: campPending, l:"ta Mega Sale submission Admin approval er opekkhay", view:"campaigns" },
       { v: liveCoupons, l:"ta shop coupon website e Live ache", view:"coupons" },
-      { v: lowCount, l:"ta product er stock kom (10 er niche)", view:"products" },
+      { v: lowCount, l:"ta product er stock kom (" + lowStockThreshold() + " er niche)", view:"products" },
       { v: retPending, l:"ta return request — accept/reject korun, refund apnar wallet theke adjust hobe", view:"returns" }
     ];
     $("todoGrid").innerHTML = todos.map(function(t){
@@ -2018,7 +2194,7 @@
       }).join("") + '</div>';
     }
 
-    var low = products.filter(function(p){ return p.stock < 10; });
+    var low = products.filter(function(p){ return p.stock < lowStockThreshold(); });
     $("lowStockStrip").innerHTML = low.length ? '<div class="alert-strip"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17.5h.01"/></svg><div><b>Low stock alert:</b> ' + low.map(function(p){ return esc(p.name) + ' (matro ' + p.stock + ' ta baki)'; }).join(" · ") + '. Products page theke restock korun.</div></div>' : "";
 
     var cats = {};
@@ -2035,6 +2211,128 @@
       tr.addEventListener("click", function(){ openOrderDrawer(tr.getAttribute("data-order")); });
     });
   }
+
+  /* ================= P2: ANALYTICS ================= */
+  function analyticsOrders(){
+    var now = Date.now();
+    var startMs, endMs = now;
+    if (analyticsRange.start && analyticsRange.end) {
+      startMs = new Date(analyticsRange.start + "T00:00:00").getTime();
+      endMs = new Date(analyticsRange.end + "T23:59:59").getTime();
+    } else {
+      startMs = now - analyticsRange.days * 24 * 60 * 60 * 1000;
+    }
+    if (isNaN(startMs) || isNaN(endMs) || startMs > endMs) return { orders: [], startMs: startMs, endMs: endMs };
+    var list = ownOrders().filter(function(o){
+      if (o.status === "Cancelled") return false;
+      var d = o.createdAt ? new Date(o.createdAt) : new Date(o.date);
+      var ms = d.getTime();
+      return !isNaN(ms) && ms >= startMs && ms <= endMs;
+    });
+    return { orders: list, startMs: startMs, endMs: endMs };
+  }
+  function renderAnalytics(){
+    var s = me(); if (!s) return;
+    var r = analyticsOrders();
+    var orders = r.orders;
+    var totalSales = orders.reduce(function(sum, o){ return sum + orderTotal(o); }, 0);
+    var totalEarn = orders.reduce(function(sum, o){ return sum + orderEarning(o); }, 0);
+    var avg = orders.length ? Math.round(totalSales / orders.length) : 0;
+    var kpis = [
+      { lbl: "Sales (ei range)", val: fmt(totalSales) },
+      { lbl: "Orders", val: orders.length },
+      { lbl: "Avg order value", val: fmt(avg) },
+      { lbl: "Apnar earning", val: fmt(totalEarn) }
+    ];
+    $("analyticsKpis").innerHTML = kpis.map(function(x){
+      return '<div class="stat"><div class="lbl">' + x.lbl + '</div><div class="val">' + x.val + '</div></div>';
+    }).join("");
+    var startLbl = fmtDate(new Date(r.startMs).toISOString()), endLbl = fmtDate(new Date(r.endMs).toISOString());
+    $("analyticsRangeLbl").textContent = startLbl + " — " + endLbl + " · Sudhu apnar shop er confirmed order (Cancelled bad)";
+    $("analyticsEmpty").classList.toggle("hidden", orders.length > 0);
+    var staffNote = $("analyticsStaffNote");
+    if (staffNote) staffNote.innerHTML = s.isStaff ? '<div class="alert-strip"><div><b>Staff account:</b> order data shop owner er id diye scope kora — staff account e ekhane 0 dekhate pare (known limitation, scoping ei round e bodlano hoy ni).</div></div>' : "";
+    /* Sales by day — 31 din er beshi hole weekly bucket. */
+    var spanDays = Math.max(1, Math.ceil((r.endMs - r.startMs) / (24*60*60*1000)));
+    var weekly = spanDays > 31;
+    var buckets = {}, labels = [];
+    function bucketKey(d){
+      if (!weekly) return d.toISOString().slice(0,10);
+      var dd = new Date(d); dd.setHours(0,0,0,0);
+      dd.setDate(dd.getDate() - ((dd.getDay() + 6) % 7));
+      return dd.toISOString().slice(0,10);
+    }
+    var cur = new Date(r.startMs); cur.setHours(0,0,0,0);
+    var guard = 0;
+    while (cur.getTime() <= r.endMs && guard < 200) {
+      var k = bucketKey(cur);
+      if (!buckets[k]) { buckets[k] = 0; labels.push(k); }
+      cur.setDate(cur.getDate() + (weekly ? 7 : 1)); guard++;
+    }
+    orders.forEach(function(o){
+      var d = o.createdAt ? new Date(o.createdAt) : new Date(o.date);
+      var k = bucketKey(d);
+      if (buckets[k] != null) buckets[k] += orderTotal(o);
+    });
+    var max = Math.max.apply(null, labels.map(function(d){ return buckets[d]; }).concat([1]));
+    $("analyticsChart").innerHTML = labels.length ? '<div class="chart-wrap">' + labels.map(function(d, i){
+      var v = buckets[d], h = Math.max(10, Math.round(v / max * 120));
+      return '<div class="bar-col"><div class="v">' + (v >= 1000 ? (v/1000).toFixed(1) + 'k' : fmt(v)) + '</div><div class="bar' + (i===labels.length-1 ? " amber" : "") + '" style="height:' + h + 'px" title="' + esc(d) + ': ' + fmt(v) + '"></div><div class="d">' + esc(d.slice(5)) + '</div></div>';
+    }).join("") + '</div>' : '<div class="empty"><div class="et">No sales yet</div><div>Ei range e kono sale nei.</div></div>';
+    /* Top products — unit + revenue. */
+    var byProd = {};
+    orders.forEach(function(o){
+      (o.items || []).forEach(function(it){
+        var p = prodById(it.pid || it.product_id || it.productId);
+        var nm = p ? p.name : (it.name || "Item");
+        var pr = p ? p.price : Number(it.price || it.unitPrice || 0);
+        var q = it.qty || 1;
+        var key = p ? String(p.id) : nm;
+        if (!byProd[key]) byProd[key] = { name: nm, units: 0, revenue: 0 };
+        byProd[key].units += q; byProd[key].revenue += pr * q;
+      });
+    });
+    var top = Object.keys(byProd).map(function(k){ return byProd[k]; }).sort(function(a, b){ return b.revenue - a.revenue; }).slice(0, 8);
+    $("analyticsTop").innerHTML = top.length ? '<div class="tbl-wrap"><table class="tbl-recent"><thead><tr><th>Product</th><th>Units</th><th>Revenue</th></tr></thead><tbody>' + top.map(function(t){ return '<tr><td>' + esc(t.name) + '</td><td>' + t.units + '</td><td><b>' + fmt(t.revenue) + '</b></td></tr>'; }).join("") + '</tbody></table></div>' : '<div class="empty"><div class="et">Kono product sale hoy ni</div><div>Ei range e kono item bikri hoy ni.</div></div>';
+    /* Category split — revenue onujayi. */
+    var byCat = {};
+    orders.forEach(function(o){
+      (o.items || []).forEach(function(it){
+        var p = prodById(it.pid || it.product_id || it.productId);
+        var cat = p ? (p.cat || "Onno") : (it.category || it.cat || "Onno");
+        var pr = p ? p.price : Number(it.price || it.unitPrice || 0);
+        byCat[cat] = (byCat[cat] || 0) + pr * (it.qty || 1);
+      });
+    });
+    var catKeys = Object.keys(byCat).sort(function(a, b){ return byCat[b] - byCat[a]; });
+    var catTotal = catKeys.reduce(function(sum, k){ return sum + byCat[k]; }, 0);
+    $("analyticsCat").innerHTML = catKeys.length ? catKeys.map(function(k){
+      var pct = catTotal ? Math.round(byCat[k] / catTotal * 100) : 0;
+      return '<div class="comm-row"><span>' + esc(k) + '</span><b>' + fmt(byCat[k]) + ' · ' + pct + '%</b></div><div class="usebar"><i style="width:' + pct + '%"></i></div>';
+    }).join("") : '<div class="empty"><div class="et">Kono category sale nei</div><div>Ei range e kono item bikri hoy ni.</div></div>';
+  }
+  $("analyticsChips").addEventListener("click", function(e){
+    var b = e.target.closest("button[data-days]"); if (!b) return;
+    analyticsRange.days = +b.getAttribute("data-days");
+    analyticsRange.start = ""; analyticsRange.end = "";
+    $("anStart").value = ""; $("anEnd").value = "";
+    document.querySelectorAll("#analyticsChips .fchip").forEach(function(c){ c.classList.toggle("on", c === b); });
+    renderAnalytics();
+  });
+  $("anApply").addEventListener("click", function(){
+    var st = $("anStart").value, en = $("anEnd").value;
+    if (!st || !en) { toast("Start ar end date duitai din."); return; }
+    if (new Date(st) > new Date(en)) { toast("Start date, end date er pore hote parbe na."); return; }
+    analyticsRange.start = st; analyticsRange.end = en;
+    document.querySelectorAll("#analyticsChips .fchip").forEach(function(c){ c.classList.remove("on"); });
+    renderAnalytics();
+  });
+  $("anClear").addEventListener("click", function(){
+    analyticsRange.days = 30; analyticsRange.start = ""; analyticsRange.end = "";
+    $("anStart").value = ""; $("anEnd").value = "";
+    document.querySelectorAll("#analyticsChips .fchip").forEach(function(c){ c.classList.toggle("on", c.getAttribute("data-days") === "30"); });
+    renderAnalytics();
+  });
 
   /* ================= PRODUCTS ================= */
   function renderProducts(){
@@ -2053,7 +2351,7 @@
     $("productsEmpty").classList.toggle("hidden", ownProducts().length > 0);
     $("productsBody").innerHTML = list.map(function(p){
       var pct = Math.min(100, Math.round(p.stock/150*100));
-      var cls = p.stock===0 || p.stock<5 ? "low" : (p.stock<25 ? "mid" : "");
+      var cls = p.stock===0 || p.stock<lowStockThreshold() ? "low" : (p.stock<25 ? "mid" : "");
       var thumbHtml = (p.images && p.images.length) ? '<img class="thumb" src="' + esc(p.images[0]) + '" alt="' + esc(p.name) + '" style="object-fit:cover" />' : '<div class="thumb" style="background:' + (CAT_COLORS[p.cat]||"#666") + '">' + catIcon(p.cat) + '</div>';
       /* P1 (2026-11-23): Warehouse staff sudhu Stock pabe; Edit/Pause/Delete
          sudhu "Product add / edit" permission thakle. Pending-Approval
@@ -2066,7 +2364,7 @@
         acts += '<button class="mini-btn" data-act="toggle" data-id="' + p.id + '" type="button"' + (isPending ? ' disabled title="Approval er opekkhay — pause kora jabe na"' : '') + '>' + (p.status==="Active" ? "Pause" : "Activate") + '</button>';
         acts += '<button class="mini-btn red" data-act="del" data-id="' + p.id + '" type="button">Delete</button>';
       }
-      return '<tr><td><div class="prod-cell">' + thumbHtml + '<div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div>' + (packLabel(p) ? '<div class="psku">📦 ' + esc(packLabel(p)) + '</div>' : '') + '</div></div></td>'
+      return '<tr><td><input type="checkbox" class="prod-check" data-id="' + p.id + '" aria-label="Select ' + esc(p.name) + '"' + (bulkSelected[p.id] ? " checked" : "") + ' /></td><td><div class="prod-cell">' + thumbHtml + '<div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div>' + (packLabel(p) ? '<div class="psku">📦 ' + esc(packLabel(p)) + '</div>' : '') + '</div></div></td>'
         + '<td><b>' + fmt(p.price) + '</b>' + (p.oldPrice ? '<div class="psku"><s>' + fmt(p.oldPrice) + '</s></div>' : '') + '</td>'
         + '<td><b>' + p.stock + '</b><div class="stockbar"><i class="' + cls + '" style="width:' + pct + '%"></i></div></td>'
         + '<td>' + (p.sold || 0).toLocaleString("en-IN") + '</td>'
@@ -2075,7 +2373,7 @@
         + '<td><div class="row-actions">' + acts + '</div></td></tr>';
     }).join("");
     if (ownProducts().length && !list.length) {
-      $("productsBody").innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1.4rem">Ei filter e kono product mile ni — search ba filter bodle dekhun.</td></tr>';
+      $("productsBody").innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:1.4rem">Ei filter e kono product mile ni — search ba filter bodle dekhun.</td></tr>';
     }
     $("productsBody").querySelectorAll("button[data-act]").forEach(function(b){
       b.addEventListener("click", async function(){
@@ -2106,6 +2404,7 @@
                 p.stock = newStock;
                 closeModal();
                 toast(p.name + " — " + qty + " ta stock add holo. Ekhon total " + p.stock);
+                logStaffActivity("Stock add", p.name + " — +" + qty + ", total " + p.stock);
                 renderAll();
               });
             });
@@ -2128,10 +2427,188 @@
           }
           toast(p.name + " ekhon " + p.status); renderAll();
         }
-        if (act==="del"){ if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; } openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', async function(){ var s = me(); if (supabaseConnected && supabase) { try { var delR = await supabase.from('products').delete().eq('id', p.id).eq('shop_id', s.shopId); if (delR && delR.error) { toast("Product delete hoy ni — " + (delR.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Product delete hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } } s.products = s.products.filter(function(x){ return String(x.id)!==String(id); }); toast("Product delete hoyeche"); renderAll(); }); }
+        if (act==="del"){ if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; } openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', async function(){ var s = me(); if (supabaseConnected && supabase) { try { var delR = await supabase.from('products').delete().eq('id', p.id).eq('shop_id', s.shopId); if (delR && delR.error) { toast("Product delete hoy ni — " + (delR.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Product delete hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } } s.products = s.products.filter(function(x){ return String(x.id)!==String(id); }); toast("Product delete hoyeche"); logStaffActivity("Product delete", p.name); renderAll(); }); }
         if (act==="edit"){ if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; } openProductModal(p); }
       });
     });
+    /* P2 (2026-11-23): bulk select — checkbox state bulkSelected e thake, render er por o thake. */
+    currentProductList = list;
+    $("productsBody").querySelectorAll(".prod-check").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var id = cb.getAttribute("data-id");
+        if (cb.checked) bulkSelected[id] = true; else delete bulkSelected[id];
+        updateBulkBar();
+      });
+    });
+    var sa = $("prodSelectAll"); if (sa) sa.checked = list.length > 0 && list.every(function(p){ return bulkSelected[p.id]; });
+    updateBulkBar();
+  }
+  var currentProductList = [];
+  function updateBulkBar(){
+    var bar = $("bulkBar"); if (!bar) return;
+    var n = Object.keys(bulkSelected).length;
+    bar.classList.toggle("hidden", n === 0);
+    $("bulkCount").textContent = n + " selected";
+    $("bulkValue").style.display = ($("bulkAction").value === "activate" || $("bulkAction").value === "pause") ? "none" : "";
+  }
+  function selectedProducts(){ return ownProducts().filter(function(p){ return bulkSelected[p.id]; }); }
+  $("prodSelectAll").addEventListener("change", function(){
+    var checked = this.checked;
+    currentProductList.forEach(function(p){ if (checked) bulkSelected[p.id] = true; else delete bulkSelected[p.id]; });
+    renderProducts();
+  });
+  $("bulkAction").addEventListener("change", updateBulkBar);
+  $("bulkClearBtn").addEventListener("click", function(){ bulkSelected = {}; renderProducts(); });
+  $("bulkApplyBtn").addEventListener("click", function(){
+    var s = me(); if (!s) return;
+    var sel = selectedProducts();
+    if (!sel.length) { toast("Kono product select kora hoy ni."); return; }
+    if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; }
+    var action = $("bulkAction").value, raw = $("bulkValue").value.trim();
+    var summary = "";
+    if (action === "price_pct") { var pct = parseFloat(raw); if (isNaN(pct)) { toast("Sothik % din — e.g. 10 (barate) ba -10 (komate)."); return; } summary = sel.length + " ta product er price " + (pct >= 0 ? "+" : "") + pct + "% bodle jabe."; }
+    else if (action === "price_fixed") { var fx = parseFloat(raw); if (isNaN(fx)) { toast("Sothik amount din — e.g. 50 (barate) ba -50 (komate)."); return; } summary = sel.length + " ta product er price " + (fx >= 0 ? "+" : "") + "৳" + fx + " bodle jabe."; }
+    else if (action === "stock") { var st = parseInt(raw, 10); if (isNaN(st) || st < 0) { toast("Sothik stock din — 0 ba tar beshi."); return; } summary = sel.length + " ta product er stock " + st + " kora hobe."; }
+    else if (action === "activate") summary = sel.length + " ta product Active kora hobe (Pending Approval / Rejected bad jabe).";
+    else if (action === "pause") summary = sel.length + " ta product Pause kora hobe (Pending Approval / Rejected bad jabe).";
+    openConfirm("Bulk update confirm korun", summary, async function(){
+      var ok = 0, skipped = [], failed = [];
+      for (var i = 0; i < sel.length; i++) {
+        var p = sel[i], patch = null;
+        if (action === "price_pct") { var np = Math.max(1, Math.round(p.price * (1 + parseFloat(raw) / 100))); patch = { price: np }; }
+        else if (action === "price_fixed") { var nf = Math.max(1, Math.round(p.price + parseFloat(raw))); patch = { price: nf }; }
+        else if (action === "stock") { patch = { stock: parseInt(raw, 10) }; }
+        else if (action === "activate") { if (p.approval !== "Approved") { skipped.push(p.name + " (approval: " + p.approval + ")"); continue; } if (p.status === "Active") { skipped.push(p.name + " (agei Active)"); continue; } patch = { status: "approved" }; }
+        else if (action === "pause") { if (p.approval !== "Approved") { skipped.push(p.name + " (approval: " + p.approval + ")"); continue; } if (p.status === "Paused") { skipped.push(p.name + " (agei Paused)"); continue; } patch = { status: "paused" }; }
+        var saved = false;
+        if (supabaseConnected && supabase) {
+          try { var up = await supabase.from('products').update(patch).eq('id', p.id).eq('shop_id', s.shopId).select("id"); if (up.error) { failed.push(p.name + ": " + up.error.message); continue; } if (!up.data || !up.data.length) { failed.push(p.name + ": save hoy ni (kono row update hoy ni)"); continue; } saved = true; } catch(e){ failed.push(p.name + ": " + (e && e.message ? e.message : "database error")); continue; }
+        } else saved = true;
+        if (saved) { if (patch.price != null) p.price = patch.price; if (patch.stock != null) p.stock = patch.stock; if (patch.status) p.status = patch.status === "paused" ? "Paused" : "Active"; ok++; }
+      }
+      bulkSelected = {};
+      renderAll();
+      logStaffActivity("Bulk product update", action + " — " + ok + " ta update, " + skipped.length + " ta bad, " + failed.length + " ta fail");
+      var msg = ok + " ta product update hoyeche." + (skipped.length ? " " + skipped.length + " ta bad deya hoyeche." : "") + (failed.length ? " " + failed.length + " ta fail hoyeche." : "");
+      if (failed.length || skipped.length) openModal('<h2>Bulk update result</h2><div class="msub">' + esc(msg) + '</div>' + (skipped.length ? '<h4>Bad deya hoyeche</h4><ul>' + skipped.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join("") + '</ul>' : '') + (failed.length ? '<h4>Fail hoyeche</h4><ul>' + failed.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join("") + '</ul>' : '') + '<div style="display:flex;justify-content:flex-end"><button class="btn" id="bulkResOk" type="button">OK</button></div>', function(){ $("bulkResOk").addEventListener("click", closeModal); });
+      else toast(msg);
+    });
+  });
+  /* ================= P2: CSV EXPORT / IMPORT ================= */
+  function csvEscape(v){ v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
+  function downloadTextFile(filename, text){
+    var blob = new Blob([text], { type: "text/csv;charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a"); a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+    setTimeout(function(){ try { URL.revokeObjectURL(url); } catch(e){} a.remove(); }, 500);
+  }
+  $("exportProductsBtn").addEventListener("click", function(){
+    var header = ["name","sku","category","price","old_price","stock","sold","status","approval"];
+    var csv = header.join(",") + "\n" + ownProducts().map(function(p){
+      var r = { name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice != null ? p.oldPrice : "", stock: p.stock, sold: p.sold || 0, status: p.status, approval: p.approval };
+      return header.map(function(h){ return csvEscape(r[h]); }).join(",");
+    }).join("\n");
+    downloadTextFile("anbobd-my-products.csv", csv);
+    toast(ownProducts().length + " ta product CSV te export holo.");
+  });
+  function parseCsvLine(line){
+    var out = [], cur = "", inQ = false;
+    for (var i = 0; i < line.length; i++) {
+      var ch = line[i];
+      if (inQ) { if (ch === '"') { if (line[i+1] === '"') { cur += '"'; i++; } else inQ = false; } else cur += ch; }
+      else if (ch === '"') inQ = true;
+      else if (ch === ',') { out.push(cur); cur = ""; }
+      else cur += ch;
+    }
+    out.push(cur);
+    return out;
+  }
+  $("importProductsBtn").addEventListener("click", function(){
+    if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; }
+    openModal('<h2>Import Products (CSV)</h2><div class="msub">CSV file er column: <b>name, sku, category, price, old_price, stock, pack_size, unit, packaging</b>. Category hote hobe: ' + esc(Object.keys(COMMISSION).join(", ")) + '. Price 0 er beshi hote hobe. Import kora product "Pending Approval" thakbe — Admin approve korle live hobe. Chhobi CSV te ashe na — pore Edit kore chhobi dite hobe. Template er example row ta muche felun ba nijer data diye bodle felun.</div>'
+      + '<div style="display:flex;gap:.6rem;flex-wrap:wrap"><button class="btn ghost" id="csvTemplateBtn" type="button">Template download</button><input id="csvFile" type="file" accept=".csv,text/csv" style="flex:1;min-width:200px" /></div>'
+      + '<p class="err" id="csvErr"></p>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="csvCancel" type="button">Cancel</button><button class="btn" id="csvGo" type="button">Import</button></div>',
+      function(){
+        $("csvCancel").addEventListener("click", closeModal);
+        $("csvTemplateBtn").addEventListener("click", function(){ downloadTextFile("anbobd-product-import-template.csv", "name,sku,category,price,old_price,stock,pack_size,unit,packaging\nExample Honey,SKU-000001,Grocery,500,650,20,500,g,Jar\n"); });
+        $("csvGo").addEventListener("click", async function(){
+          var f = $("csvFile").files && $("csvFile").files[0];
+          if (!f) { $("csvErr").textContent = "CSV file bachhun."; return; }
+          var text = await f.text();
+          var lines = text.split(/\r?\n/).filter(function(l){ return l.trim() !== ""; });
+          if (lines.length < 2) { $("csvErr").textContent = "File e header + kompokkhe 1 ta row lagbe."; return; }
+          var header = parseCsvLine(lines[0]).map(function(h){ return h.trim().toLowerCase(); });
+          var need = ["name","category","price"];
+          var missing = need.filter(function(h){ return header.indexOf(h) === -1; });
+          if (missing.length) { $("csvErr").textContent = "Header e ei column gulo nei: " + missing.join(", "); return; }
+          var idx = function(h){ return header.indexOf(h); };
+          var cats = Object.keys(COMMISSION);
+          var okRows = [], failRows = [];
+          for (var li = 1; li < lines.length; li++) {
+            var cols = parseCsvLine(lines[li]);
+            var get = function(h){ var i = idx(h); return i > -1 ? (cols[i] || "").trim() : ""; };
+            var rowNo = li + 1;
+            var nm = get("name");
+            if (!nm) { failRows.push("Row " + rowNo + ": name khali"); continue; }
+            var ct = get("category");
+            var catMatch = cats.filter(function(c){ return c.toLowerCase() === ct.toLowerCase(); })[0];
+            if (!catMatch) { failRows.push("Row " + rowNo + " (" + nm + "): category vul — " + ct); continue; }
+            var pr = parseFloat(get("price"));
+            if (isNaN(pr) || pr <= 0) { failRows.push("Row " + rowNo + " (" + nm + "): price sothik na"); continue; }
+            var stk = get("stock") === "" ? 0 : parseInt(get("stock"), 10);
+            if (isNaN(stk) || stk < 0) { failRows.push("Row " + rowNo + " (" + nm + "): stock sothik na"); continue; }
+            var oldP = get("old_price") === "" ? null : parseFloat(get("old_price"));
+            if (oldP != null && (isNaN(oldP) || oldP < 0)) { failRows.push("Row " + rowNo + " (" + nm + "): old_price sothik na"); continue; }
+            var ps = get("pack_size") === "" ? null : parseFloat(get("pack_size"));
+            if (ps != null && (isNaN(ps) || ps <= 0)) { failRows.push("Row " + rowNo + " (" + nm + "): pack_size sothik na"); continue; }
+            okRows.push({ name: nm, sku: get("sku") || ("SKU-" + String(Date.now()).slice(-6) + "-" + li), cat: catMatch, price: pr, oldPrice: oldP, stock: stk, desc: "", packSize: ps, unit: get("unit"), packaging: get("packaging") });
+          }
+          if (!okRows.length) { $("csvErr").textContent = "Kono valid row pelam na — header/column check korun."; return; }
+          var saved = 0, saveFails = [];
+          var s = me();
+          for (var k = 0; k < okRows.length; k++) {
+            var r = okRows[k];
+            if (supabaseConnected && supabase) {
+              try {
+                var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: r.name, sku: r.sku, category: r.cat, price: r.price, old_price: r.oldPrice, stock: r.stock, description: "", images: [], image_url: null, pack_size: r.packSize, unit: r.unit, packaging: r.packaging, status: "pending" }).select().single();
+                if (ins.error) { saveFails.push(r.name + ": " + ins.error.message); continue; }
+                if (ins.data) s.products.unshift(mapProductRow(ins.data));
+                saved++;
+              } catch(e){ saveFails.push(r.name + ": " + (e && e.message ? e.message : "database error")); continue; }
+            } else {
+              s.products.unshift({ id: Date.now() + k, sellerId: s.shopId, shop_id: s.shopId, approval: "Pending Approval", name: r.name, sku: r.sku, cat: r.cat, price: r.price, oldPrice: r.oldPrice, stock: r.stock, desc: "", sold: 0, status: "Active", packSize: r.packSize, unit: r.unit, packaging: r.packaging, images: [], imageUrl: "", variants: [], saleStart: "", saleEnd: "" });
+              saved++;
+            }
+          }
+          var allFails = failRows.concat(saveFails);
+          closeModal(); renderAll();
+          logStaffActivity("CSV import", saved + " ta product import, " + allFails.length + " ta row fail");
+          openModal('<h2>CSV import result</h2><div class="msub">' + saved + ' ta product import hoyeche (Pending Approval — Admin approve korle live hobe). ' + allFails.length + ' ta row fail hoyeche.</div>'
+            + (allFails.length ? '<h4>Fail howa row</h4><ul style="max-height:300px;overflow:auto">' + allFails.map(function(x){ return '<li>' + esc(x) + '</li>'; }).join("") + '</ul>' : '<p>Shob row thik moto import hoyeche 🎉</p>')
+            + '<div style="display:flex;justify-content:flex-end"><button class="btn" id="csvResOk" type="button">OK</button></div>',
+            function(){ $("csvResOk").addEventListener("click", closeModal); });
+        });
+      });
+  });
+  /* P2 (2026-11-23): products.variants / sale_start / sale_end column na
+     thakle 42703 error — tokhon oi field gulo baad diye abar save, ar
+     flag off kore UI te note dekhano hoy. */
+  async function productSaveWithFallback(payload, isEdit, id, shopId){
+    var r;
+    if (isEdit) r = await supabase.from('products').update(payload).eq('id', id).eq('shop_id', shopId);
+    else r = await supabase.from('products').insert(payload).select().single();
+    if (r.error && r.error.code === "42703") {
+      var stripped = {};
+      for (var k in payload) if (k !== "variants" && k !== "sale_start" && k !== "sale_end") stripped[k] = payload[k];
+      if (Object.keys(stripped).length !== Object.keys(payload).length) {
+        DB_HAS.variants = false; DB_HAS.saleStart = false; DB_HAS.saleEnd = false;
+        if (isEdit) r = await supabase.from('products').update(stripped).eq('id', id).eq('shop_id', shopId);
+        else r = await supabase.from('products').insert(stripped).select().single();
+        if (!r.error) r.degraded = true;
+      }
+    }
+    return r;
   }
   $("prodSearch").addEventListener("input", renderProducts);
   $("prodCatFilter").addEventListener("change", renderProducts);
@@ -2141,7 +2618,7 @@
 
   function openProductModal(p){
     var s = me(); if (!s) return;
-    var isEdit = !!p; p = p || { name:"", sku:"", cat:s.category || "Electronics", price:"", oldPrice:"", stock:"", desc:"", packSize:"", unit:"", packaging:"" };
+    var isEdit = !!p; p = p || { name:"", sku:"", cat:s.category || "Electronics", price:"", oldPrice:"", stock:"", desc:"", packSize:"", unit:"", packaging:"", variants: [], saleStart: "", saleEnd: "" };
     var catOpts = Object.keys(COMMISSION).map(function(c){ return '<option ' + (p.cat===c ? "selected" : "") + '>' + c + '</option>'; }).join("");
     var unitOpts = ["", "g", "kg", "ml", "L", "pcs"].map(function(u){ return '<option value="' + u + '"' + (String(p.unit || "") === u ? " selected" : "") + '>' + (u === "" ? "— একক বাছুন —" : (u === "pcs" ? "pcs (পিস)" : u)) + '</option>'; }).join("");
     var packOpts = ["", "Jar", "Bottle", "Packet", "Box", "Piece", "Other"].map(function(k){ return '<option value="' + k + '"' + (String(p.packaging || "") === k ? " selected" : "") + '>' + (k === "" ? "— প্যাকেজিং বাছুন —" : k) + '</option>'; }).join("");
@@ -2157,6 +2634,10 @@
       + '<div class="field"><label>একক (Unit)</label><select id="mUnit" aria-label="Unit">' + unitOpts + '</select></div>'
       + '<div class="field"><label>প্যাকেজিং (Packaging)</label><select id="mPack" aria-label="Packaging">' + packOpts + '</select></div></div>'
       + '<div class="hint">পরিমাণ + প্যাকেজিং customer product page e dekhabe — e.g. "500 g · Jar".</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Sale start (ঐচ্ছিক)</label><input id="mSaleStart" aria-label="Sale start" type="datetime-local" value="' + toDatetimeLocal(p.saleStart) + '" /></div>'
+      + '<div class="field"><label>Sale end (ঐচ্ছিক)</label><input id="mSaleEnd" aria-label="Sale end" type="datetime-local" value="' + toDatetimeLocal(p.saleEnd) + '" /></div></div>'
+      + '<div class="hint" id="saleNote">' + (DB_HAS.saleStart === false ? 'Sale scheduling ekhono database e chalu hoy ni (products.sale_start / sale_end column nei) — save korle sale window thakbe na.' : 'Sale window er vitore storefront e sale price dekhabe; window er baire gele ager (old) price dekhabe.') + '</div>'
+      + '<div class="field"><label>Variations (ঐচ্ছিক)</label><div id="varEditor"></div><button class="btn ghost sm" id="varAddBtn" type="button">+ Add variation</button><div class="hint" id="varNote">' + (DB_HAS.variants === false ? 'Variations ekhono database e chalu hoy ni (products.variants column nei) — save korle variations thakbe na.' : 'E.g. Size: S / M / L — prottek option e price delta (৳) ar stock dite parben.') + '</div></div>'
       + '<div class="field"><label>Product description</label><textarea id="mDesc" aria-label="Product description" rows="4" placeholder="Ponner biboron likhun — size, material, ki ki ache, warranty ityadi. Customer product page e eta dekhbe.">' + esc(p.desc || "") + '</textarea></div>'
       + '<div class="field"><label>Product images</label><input id="mImages" type="file" accept="image/*" multiple aria-label="Product images" /><div class="hint">Sorbochcho 5 ta chhobi, prottekta sorbochcho 2MB (JPG, PNG, WebP). Prothom chhobi tai primary hobe.</div><div class="img-grid" id="mImgGrid"></div></div>'
       + '<p class="err" id="mErr"></p>'
@@ -2183,6 +2664,29 @@
           });
         }
         renderImgGrid();
+        /* P2 (2026-11-23): variations editor — [{name, options:[{label, price_delta, stock}]}]. */
+        var varData = (p.variants || []).map(function(v){ return { name: v.name || "", options: (v.options || []).map(function(o){ return { label: o.label || "", price_delta: Number(o.price_delta || 0), stock: Number(o.stock || 0) }; }) }; });
+        function renderVarEditor(){
+          var box = $("varEditor"); if (!box) return;
+          box.innerHTML = varData.map(function(v, vi){
+            var opts = v.options.map(function(o, oi){
+              return '<div style="display:flex;gap:.4rem;margin:.3rem 0 .3rem 1rem"><input data-vidx="' + vi + '" data-oidx="' + oi + '" data-vf="label" placeholder="Option, e.g. M" value="' + esc(o.label) + '" style="flex:1;border:1.5px solid var(--line);border-radius:8px;padding:.35rem .5rem;background:var(--surface)" /><input data-vidx="' + vi + '" data-oidx="' + oi + '" data-vf="price_delta" type="number" step="any" placeholder="Price delta ৳" value="' + o.price_delta + '" style="width:110px;border:1.5px solid var(--line);border-radius:8px;padding:.35rem .5rem;background:var(--surface)" /><input data-vidx="' + vi + '" data-oidx="' + oi + '" data-vf="stock" type="number" min="0" placeholder="Stock" value="' + o.stock + '" style="width:80px;border:1.5px solid var(--line);border-radius:8px;padding:.35rem .5rem;background:var(--surface)" /><button type="button" class="mini-btn red" data-vrm-opt="' + vi + ':' + oi + '">✕</button></div>';
+            }).join("");
+            return '<div style="border:1px solid var(--line);border-radius:10px;padding:.5rem .6rem;margin-bottom:.5rem"><div style="display:flex;gap:.4rem"><input data-vidx="' + vi + '" data-vf="name" placeholder="Variation name, e.g. Size" value="' + esc(v.name) + '" style="flex:1;border:1.5px solid var(--line);border-radius:8px;padding:.35rem .5rem;background:var(--surface)" /><button type="button" class="mini-btn red" data-vrm-var="' + vi + '">Remove</button></div>' + opts + '<button type="button" class="mini-btn" data-vadd-opt="' + vi + '">+ Add option</button></div>';
+          }).join("");
+          box.querySelectorAll("input[data-vf]").forEach(function(inp){
+            inp.addEventListener("input", function(){
+              var vi = +inp.getAttribute("data-vidx"), oi = inp.getAttribute("data-oidx"), f = inp.getAttribute("data-vf");
+              if (oi == null || oi === "") { varData[vi][f] = inp.value; }
+              else { varData[vi].options[+oi][f] = (f === "label" ? inp.value : (+inp.value || 0)); }
+            });
+          });
+          box.querySelectorAll("[data-vadd-opt]").forEach(function(b){ b.addEventListener("click", function(){ varData[+b.getAttribute("data-vadd-opt")].options.push({ label: "", price_delta: 0, stock: 0 }); renderVarEditor(); }); });
+          box.querySelectorAll("[data-vrm-opt]").forEach(function(b){ b.addEventListener("click", function(){ var parts = b.getAttribute("data-vrm-opt").split(":"); varData[+parts[0]].options.splice(+parts[1], 1); renderVarEditor(); }); });
+          box.querySelectorAll("[data-vrm-var]").forEach(function(b){ b.addEventListener("click", function(){ varData.splice(+b.getAttribute("data-vrm-var"), 1); renderVarEditor(); }); });
+        }
+        renderVarEditor();
+        $("varAddBtn").addEventListener("click", function(){ varData.push({ name: "", options: [{ label: "", price_delta: 0, stock: 0 }] }); renderVarEditor(); });
         $("mImages").addEventListener("change", function(){
           var files = Array.prototype.slice.call(this.files || []);
           this.value = "";
@@ -2198,6 +2702,9 @@
           var name = $("mName").value.trim(), price = +$("mPrice").value, stock = +$("mStock").value, desc = $("mDesc").value.trim();
           var packSizeVal = $("mPackSize").value.trim(), packUnitVal = $("mUnit").value, packVal = $("mPack").value;
           if (packSizeVal !== "" && !(+packSizeVal > 0)) { $("mErr").textContent = "পরিমাণ সঠিক সংখ্যায় দিন (e.g. 500)।"; return; }
+          var saleStartVal = $("mSaleStart").value, saleEndVal = $("mSaleEnd").value;
+          if (saleStartVal && saleEndVal && new Date(saleEndVal) <= new Date(saleStartVal)) { $("mErr").textContent = "Sale end, sale start er pore hote hobe."; return; }
+          var cleanVars = varData.filter(function(v){ return String(v.name || "").trim() && v.options.some(function(o){ return String(o.label || "").trim(); }); }).map(function(v){ return { name: v.name.trim(), options: v.options.filter(function(o){ return String(o.label || "").trim(); }).map(function(o){ return { label: o.label.trim(), price_delta: Number(o.price_delta || 0), stock: Math.max(0, Math.floor(Number(o.stock || 0))) }; }) }; });
           if (!name || !(price>0) || isNaN(stock) || stock<0) { $("mErr").textContent = "Name, sothik price ar stock din."; return; }
           /* P1-24: a product needs at least 1 image — on create (no images yet)
              and on edit (total images after removals). imgItems already holds
@@ -2231,17 +2738,20 @@
             /* Pack size/unit/packaging: products table er pack_size/unit/packaging column e save hoy (column jog hoyeche 2026-11-23). */
             p.packSize = packSizeVal === "" ? null : +packSizeVal; p.unit = packUnitVal; p.packaging = packVal;
             p.images = finalImages; p.imageUrl = finalImages.length ? finalImages[0] : "";
+            p.variants = cleanVars; p.saleStart = saleStartVal ? new Date(saleStartVal).toISOString() : ""; p.saleEnd = saleEndVal ? new Date(saleEndVal).toISOString() : "";
             if (p.approval === "Rejected") p.approval = "Pending Approval";
-            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: p.packSize, unit: p.unit, packaging: p.packaging, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
+            if (supabaseConnected && supabase) { try { var upPayload = { name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: p.packSize, unit: p.unit, packaging: p.packaging, status: p.approval === "Pending Approval" ? "pending" : "approved" }; if (DB_HAS.variants !== false) upPayload.variants = p.variants; if (DB_HAS.saleStart !== false) { upPayload.sale_start = p.saleStart ? p.saleStart : null; upPayload.sale_end = p.saleEnd ? p.saleEnd : null; } var up = await productSaveWithFallback(upPayload, true, p.id, s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } if (up.degraded) toast("Sale / variations column ekhono database e nei — baki sob save hoyeche."); } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
             toast("Product update hoyeche");
+            logStaffActivity("Product edit", p.name + " — ৳" + p.price + ", stock " + p.stock);
           } else {
             var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
-            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"Active", packSize: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "" };
+            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"Active", packSize: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "", variants: cleanVars, saleStart: saleStartVal ? new Date(saleStartVal).toISOString() : "", saleEnd: saleEndVal ? new Date(saleEndVal).toISOString() : "" };
             if (supabaseConnected && supabase) {
-              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
+              try { var insPayload = { shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, status: "pending" }; if (DB_HAS.variants !== false) insPayload.variants = cleanVars; if (DB_HAS.saleStart !== false) { insPayload.sale_start = saleStartVal ? new Date(saleStartVal).toISOString() : null; insPayload.sale_end = saleEndVal ? new Date(saleEndVal).toISOString() : null; } var ins = await productSaveWithFallback(insPayload, false, null, s.shopId); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); if (ins.degraded) toast("Sale / variations column ekhono database e nei — baki sob save hoyeche."); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
             }
             s.products.unshift(newProd);
             toast("Product add hoyeche — My Products e dekhun. Admin moderation approve korle live hobe: " + name);
+            logStaffActivity("Product add", name + " — ৳" + price);
           }
           closeModal(); renderAll(); showView("products");
         });
@@ -2273,7 +2783,7 @@
         + '<td style="max-width:240px">' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b><div class="psku">' + esc(o.payVisibility || "Prepaid — Admin verified") + (o.codCollect ? '<br>COD collect: <b>' + fmt(o.codCollect) + '</b>' : '') + (o.trackingId ? '<br>Tracking: <b>' + esc(o.trackingId) + '</b>' : '') + '</div></td>'
         + '<td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td>'
         + '<td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span>' + src + '</td>'
-        + '<td><div class="row-actions"><button class="mini-btn" data-view-order="' + o.id + '" type="button">View</button>' + (o.status === "Cancelled" ? '' : '<button class="mini-btn" data-label="' + o.id + '" type="button">Print Label</button>')
+        + '<td><div class="row-actions"><button class="mini-btn" data-view-order="' + o.id + '" type="button">View</button><button class="mini-btn" data-invoice="' + o.id + '" type="button">Invoice</button>' + (o.status === "Cancelled" ? '' : '<button class="mini-btn" data-label="' + o.id + '" type="button">Print Label</button>')
         + (next ? '<button class="mini-btn" data-advance="' + o.id + '" type="button">' + NEXT_LABEL[o.status] + '</button>' : '')
         + (o.status==="Awaiting Admin" ? '<span style="font-size:.78rem;color:var(--muted);font-weight:600">Admin confirm korle ship korte parben</span>' : '')
         + '</div></td></tr>';
@@ -2283,6 +2793,9 @@
     }
     $("ordersBody").querySelectorAll("[data-view-order]").forEach(function(b){
       b.addEventListener("click", function(){ openOrderDrawer(b.getAttribute("data-view-order")); });
+    });
+    $("ordersBody").querySelectorAll("[data-invoice]").forEach(function(b){
+      b.addEventListener("click", function(){ openInvoiceModal(b.getAttribute("data-invoice")); });
     });
     $("ordersBody").querySelectorAll("[data-advance]").forEach(function(b){
       b.addEventListener("click", function(){ advanceOrder(b.getAttribute("data-advance")); });
@@ -2299,6 +2812,32 @@
       + '<div style="font-size:.9rem;margin-top:.5rem"><b>To:</b> ' + esc(o.customer) + ' · ' + esc(o.phone) + '<br>' + esc(o.shipAddress || o.district) + ', ' + esc(o.district) + '<br><b>Items:</b> ' + esc(orderItemsText(o)) + '<br><b>Master Order:</b> ' + esc(o.localId || o.id) + ' · <b>Sub-Order:</b> ' + esc(o.subId || o.id) + (o.codCollect ? '<br><b>COD Collect:</b> ' + fmt(o.codCollect) : '<br><b>Prepaid</b> — kichu collect korte hobe na') + (o.trackingId ? '<br><b>Tracking:</b> ' + esc(o.trackingId) : '') + '</div></div>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn" id="lbPrint" type="button">Print / Save Label</button><button class="btn ghost" id="lbClose" type="button">Close</button></div>',
       function(){ $("lbPrint").addEventListener("click", function(){ window.print(); }); $("lbClose").addEventListener("click", closeModal); });
+  }
+  /* P2 (2026-11-23): per-order invoice — storefront invoice er motoi tothyo
+     (order number, items, totals, payment method, TrxID, shop name).
+     Print CSS sudhu modal tai print kore — "Print / Save as PDF" e PDF o hobe.
+     Hisab sudhu apnar shop-er sub-order er — master order er onno seller er
+     ongsho ekhane nei. */
+  function openInvoiceModal(id){
+    var s = me(); if (!s) return;
+    var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
+    var items = (o.items||[]).map(function(it){ var p = prodById(it.pid || it.product_id || it.productId); var nm = p ? p.name : (it.name || "Item"); var pr = p ? p.price : Number(it.price || it.unitPrice || 0); var q = it.qty || 1; return '<div class="kv"><span>' + esc(nm) + ' × ' + q + '</span><b>' + fmt(pr * q) + '</b></div>'; }).join("");
+    openModal('<h2>Invoice — ' + esc(o.localId || o.subId || o.id) + '</h2><div class="msub">' + esc(s.shop) + ' · ' + esc(o.date) + ' · Sudhu apnar shop-er sub-order er hisab</div>'
+      + '<div style="border:1.5px solid var(--line);border-radius:12px;padding:1rem">'
+      + '<div class="kv"><span>Order number</span><b>' + esc(o.localId || o.subId || o.id) + '</b></div>'
+      + '<div class="kv"><span>Customer</span><b>' + esc(o.customer) + ' · ' + esc(o.phone) + '</b></div>'
+      + '<div class="kv"><span>Ship to</span><b>' + esc(o.shipAddress || o.district) + '</b></div>'
+      + '<div class="kv"><span>Payment method</span><b>' + esc(o.payment || "—") + '</b></div>'
+      + (o.txnId ? '<div class="kv"><span>Transaction ID</span><b>' + esc(o.txnId) + '</b></div>' : '')
+      + (o.trackingId ? '<div class="kv"><span>Tracking ID</span><b>' + esc(o.trackingId) + '</b></div>' : '')
+      + '<h3 style="font-size:.95rem;margin:1rem 0 .3rem">Items</h3>' + items
+      + '<div class="kv"><span>Order total</span><b>' + fmt(orderTotal(o)) + '</b></div>'
+      + '<div class="kv"><span>AnboBD commission (' + (typeof o.commissionRate === "number" ? o.commissionRate + "%" : "category rate") + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
+      + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
+      + (o.codCollect ? '<div class="kv"><span>COD collect</span><b>' + fmt(o.codCollect) + '</b></div>' : '')
+      + '</div>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn" id="invPrint" type="button">Print / Save as PDF</button><button class="btn ghost" id="invClose" type="button">Close</button></div>',
+      function(){ $("invPrint").addEventListener("click", function(){ window.print(); }); $("invClose").addEventListener("click", closeModal); });
   }
   async function sbUpdateSubOrder(o, extra){
     if (!supabaseConnected || !supabase || !o) return;
@@ -2396,7 +2935,7 @@
     if (o.status==="Packed" && !o.trackingId) {
       openModal('<h2>Ship — Tracking ID din</h2><div class="msub">' + esc(o.subId || id) + ' courier e diye tracking ID ta likhun</div><div class="field"><label>Courier tracking ID</label><input id="trkId" placeholder="e.g. PTH-882910" /></div><p class="err" id="trkErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="trkCancel" type="button">Cancel</button><button class="btn" id="trkGo" type="button">Confirm Shipped</button></div>', function(){
         $("trkCancel").addEventListener("click", closeModal);
-        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; var saved = await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); if (saved !== false) { toast(id + " shipped — Tracking: " + v); await sbPropagateMasterStatus(o, "Shipped"); } });
+        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; var saved = await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); if (saved !== false) { toast(id + " shipped — Tracking: " + v); logStaffActivity("Order shipped", (o.localId || o.id) + " — Tracking: " + v); await sbPropagateMasterStatus(o, "Shipped"); } });
       });
       return;
     }
@@ -2409,6 +2948,7 @@
       else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
       else if (o.status === "Delivered") { toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
       else toast(id + " ekhon " + o.status);
+      logStaffActivity("Order " + o.status, o.localId || o.id);
       await sbPropagateMasterStatus(o, o.status);
     }
     renderAll();
@@ -2448,12 +2988,14 @@
       + '<div class="kv"><span>Commission (' + (typeof o.commissionRate==="number" ? o.commissionRate + "%" : "category rate") + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
       + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
       + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Tracking — Admin → Seller → Customer</h3><ul class="timeline">' + tl + '</ul>' + (o.status==="Cancelled" ? '' : '<button class="btn ghost" id="drawerLabel" type="button" style="width:100%;margin-bottom:.6rem">Print Shipping Label</button>')
+      + '<button class="btn ghost" id="drawerInvoice" type="button" style="width:100%;margin-bottom:.6rem">Download / Print Invoice</button>'
       + (o.status==="Awaiting Admin" ? '<div class="locked-note"><b>Waiting for Admin confirmation.</b> Admin panel theke confirm hole order ta “Ready to Ship” hoye asbe — tokhon e ship korte parben. Seller hisebe apni order confirm ba cancel korte parben na.</div>' : '')
       + (next ? '<button class="btn" id="drawerAdvance" type="button" style="width:100%">' + NEXT_LABEL[o.status] + '</button>' : '')
       + (o.status==="Ready to Ship" || o.status==="Shipped" ? '<p style="font-size:.82rem;color:var(--muted);margin:.7rem 0 0">Kono somossa hole (stock nei, address vul) Admin support e janaben — order cancel sudhu Admin korte pare.</p>' : '')
       + '</div></div>';
     $("drawerX").addEventListener("click", closeDrawer);
     var lb = $("drawerLabel"); if (lb) lb.addEventListener("click", function(){ openLabelModal(o.id); });
+    var inv = $("drawerInvoice"); if (inv) inv.addEventListener("click", function(){ openInvoiceModal(o.id); });
     $("drawerWrap").addEventListener("click", function(e){ if (e.target===this) closeDrawer(); });
     var adv = $("drawerAdvance");
     if (adv) adv.addEventListener("click", function(){ advanceOrder(o.id); });
@@ -2488,10 +3030,12 @@
         + '<span class="status ' + statusClass(c.status) + '">' + (c.status==="Live" ? "Live on website" : c.status) + '</span></div>'
         + '<div class="comm-row"><span>Minimum order</span><b>' + fmt(c.min) + '</b></div><div class="comm-row"><span>Max discount cap</span><b>' + (c.cap ? fmt(c.cap) : "Cap nei") + '</b></div><div class="comm-row"><span>Projojjo</span><b>Sudhu amar shop-er item e</b></div>'
         + '<div class="comm-row"><span>Scope</span><b style="text-align:right">' + esc(c.scope) + '</b></div>'
+        + '<div class="comm-row"><span>Per-customer limit</span><b>' + (c.perCustomerLimit != null ? c.perCustomerLimit + " bar" : "Limit nei") + '</b></div>'
         + '<div class="comm-row"><span>Expiry</span><b>' + esc(c.expiry) + '</b></div>'
         + '<div style="font-size:.83rem;color:var(--muted);margin-top:.55rem">Used ' + c.used + ' / ' + c.limit + ' bar</div><div class="usebar"><i style="width:' + pct + '%"></i></div>'
         + '<div class="row-actions" style="margin-top:.8rem">'
         + '<button class="mini-btn" data-coupon-copy="' + c.id + '" type="button">Copy Code</button>'
+        + '<button class="mini-btn" data-coupon-edit="' + c.id + '" type="button">Edit</button>'
         + '<button class="mini-btn" data-coupon-toggle="' + c.id + '" type="button">' + (c.status==="Live" ? "Pause (website theke soran)" : "Make Live") + '</button>'
         + '<button class="mini-btn red" data-coupon-del="' + c.id + '" type="button">Delete</button>'
         + '</div></div>';
@@ -2506,6 +3050,12 @@
         var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-copy")); })[0]; if (!c) return;
         if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(c.code).then(function(){ toast("Coupon code copy hoyeche: " + c.code); }, function(){ toast("Coupon code: " + c.code); }); }
         else toast("Coupon code: " + c.code);
+      });
+    });
+    $("couponGrid").querySelectorAll("[data-coupon-edit]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-edit")); })[0]; if (!c) return;
+        openCouponEditModal(c);
       });
     });
     $("couponGrid").querySelectorAll("[data-coupon-toggle]").forEach(function(b){
@@ -2526,6 +3076,7 @@
           } catch(e){ c.status = prevCStatus; toast("Coupon status save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderAll(); return; }
         }
         toast(c.code + (c.status==="Live" ? " ekhon website e LIVE" : " pause hoyeche — website theke sore geche"));
+        logStaffActivity("Coupon " + (c.status === "Live" ? "live" : "pause"), c.code);
         renderAll();
       });
     });
@@ -2533,7 +3084,7 @@
       b.addEventListener("click", function(){
         var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-del")); })[0]; if (!c) return;
         openConfirm("Coupon delete korben?", '"' + c.code + '" delete hole website theke sore jabe ar customer ar use korte parbe na.', async function(){
-          var ss = me(); if (supabaseConnected && supabase) { try { var delC = await supabase.from('coupons').delete().eq('id', c.id).eq('shop_id', ss.shopId); if (delC && delC.error) { toast("Coupon delete hoy ni — " + (delC.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Coupon delete hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } } ss.coupons = ss.coupons.filter(function(x){ return String(x.id)!==String(c.id); }); toast("Coupon delete hoyeche"); renderAll();
+          var ss = me(); if (supabaseConnected && supabase) { try { var delC = await supabase.from('coupons').delete().eq('id', c.id).eq('shop_id', ss.shopId); if (delC && delC.error) { toast("Coupon delete hoy ni — " + (delC.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Coupon delete hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } } ss.coupons = ss.coupons.filter(function(x){ return String(x.id)!==String(c.id); }); toast("Coupon delete hoyeche"); logStaffActivity("Coupon delete", c.code); renderAll();
         });
       });
     });
@@ -2547,8 +3098,9 @@
       + '<div class="field"><label>Discount value</label><input id="cVal" aria-label="Discount value" type="number" min="1" placeholder="Percent hole %, Flat hole ৳" /></div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Minimum order (৳)</label><input id="cMin" aria-label="Minimum order" type="number" min="0" value="0" /></div>'
       + '<div class="field"><label>Usage limit (mot koybar)</label><input id="cLimit" aria-label="Usage limit" type="number" min="1" value="200" /></div></div>'
+      + '<div class="field"><label>Per-customer limit (ঐচ্ছিক) — ek customer koybar use korte parbe</label><input id="cPerCust" aria-label="Per-customer limit" type="number" min="1" placeholder="Khali mane limit nei" />' + (DB_HAS.couponPerCustomer === false ? '<div class="hint">Per-customer limit ekhono database e chalu hoy ni (coupons.per_customer_limit column nei) — save korle limit thakbe na.</div>' : '') + '</div>'
       + '<div class="field"><label>Max discount cap (৳) — ek order e sorbochcho chhar</label><input id="cCap" aria-label="Max discount cap" type="number" min="0" value="500" /><div class="hint">Percent coupon eo ei cap er beshi chhar hobe na.</div></div>'
-      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Scope</label><select id="cScope" aria-label="Scope"><option>Shop-wide (sob product)</option><option>Electronics only</option><option>Fashion only</option><option>Beauty only</option><option>Home &amp; Living only</option></select></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Scope</label><select id="cScope" aria-label="Scope"><option>Shop-wide (sob product)</option><option>Electronics only</option><option>Fashion only</option><option>Beauty only</option><option>Home &amp; Living only</option><option>Grocery only</option><option>Sports only</option></select></div>'
       + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="date" min="' + new Date().toISOString().slice(0,10) + '" /></div></div>' /* P2-35: date picker, past dates blocked by min=today; future-date validation below still applies. */
       + '<p class="err" id="cErr"></p>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cCancel" type="button">Cancel</button><button class="btn" id="cSave" type="button">Create &amp; Publish on Website</button></div>',
@@ -2562,21 +3114,75 @@
           if (!(val>0)) { $("cErr").textContent = "Discount value din."; return; }
           if (type==="Percent" && val>70) { $("cErr").textContent = "Percent discount sorbochcho 70% hote pare."; return; }
           if (!(limit>0)) { $("cErr").textContent = "Usage limit din."; return; }
+          var perCust = $("cPerCust").value.trim();
+          if (perCust !== "" && !(+perCust > 0)) { $("cErr").textContent = "Per-customer limit sothik songkhay din (1 ba tar beshi)."; return; }
           var exp = $("cExp").value.trim();
           if (!exp) { $("cErr").textContent = "Expiry date din."; return; }
           var expDate = Date.parse(exp);
           if (isNaN(expDate)) { $("cErr").textContent = "Expiry date din — date picker theke ekta din beche nin."; return; }
           if (expDate <= Date.now()) { $("cErr").textContent = "Expiry date obossoi agami din hote hobe — meyad sesh coupon live kora jabe na."; return; }
-          var newCoupon = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Pending Approval" };
+          var newCoupon = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Pending Approval", perCustomerLimit: perCust === "" ? null : +perCust };
           if (supabaseConnected && supabase) {
-            try { var insC = await supabase.from('coupons').insert({ shop_id: s.shopId, code: code, discount_type: type, discount_value: val, min_order: min, max_cap: +$("cCap").value || 0, usage_limit: limit, expires_at: new Date(expDate).toISOString(), status: "pending", scope: $("cScope").value }).select().single(); if (insC.error) { $("cErr").textContent = insC.error.message; return; } if (insC.data) newCoupon = mapCouponRow(insC.data); } catch(e){ $("cErr").textContent = "Coupon save hoy ni — abar chesta korun."; return; }
+            try { var insCPayload = { shop_id: s.shopId, code: code, discount_type: type, discount_value: val, min_order: min, max_cap: +$("cCap").value || 0, usage_limit: limit, expires_at: new Date(expDate).toISOString(), status: "pending", scope: $("cScope").value }; if (DB_HAS.couponPerCustomer !== false && perCust !== "") insCPayload.per_customer_limit = +perCust; var insC = await supabase.from('coupons').insert(insCPayload).select().single(); if (insC.error && insC.error.code === "42703" && insCPayload.per_customer_limit != null) { DB_HAS.couponPerCustomer = false; delete insCPayload.per_customer_limit; insC = await supabase.from('coupons').insert(insCPayload).select().single(); } if (insC.error) { $("cErr").textContent = insC.error.message; return; } if (insC.data) newCoupon = mapCouponRow(insC.data); } catch(e){ $("cErr").textContent = "Coupon save hoy ni — abar chesta korun."; return; }
           }
           s.coupons.unshift(newCoupon);
           closeModal(); renderAll(); showView("coupons");
           toast(code + " toiri — Admin approval er jonno pathano hoyeche");
+          logStaffActivity("Coupon create", code + " — " + couponValueText(newCoupon));
         });
       });
   });
+
+  /* P2 (2026-11-23): coupon edit — code bodlano jay na (checkout e code
+     diye khoja hoy), baki sob bodlano jay. */
+  function openCouponEditModal(c){
+    var s = me(); if (!s || !c) return;
+    var scopeOpts = COUPON_SCOPES.map(function(sc){ return '<option ' + (c.scope === sc ? "selected" : "") + '>' + esc(sc) + '</option>'; }).join("");
+    var expVal = (c.expiry && !isNaN(Date.parse(c.expiry))) ? new Date(Date.parse(c.expiry)).toISOString().slice(0,10) : "";
+    openModal(
+      '<h2>Edit Coupon — ' + esc(c.code) + '</h2><div class="msub">Coupon code bodlano jabe na — baki sob bodlano jabe. Save korle notun niyom website e live hobe.</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Discount type</label><select id="cType" aria-label="Discount type"><option ' + (c.type === "Percent" ? "selected" : "") + '>Percent</option><option ' + (c.type === "Flat" ? "selected" : "") + '>Flat</option></select></div>'
+      + '<div class="field"><label>Discount value</label><input id="cVal" aria-label="Discount value" type="number" min="1" value="' + c.value + '" /></div></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Minimum order (৳)</label><input id="cMin" aria-label="Minimum order" type="number" min="0" value="' + c.min + '" /></div>'
+      + '<div class="field"><label>Usage limit (mot koybar)</label><input id="cLimit" aria-label="Usage limit" type="number" min="1" value="' + c.limit + '" /></div></div>'
+      + '<div class="field"><label>Per-customer limit (ঐচ্ছিক) — ek customer koybar use korte parbe</label><input id="cPerCust" aria-label="Per-customer limit" type="number" min="1" value="' + (c.perCustomerLimit != null ? c.perCustomerLimit : "") + '" placeholder="Khali mane limit nei" />' + (DB_HAS.couponPerCustomer === false ? '<div class="hint">Per-customer limit ekhono database e chalu hoy ni (coupons.per_customer_limit column nei) — save korle limit thakbe na.</div>' : '') + '</div>'
+      + '<div class="field"><label>Max discount cap (৳) — ek order e sorbochcho chhar</label><input id="cCap" aria-label="Max discount cap" type="number" min="0" value="' + c.cap + '" /></div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Scope</label><select id="cScope" aria-label="Scope">' + scopeOpts + '</select></div>'
+      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="date" value="' + expVal + '" min="' + new Date().toISOString().slice(0,10) + '" /></div></div>'
+      + '<p class="err" id="cErr"></p>'
+      + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cCancel" type="button">Cancel</button><button class="btn" id="cSave" type="button">Save Changes</button></div>',
+      function(){
+        $("cCancel").addEventListener("click", closeModal);
+        $("cSave").addEventListener("click", async function(){
+          var type = $("cType").value, val = +$("cVal").value, min = +$("cMin").value || 0, limit = +$("cLimit").value;
+          if (!(val>0)) { $("cErr").textContent = "Discount value din."; return; }
+          if (type==="Percent" && val>70) { $("cErr").textContent = "Percent discount sorbochcho 70% hote pare."; return; }
+          if (!(limit>0)) { $("cErr").textContent = "Usage limit din."; return; }
+          var perCust = $("cPerCust").value.trim();
+          if (perCust !== "" && !(+perCust > 0)) { $("cErr").textContent = "Per-customer limit sothik songkhay din (1 ba tar beshi)."; return; }
+          var exp = $("cExp").value.trim();
+          if (!exp) { $("cErr").textContent = "Expiry date din."; return; }
+          var expDate = Date.parse(exp);
+          if (isNaN(expDate)) { $("cErr").textContent = "Expiry date din — date picker theke ekta din beche nin."; return; }
+          if (expDate <= Date.now()) { $("cErr").textContent = "Expiry date obossoi agami din hote hobe — meyad sesh coupon live kora jabe na."; return; }
+          var prev = { type: c.type, value: c.value, min: c.min, limit: c.limit, cap: c.cap, scope: c.scope, expiry: c.expiry, perCustomerLimit: c.perCustomerLimit };
+          c.type = type; c.value = val; c.min = min; c.limit = limit; c.cap = +$("cCap").value || 0; c.scope = $("cScope").value; c.expiry = exp; c.perCustomerLimit = perCust === "" ? null : +perCust;
+          if (supabaseConnected && supabase) {
+            try {
+              var upPayload = { discount_type: type, discount_value: val, min_order: min, max_cap: c.cap, usage_limit: limit, expires_at: new Date(expDate).toISOString(), scope: c.scope };
+              if (DB_HAS.couponPerCustomer !== false) upPayload.per_customer_limit = perCust === "" ? null : +perCust;
+              var upC = await supabase.from('coupons').update(upPayload).eq('id', c.id).eq('shop_id', s.shopId).select().single();
+              if (upC.error && upC.error.code === "42703" && upPayload.per_customer_limit !== undefined) { DB_HAS.couponPerCustomer = false; delete upPayload.per_customer_limit; upC = await supabase.from('coupons').update(upPayload).eq('id', c.id).eq('shop_id', s.shopId).select().single(); }
+              if (upC.error) { c.type = prev.type; c.value = prev.value; c.min = prev.min; c.limit = prev.limit; c.cap = prev.cap; c.scope = prev.scope; c.expiry = prev.expiry; c.perCustomerLimit = prev.perCustomerLimit; $("cErr").textContent = upC.error.message; return; }
+              if (upC.data) { var mapped = mapCouponRow(upC.data); c.status = mapped.status; c.used = mapped.used; }
+            } catch(e){ c.type = prev.type; c.value = prev.value; c.min = prev.min; c.limit = prev.limit; c.cap = prev.cap; c.scope = prev.scope; c.expiry = prev.expiry; c.perCustomerLimit = prev.perCustomerLimit; $("cErr").textContent = "Coupon update hoy ni — abar chesta korun."; return; }
+          }
+          closeModal(); renderAll();
+          toast(c.code + " update hoyeche");
+          logStaffActivity("Coupon edit", c.code + " — " + couponValueText(c));
+        });
+      });
+  }
 
   /* ================= CAMPAIGNS / MEGA SALE ================= */
   function campTypeByName(n){ for (var i=0;i<CAMPAIGN_TYPES.length;i++) if (CAMPAIGN_TYPES[i].name===n) return CAMPAIGN_TYPES[i]; return null; }
@@ -2830,6 +3436,7 @@
           s.payouts.unshift({ date: fmtDate(new Date().toISOString()), method: method, account: maskAccount(acc), amount: amt, status: "Processing" });
           closeModal(); renderAll();
           toast("Payout request pathano hoyeche — Admin Finance approve korle " + fmt(amt) + " " + method + " e jabe. Nijer payout nije approve kora jay na.");
+          logStaffActivity("Payout request", fmt(amt) + " · " + method);
         });
       });
   });
@@ -2883,6 +3490,15 @@
       }).join("");
       return '<tr><td style="font-weight:600">' + esc(p) + '</td>' + cells + '</tr>';
     }).join("");
+    renderStaffActivity();
+  }
+  /* P2 (2026-11-23): staff activity list — staff_activity table theke.
+     Table na thakle sotyi kotha dekhay, fake entry banay na. */
+  function renderStaffActivity(){
+    var el = $("staffActivityList"); if (!el) return;
+    if (DB_HAS.staffActivity === false) { el.innerHTML = '<div class="empty"><div class="et">Staff activity log ekhono chalu hoy ni</div><div>Database e staff_activity table toiri hole staff ra ei panel theke ja korbe (product add/edit, order advance, coupon, payout request) ekhane log hobe.</div></div>'; return; }
+    var list = ownStaffActivity();
+    el.innerHTML = list.length ? '<div class="tbl-wrap"><table class="tbl-recent"><thead><tr><th>Staff</th><th>Kaj</th><th>Bistarito</th><th>Date</th></tr></thead><tbody>' + list.map(function(a){ return '<tr><td>' + esc(a.staffEmail) + '</td><td><b>' + esc(a.action) + '</b></td><td>' + esc(a.detail) + '</td><td>' + esc(a.date) + '</td></tr>'; }).join("") + '</tbody></table></div>' : '<div class="empty"><div class="et">Ekhono kono staff activity nei</div><div>Staff ra ei panel theke kaj korle ekhane log dekhabe.</div></div>';
   }
   function roleOptions(sel){
     return Object.keys(PERMS).map(function(r){ return '<option ' + (r===sel ? "selected" : "") + '>' + r + '</option>'; }).join("");
@@ -3000,6 +3616,145 @@
   });
 
   /* ================= SETTINGS ================= */
+  /* P2 (2026-11-23): KYC re-request banner — Admin shops.kyc_rerequest
+     e note likhle Dashboard + Settings e banner dekhay; column na thakle
+     kichu dekhay na, kokhono error noy. */
+  function renderKycRerequest(){
+    var s = me();
+    var html = "";
+    if (s && s.kycRerequest) {
+      html = '<div class="alert-strip" style="border-color:var(--red);background:#fef2f2"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3L2 20h20L12 3z"/><path d="M12 10v4M12 17.5h.01"/></svg><div style="flex:1"><b>Admin abar apnar document cheyeche:</b> ' + esc(s.kycRerequest) + '</div><button class="btn sm" type="button" data-kyc-goto="settings">Re-upload korun</button></div>';
+    }
+    ["kycRerequestBanner","kycRerequestBannerSettings"].forEach(function(id){
+      var el = $(id); if (el) el.innerHTML = html;
+    });
+    document.querySelectorAll("[data-kyc-goto]").forEach(function(b){
+      b.addEventListener("click", function(){
+        showView("settings");
+        var inp = $("kycNidFile"); if (inp) inp.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
+    });
+  }
+  /* P2 (2026-11-23): notification preference toggle gulo render kore. */
+  function renderNotifPrefs(){
+    var el = $("notifPrefsList"); if (!el) return;
+    var s = me();
+    if (!s) { el.innerHTML = ""; return; }
+    if (!s.hasNotifPrefsCol) { el.innerHTML = '<div class="hint">Notification preferences ekhono database e chalu hoy ni (shops.notif_prefs column nei) — toggle save korle kaj korbe na.</div>'; return; }
+    el.innerHTML = NOTIF_TYPES.map(function(t){
+      var on = notifPref(t.key);
+      return '<label style="display:flex;gap:.6rem;align-items:center;padding:.45rem 0;cursor:pointer"><input type="checkbox" data-notif="' + t.key + '"' + (on ? " checked" : "") + ' style="width:18px;height:18px" /> ' + esc(t.label) + '</label>';
+    }).join("");
+  }
+  /* P2 (2026-11-23): Shop URL / slug — lowercase/number/hyphen, unique check. */
+  $("saveSlugBtn").addEventListener("click", async function(){
+    var s = me(); if (!s) return;
+    var el = $("slugErr"); if (el) el.textContent = "";
+    var raw = $("setSlug").value.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    if (raw.length < 3) { if (el) el.textContent = "Slug kompokkhe 3 akkhor hote hobe (a-z, 0-9, hyphen)."; return; }
+    if (raw.length > 60) { if (el) el.textContent = "Slug sorbochcho 60 akkhor hote pare."; return; }
+    if (raw === s.slug) { toast("Slug bodlay ni."); return; }
+    if (supabaseConnected && supabase) {
+      try {
+        var chk = await supabase.from('shops').select('id').eq('slug', raw).neq('id', s.shopId).limit(1);
+        if (chk.error) { if (el) el.textContent = chk.error.message; return; }
+        if (chk.data && chk.data.length) { if (el) el.textContent = "Ei slug ta onno ekta shop use korche — onno slug din."; return; }
+        var up = await supabase.from('shops').update({ slug: raw }).eq('id', s.shopId).select('id');
+        if (up.error) { if (el) el.textContent = up.error.message; return; }
+        if (!up.data || !up.data.length) { if (el) el.textContent = "Slug save hoy ni — kono row update hoy ni."; return; }
+      } catch(e){ if (el) el.textContent = "Slug save hoy ni — " + (e && e.message ? e.message : "database error"); return; }
+    }
+    s.slug = raw; syncShopUI(); toast("Shop slug save hoyeche: " + raw);
+  });
+  /* P2 (2026-11-23): per-shop delivery settings — khali mane platform default. */
+  $("saveDeliveryBtn").addEventListener("click", async function(){
+    var s = me(); if (!s) return;
+    var el = $("deliveryErr"); if (el) el.textContent = "";
+    if (!s.hasDeliveryCols) { if (el) el.textContent = "Delivery settings ekhono database e chalu hoy ni (shops.delivery_fee / shops.free_delivery_threshold column nei)."; return; }
+    var feeRaw = $("setDeliveryFee").value.trim(), thrRaw = $("setFreeDeliveryThreshold").value.trim();
+    var fee = feeRaw === "" ? null : Number(feeRaw), thr = thrRaw === "" ? null : Number(thrRaw);
+    if (fee != null && (isNaN(fee) || fee < 0)) { if (el) el.textContent = "Delivery fee sothik songkhay din (0 ba tar beshi)."; return; }
+    if (thr != null && (isNaN(thr) || thr < 0)) { if (el) el.textContent = "Free delivery threshold sothik songkhay din (0 ba tar beshi)."; return; }
+    if (supabaseConnected && supabase) {
+      try {
+        var up = await supabase.from('shops').update({ delivery_fee: fee, free_delivery_threshold: thr }).eq('id', s.shopId).select('id');
+        if (up.error) { if (el) el.textContent = up.error.message; return; }
+        if (!up.data || !up.data.length) { if (el) el.textContent = "Delivery settings save hoy ni — kono row update hoy ni."; return; }
+      } catch(e){ if (el) el.textContent = "Delivery settings save hoy ni — " + (e && e.message ? e.message : "database error"); return; }
+    }
+    s.deliveryFee = fee; s.freeDeliveryThreshold = thr; syncShopUI();
+    toast("Delivery settings save hoyeche" + (fee == null && thr == null ? " — platform default cholbe" : ""));
+  });
+  /* P2 (2026-11-23): notification preferences — shops.notif_prefs jsonb. */
+  $("saveNotifBtn").addEventListener("click", async function(){
+    var s = me(); if (!s) return;
+    var el = $("notifErr"); if (el) el.textContent = "";
+    if (!s.hasNotifPrefsCol) { if (el) el.textContent = "Notification preferences ekhono database e chalu hoy ni (shops.notif_prefs column nei)."; return; }
+    var prefs = {};
+    document.querySelectorAll("[data-notif]").forEach(function(cb){ prefs[cb.getAttribute("data-notif")] = cb.checked; });
+    if (supabaseConnected && supabase) {
+      try {
+        var up = await supabase.from('shops').update({ notif_prefs: prefs }).eq('id', s.shopId).select('id');
+        if (up.error) { if (el) el.textContent = up.error.message; return; }
+        if (!up.data || !up.data.length) { if (el) el.textContent = "Preferences save hoy ni — kono row update hoy ni."; return; }
+      } catch(e){ if (el) el.textContent = "Preferences save hoy ni — " + (e && e.message ? e.message : "database error"); return; }
+    }
+    s.notifPrefs = prefs; renderDashboard();
+    toast("Notification preferences save hoyeche");
+  });
+  /* P2 (2026-11-23): low-stock threshold — shops.low_stock_threshold. */
+  $("saveLowStockBtn").addEventListener("click", async function(){
+    var s = me(); if (!s) return;
+    var el = $("lowStockErr"); if (el) el.textContent = "";
+    if (!s.hasLowStockCol) { if (el) el.textContent = "Low-stock threshold ekhono database e chalu hoy ni (shops.low_stock_threshold column nei)."; return; }
+    var v = parseInt($("setLowStock").value, 10);
+    if (isNaN(v) || v < 1) { if (el) el.textContent = "Threshold 1 ba tar beshi hote hobe."; return; }
+    if (supabaseConnected && supabase) {
+      try {
+        var up = await supabase.from('shops').update({ low_stock_threshold: v }).eq('id', s.shopId).select('id');
+        if (up.error) { if (el) el.textContent = up.error.message; return; }
+        if (!up.data || !up.data.length) { if (el) el.textContent = "Threshold save hoy ni — kono row update hoy ni."; return; }
+      } catch(e){ if (el) el.textContent = "Threshold save hoy ni — " + (e && e.message ? e.message : "database error"); return; }
+    }
+    s.lowStockThreshold = v; syncShopUI(); renderAll();
+    toast("Low-stock threshold save hoyeche: " + v);
+  });
+  /* P2 (2026-11-23): change password / email in-app — Supabase auth.updateUser. */
+  $("changePwBtn").addEventListener("click", async function(){
+    var s = me(); if (!s) return;
+    var el = $("pwErr"); if (el) el.textContent = "";
+    var cur = $("curPw").value, nw = $("newPw").value, nw2 = $("newPw2").value;
+    if (!cur) { if (el) el.textContent = "Current password din."; return; }
+    if (!nw || nw.length < 8) { if (el) el.textContent = "New password kompokkhe 8 akkhor hote hobe."; return; }
+    if (nw !== nw2) { if (el) el.textContent = "New password duita mile ni."; return; }
+    if (!supabaseConnected || !supabase) { if (el) el.textContent = "Database connect nei — password bodlano jabe na."; return; }
+    try {
+      var chk = await supabase.auth.signInWithPassword({ email: s.email, password: cur });
+      if (chk.error) { if (el) el.textContent = "Current password vul."; return; }
+      var up = await supabase.auth.updateUser({ password: nw });
+      if (up.error) { if (el) el.textContent = up.error.message; return; }
+      $("curPw").value = ""; $("newPw").value = ""; $("newPw2").value = "";
+      toast("Password bodle geche — next sign-in theke notun password cholbe.");
+    } catch(e){ if (el) el.textContent = "Password bodlano jay ni — " + (e && e.message ? e.message : "database error"); }
+  });
+  $("changeEmailBtn").addEventListener("click", async function(){
+    var s = me(); if (!s) return;
+    var el = $("emailErr"); if (el) el.textContent = "";
+    var em = $("newEmail").value.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { if (el) el.textContent = "Sothik email address din."; return; }
+    if (em === s.email.toLowerCase()) { if (el) el.textContent = "Eta apnar bortoman email — onno email din."; return; }
+    if (!supabaseConnected || !supabase) { if (el) el.textContent = "Database connect nei — email bodlano jabe na."; return; }
+    try {
+      var up = await supabase.auth.updateUser({ email: em });
+      if (up.error) { if (el) el.textContent = up.error.message; return; }
+      /* profiles row eo email bodlan — na hole Seller Center er profile
+         purono email dekhabe. */
+      try { await supabase.from('profiles').update({ email: em }).eq('id', s.id); } catch(e2){}
+      s.email = em;
+      $("newEmail").value = "";
+      toast("Email bodlano hoyeche — next sign-in theke notun email (" + em + ") cholbe. Confirm-email OFF, tobe Supabase setting onujayi confirmation mail aste pare.");
+    } catch(e){ if (el) el.textContent = "Email bodlano jay ni — " + (e && e.message ? e.message : "database error"); }
+  });
   $("shopForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var s = me(); if (!s) return;
@@ -3153,12 +3908,15 @@
       try {
         var path = await uploadKycDocToStorage(s.userId || s.id, kind === "nid" ? "nid" : "trade_licence", f);
         var patch = {}; if (kind === "nid") patch.nid_copy_url = path; else patch.trade_licence_copy_url = path;
+        var hadRerequest = !!s.kycRerequest;
+        if (hadRerequest && s.hasKycRerequestCol) patch.kyc_rerequest = null;
         var upR = await supabase.from('shops').update(patch).eq('id', s.shopId);
         if (upR.error) throw upR.error;
         if (kind === "nid") s.nidCopyUrl = path; else s.tradeCopyUrl = path;
+        if (hadRerequest) { s.kycRerequest = null; renderKycRerequest(); }
         if (ids && ids.successMsg) { if (statusEl) statusEl.innerHTML = '<span style="color:var(--brand);font-weight:600">' + esc(ids.successMsg) + '</span>'; }
         else if (statusEl) statusEl.textContent = "";
-        toast(kind === "nid" ? "NID copy update hoyeche" : "Trade licence copy update hoyeche");
+        toast(hadRerequest ? "Document update hoyeche — Admin er re-request clear hoyeche" : (kind === "nid" ? "NID copy update hoyeche" : "Trade licence copy update hoyeche"));
       } catch(e) {
         if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">Upload hoy ni: ' + esc(e && e.message ? e.message : "abar chesta korun") + '</span>';
       }
@@ -3194,7 +3952,7 @@
   }
 
   /* ================= INIT ================= */
-  function renderAll(){ var s = me(); if (s) recomputeWallet(s); renderDashboard(); renderProducts(); renderOrders(); renderReviews(); renderCoupons(); renderCampaigns(); renderReturns(); renderPayouts(); renderTeam(); }
+  function renderAll(){ var s = me(); if (s) recomputeWallet(s); renderDashboard(); renderProducts(); renderOrders(); renderReviews(); renderCoupons(); renderCampaigns(); renderReturns(); renderPayouts(); renderTeam(); renderAnalytics(); renderKycRerequest(); }
   (function init(){
     var sel = $("prodCatFilter");
     Object.keys(COMMISSION).forEach(function(c){ var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
