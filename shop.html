@@ -197,10 +197,10 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
       <div class="payrow"><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span><span>COD</span></div>
     </div>
     <div><b>কেনাকাটা</b><a href="/#flash">ফ্ল্যাশ সেল</a><a href="/#products">সব পণ্য</a><a href="/#categories">ক্যাটাগরি</a><a href="/shop">🏪 সব দোকান</a><a href="/#faq">সাধারণ জিজ্ঞাসা</a><a href="/index.html#track">অর্ডার ট্র্যাক করুন</a></div>
-    <div><b>কাস্টমার কেয়ার</b><a href="/pages/return-refund.html">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html">ডেলিভারি তথ্য</a><a href="/pages/warranty.html">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html">প্রাইভেসি পলিসি</a><a href="/pages/contact.html">যোগাযোগ করুন</a></div>
+    <div><b>কাস্টমার কেয়ার</b><a href="/pages/help.html">সাহায্য কেন্দ্র (Help Center)</a><a href="/pages/return-refund.html">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html">ডেলিভারি তথ্য</a><a href="/pages/warranty.html">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html">প্রাইভেসি পলিসি</a><a href="/pages/contact.html">যোগাযোগ করুন</a></div>
     <div><b>AnboBD</b><a href="/pages/about.html">আমাদের সম্পর্কে</a><a href="/seller/">বিক্রেতা হোন</a><a href="/pages/terms.html">শর্তাবলী</a><a href="/pages/career.html">ক্যারিয়ার</a></div>
   </div>
-  <div class="wrap" style="margin-top:26px;font-size:.85rem">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩</div>
+  <div class="wrap" style="margin-top:26px;font-size:.85rem">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩 · <a href="/sitemap.xml" style="color:var(--teal);font-weight:700">সাইটম্যাপ</a></div>
 </footer>
 
 <div class="bottomnav"><nav>
@@ -252,7 +252,21 @@ function anboCatSlug(v){
   if(map[s]) return map[s];
   return CAT_LABELS[s] ? s : "electronics";
 }
-function offPct(p){ return Math.round((1 - p.price/p.oldPrice)*100); }
+function offPct(p){ var e = shEffPrice(p), o = shEffOldPrice(p); return (o>e) ? Math.round((1 - e/o)*100) : 0; }
+/* P2 (2026-11-23) — sale scheduling (READ side): sale_start/end thakle shudhu
+   window-er vitorei old_price sale; window-er baire regular price (oldPrice). */
+function shSaleActive(p){
+  if(!p) return true;
+  if(!p.saleStart && !p.saleEnd) return true;
+  var now = Date.now();
+  var st = p.saleStart ? Date.parse(p.saleStart) : NaN;
+  var en = p.saleEnd ? Date.parse(p.saleEnd) : NaN;
+  if(!isNaN(st) && now < st) return false;
+  if(!isNaN(en) && now > en) return false;
+  return true;
+}
+function shEffPrice(p){ if(!p) return 0; if(shSaleActive(p)) return p.price; return (p.oldPrice > p.price) ? p.oldPrice : p.price; }
+function shEffOldPrice(p){ if(!p) return 0; return shSaleActive(p) ? p.oldPrice : 0; }
 function soldFmt(n){ return n>=1000 ? (n/1000).toFixed(1).replace(".0","")+"k" : ""+n; }
 /* Pack label — shudhu ja set kora ache tai; khali thakle "". */
 function packLabel(p){ if(!p) return ""; var parts=[]; if(p.packSize!=null && p.packSize!=="" && +p.packSize>0){ parts.push(String(p.packSize)+(p.unit?" "+p.unit:"")); } else if(p.unit){ parts.push(p.unit); } if(p.packaging){ parts.push(p.packaging); } return parts.join(" · "); }
@@ -348,7 +362,11 @@ function mapProductRow(r){
     status:(String(r.status||"").toLowerCase()==="approved" ? "active" : String(r.status||"pending").toLowerCase()),
     img:(imgs.length?imgs[0]:""), images:imgs, desc:r.desc||r.description||"",
     packSize:(r.pack_size!=null && r.pack_size!==""?Number(r.pack_size):(r.packSize!=null?Number(r.packSize):null)), unit:r.unit||r.pack_unit||"", packaging:r.packaging||"",
-    createdAt:typeof r.created_at==="number"?r.created_at:0 };
+    /* P2 (2026-11-23): variations + sale scheduling — READ side. Column na
+       thakle null → ajker motoi acharon. */
+    variants:(Array.isArray(r.variants) ? r.variants : null),
+    saleStart:(r.sale_start || r.saleStart || null), saleEnd:(r.sale_end || r.saleEnd || null),
+    createdAt:typeof r.created_at==="number"?r.created_at:(typeof r.created_at==="string"&&r.created_at?Date.parse(r.created_at)||0:0) };
 }
 
 /* ---------- views ---------- */
@@ -383,11 +401,11 @@ function renderShopList(){
 function shCardHtml(p){
   var on = !!readState().wishlist[String(p.id)];
   return '<article class="pcard">' +
-    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — বিস্তারিত দেখুন"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'">'+(p.oldPrice>p.price?'<span class="badge">−'+offPct(p)+'%</span>':'')+'<span class="soldtag">বিক্রি '+soldFmt(p.soldCount)+'</span></a>' +
+    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — বিস্তারিত দেখুন"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'">'+(shEffOldPrice(p)>shEffPrice(p)?'<span class="badge">−'+offPct(p)+'%</span>':'')+'<span class="soldtag">বিক্রি '+soldFmt(p.soldCount)+'</span></a>' +
     '<button class="wishbtn'+(on?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="উইশলিস্টে রাখুন">'+(on?'❤️':'🤍')+'</button>' +
     '<div class="pbody"><div class="pcat">'+escHtml(catLabel(p.categoryId))+'</div><h3 class="pname"><a href="/product.html?id='+encodeURIComponent(p.id)+'">'+escHtml(p.name)+'</a></h3>' +
     (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
-    '<div class="price"><b>'+fmt(p.price)+'</b>'+(p.oldPrice>p.price?'<s>'+fmt(p.oldPrice)+'</s>':'')+'</div>' +
+    '<div class="price"><b>'+fmt(shEffPrice(p))+'</b>'+(shEffOldPrice(p)>shEffPrice(p)?'<s>'+fmt(shEffOldPrice(p))+'</s>':'')+'</div>' +
     '<div class="cardbtns"><button class="addbtn" data-add="'+escHtml(p.id)+'">🛒 কার্টে যোগ</button></div></div></article>';
 }
 function renderShopSingle(){
