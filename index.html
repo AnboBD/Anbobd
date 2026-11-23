@@ -2276,6 +2276,27 @@ function finishCheckoutUI(name, phone, addr, dist, pay, isManual, trxId, paySend
   renderCart(); renderProducts(); renderFlash(); renderUnder();
 }
 
+/* ---------- Payment status — Admin is the source of truth ----------
+   Admin orderPaymentStatus() normalizes anything not confirmed/rejected to
+   "pending". The storefront must agree: ONLY payment_status "confirmed" means
+   verified. Never key the verified label off the order status (a Cancelled
+   order is not AwaitingAdmin, so the old ternary read it as "verified") or
+   off the mere presence of a transaction_id. */
+function anboPayStatus(o){
+  var s = String((o && o.payment && o.payment.status) || "").trim().toLowerCase();
+  if(s === "confirmed") return "confirmed";
+  if(s === "rejected") return "rejected";
+  return "pending";
+}
+/* Short My-Orders label under the same rule. */
+function anboPayLabel(o){
+  var ps = anboPayStatus(o);
+  if(ps === "confirmed") return '✅ পেমেন্ট যাচাই হয়েছে';
+  if(ps === "rejected") return '❌ পেমেন্ট যাচাই হয়নি';
+  if(o && o.status === "Cancelled") return '❌ অর্ডার বাতিল — পেমেন্ট যাচাই হয়নি';
+  return '⏳ Admin পেমেন্ট যাচাইয়ের অপেক্ষায়';
+}
+
 /* ---------- Tracking ---------- */
 function renderTracking(order){
   var flow = ANBOBD_STORE.orderFlow, idx = flow.indexOf(order.status);
@@ -2283,7 +2304,14 @@ function renderTracking(order){
   var subs = { AwaitingAdmin:"AnboBD Admin অর্ডারটি যাচাই করছে", AdminConfirmed:"Seller অর্ডারটি পেয়ে গেছে", Packed:"Seller পণ্য প্যাক করে প্রস্তুত করেছে", Shipped:"কুরিয়ার ফোন করবে", Delivered:"পণ্য হাতে পেয়েছেন" };
   var html = '<div class="sumbox" style="background:var(--surface2);border-radius:14px;padding:13px 15px;font-size:.92rem">অর্ডার: <b>'+escHtml(order.id)+'</b> • '+escHtml(order.customer.district)+' • সর্বমোট <b>'+fmt(order.amounts.total)+'</b><br>📅 আনুমানিক ডেলিভারি: <b>'+escHtml(order.estimatedDelivery)+'</b> • পেমেন্ট: '+escHtml(order.payment.method)+'</div>';
   if(order.payment && order.payment.transactionId){
-    html += '<div class="paystatus">📱 <b>ম্যানুয়াল পেমেন্ট ('+escHtml(order.payment.method)+')</b> — Transaction ID: <b>'+escHtml(order.payment.transactionId)+'</b>'+(order.payment.senderNumber ? ' • প্রেরকের নম্বর: '+escHtml(order.payment.senderNumber) : '')+'<br>'+(order.status==="AwaitingAdmin" ? '⏳ <b>পেমেন্ট যাচাইয়ের অপেক্ষায় আছে</b> — Admin ট্রান্সাকশন ID মিলিয়ে যাচাই করে কনফার্ম করলেই অর্ডারটি Seller-এর কাছে যাবে।' : '✅ Admin পেমেন্ট যাচাই করে অর্ডারটি কনফার্ম করেছে।')+'</div>';
+    /* Payment label keys off payment_status (anboPayStatus), NOT the order
+       status — a Cancelled order must never read as "verified". */
+    var _ps = anboPayStatus(order);
+    var _payTxt = _ps === "confirmed" ? '✅ Admin পেমেন্ট যাচাই করে অর্ডারটি কনফার্ম করেছে.'
+      : _ps === "rejected" ? '❌ পেমেন্ট যাচাই হয়নি।'
+      : order.status === "Cancelled" ? '❌ অর্ডারটি বাতিল করা হয়েছে — পেমেন্ট যাচাই করা হয়নি।'
+      : '⏳ <b>পেমেন্ট যাচাইয়ের অপেক্ষায় আছে</b> — Admin ট্রান্সাকশন ID মিলিয়ে যাচাই করে কনফার্ম করলেই অর্ডারটি Seller-এর কাছে যাবে।';
+    html += '<div class="paystatus">📱 <b>ম্যানুয়াল পেমেন্ট ('+escHtml(order.payment.method)+')</b> — Transaction ID: <b>'+escHtml(order.payment.transactionId)+'</b>'+(order.payment.senderNumber ? ' • প্রেরকের নম্বর: '+escHtml(order.payment.senderNumber) : '')+'<br>'+_payTxt+'</div>';
   } else if(order.payment && order.payment.method==="ক্যাশ অন ডেলিভারি"){
     html += '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">💵 ক্যাশ অন ডেলিভারি — পণ্য হাতে পেয়ে কুরিয়ারকে <b>'+fmt(order.amounts.total)+'</b> পরিশোধ করুন।</div>';
   }
@@ -3658,7 +3686,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       var fm = FLOW_META[o.status] || { label:o.status, cls:"st-wait" };
       return '<div class="ocard"><div class="ohead"><span class="oid">' + o.id + '</span><span class="st ' + fm.cls + '">' + fm.label + '</span><span style="margin-left:auto;font-weight:800">' + fmt(o.amounts.total) + '</span></div>' +
         '<div class="oitems">' + o.items.map(function(it){ return "• " + esc(it.name) + " × " + it.qty + " — " + fmt(it.lineTotal); }).join("<br>") + '</div>' +
-        '<div class="ocust">📅 আনুমানিক ডেলিভারি: ' + o.estimatedDelivery + ' • 💵 ' + o.payment.method + (o.payment.transactionId ? '<br>📱 Transaction ID: <b>' + esc(o.payment.transactionId) + '</b> — ' + (o.status === 'AwaitingAdmin' ? '⏳ Admin পেমেন্ট যাচাইয়ের অপেক্ষায়' : '✅ পেমেন্ট যাচাই হয়েছে') : '') + '</div>' +
+        '<div class="ocust">📅 আনুমানিক ডেলিভারি: ' + o.estimatedDelivery + ' • 💵 ' + o.payment.method + (o.payment.transactionId ? '<br>📱 Transaction ID: <b>' + esc(o.payment.transactionId) + '</b> — ' + anboPayLabel(o) : '') + '</div>' +
         '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">📦 ট্র্যাক করুন</button>' + ' <button class="btn-sec" data-invoice-order="' + o.id + '">🧾 ইনভয়েস</button>' + (o.status === "AwaitingAdmin" ? ' <button class="btn-sec" data-cancel-order="' + o.id + '">❌ বাতিল করুন</button>' : '') + (o.status === "Delivered" ? ' <button class="btn-sec" data-return-order="' + o.id + '">↩️ Return আবেদন</button>' + reviewBtnsFor(o, u) : '') + '</div></div>';
     }).join("") : (window.__anboMyOrdersLoaded ? '<p style="color:var(--muted);margin:0;line-height:1.6">এখনো কোনো অর্ডার নেই — কেনাকাটা করে অর্ডার করলেই তা এখানে দেখা যাবে।</p>' : '<p style="color:var(--muted);margin:0;line-height:1.6">… লোড হচ্ছে</p>');
     var lbEl = document.getElementById("auLoyalty");
