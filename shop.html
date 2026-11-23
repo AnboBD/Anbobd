@@ -112,6 +112,8 @@ header.site{position:sticky;top:0;z-index:60;background:color-mix(in srgb, var(-
 .pname a{color:inherit;text-decoration:none}
 .pmeta{display:flex;gap:6px;flex-wrap:wrap}
 .pmeta span{font-size:.7rem;font-weight:700;border-radius:99px;padding:2px 8px;background:var(--surface2);color:var(--teal)}
+.stars{color:var(--amber);font-size:.85rem;letter-spacing:1px}
+.stars span{color:var(--muted);letter-spacing:0}
 .price{display:flex;align-items:baseline;gap:9px;margin-top:auto;flex-wrap:wrap}
 .price b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.3rem}
 .price s{color:var(--muted);font-size:.9rem}
@@ -308,7 +310,7 @@ function syncWishCount(){
 </script>
 <script>
 /* ---------- Supabase client (product.html-er motoi) ---------- */
-var SH = { id:null, shop:null, shops:[], products:[], counts:{}, catLabels:{}, catEnabled:{} };
+var SH = { id:null, shop:null, shops:[], products:[], counts:{}, catLabels:{}, catEnabled:{}, productReviews:{} };
 var __shClient = null;
 function shConfigured(){
   return !!(ANBOBD_SUPABASE.configured && ANBOBD_SUPABASE.url && ANBOBD_SUPABASE.anonKey && window.supabase && typeof window.supabase.createClient==="function");
@@ -369,6 +371,50 @@ function mapProductRow(r){
     createdAt:typeof r.created_at==="number"?r.created_at:(typeof r.created_at==="string"&&r.created_at?Date.parse(r.created_at)||0:0) };
 }
 
+/* P2 fix (2026-11-23) — Bug A (shop page): products table-e rating /
+   review_count column nei, tai mapProductRow sobsomoy rating 0 /
+   reviewCount 0 dey — kintu card oi duti field-e pore. Asol gar + count
+   reviews table theke ase (SH.productReviews, shLoadReviews-e pore);
+   render-er age prottek product-e asol man bosiye dao, jate shop page-eo
+   asol DB review dekhay (hunny: 5.0 / 1 review). Review na thakle 0-i
+   thake — kokhono fake na. (index.html-er anboSyncProductRatings-er
+   motoi, shop.html-er SH.products / shReviewsFor diye.) */
+function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s+" <span>("+r+")</span>"; }
+function shReviewsFor(p){ return (SH.productReviews && SH.productReviews[String(p.id)]) || []; }
+function shAvgRating(p){
+  var rv = shReviewsFor(p);
+  if(rv.length){ var sum = 0, n = 0; rv.forEach(function(r){ if(r.rating>0){ sum += r.rating; n++; } }); if(n) return sum/n; }
+  return p.rating || 0;
+}
+function shSyncProductRatings(){
+  SH.products.forEach(function(p){
+    var rv = shReviewsFor(p);
+    p.reviewCount = rv.length;
+    p.rating = shAvgRating(p);
+  });
+}
+/* P0-3 (index.html-er moto): real reviews only — reviews table theke ekbar
+   pore; row rakha hoy shudhu jokhon product_id/productId ache ar text ache.
+   Blocked/khali read hole productReviews khali thake, card-e "এখনো কোনো
+   রিভিউ নেই" dekhabe. Fake reviewer kokhono banano hoy na. */
+async function shLoadReviews(sb){
+  try{
+    var rv = await sb.from("reviews").select("*");
+    if(!rv.error && rv.data){
+      SH.productReviews = {};
+      rv.data.forEach(function(r){
+        var pid = r.product_id || r.productId || r.product || null; if(pid==null) return;
+        var txt = r.comment || r.text || r.review || r.body || ""; if(!String(txt).trim()) return;
+        var key = String(pid);
+        (SH.productReviews[key] = SH.productReviews[key] || []).push({
+          n: r.customer_name || r.name || r.reviewer || r.customer || "Customer",
+          d: r.created_at ? String(r.created_at).slice(0,10) : "",
+          w: "", t: String(txt), rating: Number(r.rating||0)||0 });
+      });
+    }
+  }catch(e){ console.warn("Reviews load failed (showing No reviews yet):", e); }
+}
+
 /* ---------- views ---------- */
 function showNotFound(msg){
   document.getElementById("shLoading").style.display = "none";
@@ -406,6 +452,7 @@ function shCardHtml(p){
     '<div class="pbody"><div class="pcat">'+escHtml(catLabel(p.categoryId))+'</div><h3 class="pname"><a href="/product.html?id='+encodeURIComponent(p.id)+'">'+escHtml(p.name)+'</a></h3>' +
     (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
     '<div class="price"><b>'+fmt(shEffPrice(p))+'</b>'+(shEffOldPrice(p)>shEffPrice(p)?'<s>'+fmt(shEffOldPrice(p))+'</s>':'')+'</div>' +
+    (p.reviewCount>0 ? '<div class="stars">'+stars(p.rating)+' <span>• '+p.reviewCount+'টি রিভিউ</span></div>' : '<div class="stars"><span>এখনো কোনো রিভিউ নেই</span></div>') +
     '<div class="cardbtns"><button class="addbtn" data-add="'+escHtml(p.id)+'">🛒 কার্টে যোগ</button></div></div></article>';
 }
 function renderShopSingle(){
@@ -471,6 +518,7 @@ async function shLoad(){
     var pr2 = await sb.from("products").select("*").eq("shop_id", id).eq("status", "approved").order("created_at", { ascending:false });
     if(pr2.error) throw pr2.error;
     SH.products = (pr2.data||[]).map(mapProductRow).filter(function(p){ return p && p.status==="active" && catEnabled(p.categoryId); });
+    await shLoadReviews(sb); shSyncProductRatings(); /* P2 fix (2026-11-23) — Bug A: asol review gar/count product-e bosao, tarpor render. */
     renderShopSingle();
   }catch(e){
     console.warn("Shop load failed:", e);
