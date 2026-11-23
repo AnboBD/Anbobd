@@ -11,6 +11,11 @@
 <meta property="og:description" content="আসল দাম, আসল স্টক, 7 দিনের সহজ রিটার্ন। ক্যাশ অন ডেলিভারিতে পণ্য হাতে পেয়ে টাকা পরিশোধ করুন।" />
 <meta property="og:image" content="https://anbobd-azure.vercel.app/assets/hero-3d.webp" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link id="pdCanonical" rel="canonical" href="https://anbobd-azure.vercel.app/" />
+<!-- P2 (2026-11-23): per-product SEO — JSON-LD Product (JS-e product diye bhorbe).
+     Static hosting-e crawler OG tag server-render kora jay na — og:title/description
+     generic-i thake; JSON-LD + canonical diye ja sombhob tai kora holo. -->
+<script type="application/ld+json" id="pdJsonLd">{"@context":"https://schema.org","@type":"Product","name":"AnboBD","description":"পণ্যের বিস্তারিত — AnboBD"}</script>
 <title>AnboBD — পণ্যের বিস্তারিত</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -105,6 +110,10 @@ header.site{position:sticky;top:0;z-index:60;background:color-mix(in srgb, var(-
 .ctarow .addbtn,.ctarow .buybtn{padding:13px 10px;font-size:1rem}
 .wishrow{display:flex;gap:10px;flex-wrap:wrap}
 .wishbtn2.on{border-color:var(--coral);color:var(--coral-deep)}
+/* P2 (2026-11-23): product variations — variant option button (storefront-er .varbtn-er motoi). */
+.varbtn{border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:9px 14px;font-weight:700;font-size:.9rem}
+.varbtn.on{border-color:var(--teal);background:var(--surface2);box-shadow:0 0 0 2px var(--teal)}
+.varbtn:disabled{opacity:.45;cursor:not-allowed;text-decoration:line-through}
 .box{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:16px 18px;box-shadow:var(--card-shadow)}
 .box h3{margin:0 0 8px;font-size:1.05rem}
 .box p{margin:6px 0;color:var(--ink);line-height:1.65;font-size:.94rem}
@@ -216,6 +225,9 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
       <p class="deldate" id="pdEta" style="margin:0"></p>
       <p style="margin:0;color:var(--muted);line-height:1.65;font-size:.94rem" id="pdPack"></p>
 
+      <!-- P2 (2026-11-23): product variations — variants thakle ekhane selector ashe; na thakle lukano. -->
+      <div id="pdVariants" style="display:none"></div>
+
       <div class="qtyrow">
         <span style="font-weight:700">পরিমাণ:</span>
         <span class="qty"><button type="button" id="pdQtyMinus" aria-label="একটি কমান">−</button><b id="pdQty">1</b><button type="button" id="pdQtyPlus" aria-label="একটি বাড়ান">+</button></span>
@@ -228,7 +240,11 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
       <div class="wishrow">
         <button type="button" class="ghostbtn wishbtn2" id="pdWish">🤍 উইশলিস্টে রাখুন</button>
         <button type="button" class="ghostbtn" id="pdShare">🔗 শেয়ার করুন</button>
+        <button type="button" class="ghostbtn" id="pdCompare">⚖️ তুলনা করুন</button>
+        <button type="button" class="ghostbtn" id="pdReport">🚩 রিপোর্ট করুন</button>
       </div>
+      <!-- P2: Report form ekhane khulbe (signed-in holei). -->
+      <div id="pdReportBox" style="margin-top:10px"></div>
 
       <div class="box">
         <h3>🚚 ডেলিভারি তথ্য</h3>
@@ -250,6 +266,15 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
     <div id="pdReviews"></div>
   </section>
 
+  <!-- P2 (2026-11-23): Q&A — ASK side. product_qa table theke proshno+uttor
+       pore; signed-in customer proshno korte parbe. Table na thakle honest
+       empty state — kokhono error toast na. Uttor Admin panel theke lekha hoy. -->
+  <section class="box" id="pdQaBox" style="display:none;margin-top:22px">
+    <h3 style="margin:0 0 6px">❓ প্রশ্ন ও উত্তর</h3>
+    <div id="pdQaList"><p style="color:var(--muted);margin:0">প্রশ্ন লোড হচ্ছে…</p></div>
+    <div id="pdQaFormWrap" style="margin-top:14px"></div>
+  </section>
+
   <div class="box" id="pdDescBox" style="display:none;margin-top:22px">
     <h3 style="margin:0 0 8px">📋 পণ্যের বিবরণ</h3>
     <p class="desc" id="pdDesc" style="margin:0"></p>
@@ -267,10 +292,10 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
       <div class="payrow"><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span><span>COD</span></div>
     </div>
     <div><b>কেনাকাটা</b><a href="/#flash">ফ্ল্যাশ সেল</a><a href="/#products">সব পণ্য</a><a href="/#categories">ক্যাটাগরি</a><a href="/#faq">সাধারণ জিজ্ঞাসা</a><a href="/index.html#track">অর্ডার ট্র্যাক করুন</a></div>
-    <div><b>কাস্টমার কেয়ার</b><a href="/pages/return-refund.html">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html">ডেলিভারি তথ্য</a><a href="/pages/warranty.html">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html">প্রাইভেসি পলিসি</a><a href="/pages/contact.html">যোগাযোগ করুন</a></div>
+    <div><b>কাস্টমার কেয়ার</b><a href="/pages/help.html">সাহায্য কেন্দ্র (Help Center)</a><a href="/pages/return-refund.html">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html">ডেলিভারি তথ্য</a><a href="/pages/warranty.html">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html">প্রাইভেসি পলিসি</a><a href="/pages/contact.html">যোগাযোগ করুন</a></div>
     <div><b>AnboBD</b><a href="/pages/about.html">আমাদের সম্পর্কে</a><a href="/seller/">বিক্রেতা হোন</a><a href="/pages/terms.html">শর্তাবলী</a><a href="/pages/career.html">ক্যারিয়ার</a></div>
   </div>
-  <div class="wrap" style="margin-top:26px;font-size:.85rem">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩</div>
+  <div class="wrap" style="margin-top:26px;font-size:.85rem">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩 · <a href="/sitemap.xml" style="color:var(--teal);font-weight:700">সাইটম্যাপ</a></div>
 </footer>
 
 <div class="bottomnav"><nav>
@@ -320,7 +345,33 @@ function anboCatSlug(v){
   if(map[s]) return map[s];
   return CAT_LABELS[s] ? s : "electronics";
 }
-function offPct(p){ return Math.round((1 - p.price/p.oldPrice)*100); }
+function offPct(p){ var e = pdEffPrice(p), o = pdEffOldPrice(p); return (o>e) ? Math.round((1 - e/o)*100) : 0; }
+/* P2 (2026-11-23) — sale scheduling (READ side): sale_start/end thakle shudhu
+   window-er vitorei old_price sale; window-er baire regular price (oldPrice). */
+function pdSaleActive(p){
+  if(!p) return true;
+  if(!p.saleStart && !p.saleEnd) return true;
+  var now = Date.now();
+  var st = p.saleStart ? Date.parse(p.saleStart) : NaN;
+  var en = p.saleEnd ? Date.parse(p.saleEnd) : NaN;
+  if(!isNaN(st) && now < st) return false;
+  if(!isNaN(en) && now > en) return false;
+  return true;
+}
+function pdEffPrice(p){ if(!p) return 0; if(pdSaleActive(p)) return p.price; return (p.oldPrice > p.price) ? p.oldPrice : p.price; }
+function pdEffOldPrice(p){ if(!p) return 0; return pdSaleActive(p) ? p.oldPrice : 0; }
+/* P2 — variations (READ side): products.variants = [{name, options:[{label, price_delta, stock}]}]. */
+function pdVariantOption(p, label){
+  if(!p || !Array.isArray(p.variants) || !label) return null;
+  var found = null;
+  p.variants.forEach(function(g){
+    if(found || !g || !Array.isArray(g.options)) return;
+    g.options.forEach(function(o){ if(!found && o && String(o.label) === String(label)) found = o; });
+  });
+  return found;
+}
+function pdVariantStock(p, label){ var o = pdVariantOption(p, label); return o ? (o.stock!=null ? +o.stock : p.stockQty) : p.stockQty; }
+function pdVariantDelta(p, label){ var o = pdVariantOption(p, label); return o ? (+o.price_delta || 0) : 0; }
 function soldFmt(n){ return n>=1000 ? (n/1000).toFixed(1).replace(".0","")+"k" : ""+n; }
 function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s; }
 function etaDate(days){ var d=new Date(); d.setDate(d.getDate()+days); try{ return d.toLocaleDateString("bn-BD",{weekday:"long", day:"numeric", month:"long"}); }catch(e){ return d.toDateString(); } }
@@ -405,15 +456,30 @@ function syncWishCount(){
 </script>
 <script>
 /* ---------- Supabase client (storefront-er motoi) ---------- */
-var PD = { id:null, product:null, shop:null, reviews:[], images:[], slide:0, qty:1 };
+var PD = { id:null, product:null, shop:null, reviews:[], images:[], slide:0, qty:1, variant:null };
 var __pdClient = null;
 function pdConfigured(){
   return !!(ANBOBD_SUPABASE.configured && ANBOBD_SUPABASE.url && ANBOBD_SUPABASE.anonKey && window.supabase && typeof window.supabase.createClient==="function");
 }
 function pdSb(){
   if(!pdConfigured()) return null;
-  if(!__pdClient){ __pdClient = window.supabase.createClient(ANBOBD_SUPABASE.url, ANBOBD_SUPABASE.anonKey); }
+  /* P2 (2026-11-23): storageKey storefront-er motoi — na dile Q&A/report
+     insert anonymous hoye RLS-e reject hoto (authenticated insert). Read-e
+     kono bodol nei. */
+  if(!__pdClient){ __pdClient = window.supabase.createClient(ANBOBD_SUPABASE.url, ANBOBD_SUPABASE.anonKey, { auth:{ storageKey:"anbobd-storefront-auth" } }); }
   return __pdClient;
+}
+/* P2 — signed-in customer (storefront session token theke; cartStateKey-er motoi). */
+function pdCurrentUser(){
+  try{
+    var raw = localStorage.getItem("anbobd-storefront-auth");
+    if(!raw) return null;
+    var sess = JSON.parse(raw);
+    var u = (sess && sess.user) || (sess && sess.currentSession && sess.currentSession.user);
+    if(!u || !u.id) return null;
+    var meta = u.user_metadata || {};
+    return { id:u.id, email:u.email||"", name:meta.full_name || meta.name || (u.email ? u.email.split("@")[0] : "গ্রাহক"), phone:meta.phone || "" };
+  }catch(e){ return null; }
 }
 
 /* ---------- DB row → product (storefront-er anboMapProductRow-er motoi) ---------- */
@@ -433,7 +499,11 @@ function mapProductRow(r){
     warranty:r.warranty||"", img:(imgs.length?imgs[0]:""), images:imgs, desc:r.desc||r.description||"",
     specs:Array.isArray(r.specs)?r.specs:[],
     packSize:(r.pack_size!=null && r.pack_size!==""?Number(r.pack_size):(r.packSize!=null?Number(r.packSize):null)), unit:r.unit||r.pack_unit||"", packaging:r.packaging||"",
-    createdAt:typeof r.created_at==="number"?r.created_at:0 };
+    /* P2 (2026-11-23): variations + sale scheduling — READ side. Column na
+       thakle null → ajker motoi acharon. */
+    variants:(Array.isArray(r.variants) ? r.variants : null),
+    saleStart:(r.sale_start || r.saleStart || null), saleEnd:(r.sale_end || r.saleEnd || null),
+    createdAt:typeof r.created_at==="number"?r.created_at:(typeof r.created_at==="string"&&r.created_at?Date.parse(r.created_at)||0:0) };
 }
 
 /* ---------- load ---------- */
@@ -441,6 +511,7 @@ function showNotLive(){
   document.getElementById("pdLoading").style.display = "none";
   document.getElementById("pdContent").style.display = "none";
   document.getElementById("pdReviewsBox").style.display = "none";
+  document.getElementById("pdQaBox").style.display = "none";
   document.getElementById("pdDescBox").style.display = "none";
   document.getElementById("pdNotLive").style.display = "block";
   document.title = "AnboBD — পণ্যটি লাইভ নেই";
@@ -522,12 +593,29 @@ function renderProduct(){
   document.getElementById("pdStars").innerHTML = PD.reviews.length
     ? (avg>0 ? stars(avg) + " <span>(" + avg.toFixed(1) + ") • " + PD.reviews.length + "টি রিভিউ</span>" : "<span>" + PD.reviews.length + "টি রিভিউ</span>")
     : "<span>এখনো কোনো রিভিউ নেই • 0 রিভিউ</span>";
-  document.getElementById("pdPrice").textContent = fmt(p.price);
-  var hasOld = p.oldPrice > p.price;
+  document.getElementById("pdPrice").textContent = fmt(pdEffPrice(p));
+  var hasOld = pdEffOldPrice(p) > pdEffPrice(p);
   document.getElementById("pdOld").style.display = hasOld ? "" : "none";
-  if(hasOld) document.getElementById("pdOld").textContent = fmt(p.oldPrice);
+  if(hasOld) document.getElementById("pdOld").textContent = fmt(pdEffOldPrice(p));
   document.getElementById("pdOff").style.display = hasOld ? "" : "none";
   if(hasOld) document.getElementById("pdOff").textContent = "−" + offPct(p) + "% ছাড়";
+  /* P2: per-product SEO — canonical + JSON-LD Product (price BDT, stock theke availability, seller name). */
+  var can = document.getElementById("pdCanonical");
+  if(can) can.href = location.origin + "/product?id=" + encodeURIComponent(p.id);
+  var ld = document.getElementById("pdJsonLd");
+  if(ld){
+    try{
+      ld.textContent = JSON.stringify({
+        "@context":"https://schema.org", "@type":"Product",
+        name:p.name, description:(p.desc||"").slice(0,300) || p.name,
+        sku:p.sku, image:(PD.images && PD.images.length ? PD.images.slice(0,4) : (p.img ? [p.img] : [])),
+        brand:{ "@type":"Brand", name:shop.name },
+        offers:{ "@type":"Offer", url:location.origin + "/product?id=" + encodeURIComponent(p.id), priceCurrency:"BDT", price:pdEffPrice(p), availability:(p.stockQty>0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock"), seller:{ "@type":"Organization", name:shop.name } }
+      });
+    }catch(e){}
+  }
+  /* P2: variations — selector render (na thakle kichu dekhabe na). */
+  renderVariants();
   /* Honest sold count shudhu — kokhono sold-% badge na. */
   document.getElementById("pdSoldTag").textContent = "বিক্রি " + soldFmt(p.soldCount);
   var meta = [];
@@ -583,6 +671,8 @@ function renderProduct(){
       }).join("")
     : '<p style="color:var(--muted);margin:0">এখনো কোনো রিভিউ নেই — এই পণ্যের জন্য এখনো কোনো আসল রিভিউ জমা হয়নি। (0 রিভিউ)</p>';
   syncWishBtn();
+  syncCompareBtn(); /* P2 */
+  loadQa(); /* P2 — Q&A section. */
 }
 
 /* ---------- slider ---------- */
@@ -606,7 +696,7 @@ function setSlide(i){
   }
   var badge = document.getElementById("pdBadge");
   var p = PD.product;
-  if(p && p.oldPrice > p.price){ badge.style.display = ""; badge.textContent = "−"+offPct(p)+"%"; }
+  if(p && pdEffOldPrice(p) > pdEffPrice(p)){ badge.style.display = ""; badge.textContent = "−"+offPct(p)+"%"; }
   else badge.style.display = "none";
 }
 
@@ -614,9 +704,14 @@ function setSlide(i){
 function addToCart(qty){
   var p = PD.product; if(!p) return false;
   qty = qty||1;
-  if(p.stockQty<=0){ toast("😔 দুঃখিত, এই পণ্যের স্টক শেষ!"); return false; }
+  /* P2: variant thakle cart key "id||label" (na thakle shudhu id — purono
+     cart venge na); cap = variant-er stock, na thakle product-er stock. */
+  var label = PD.variant || null;
+  var cap = label ? pdVariantStock(p, label) : p.stockQty;
+  if(cap<=0){ toast("😔 দুঃখিত, এই পণ্যের স্টক শেষ!"); return false; }
   var st = readState();
-  st.cart[String(p.id)] = Math.min(((+st.cart[String(p.id)]||0)+qty), p.stockQty);
+  var key = String(p.id) + (label ? "||" + label : "");
+  st.cart[key] = Math.min(((+st.cart[key]||0)+qty), cap);
   writeState(st);
   syncCartCount();
   return true;
@@ -627,6 +722,112 @@ function syncWishBtn(){
   var b = document.getElementById("pdWish");
   b.textContent = on ? "❤️ উইশলিস্টে আছে" : "🤍 উইশলিস্টে রাখুন";
   b.classList.toggle("on", on);
+}
+
+/* ============ P2 (2026-11-23): variations — selector + price/stock update ============ */
+function renderVariants(){
+  var p = PD.product;
+  var box = document.getElementById("pdVariants");
+  if(!p || !Array.isArray(p.variants) || !p.variants.length){ box.style.display = "none"; box.innerHTML = ""; PD.variant = null; return; }
+  var html = "";
+  p.variants.forEach(function(g, gi){
+    if(!g || !Array.isArray(g.options) || !g.options.length) return;
+    html += '<div style="margin-bottom:10px"><div style="font-weight:700;margin-bottom:6px">'+escHtml(g.name||("অপশন "+(gi+1)))+':</div><div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + g.options.map(function(o){
+          var lbl = String(o.label||"");
+          var st = (o.stock!=null ? +o.stock : p.stockQty);
+          var sel = PD.variant === lbl;
+          var delta = +o.price_delta||0;
+          return '<button type="button" class="varbtn'+(sel?" on":"")+'" data-variant="'+escHtml(lbl)+'"'+(st<=0?" disabled":"")+'>'+escHtml(lbl)+(delta ? ' ('+(delta>0?"+":"−")+fmt(Math.abs(delta))+')' : '')+'</button>';
+        }).join("") + '</div></div>';
+  });
+  if(!html){ box.style.display = "none"; box.innerHTML = ""; PD.variant = null; return; }
+  box.innerHTML = html; box.style.display = "block";
+  box.querySelectorAll("[data-variant]").forEach(function(b){
+    b.addEventListener("click", function(){
+      PD.variant = b.getAttribute("data-variant");
+      box.querySelectorAll("[data-variant]").forEach(function(x){ x.classList.toggle("on", x.getAttribute("data-variant")===PD.variant); });
+      updateVariantUI();
+    });
+  });
+  updateVariantUI();
+}
+function updateVariantUI(){
+  var p = PD.product; if(!p) return;
+  var label = PD.variant;
+  var unit = pdEffPrice(p) + (label ? pdVariantDelta(p, label) : 0);
+  var stock = label ? pdVariantStock(p, label) : p.stockQty;
+  document.getElementById("pdPrice").textContent = fmt(unit);
+  document.getElementById("pdStock").innerHTML = stockLine({ stockQty:stock });
+  document.getElementById("pdStockNote").textContent = stock>0 ? ("স্টকে আছে " + stock + "টি") : "স্টক শেষ";
+  var dis = stock<=0;
+  document.getElementById("pdAdd").disabled = dis;
+  document.getElementById("pdBuy").disabled = dis;
+  document.getElementById("pdQtyPlus").disabled = dis;
+  if(PD.qty > Math.max(1, stock)){ PD.qty = Math.max(1, stock); document.getElementById("pdQty").textContent = String(PD.qty); }
+}
+
+/* ============ P2 (2026-11-23): Q&A — ASK side (product_qa table) ============
+   Storefront shudhu proshno lekhe + uttor pore; uttor Admin panel theke.
+   Table na thakle honest empty state — kokhono error toast na. */
+async function loadQa(){
+  var list = document.getElementById("pdQaList");
+  var wrap = document.getElementById("pdQaFormWrap");
+  var box = document.getElementById("pdQaBox");
+  if(!box || !PD.id) return;
+  box.style.display = "block";
+  var u = pdCurrentUser();
+  if(u){
+    wrap.innerHTML = '<form id="pdQaForm" style="display:grid;gap:10px"><div><label for="pdQaQ" style="font-weight:700">আপনার প্রশ্ন লিখুন</label><textarea id="pdQaQ" rows="3" placeholder="যেমন: এই মধু কি খাঁটি? ডেলিভারি কতদিনে আসবে?" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);margin-top:6px"></textarea></div><div id="pdQaErr" style="color:var(--danger);font-weight:700;display:none"></div><div><button class="addbtn" type="submit" style="margin:0">প্রশ্ন পাঠান →</button></div><p style="font-size:.85rem;color:var(--muted);margin:0">প্রশ্নটি দোকানদার/Admin দেখে উত্তর দেবে — উত্তর এলে এখানেই দেখা যাবে।</p></form>';
+    document.getElementById("pdQaForm").addEventListener("submit", async function(e){
+      e.preventDefault();
+      var q = String(document.getElementById("pdQaQ").value || "").trim();
+      var errEl = document.getElementById("pdQaErr");
+      if(!q){ errEl.style.display = ""; errEl.textContent = "⚠️ প্রশ্নটি লিখুন।"; return; }
+      var sb = pdSb();
+      if(!sb){ errEl.style.display = ""; errEl.textContent = "⚠️ অনলাইন সংযোগ নেই।"; return; }
+      try{
+        var r = await sb.from("product_qa").insert({ product_id: PD.id, customer_id: u.id, customer_name: u.name, question: q });
+        if(r.error) throw r.error;
+        document.getElementById("pdQaQ").value = "";
+        toast("✅ প্রশ্ন পাঠানো হয়েছে — উত্তর এলে এখানে দেখা যাবে!");
+        loadQa();
+      }catch(err){
+        var msg = (err && err.message) || "";
+        if(/42P01|Could not find the table/i.test(msg)){ errEl.style.display = ""; errEl.textContent = "⚠️ প্রশ্ন-উত্তর এখনো চালু হয়নি — পরে আবার চেষ্টা করুন।"; }
+        else { errEl.style.display = ""; errEl.textContent = "⚠️ প্রশ্ন পাঠানো যায়নি — " + msg; }
+      }
+    });
+  } else {
+    wrap.innerHTML = '<p style="color:var(--muted);margin:0">প্রশ্ন করতে <a href="/index.html?auth=signin" style="color:var(--teal);font-weight:700">লগইন</a> করুন।</p>';
+  }
+  var sb2 = pdSb();
+  if(!sb2){ list.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো প্রশ্ন নেই — প্রথম প্রশ্নটি আপনিই করুন!</p>'; return; }
+  try{
+    var r = await sb2.from("product_qa").select("*").eq("product_id", PD.id).order("created_at", { ascending:false }).limit(20);
+    if(r.error) throw r.error;
+    var rows = r.data || [];
+    if(!rows.length){ list.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো প্রশ্ন নেই — প্রথম প্রশ্নটি আপনিই করুন!</p>'; return; }
+    list.innerHTML = rows.map(function(q){
+      var ans = q.answer ? '<div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:10px"><b style="color:var(--teal)">💬 ' + escHtml(q.answered_by || "দোকানদার") + ':</b> ' + escHtml(q.answer) + '</div>' : '<div style="margin-top:8px;color:var(--muted);font-size:.88rem">⏳ উত্তর আসেনি — দোকানদার/Admin দেখে উত্তর দেবে।</div>';
+      return '<div style="border-top:1px solid var(--line);padding:12px 0"><div><b>'+escHtml(q.customer_name || "গ্রাহক")+'</b> <span style="color:var(--muted);font-size:.82rem">• '+escHtml((q.created_at||"").slice(0,10))+'</span></div><p style="margin:6px 0 0;line-height:1.6">❓ '+escHtml(q.question||"")+'</p>'+ans+'</div>';
+    }).join("");
+  }catch(e){
+    list.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো প্রশ্ন নেই — প্রথম প্রশ্নটি আপনিই করুন!</p>';
+  }
+}
+
+/* ============ P2 (2026-11-23): Product comparison (storefront-er SAME key) ============ */
+var PD_COMPARE_LS_KEY = "anbobd-compare-v1";
+function pdCompareIds(){
+  try{ var raw = localStorage.getItem(PD_COMPARE_LS_KEY); var arr = raw ? JSON.parse(raw) : []; return Array.isArray(arr) ? arr.map(String).filter(Boolean) : []; }catch(e){ return []; }
+}
+function pdSaveCompare(ids){ try{ localStorage.setItem(PD_COMPARE_LS_KEY, JSON.stringify(ids)); }catch(e){} }
+function syncCompareBtn(){
+  var p = PD.product; if(!p) return;
+  var b = document.getElementById("pdCompare"); if(!b) return;
+  var ids = pdCompareIds();
+  b.textContent = ids.indexOf(String(p.id))>=0 ? "⚖️ তুলনায় আছে ✓" : "⚖️ তুলনা করুন";
 }
 
 /* ---------- events ---------- */
@@ -653,7 +854,8 @@ document.getElementById("pdQtyMinus").addEventListener("click", function(){
 });
 document.getElementById("pdQtyPlus").addEventListener("click", function(){
   var p = PD.product;
-  PD.qty = Math.min(p ? Math.max(1, p.stockQty) : 99, PD.qty+1);
+  var cap = p ? (PD.variant ? pdVariantStock(p, PD.variant) : p.stockQty) : 99;
+  PD.qty = Math.min(p ? Math.max(1, cap) : 99, PD.qty+1);
   document.getElementById("pdQty").textContent = String(PD.qty);
 });
 document.getElementById("pdAdd").addEventListener("click", function(){
@@ -692,6 +894,54 @@ document.getElementById("pdShare").addEventListener("click", function(){
   if(navigator.clipboard && typeof navigator.clipboard.writeText === "function"){
     navigator.clipboard.writeText(link).then(copied, function(){ if(fallbackCopy()) copied(); else failed(); });
   } else if(fallbackCopy()){ copied(); } else { failed(); }
+});
+/* P2: তুলনা — storefront-er SAME localStorage key; max 3; তুলনা দেখতে /#compare. */
+document.getElementById("pdCompare").addEventListener("click", function(){
+  var p = PD.product; if(!p) return;
+  var ids = pdCompareIds();
+  var ix = ids.indexOf(String(p.id));
+  if(ix >= 0){ ids.splice(ix, 1); toast("⚖️ তুলনা থেকে সরানো হয়েছে"); }
+  else {
+    if(ids.length >= 3){ toast("⚠️ একসাথে সর্বোচ্চ ৩টি পণ্য তুলনা করা যায় — আগের একটি সরিয়ে নিন।"); return; }
+    ids.push(String(p.id));
+    toast("⚖️ তুলনায় যোগ হয়েছে (" + ids.length + "/৩) — <a href=\"/#compare\" style=\"color:var(--teal);font-weight:700\">তুলনা দেখুন</a>");
+  }
+  pdSaveCompare(ids);
+  syncCompareBtn();
+});
+/* P2: Report this product — support_tickets-e "REPORT | <name> | <id>" subject-e
+   ticket; signed-in na hole sign-in prompt. */
+document.getElementById("pdReport").addEventListener("click", function(){
+  var p = PD.product; if(!p) return;
+  var u = pdCurrentUser();
+  var box = document.getElementById("pdReportBox");
+  if(!u){ box.innerHTML = '<p style="color:var(--muted);margin:0">পণ্য রিপোর্ট করতে <a href="/index.html?auth=signin" style="color:var(--teal);font-weight:700">লগইন</a> করুন।</p>'; return; }
+  box.innerHTML = '<form id="pdReportForm" style="display:grid;gap:10px;border:1.5px solid var(--line);border-radius:14px;padding:14px;background:var(--surface2)">'
+    + '<b>🚩 এই পণ্যটি রিপোর্ট করুন</b>'
+    + '<div><label for="pdReportReason" style="font-weight:700">কারণ *</label><select id="pdReportReason" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);margin-top:6px">'
+    + '<option value="ভুল তথ্য / বিভ্রান্তিকর বিবরণ">ভুল তথ্য / বিভ্রান্তিকর বিবরণ</option><option value="নকল / ভেজাল পণ্য সন্দেহ">নকল / ভেজাল পণ্য সন্দেহ</option><option value="আপত্তিকর ছবি বা লেখা">আপত্তিকর ছবি বা লেখা</option><option value="ভুল দাম / স্টক">ভুল দাম / স্টক</option><option value="অন্যান্য">অন্যান্য</option></select></div>'
+    + '<div><label for="pdReportNote" style="font-weight:700">বিস্তারিত (ঐচ্ছিক)</label><textarea id="pdReportNote" rows="2" placeholder="সংক্ষেপে লিখুন…" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);margin-top:6px"></textarea></div>'
+    + '<div id="pdReportErr" style="color:var(--danger);font-weight:700;display:none"></div>'
+    + '<div><button class="addbtn" type="submit" style="margin:0">রিপোর্ট পাঠান →</button> <button type="button" class="ghostbtn" id="pdReportCancel">বাতিল</button></div>'
+    + '<p style="font-size:.85rem;color:var(--muted);margin:0">রিপোর্টটি Admin review করবে — পণ্যটি যাচাই করে ব্যবস্থা নেওয়া হবে।</p></form>';
+  document.getElementById("pdReportCancel").addEventListener("click", function(){ box.innerHTML = ""; });
+  document.getElementById("pdReportForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    var errEl = document.getElementById("pdReportErr");
+    var reason = document.getElementById("pdReportReason").value;
+    var note = String(document.getElementById("pdReportNote").value || "").trim();
+    var sb = pdSb();
+    if(!sb){ errEl.style.display = ""; errEl.textContent = "⚠️ অনলাইন সংযোগ নেই।"; return; }
+    try{
+      var msg = "REPORT — " + p.name + " (ID: " + p.id + ")\nকারণ: " + reason + (note ? "\nবিস্তারিত: " + note : "") + "\nরিপোর্টকারী: " + u.name + " (" + (u.email||"") + ")";
+      var r = await sb.from("support_tickets").insert({ subject: "REPORT | " + p.name + " | " + p.id, message: msg, status: "open" });
+      if(r.error) throw r.error;
+      box.innerHTML = "";
+      toast("✅ রিপোর্ট পাঠানো হয়েছে — Admin যাচাই করবে। ধন্যবাদ!");
+    }catch(err){
+      errEl.style.display = ""; errEl.textContent = "⚠️ রিপোর্ট পাঠানো যায়নি — " + ((err && err.message) || "database error");
+    }
+  });
 });
 document.getElementById("pdSearchForm").addEventListener("submit", function(e){
   e.preventDefault();
