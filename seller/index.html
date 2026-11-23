@@ -1344,10 +1344,23 @@
          enforcement: no staff row = no entry, even with valid metadata.
          NOTE: this needs the staff SELECT policy to let a staff user read
          their own row (staff.user_id = auth.uid()). If that policy is
-         missing, staff sign-in fails here with "ar sakriya nei" — fix the
-         policy in the Supabase dashboard, do NOT reopen the fallback. */
+         missing, staff sign-in fails here — fix the policy in the
+         Supabase dashboard, do NOT reopen the metadata fallback.
+         Email fallback below is NOT the metadata fallback: it still
+         requires a real, active staff row — it only changes HOW the row
+         is found when the user_id link was never written at creation. */
       try { var st = await supabase.from('staff').select('*').eq('user_id', authUser.id).limit(1); if (!st.error && st.data && st.data.length) staffRow = st.data[0]; } catch(e){}
-      if (!staffRow){ staffLoginBlocked = "Ei staff account ti ar sakriya nei — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
+      /* Fallback: user_id link bosano na thakle (staff toirir somoy link
+         update na bosle) row ta email diye khujo. Email Auth user er
+         nijer (sign-in kora email), ar row thakle + active thakle dhukte
+         deya nirapod: remove kora staff er kono row thake na, deactivate
+         kora staff er active=false thake — duita khetrei niche block hobe.
+         Ei read er jonno "staff select self by email" policy lage (RLS);
+         policy na thakle ei read khali fire asbe, ager motoi block hobe. */
+      if (!staffRow && authUser.email) {
+        try { var st2 = await supabase.from('staff').select('*').eq('email', authUser.email).limit(1); if (!st2.error && st2.data && st2.data.length) staffRow = st2.data[0]; } catch(e){}
+      }
+      if (!staffRow){ staffLoginBlocked = "Ei staff account er kono record pawa jay ni — shop owner ke janan (Team theke staff ti abar add korte hobe)."; try { await supabase.auth.signOut(); } catch(e){} return null; }
       if (staffRow.active === false){ staffLoginBlocked = "Ei staff account ti deactivate kora hoyeche — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
       staffShopId = staffRow.shop_id || "";
       if (!staffShopId){ staffLoginBlocked = "Ei staff account er sathe kono shop jukto nei — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
@@ -2936,7 +2949,8 @@
                  client diye ashol Auth user toiri (Admin staff er moto),
                  metadata te shop_id + shop role — staff nije staff row porte
                  na parleo (RLS) login metadata diye cholbe, (3) staff row e
-                 user_id bosano, (4) profiles row best-effort (seller session
+                 user_id bosano + verify kora (na bosle error dekhabe, success
+                 toast asbe na), (4) profiles row best-effort (seller session
                  theke profiles INSERT policy na thakle warn dekhabe, kintu
                  login atke jabe na). */
               var insS = await supabase.from('staff').insert({ shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true }).select().single();
@@ -2948,7 +2962,15 @@
               if (su.error) { $("nsErr").textContent = "Staff login account toiri hoy ni: " + su.error.message + " (staff row toiri hoyeche — login chara staff hisebe thakbe)"; return; }
               var uid = su.data && su.data.user ? su.data.user.id : null;
               if (uid){
-                await supabase.from('staff').update({ user_id: uid }).eq('id', newStaff.id).eq('shop_id', s.shopId);
+                /* Link update VERIFY kora hoy — age check chara chalano hoto,
+                   tai user_id na bosleo success toast asto ar staff pore
+                   sign in korte parto na ("ar sakriya nei"). RLS 0-row ba
+                   FK error — duita khetrei ekhane dhora porbe. */
+                var linkRes = await supabase.from('staff').update({ user_id: uid }).eq('id', newStaff.id).eq('shop_id', s.shopId).select('id, user_id');
+                if (linkRes.error || !linkRes.data || !linkRes.data.length || String(linkRes.data[0].user_id || "") !== String(uid)) {
+                  $("nsErr").textContent = "Staff row e login link bosano jay ni" + (linkRes.error ? (" — " + linkRes.error.message) : " — database theke row fire asheni") + ". Staff row toiri hoyeche, kintu se sign in korte parbe na — Admin ke staff policy check korte bolun.";
+                  return;
+                }
                 var pr = await supabase.from('profiles').insert({ id: uid, full_name: name, email: em, phone: ph, role: "seller_staff" });
                 if (pr.error) { newStaff._profileWarn = true; }
               }
