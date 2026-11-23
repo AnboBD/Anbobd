@@ -1055,7 +1055,7 @@
      processing kata bad deya holo, jate Admin ar Seller er number mile.
      Rate hisabe Admin er category rate (adminCatRate) lage — Seller er
      nijer COMMISSION map (age Grocery 5 chilo) na, karon Admin ledger Grocery te 8% dhore. */
-  function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*adminCatRate(p.cat)/100; } }); return Math.round(e); }
+  function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id || it.productId); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*adminCatRate(p.cat)/100; } }); return Math.round(e); }
   /* Wallet settlement — single source of truth, derived from the
      seller's OWN orders/payouts/returns (Admin derives it the same
      way). Delivered earning sits in pendingClearance for the 7-day
@@ -1245,7 +1245,7 @@
       for (var ii = 0; ii < items.length && !cat; ii++) {
         var it0 = items[ii];
         cat = it0.category || it0.cat || "";
-        if (!cat && products) { for (var pi = 0; pi < products.length; pi++) { if (String(products[pi].id) === String(it0.pid || it0.product_id || it0.id)) { cat = products[pi].cat || products[pi].category || ""; break; } } }
+        if (!cat && products) { for (var pi = 0; pi < products.length; pi++) { if (String(products[pi].id) === String(it0.pid || it0.product_id || it0.productId || it0.id)) { cat = products[pi].cat || products[pi].category || ""; break; } } }
       }
       effRate = adminCatRate(cat);
     }
@@ -2289,12 +2289,15 @@
   }
   async function sbUpdateSubOrder(o, extra){
     if (!supabaseConnected || !supabase || !o) return;
-    /* sub_orders.status er check constraint sudhu ei format gulo mane:
-       AwaitingAdmin, AdminConfirmed, ReadyToShip, Packed, Shipped, Delivered.
-       Tai display status theke sudhu space sorano hoy — case bodlano hoy na
-       ("Ready to Ship" -> "ReadyToShip"). seller_status bole sub_orders table e
-       kono column nei, tai payload e seta pathano hoy na. */
-    var payload = { status: String(o.status).replace(/\s+/g, "") };
+    /* sub_orders.status er check constraint sudhu ei DB value gulo mane:
+       AwaitingAdmin, AdminConfirmed, ReadyToShip, Packed, Shipped, Delivered,
+       Cancelled. Display status theke sudhu space sorale "Ready to Ship" ->
+       "ReadytoShip" hoy (chhoto 't') — constraint seta reject kore, tai
+       Prepare click e "Status online e save hoy ni" ashto. Explicit map
+       bebohar kora hoy. seller_status bole sub_orders table e kono column
+       nei, tai payload e seta pathano hoy na. */
+    var DB_STATUS = { "Awaiting Admin":"AwaitingAdmin", "Admin Confirmed":"AdminConfirmed", "Ready to Ship":"ReadyToShip", "Packed":"Packed", "Shipped":"Shipped", "Delivered":"Delivered", "Cancelled":"Cancelled" };
+    var payload = { status: DB_STATUS[o.status] || String(o.status).replace(/\s+/g, "") };
     if (extra) for (var k in extra) payload[k] = extra[k];
     try {
       var res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId);
@@ -2356,7 +2359,7 @@
       : steps.map(function(st, i){
           return '<li class="' + (i<=idx ? "done" : "") + '"><span class="tdot">' + (i<=idx ? "✓" : "") + '</span><div><div class="tt">' + st.t + '</div><div class="ts">' + (i<idx ? "Complete" : (i===idx ? st.s + " · Ekhon ei stage e ache" : st.s)) + '</div></div></li>';
         }).join("");
-    var items = (o.items||[]).map(function(it){ var p = prodById(it.pid || it.product_id); var nm = p ? p.name : (it.name || "Item"); var pr = p ? p.price : Number(it.price || 0); return '<div class="kv"><span>' + esc(nm) + ' × ' + (it.qty || 1) + '</span><b>' + fmt(pr * (it.qty || 1)) + '</b></div>'; }).join("");
+    var items = (o.items||[]).map(function(it){ var p = prodById(it.pid || it.product_id || it.productId); var nm = p ? p.name : (it.name || "Item"); var pr = p ? p.price : Number(it.price || 0); return '<div class="kv"><span>' + esc(nm) + ' × ' + (it.qty || 1) + '</span><b>' + fmt(pr * (it.qty || 1)) + '</b></div>'; }).join("");
     var next = NEXT_STATUS[o.status];
     $("drawerRoot").innerHTML = '<div class="drawer-wrap" id="drawerWrap"><div class="drawer">'
       + '<button class="icon-btn modal-x" id="drawerX" type="button" aria-label="Close">✕</button>'
