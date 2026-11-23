@@ -2807,7 +2807,17 @@ function syncPaymentMethods(){
   if(firstVisible && !checkedVisible) firstVisible.checked = true;
   syncManualPay();
 }
-function checkoutSubmit(e){
+/* Blocked customer guard — Admin profiles.status 'blocked'/'suspended' hole
+   customer checkout korte parbe na; guest checkout unaffected. fetchProfile
+   fail korle (offline/RLS) null ase — tokhon block kora hoy na, checkout cholbe. */
+async function anboIsCustomerBlocked(uid){
+  if(!uid) return false;
+  try{
+    var prof = await ANBOBD_DB.fetchProfile(uid);
+    return !!(prof && (prof.status === "blocked" || prof.status === "suspended"));
+  }catch(e){ return false; }
+}
+async function checkoutSubmit(e){
   e.preventDefault();
   var name = document.getElementById("coName").value.trim();
   var phone = document.getElementById("coPhone").value.trim();
@@ -2819,6 +2829,14 @@ function checkoutSubmit(e){
   ok = fldBad("fAddr", addr.length<8) && ok;
   ok = fldBad("fDist", !dist) && ok;
   if(!ok){ toast("⚠️ লাল দাগ দেওয়া ঘরগুলো ঠিক করে দিন"); return; }
+  /* Blocked customer — order toiri howar agei thamano hoy: local push,
+     payment step, DB insert — konotai hobe na. */
+  if(window.__anboCurrentUser && window.__anboCurrentUser.id){
+    if(await anboIsCustomerBlocked(window.__anboCurrentUser.id)){
+      toast("🚫 Apnar account ti block kora hoyeche — ekhon order kora jabe na. Sahajjer jonno support e jogajog korun.");
+      return;
+    }
+  }
   var payEl = document.querySelector('input[name="pay"]:checked');
   if(!payEl || payEl.disabled || (payEl.closest && payEl.closest("label") && payEl.closest("label").style.display === "none")){ toast("⚠️ এই মুহূর্তে কোনো পেমেন্ট মাধ্যম চালু নেই — পরে আবার চেষ্টা করুন"); return; }
   var pay = payEl.value;
@@ -3783,6 +3801,10 @@ var ANBOBD_DB = {
   },
   saveOrder: async function(order){
     var sb = this.sb(); if(!sb) return null;
+    /* Blocked customer — retryPendingOrders diyeo blocked account-er order
+       DB-te jabe na (checkoutSubmit-e toast diye thamanor backup). Guest
+       order-er userId null — unaffected. */
+    if(order.userId && await anboIsCustomerBlocked(order.userId)) return null;
     /* Order-এর UUID ক্লায়েন্টেই বানানো হয় (crypto.randomUUID, না থাকলে
        Math.random fallback) এবং insert-এর আগেই order.supabaseId-তে রাখা হয়,
        payload-এ id হিসেবে পাঠানো হয়। কারণ: .select() (return=representation)
