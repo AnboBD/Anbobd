@@ -222,6 +222,8 @@ tbody tr.clickable:hover{background:var(--surface2)}
 .b-shipped{background:var(--violet-bg);color:var(--violet-ink)}
 .b-delivered{background:var(--ok-bg);color:var(--ok)}
 .b-cancelled{background:var(--bad-bg);color:var(--coral-deep)}
+.b-ready{background:#dff3ef;color:var(--teal)}
+@media (prefers-color-scheme: dark){.b-ready{background:#123f39;color:#7fe3cf}}
 .b-live{background:var(--ok-bg);color:var(--ok)}
 .b-mega{background:#3b1206;color:#ffd9a8;background:#7c2d12}
 @media (prefers-color-scheme: light){.b-mega{background:#ffedd5;color:#9a3412}}
@@ -732,7 +734,13 @@ function sbAdminRole(profileRole){
 function sbNormOrderStatus(s){
   s = String(s || "pending");
   if (s === "AdminConfirmed") return "confirmed";
-  var low = s.toLowerCase();
+  var low = s.toLowerCase().replace(/[\s_]/g, "");
+  /* "Ready to Ship" is a real sub-order state (seller pressed Prepare) —
+     it used to collapse to "pending", so a ready sub-order looked unsent
+     and orderSentToSeller() missed it. It now maps to "ready", a
+     sub-order-only display status — the master orders table has no
+     ReadyToShip state, so a master order can never be "ready". */
+  if (low === "readytoship") return "ready";
   if (["pending","confirmed","packed","shipped","delivered","cancelled"].indexOf(low) !== -1) return low;
   return "pending";
 }
@@ -742,10 +750,17 @@ function sbNormOrderStatus(s){
    status is rejected by the database, so EVERY order-status write to the
    orders table must go through this mapper. (Reverse of sbNormOrderStatus.) */
 function sbDbOrderStatus(s){
-  var m = { pending: "AwaitingAdmin", confirmed: "AdminConfirmed", cancelled: "Cancelled", packed: "Packed", shipped: "Shipped", delivered: "Delivered" };
+  /* "ready" is a sub-order-only display status — the master orders table
+     has no ReadyToShip state, so it must never be written there. If it
+     ever reaches this mapper, the matching master state is AdminConfirmed
+     (a ReadyToShip sub-order always sits under a confirmed master). */
+  var m = { pending: "AwaitingAdmin", confirmed: "AdminConfirmed", ready: "AdminConfirmed", cancelled: "Cancelled", packed: "Packed", shipped: "Shipped", delivered: "Delivered" };
   var low = String(s || "").toLowerCase();
   return m[low] || s;
 }
+/* Display label for a sub-order's normalized status. Only "ready" needs a
+   friendlier label — every other token already reads as its own word. */
+function subOrderStatusLabel(s){ return s === "ready" ? "Ready to Ship" : s; }
 function sbParseItems(raw){
   var out = [];
   if (!raw) return out;
@@ -943,13 +958,18 @@ async function sbLoadAll(){
       /* Real sub_orders columns: id, order_id, shop_id, seller_id, subtotal,
          status, commission_rate, tracking_id, created_at. These ARE the
          per-seller split — with a real commission snapshot (commission_rate)
-         and tracking id. Line items themselves live on orders.items. */
+         and tracking id. Line items themselves live on orders.items.
+         P3 (2026-11-23): the stored commission_amount / seller_earning
+         snapshot is mapped too — getSubOrders prefers it over recomputing
+         from the rate. rawStatus is kept alongside the normalized status
+         so sent-checks can match the exact DB value (e.g. ReadyToShip)
+         as well as the normalized "ready" token. */
       var subsByOrder = {};
       subRows.forEach(function(sr){
         var mo = orders.filter(function(x){ return String(x.id) === String(sr.order_id); })[0];
         if (!mo) return;
         if (!subsByOrder[mo.id]) subsByOrder[mo.id] = [];
-        subsByOrder[mo.id].push({ subId: sr.id, shopId: sr.shop_id, shop: shopNameById[sr.shop_id] || "Shop", subtotal: sr.subtotal || 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 10), status: sbNormOrderStatus(sr.status), trackingId: sr.tracking_id || "", courier: sr.courier || "" });
+        subsByOrder[mo.id].push({ subId: sr.id, shopId: sr.shop_id, shop: shopNameById[sr.shop_id] || "Shop", subtotal: sr.subtotal || 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 10), commissionAmount: (sr.commission_amount != null ? +sr.commission_amount : null), sellerEarning: (sr.seller_earning != null ? +sr.seller_earning : null), rawStatus: sr.status || "", status: sbNormOrderStatus(sr.status), trackingId: sr.tracking_id || "", courier: sr.courier || "" });
         /* Bug 3 fix (2026-11-23): a cancelled master must NEVER look sent —
            only flip sentToSeller / upgrade a pending master when the master
            itself is not cancelled. (The sub-order row stays AdminConfirmed
@@ -1155,7 +1175,7 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
   }
   function toRealSubs(rows){
     return rows.map(function(sr){
-      return { subId: sr.id || "", shopId: sr.shop_id, shop: shopNameForId(sr.shop_id), subtotal: sr.subtotal != null ? sr.subtotal : 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 0), status: sbNormOrderStatus(sr.status || targetStatus), trackingId: sr.tracking_id || "" };
+      return { subId: sr.id || "", shopId: sr.shop_id, shop: shopNameForId(sr.shop_id), subtotal: sr.subtotal != null ? sr.subtotal : 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 0), rawStatus: sr.status || "", status: sbNormOrderStatus(sr.status || targetStatus), trackingId: sr.tracking_id || "" };
     });
   }
   /* Commission fix (2026-11-21): sub_orders rows used to be written WITHOUT
@@ -1242,6 +1262,7 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
       if (firstErr){ sbSaveFailed("sub_orders", firstErr); return; }
       subs.forEach(function(rs){
         rs.status = sbNormOrderStatus(targetStatus);
+        rs.rawStatus = targetStatus;
         if (rs._pendingCommission) rs.commissionRate = rs._pendingCommission.rate;
         delete rs._pendingCommission;
       });
@@ -1411,7 +1432,15 @@ function computeSalesSeries(){
   SALES7 = days; SALES30 = weeks;
 }
 
-var settings = { dhakaFee:60, outsideFee:120, freeAbove:2000, freeDeliveryMode:"dhaka", bkashNumber:"", nagadNumber:"", rocketNumber:"", loyaltyPer100:1, loyaltyRedeemPoints:100, loyaltyRedeemValue:50, cod:true, bkash:true, nagad:true, rocket:true, card:false, flash:true, returns:true, vatRate:5, defaultCommission:10, payoutDay:"Thursday", payoutHoldDays:3, returnWindowDays:7, megaStacking:false, courierSteadfast:true, courierPathao:true, courierRedx:true, courierSundarban:false, bannerMega:true, bannerFreeDel:true, bannerNewSeller:false, heroTitle:"", heroLead:"" };
+var settings = { dhakaFee:60, outsideFee:120, freeAbove:2000, freeDeliveryMode:"dhaka", bkashNumber:"", nagadNumber:"", rocketNumber:"", loyaltyPer100:1, loyaltyRedeemPoints:100, loyaltyRedeemValue:50, cod:true, bkash:true, nagad:true, rocket:true, card:false, flash:true, returns:true, vatRate:5, defaultCommission:10, payoutDay:"Thursday", payoutHoldDays:3, returnWindowDays:7, megaStacking:false, courierSteadfast:true, courierPathao:true, courierRedx:true, courierSundarban:false, bannerMega:true, bannerFreeDel:true, bannerNewSeller:false, heroTitle:"", heroLead:"", homepageAnnouncementText:"", homepageAnnouncementEnabled:false, homepageBannerImage:"", homepageBannerLink:"", homepageSectionOrder:["hero","categories","banners","campaigns","mega","flash","vouchers","shop-coupons","products","recent","under999","howto","faq","newsletter","seller"], homepageFeaturedIds:[] };
+/* P3 (2026-11-23): homepage management — the storefront reads these six
+   keys from the settings table (see SETTINGS_SYNC_DEFS below). Section
+   order is a JSON array of the known homepage section ids; unknown ids
+   are dropped and missing known sections are appended, so the storefront
+   never loses a section because of a partial save. */
+var HOMEPAGE_SECTION_IDS = ["hero","categories","banners","campaigns","mega","flash","vouchers","shop-coupons","products","recent","under999","howto","faq","newsletter","seller"];
+var HOMEPAGE_SECTION_LABELS = {hero:"Hero", categories:"Categories", banners:"Promo banners", campaigns:"Campaigns", mega:"Mega Sale", flash:"Flash Sale", vouchers:"Vouchers", "shop-coupons":"Shop coupons", products:"Products grid", recent:"Recently viewed", under999:"Under ৳999", howto:"How it works", faq:"FAQ", newsletter:"Newsletter", seller:"Become a seller"};
+function normalizeHomepageOrder(arr){ var seen={}, out=[]; (Array.isArray(arr)?arr:[]).forEach(function(id){ id=String(id||""); if(HOMEPAGE_SECTION_IDS.indexOf(id)!==-1 && !seen[id]){ seen[id]=1; out.push(id); } }); HOMEPAGE_SECTION_IDS.forEach(function(id){ if(!seen[id]) out.push(id); }); return out; }
 /* Settings persist in this browser (localStorage) so a reload doesn't lose
    them. Decision 6/7 (2026-11-21): platform payment numbers + loyalty rates
    ALSO sync to the Supabase `settings` key/value table (columns id, key,
@@ -1524,7 +1553,16 @@ var SETTINGS_SYNC_DEFS = [
   { key:"mega_campaign_3_name",          get:function(){ return MEGA_CAMPAIGNS[2].name || ""; },      set:function(v){ if(typeof v==="string" && v) MEGA_CAMPAIGNS[2].name = v; } },
   { key:"mega_campaign_3_start",         get:function(){ return MEGA_CAMPAIGNS[2].start || ""; },     set:function(v){ if(typeof v==="string") MEGA_CAMPAIGNS[2].start = v; } },
   { key:"mega_campaign_3_end",           get:function(){ return MEGA_CAMPAIGNS[2].end || ""; },       set:function(v){ if(typeof v==="string") MEGA_CAMPAIGNS[2].end = v; } },
-  { key:"mega_campaign_3_min_discount",  get:function(){ return MEGA_CAMPAIGNS[2].minDiscount; },    set:function(v){ if(!isNaN(+v)) MEGA_CAMPAIGNS[2].minDiscount = +v; } }
+  { key:"mega_campaign_3_min_discount",  get:function(){ return MEGA_CAMPAIGNS[2].minDiscount; },    set:function(v){ if(!isNaN(+v)) MEGA_CAMPAIGNS[2].minDiscount = +v; } },
+  /* P3 (2026-11-23): homepage management — the storefront P3 build reads
+     exactly these six keys. Arrays are stored as JSON strings by the sync
+     (JSON.stringify in runSettingsSync) and parsed back by sbSettingsVal. */
+  { key:"homepage_announcement_text",    get:function(){ return settings.homepageAnnouncementText || ""; }, set:function(v){ if(typeof v==="string") settings.homepageAnnouncementText = v; } },
+  { key:"homepage_announcement_enabled", get:function(){ return !!settings.homepageAnnouncementEnabled; }, set:function(v){ settings.homepageAnnouncementEnabled = !!v; } },
+  { key:"homepage_banner_image",         get:function(){ return settings.homepageBannerImage || ""; },    set:function(v){ if(typeof v==="string") settings.homepageBannerImage = v; } },
+  { key:"homepage_banner_link",          get:function(){ return settings.homepageBannerLink || ""; },     set:function(v){ if(typeof v==="string") settings.homepageBannerLink = v; } },
+  { key:"homepage_section_order",        get:function(){ return settings.homepageSectionOrder; },         set:function(v){ settings.homepageSectionOrder = normalizeHomepageOrder(v); } },
+  { key:"homepage_featured_ids",         get:function(){ return settings.homepageFeaturedIds; },          set:function(v){ settings.homepageFeaturedIds = (Array.isArray(v) ? v.filter(function(x){ return typeof x==="string" && x; }).slice(0,8) : []); } }
 ];
 function settingsSyncRows(){
   return SETTINGS_SYNC_DEFS.map(function(d){ return { key:d.key, value:d.get() }; });
@@ -1698,7 +1736,6 @@ sbDeliveryZonesLoad().catch(function(){});
 
 /* ---- Returns, courier, support, reviews, approvals, activity ---- */
 var returnRequests = [];
-var courierJobs = [];
 var supportTickets = [];
 var reviewQueue = [];
 /* P2 (2026-11-23): Disputes + Product Q&A — NEW tables (disputes,
@@ -1915,8 +1952,14 @@ function getSubOrders(o){ /* Commission snapshot: the first calculation for an o
       var _catKey = null;
       if (subItems.length){ var _p0 = null; try{ _p0 = prod(subItems[0][0]); }catch(e){} if (_p0) _catKey = anboCatNorm(_p0.cat); }
       var effRate = (rs.commissionRate != null && rs.commissionRate > 0) ? rs.commissionRate : effectiveCommissionRate(sellerOfShop(rs.shop), _catKey);
-      var comm = Math.round(rs.subtotal * effRate / 100);
-      return { id: (o.localId || o.id)+"-"+letters[idx], subId: rs.subId, shop: rs.shop, shopId: rs.shopId, items: subItems, subtotal: rs.subtotal, sellerId: rs.shopId || "ANBO-OWN", commissionRate: effRate, discount: 0, commission: comm, earning: rs.subtotal - comm, status: rs.status, sentToSeller: rs.status !== "pending" && rs.status !== "cancelled", trackingId: rs.trackingId || "" };
+      /* P3 (2026-11-23): prefer the STORED commission snapshot — the
+         sub_orders row already holds the settled commission_amount /
+         seller_earning. A stored 0 is the old DB default, never a
+         deliberate 0, so it counts as unset and the effective rate is
+         used instead. Either way a real row never shows ৳0 commission. */
+      var comm = (rs.commissionAmount != null && rs.commissionAmount > 0) ? Math.round(rs.commissionAmount) : Math.round(rs.subtotal * effRate / 100);
+      var earn = (rs.sellerEarning != null && rs.sellerEarning > 0) ? Math.round(rs.sellerEarning) : rs.subtotal - comm;
+      return { id: (o.localId || o.id)+"-"+letters[idx], subId: rs.subId, shop: rs.shop, shopId: rs.shopId, items: subItems, subtotal: rs.subtotal, sellerId: rs.shopId || "ANBO-OWN", commissionRate: effRate, discount: 0, commission: comm, earning: earn, status: rs.status, sentToSeller: rs.status !== "pending" && rs.status !== "cancelled", trackingId: rs.trackingId || "" };
     });
     return o._subs;
   }
@@ -1984,7 +2027,7 @@ var NAV = [
  {id:"coupons", label:"Coupons", badge:function(){ return pendingSellerCouponCount(); }, badgeClass:"lime", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2"/><path d="M13 17v2"/><path d="M13 11v2"/></svg>'},
  {id:"finance", label:"Finance & Payouts", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>'},
  {id:"returns", label:"Returns & Refunds", badge:function(){ return returnRequests.filter(function(r){return r.status==="Requested";}).length; }, icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 14 4 9 9 4"/><path d="M20 20v-7a4 4 0 0 0-4-4H4"/></svg>'},
- {id:"logistics", label:"Courier & Delivery", badge:function(){ return courierJobs.filter(function(j){return j.status.indexOf("Failed")===0;}).length; }, icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="14" height="12" rx="1"/><path d="M15 9h4l4 4v4h-8z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>'},
+ {id:"logistics", label:"Courier & Delivery", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="5" width="14" height="12" rx="1"/><path d="M15 9h4l4 4v4h-8z"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="19" r="2"/></svg>'},
  {id:"support", label:"Support & Reviews", badge:function(){ return supportTickets.filter(function(t){return t.status==="Open";}).length + reviewQueue.filter(function(r){return r.status==="Pending"||r.status==="Flagged";}).length + disputes.filter(function(d){ return d.status==="open"||d.status==="investigating"; }).length + productQa.filter(function(q){ return !q.answer; }).length; }, badgeClass:"lime", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>'},
  {id:"activity", label:"Activity Log", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'},
  {id:"reports", label:"Reports", icon:'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
@@ -2126,8 +2169,9 @@ function computeNotifItems(){
 /* P1 (2026-11-23): notification read state — header bell badge counts
    UNREAD items only. Stored as id -> count seen at mark-all-read time, so
    a count that grows again (new pending work) becomes unread again.
-   "Failed deliveries" is deliberately NOT a source: courierJobs is never
-   populated, so there is no data for it. */
+   Failed deliveries are deliberately NOT a source: delivery failures are
+   tracked by the courier, not in this panel, so there is no data for
+   them here. */
 var NOTIF_READ_KEY = "anbobd-admin-notif-read";
 function notifReadMap(){ try{ return JSON.parse(localStorage.getItem(NOTIF_READ_KEY)||"{}") || {}; }catch(e){ return {}; } }
 function notifUnreadItems(){ var m = notifReadMap(); return computeNotifItems().filter(function(n){ return (m[n.id]||0) < (n.count||1); }); }
@@ -2285,7 +2329,7 @@ function renderDashboard(){
     + staff.slice(0,4).map(function(s){ return '<div class="alert-item"><span class="avatar" style="width:38px;height:38px;font-size:13px">'+staffInitials(s.name)+'</span><div><div class="nm">'+esc(s.name)+'</div><div class="meta">'+esc(s.last)+'</div></div><span class="badge '+(ROLE_BADGE[s.role]||"b-draft")+'" style="margin-left:auto">'+s.role+'</span></div>'; }).join("")
     + '<button class="btn ghost sm" type="button" data-goto="staff" style="margin-top:12px">Manage staff &amp; roles →</button></div>'
     + '<div class="card"><h3>Marketplace — Sellers</h3><p class="hint">'+plural(sellers.filter(function(s){return s.status==="approved";}).length,"approved seller","approved sellers")+' · '+plural(pendingSellerCount(),"seller","sellers")+' waiting for approval · Payout due '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</p>'
-    + sellers.filter(function(s){return s.status==="approved";}).slice(0,4).map(function(s){ return '<div class="alert-item"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><div class="nm">'+esc(s.shop)+'</div><div class="meta">'+s.cat+' · '+s.products+' products · ★ '+s.rating+'</div></div><b class="num" style="margin-left:auto">'+fmt(s.sales)+'</b></div>'; }).join("")
+    + sellers.filter(function(s){return s.status==="approved";}).slice(0,4).map(function(s){ return '<div class="alert-item"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><div class="nm">'+esc(s.shop)+'</div><div class="meta">'+s.cat+' · '+s.products+' products · ★ '+s.rating+'</div></div><b class="num" style="margin-left:auto">'+fmt(sellerRealTotals(s).sales)+'</b></div>'; }).join("")
     + '<button class="btn ghost sm" type="button" data-goto="sellers" style="margin-top:12px">Manage sellers &amp; payouts →</button></div></div>';
 
   $("#view-dashboard").innerHTML = html;
@@ -2427,8 +2471,9 @@ function renderOrders(){
 /* Bug 3 fix (2026-11-23): "sent to seller" must reflect the REAL sub-order
    rows, not the master status. A row counts as sent only when its stored
    status is a post-confirm state (AdminConfirmed / confirmed, or a seller
-   fulfilment state). AwaitingAdmin / pending / cancelled rows are NOT sent.
-   Orders with no real rows fall back to the master-derived flag. */
+   fulfilment state — including ReadyToShip). AwaitingAdmin / pending /
+   cancelled rows are NOT sent. Orders with no real rows fall back to the
+   master-derived flag. */
 function orderSentToSeller(o){
   if (!o) return false;
   /* A cancelled master is NEVER sent — even if its real sub-order row is
@@ -2437,8 +2482,11 @@ function orderSentToSeller(o){
   if (String(o.status || "").toLowerCase() === "cancelled") return false;
   if (o._realSubs && o._realSubs.length){
     return o._realSubs.some(function(rs){
-      var st = String(rs.status || "").toLowerCase();
-      return st === "adminconfirmed" || st === "confirmed" || st === "packed" || st === "shipped" || st === "delivered" || st === "ready to ship";
+      /* Loader rows carry rawStatus ("ReadyToShip"); rows rebuilt by
+         toRealSubs carry the normalized status ("ready"). Accept both
+         spellings so a ReadyToShip row counts as sent either way. */
+      var st = String(rs.rawStatus || rs.status || "").toLowerCase().replace(/[\s_]/g, "");
+      return st === "adminconfirmed" || st === "confirmed" || st === "packed" || st === "shipped" || st === "delivered" || st === "readytoship" || st === "ready";
     });
   }
   return !!o.sentToSeller;
@@ -2455,7 +2503,7 @@ function cancelRealSubOrders(o){
   if (!o) return;
   o._subs = null;
   if (o._realSubs && o._realSubs.length){
-    o._realSubs.forEach(function(rs){ rs.status = "cancelled"; });
+    o._realSubs.forEach(function(rs){ rs.status = "cancelled"; rs.rawStatus = "Cancelled"; });
   }
   if (sbReady()) sbUpdate("sub_orders", "order_id", o.supabaseId || o.id, { status: "Cancelled" });
 }
@@ -2641,10 +2689,23 @@ function openOrder(id){
   closeAllOverlays();
   var o = orders.filter(function(x){ return x.id===id; })[0]; if(!o) return;
   var idx = STATUS_FLOW.indexOf(o.status);
+  /* P3 (2026-11-23): the "confirmed" tick means a REAL sub-order row was
+     actually sent — a confirmed master whose row is still AwaitingAdmin
+     (or missing) must NOT tick it. rawStatus is checked first (loader rows
+     carry it); rows rebuilt by toRealSubs carry the normalized "ready"
+     token, which is accepted too. */
+  var sentReal = !!(o._realSubs && o._realSubs.length && o._realSubs.some(function(rs){
+    var st = String(rs.rawStatus || rs.status || "").toLowerCase().replace(/[\s_]/g, "");
+    return st === "adminconfirmed" || st === "confirmed" || st === "packed" || st === "shipped" || st === "delivered" || st === "readytoship" || st === "ready";
+  }));
   var steps = [["pending","Order placed — Admin er kache esheche"],["confirmed","Admin confirmed · Seller ke pathano hoyeche"],["packed","Seller packed — rider er jonno ready"],["shipped","Shipped — rider niye geche"],["delivered","Delivered"]];
   var timeline = o.status==="cancelled"
     ? '<li class="done"><span class="dot">✕</span>Order cancelled</li>'
-    : steps.map(function(st, i){ return '<li class="'+(i<=idx?"done":"")+'"><span class="dot">'+(i<=idx?"✓":"")+'</span>'+st[1]+(i===0?" · "+esc(o.date):"")+(i===1&&o.sentToSeller?" · to "+esc(sellerForOrder(o)):"")+'</li>'; }).join("");
+    : steps.map(function(st, i){
+      var done = i<=idx, label = st[1];
+      if (i===1 && done && !sentReal){ done = false; label = "Seller er kache pathano hoy ni — sub-order ekhono confirm hoy ni"; }
+      return '<li class="'+(done?"done":"")+'"><span class="dot">'+(done?"✓":"")+'</span>'+label+(i===0?" · "+esc(o.date):"")+(i===1&&sentReal?" · to "+esc(sellerForOrder(o)):"")+'</li>';
+    }).join("");
   var next = o.status==="pending" ? "confirmed" : null;
   var nextLabel = next==="confirmed" ? "✓ Confirm & Send to Seller" : null;
   var waitingNote = (o.status==="confirmed" || o.status==="packed" || o.status==="shipped") ? '<span class="note" style="align-self:center">Seller packs &amp; ships — status Seller Center theke update hobe</span>' : "";
@@ -2663,7 +2724,7 @@ function openOrder(id){
     + '<div class="kv"><span>Payment status</span><b>'+paymentBadge(o)+'</b></div>'
     + (isManualPay(o) && orderPaymentStatus(o)==="pending" ? '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Manual ' + o.pay + ' payment — jachai chara seller er kache jabe na</b><p class="note" style="margin:0 0 10px">Customer er deya Txn ID <b>' + (orderTxnId(o) ? esc(orderTxnId(o)) : "—") + '</b> tomar ' + o.pay + ' statement er sathe miliye dekho. Mile gele Confirm, na mille Reject — Reject hole order hold thakbe.</p><span style="display:inline-flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="drawerPayOk">✓ Confirm payment</button><button class="btn danger sm" type="button" id="drawerPayNo">✕ Reject payment</button></span></div>' : "")
     + (isManualPay(o) && orderPaymentStatus(o)==="rejected" ? '<div class="dispatch-box" style="border-color:var(--danger)"><b>Payment rejected</b><p class="note" style="margin:4px 0 0">Ei order seller er kache pathano hobe na. Customer ke bolo sothik Txn ID diye abar payment korte.</p></div>' : "")
-    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+so.status+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span></span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+so.commissionRate+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
+    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+subOrderStatusLabel(so.status)+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span></span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+so.commissionRate+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
     + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Seller dispatch (master)</b><div class="kv" style="border:none;padding:4px 0"><span>Fulfilling seller</span><b>'+esc(sellerShopsForOrder(o).join(", "))+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Sent to seller?</span><b>'+(orderSentToSeller(o)?"✓ Yes — Seller Center e ache":"✕ Na — Admin confirm korlei jabe")+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Seller status</span><b>'+esc(o.sellerStatus||"—")+'</b></div>' + ((o.status==="confirmed"||o.status==="packed"||o.status==="shipped"||o.status==="delivered") && !orderSentToSeller(o) && uuidSellerGroups(o).length ? '<p class="note" style="margin:8px 0;color:var(--danger)">⚠ ' + ((!o._realSubs || !o._realSubs.length) ? 'DB te sub-order row nei — seller ekhono ei order dekhte pay ni.' : 'Sub-order row ache kintu ekhono confirm hoy ni — seller ekhono ei order dekhte pay ni.') + '</p><button class="btn sm" type="button" id="drawerSendSubs">Seller ke pathao</button>' : "") + '<p class="note" style="margin:6px 0 0">Seller customer er full address/phone dekhbe na pack korar age porjonto label print er jonno ja lage tai pabe — eta seller er kaj, delivery AnboBD rider diyei hobe.</p></div>'
     + '<h4 style="margin:20px 0 6px">Items</h4>'
     + ((!o.items || !o.items.length) ? '<p class="note">No items recorded for this order.</p>' : "")
@@ -3286,6 +3347,25 @@ function renderReports(){
 function switchRow(key, title, desc){
   return '<div class="set-row"><div class="t"><b>'+title+'</b><span>'+desc+'</span></div><button type="button" class="switch" role="switch" aria-label="Toggle '+title+'" aria-checked="'+settings[key]+'" data-setting="'+key+'"><span class="track"></span></button></div>';
 }
+/* P3 (2026-11-23): homepage management helpers — section order list (up/down)
+   and featured-products multi-select (max 8). Both read live state; the
+   form's Save button is the only thing that writes to the DB. */
+function hpOrderListHtml(){
+  var order = normalizeHomepageOrder(settings.homepageSectionOrder);
+  return order.map(function(id, i){
+    return '<div style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line)"><span style="flex:1;font-weight:600">'+esc(HOMEPAGE_SECTION_LABELS[id] || id)+' <span class="note">('+esc(id)+')</span></span><button class="btn ghost sm" type="button" data-hp-move="up" data-hp-sec="'+esc(id)+'"'+(i===0?" disabled":"")+'>↑</button><button class="btn ghost sm" type="button" data-hp-move="down" data-hp-sec="'+esc(id)+'"'+(i===order.length-1?" disabled":"")+'>↓</button></div>';
+  }).join("");
+}
+function hpFeaturedListHtml(){
+  var sel = settings.homepageFeaturedIds || [];
+  if (!products.length) return '<p class="note">Ekhono kono product nei — product asle ekhane multi-select dekhabe.</p>';
+  var sorted = products.slice().sort(function(a,b){ var ra=(a.status==="approved"?0:(a.status==="pending"?1:2)), rb=(b.status==="approved"?0:(b.status==="pending"?1:2)); return ra-rb || String(a.name).localeCompare(String(b.name)); });
+  return '<p class="note" style="margin:0 0 6px"><span id="hpFeatCount">'+sel.length+' / 8 selected</span> — storefront homepage er Featured section e dekhabe.</p>'
+    + sorted.map(function(p){
+      var on = sel.indexOf(String(p.id))!==-1;
+      return '<label style="display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);cursor:pointer"><input type="checkbox" data-hp-feat="'+esc(p.id)+'"'+(on?" checked":"")+' /><span style="flex:1"><b>'+esc(p.name)+'</b> <span class="note">'+esc(p.sku)+' · '+fmt(p.price)+' · '+esc(p.status)+'</span></span></label>';
+    }).join("");
+}
 function renderSettings(){
   $("#view-settings").innerHTML = '<div class="grid-2b"><div class="card"><h3>Delivery charges</h3><p class="hint">Used at checkout on the storefront and in order totals here.</p>'
     + '<form id="feeForm"><div class="form-grid"><div class="field"><label for="sfDhaka">Inside Dhaka (৳)</label><input id="sfDhaka" type="number" min="0" value="'+settings.dhakaFee+'" /></div>'
@@ -3310,6 +3390,11 @@ function renderSettings(){
     + switchRow("bannerNewSeller", "New Seller spotlight", "Notun approved seller der homepage spotlight")
     + '<h3 style="margin-top:28px">Homepage hero text</h3><p class="hint">Storefront er boro headline ar tar nicher lekha. Khali rakhle ager lekha (3D স্টাইলে!) dekhabe. Save korle storefront e sathe sathe bodle jay (ei browser e; onno device e settings sync lagbe).</p>'
     + '<form id="heroForm"><div class="form-grid"><div class="field full"><label for="sfHeroTitle">Hero headline</label><input id="sfHeroTitle" value="'+esc(settings.heroTitle)+'" placeholder="সবকিছু কিনুন, ঘুরিয়ে দেখে — একদম 3D স্টাইলে!" /></div><div class="field full"><label for="sfHeroLead">Hero sub-text</label><input id="sfHeroLead" value="'+esc(settings.heroLead)+'" placeholder="মোবাইল, ফ্যাশন, গ্যাজেট…" /></div></div><button class="btn" type="submit">Save hero text</button></form>'
+    + '<h3 style="margin-top:28px">Homepage management</h3><p class="hint">Storefront homepage er announcement, banner, section order ar featured products. Save korle settings table e jabe — storefront sekhan theke pore dekhabe.</p>'
+    + '<form id="homepageForm"><div class="form-grid"><div class="field full"><label for="hpAnnText">Announcement bar text</label><input id="hpAnnText" value="'+esc(settings.homepageAnnouncementText||"")+'" placeholder="jemon: Eid offer — sob product e 10% char!" /></div><div class="field full"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="hpAnnEnabled"'+(settings.homepageAnnouncementEnabled?" checked":"")+' /> Announcement bar dekhao (storefront homepage er upore)</label></div><div class="field full"><label for="hpBannerImg">Homepage banner image (URL)</label><input id="hpBannerImg" value="'+esc(settings.homepageBannerImage||"")+'" placeholder="https://…/banner.jpg — khali rakhle default banner thakbe" /></div><div class="field full"><label for="hpBannerLink">Banner link (URL)</label><input id="hpBannerLink" value="'+esc(settings.homepageBannerLink||"")+'" placeholder="https://… — banner e click korle koi jabe" /></div></div>'
+    + '<h4 style="margin:16px 0 4px">Section order</h4><p class="note" style="margin:0 0 6px">Upore theke niche — storefront homepage e ei order ei section gulo dekhabe.</p><div id="hpOrderList">'+hpOrderListHtml()+'</div>'
+    + '<h4 style="margin:16px 0 4px">Featured products (max 8)</h4><div id="hpFeaturedList">'+hpFeaturedListHtml()+'</div>'
+    + '<button class="btn" type="submit" style="margin-top:12px">Save homepage settings</button></form>'
     + '<h3 style="margin-top:28px">Categories (platform)</h3><p class="hint">Storefront er 7 category. Seller category theke ber hote pare na — admin category bondho korle oi category er sob listing hold hoy.</p>'
     + Object.keys(CATS).map(function(k){ return '<div class="kv"><span>'+CATS[k]+'</span><b>'+products.filter(function(pp){return pp.cat===k;}).length+' products · Commission '+CATEGORY_COMMISSION[k]+'%</b></div>'; }).join("")
     + '<h3 style="margin-top:20px">Category management</h3><p class="hint">Prottek category er Bangla nam ar on/off ekhane bodlano jay — save korle settings table e jabe, storefront sekhan theke pore dekhabe. Category bondho korle oi category er listing storefront e dekhabe na.</p>'
@@ -3380,6 +3465,44 @@ function renderSettings(){
     renderSettings();
   }); });
   var hf=$("#heroForm"); if(hf) hf.addEventListener("submit", async function(e){ e.preventDefault(); settings.heroTitle=$("#sfHeroTitle").value.trim(); settings.heroLead=$("#sfHeroLead").value.trim(); if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return; logActivity("Updated homepage hero text"); toast('<span class="lime">✓ Hero text saved</span> — storefront e sathe sathe dekhabe (ei browser e)'); renderAll(); });
+  /* P3 (2026-11-23): homepage management — one Save writes all six keys.
+     Up/down reorders in-memory only; the form fields are read into
+     settings first so a re-render never wipes unsaved typing. */
+  function hpReadFormIntoSettings(){
+    var at=$("#hpAnnText"), ae=$("#hpAnnEnabled"), bi=$("#hpBannerImg"), bl=$("#hpBannerLink");
+    if (at) settings.homepageAnnouncementText = at.value.trim();
+    if (ae) settings.homepageAnnouncementEnabled = !!ae.checked;
+    if (bi) settings.homepageBannerImage = bi.value.trim();
+    if (bl) settings.homepageBannerLink = bl.value.trim();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll("[data-hp-move]"), function(b){ b.addEventListener("click", function(){
+    var dir=b.getAttribute("data-hp-move"), id=b.getAttribute("data-hp-sec");
+    hpReadFormIntoSettings();
+    var order=normalizeHomepageOrder(settings.homepageSectionOrder);
+    var i=order.indexOf(id); if(i<0) return;
+    var j=dir==="up"?i-1:i+1; if(j<0||j>=order.length) return;
+    var tmp=order[i]; order[i]=order[j]; order[j]=tmp;
+    settings.homepageSectionOrder=order;
+    renderSettings();
+  }); });
+  Array.prototype.forEach.call(document.querySelectorAll("[data-hp-feat]"), function(cb){ cb.addEventListener("change", function(){
+    var sel=(settings.homepageFeaturedIds||[]).slice();
+    var id=cb.getAttribute("data-hp-feat");
+    if(cb.checked){ if(sel.length>=8){ cb.checked=false; toast("⚠ Featured products sorboccho 8 ta — age ekta sorao"); return; } if(sel.indexOf(id)===-1) sel.push(id); }
+    else { sel=sel.filter(function(x){ return x!==id; }); }
+    settings.homepageFeaturedIds=sel;
+    var c=$("#hpFeatCount"); if(c) c.textContent=sel.length+" / 8 selected";
+  }); });
+  var hpf=$("#homepageForm"); if(hpf) hpf.addEventListener("submit", async function(e){
+    e.preventDefault();
+    hpReadFormIntoSettings();
+    settings.homepageSectionOrder=normalizeHomepageOrder(settings.homepageSectionOrder);
+    settings.homepageFeaturedIds=(settings.homepageFeaturedIds||[]).filter(function(x){ return typeof x==="string" && x; }).slice(0,8);
+    if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return;
+    logActivity("Updated homepage settings — announcement " + (settings.homepageAnnouncementEnabled ? "ON" : "OFF") + ", banner, " + settings.homepageSectionOrder.length + " sections, " + settings.homepageFeaturedIds.length + " featured products");
+    toast("<span class='lime'>✓ Homepage settings saved</span> — storefront settings theke pore dekhabe");
+    renderAll();
+  });
   var scc=$("#saveCatComm"); if(scc) scc.addEventListener("click", async function(){ Array.prototype.forEach.call(document.querySelectorAll("[data-cat-comm]"), function(inp){ var k=inp.getAttribute("data-cat-comm"); var v=parseInt(inp.value,10); if(!isNaN(v)&&v>=0&&v<=30 && CATEGORY_COMMISSION[k]!==v){ COMMISSION_HISTORY.unshift({when:nowLabel(), scope:"Category · "+CATS[k], change:CATEGORY_COMMISSION[k]+"% → "+v+"%", by:currentUserName+" ("+currentUserRole+")", reason:"Settings theke update"}); CATEGORY_COMMISSION[k]=v; } }); if (!await saveSettingsAndWait(scc)) return; logActivity("Updated category commission rates"); toast("<span class='lime'>✓ Category commission saved</span> — notun order theke lagbe, history te record ache"); renderAll(); });
   var cmf=$("#catManageForm"); if(cmf) cmf.addEventListener("submit", async function(e){
     e.preventDefault();
@@ -3592,14 +3715,31 @@ function sellerStatusBadge(s){
   if(s==="pending") return '<span class="badge b-low">Pending approval</span>';
   return '<span class="badge b-suspended">Suspended</span>';
 }
-function sellerCommission(s){ return Math.round(s.sales * s.commissionRate / 100); }
-function sellerNet(s){ return s.sales - sellerCommission(s); }
+/* P3 (2026-11-23): per-seller totals from REAL sub-order rows only — the
+   same source the Finance ledger uses (getSubOrders, which now prefers
+   the stored commission_amount / seller_earning snapshot). The loader's
+   s.sales is computed once at load and goes stale when a sub-order row
+   is created later; this recomputes from the live orders array at every
+   render, so it never shows ৳0 while real rows exist. Orders without a
+   real sub-order row are NOT counted here (no computed fallback). */
+function sellerRealTotals(s){
+  var t = { sales:0, commission:0, earning:0, orders:0 };
+  if (!s) return t;
+  orders.forEach(function(o){
+    if (o.status === "cancelled" || !o._realSubs || !o._realSubs.length) return;
+    var so = subOrderForShop(o, s.shop);
+    if (so){ t.sales += so.subtotal; t.commission += so.commission; t.earning += so.earning; t.orders += 1; }
+  });
+  return t;
+}
+function sellerCommission(s){ return sellerRealTotals(s).commission; }
+function sellerNet(s){ return sellerRealTotals(s).earning; }
 function renderSellers(){
   var el = $("#view-sellers");
   var approved = sellers.filter(function(s){ return s.status==="approved"; });
   var payoutDue = sellers.reduce(function(a,s){ return a + derivedPayoutDue(s); }, 0);
   var totalCommission = sellers.reduce(function(a,s){ return a + sellerCommission(s); }, 0);
-  var totalSellerSales = sellers.reduce(function(a,s){ return a + s.sales; }, 0);
+  var totalSellerSales = sellers.reduce(function(a,s){ return a + sellerRealTotals(s).sales; }, 0);
   var list = sellers.filter(function(s){
     if(sellerFilter!=="all" && s.status!==sellerFilter) return false;
     if(sellerQuery && (s.shop+" "+s.owner+" "+s.email+" "+s.district+" "+s.cat).toLowerCase().indexOf(sellerQuery.toLowerCase())===-1) return false;
@@ -3630,7 +3770,7 @@ function renderSellers(){
         return '<tr><td data-label="Shop"><span style="display:flex;align-items:center;gap:11px;text-align:left"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><span><b>'+esc(s.shop)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(s.owner)+' · '+esc(s.district)+' · '+esc(s.phone)+'</span></span></span></td>'
           + '<td data-label="Category">'+s.cat+'</td>'
           + '<td data-label="Products"><span class="num" style="font-weight:700">'+s.products+'</span></td>'
-          + '<td data-label="Sales"><b class="num">'+fmt(s.sales)+'</b><br /><span style="color:var(--muted);font-size:12px">'+s.sold.toLocaleString("en-IN")+' sold</span></td>'
+          + '<td data-label="Sales"><b class="num">'+fmt(sellerRealTotals(s).sales)+'</b><br /><span style="color:var(--muted);font-size:12px">'+s.sold.toLocaleString("en-IN")+' sold</span></td>'
           + '<td data-label="Commission"><span class="num">'+s.commissionRate+'%</span><br /><span style="color:var(--muted);font-size:12px">'+fmt(sellerCommission(s))+' earned</span></td>'
           + '<td data-label="Payout due">'+(derivedPayoutDue(s)>0 ? '<b class="num">'+fmt(derivedPayoutDue(s))+'</b>' : '<span style="color:var(--muted)">—</span>')+'</td>'
           + '<td data-label="Rating">'+(s.rating ? '★ '+s.rating : '<span style="color:var(--muted)">New</span>')+'</td>'
@@ -3819,6 +3959,7 @@ function loadKycDocs(s){ resolveKycDoc(s, "nid"); resolveKycDoc(s, "trade"); }
 function openSellerDetail(id){
   closeAllOverlays();
   var s = sellers.filter(function(x){ return String(x.id)===String(id); })[0]; if(!s) return;
+  var rt = sellerRealTotals(s); /* P3: real sub-order rows only — never the stale loader s.sales. */
   var ownProducts = products.filter(function(p){ return PRODUCT_SELLER[p.id]===s.shop; });
   if(s.status==="pending" || s.status==="suspended" && !ownProducts.length) { /* keep real mapping; pending sellers genuinely have none yet */ }
   if(s.status==="pending") ownProducts = [];
@@ -3837,9 +3978,9 @@ function openSellerDetail(id){
     + '<div class="kv"><span>Joined / Applied</span><b>'+(s.status==="pending" ? (s.applied||"—") : s.joined)+'</b></div>'
     + '<div class="kv"><span>Rating</span><b>'+(s.rating ? "★ "+s.rating : "New seller")+'</b></div>'
     + '<h4 style="margin:20px 0 6px">Sales &amp; money</h4>'
-    + '<div class="kv"><span>Total sales</span><b class="num">'+fmt(s.sales)+' ('+s.sold.toLocaleString("en-IN")+' items)</b></div>'
-    + '<div class="kv"><span>Commission ('+s.commissionRate+'% to AnboBD)</span><b class="num">−'+fmt(sellerCommission(s))+'</b></div>'
-    + '<div class="kv"><span>Seller earnings</span><b class="num">'+fmt(sellerNet(s))+'</b></div>'
+    + '<div class="kv"><span>Total sales</span><b class="num">'+fmt(rt.sales)+' ('+s.sold.toLocaleString("en-IN")+' items)</b></div>'
+    + '<div class="kv"><span>Commission ('+s.commissionRate+'% to AnboBD)</span><b class="num">−'+fmt(rt.commission)+'</b></div>'
+    + '<div class="kv"><span>Seller earnings</span><b class="num">'+fmt(rt.earning)+'</b></div>'
     + '<div class="kv"><span>Payout due now</span><b class="num" style="font-size:16px">'+fmt(derivedPayoutDue(s))+'</b></div>'
     + '<div class="kv"><span>Payout method</span><b>'+esc(maskPayoutMethod(s.payoutMethod))+'</b></div>'
     + '<h4 style="margin:20px 0 4px">Products on AnboBD ('+s.products+')</h4>'
@@ -3864,7 +4005,7 @@ function openSellerDetail(id){
   var rn = $("#revealNid"); if(rn) rn.addEventListener("click", function(){ var m = $("#nidMasked"); if(m) m.textContent = s.nidNumber; logActivity("Revealed NID number for seller " + s.shop + " in seller detail"); rn.remove(); });
   var rl = $("#revealLicence"); if(rl) rl.addEventListener("click", function(){ var m = $("#licenceMasked"); if(m) m.textContent = s.license; logActivity("Revealed trade licence number for seller " + s.shop + " in seller detail"); rl.remove(); });
   loadKycDocs(s);
-  var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", async function(){ var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } var r = await sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); if(!r || r.error){ toast("⚠ Commission save hoy ni — database e jay ni"); return; } s.commissionRate=v; logActivity("Changed commission of "+s.shop+" to "+v+"%"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+v+"%"); renderAll(); openSellerDetail(s.id); });
+  var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", async function(){ var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } var r = await sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); if(!r || r.error){ toast("⚠ Commission save hoy ni — database e jay ni"); return; } /* P3 (2026-11-23): log BOTH rates — the edited seller rate and the effective rate the UI will show. A seller rate of 0 means "unset": the category rate applies, so the log must never claim the edited number when displays show the category rate. s.commissionRate is set to the effective rate (as the loader does) so the re-render matches post-reload. */ var eff=effectiveCommissionRate({commissionRate:v}, anboCatNorm(s.cat)); s.commissionRate=eff; logActivity("Changed commission of "+s.shop+" — seller rate "+v+"%, effective rate "+eff+"% ("+(v>0?"seller override":"category rate "+catLabel(s.cat)+" applies")+"); displays show the effective rate"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+eff+"% (effective)"); renderAll(); openSellerDetail(s.id); });
 }
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller]"), function(b){ b.addEventListener("click", function(){ $("#sellerModalWrap").classList.remove("show"); }); });
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller-detail]"), function(b){ b.addEventListener("click", function(){ $("#sellerDetailWrap").classList.remove("show"); }); });
@@ -4313,7 +4454,7 @@ function renderFinance(){
         var own = orders.filter(function(o){ return sellerShopsForOrder(o).indexOf(s.shop)!==-1 && o.status!=="cancelled"; });
         var del = own.filter(function(o){ return o.status==="delivered"; });
         var led = sellerDeliveredLedger(s); var gross = led.gross; var comm = led.commission;
-        return '<div class="alert-item"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><div class="nm">'+esc(s.shop)+' · '+s.commissionRate+'% commission · '+esc(maskPayoutMethod(s.payoutMethod))+'</div><div class="meta">Delivered '+led.deliveredCount+' sub-order · Gross '+fmt(gross)+' · Commission −'+fmt(comm)+' · Seller-coupon −'+fmt(led.discount)+' · Refunds −'+fmt(led.refunds)+(led.inHoldCount ? ' · Hold e '+fmt(led.inHold)+' ('+led.inHoldCount+' order — delivery +'+settings.payoutHoldDays+' din por payable)' : "")+' · Net payable '+fmt(led.due)+' · All-time shop sales (info)  '+fmt(s.sales)+'</div></div><span style="margin-left:auto;text-align:right"><b class="num">'+fmt(derivedPayoutDue(s))+'</b> due<br /><button class="btn ghost sm" type="button" data-fin-stmt="'+s.id+'" style="margin-top:5px">⬇ Statement</button> '+(derivedPayoutDue(s)>0?'<button class="btn lime sm" type="button" data-fin-pay="'+s.id+'" style="margin-top:5px">Pay now</button>':"")+'</span></div>';
+        return '<div class="alert-item"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><div class="nm">'+esc(s.shop)+' · '+s.commissionRate+'% commission · '+esc(maskPayoutMethod(s.payoutMethod))+'</div><div class="meta">Delivered '+led.deliveredCount+' sub-order · Gross '+fmt(gross)+' · Commission −'+fmt(comm)+' · Seller-coupon −'+fmt(led.discount)+' · Refunds −'+fmt(led.refunds)+(led.inHoldCount ? ' · Hold e '+fmt(led.inHold)+' ('+led.inHoldCount+' order — delivery +'+settings.payoutHoldDays+' din por payable)' : "")+' · Net payable '+fmt(led.due)+' · All-time shop sales (info)  '+fmt(sellerRealTotals(s).sales)+'</div></div><span style="margin-left:auto;text-align:right"><b class="num">'+fmt(derivedPayoutDue(s))+'</b> due<br /><button class="btn ghost sm" type="button" data-fin-stmt="'+s.id+'" style="margin-top:5px">⬇ Statement</button> '+(derivedPayoutDue(s)>0?'<button class="btn lime sm" type="button" data-fin-pay="'+s.id+'" style="margin-top:5px">Pay now</button>':"")+'</span></div>';
       }).join("") : '<p class="note" style="margin:0">No approved sellers yet — approve a seller first.</p>') + '</div>'
     + '<div class="grid-2"><div class="card"><h3>Per sub-order commission ledger</h3><p class="hint">Prottek order e seller koto pel, AnboBD koto commission nil</p>'
     + orders.filter(function(o){return o.status!=="cancelled";}).slice(0,10).map(function(o){ return '<div class="kv"><span>'+esc(o.localId || o.id)+' · '+esc(sellerForOrder(o))+'<br /><span class="note">'+esc(o.customer)+' · '+o.status+'</span></span><b class="num" style="text-align:right">Total '+fmt(orderTotal(o))+'<br /><span class="note">Commission '+fmt(orderCommission(o))+' · Seller '+fmt(orderSellerEarning(o))+'</span></b></div>'; }).join("")
@@ -4402,28 +4543,25 @@ function availableCouriers(){
 }
 var courierAssign = {}; /* orderId -> {courier, tracking} — P1 (2026-11-23): the courier persists in sub_orders.courier; courierAssign only holds changes made this session before the sub-order row is read. */
 function deriveCourierJobs(){
-  /* Shipments come from real orders (packed/shipped/delivered). Previously
-     this page was always empty: courierJobs was never loaded from anywhere. */
+  /* Shipments come from real orders (packed/shipped/delivered). */
   var jobs = orders.filter(function(o){ return o.status==="packed" || o.status==="shipped" || o.status==="delivered"; }).map(function(o){
     var a = courierAssign[o.id] || {};
     var rs = (o._realSubs && o._realSubs[0]) || null;
     return { order:o.id, subId: rs ? rs.subId : null, customer:o.customer, district:o.district, cod: o.pay==="COD" ? orderTotal(o) : 0, courier: a.courier || (rs && rs.courier) || "Unassigned", rider: o.status==="delivered" ? "Delivered" : "—", tracking: a.tracking || (rs && rs.trackingId) || "—", status: o.status==="delivered" ? "Delivered" : o.status==="shipped" ? "In transit" : "Waiting pickup" };
   });
-  return jobs.concat(courierJobs.filter(function(j){ return !jobs.some(function(x){ return x.order===j.order; }); }));
+  return jobs;
 }
 function renderLogistics(){
   var el = $("#view-logistics");
   var jobs = deriveCourierJobs();
-  var failed = jobs.filter(function(j){ return j.status.indexOf("Failed")===0; });
   el.innerHTML = '<div class="kpis">'
     + kpi("Active shipments", jobs.filter(function(j){return j.status==="In transit"||j.status==="Picked up";}).length, '<span class="sub">Rider / courier er kache</span>')
-    + kpi("Failed deliveries", failed.length, '<span class="sub">Customer ke call kore reschedule korte hobe</span>')
     + kpi("COD to collect", fmt(jobs.reduce(function(a,j){return a+(j.status==="In transit"||j.status==="Picked up"?j.cod:0);},0)), '<span class="sub">Delivery hole rider joma dibe</span>')
     + kpi("Waiting assignment", jobs.filter(function(j){return j.courier==="Unassigned";}).length, '<span class="sub">Seller packing sesh hole assign koro</span>')
     + '</div>'
-    + (failed.length ? '<div class="card" style="margin-bottom:16px;border-color:var(--coral)"><h3>⚠ Failed delivery — action lagbe</h3>'+failed.map(function(j){ return '<p class="hint" style="margin:4px 0">'+esc(j.order)+' · '+esc(j.customer)+' · '+esc(j.status)+' · Tracking '+esc(j.tracking)+' — customer ke call kore notun time nao, na hole warehouse e ferot ashbe.</p>'; }).join("")+'</div>' : "")
+    + '<p class="note" style="margin:0 0 16px">Delivery fail hole courier janay — ei panel e failed delivery track kora hoy na; courier er report ba customer call theke reschedule koro.</p>'
     + '<div class="card"><h3>Courier assignment &amp; tracking</h3><p class="hint">Prottek shipped order er courier, rider ar tracking ID ekhane. Courier bodlale customer tracking page eo update hoy.</p>'
-    + (jobs.length ? jobs.map(function(j,i){ return '<div class="alert-item"><div><div class="nm">'+esc(j.order)+' · '+esc(j.customer)+' · '+esc(j.district)+'</div><div class="meta">Rider: '+esc(j.rider)+' · Tracking: <b>'+esc(j.tracking)+'</b> · COD '+fmt(j.cod)+'</div></div><span style="margin-left:auto;display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+(j.status.indexOf("Failed")===0?"b-cancelled":j.status==="In transit"?"b-shipped":"b-confirmed")+'">'+j.status+'</span><select class="status-sel" data-courier-for="'+i+'" aria-label="Courier for '+esc(j.order)+'">'+availableCouriers().map(function(c){ return '<option'+(j.courier===c?" selected":"")+'>'+c+'</option>'; }).join("")+'</select><button class="btn ghost sm" type="button" data-track-gen="'+i+'">New tracking ID</button></span></div>'; }).join("") : '<p class="note" style="margin:0">No packed/shipped orders yet — shipments appear here once sellers pack an order.</p>')
+    + (jobs.length ? jobs.map(function(j,i){ return '<div class="alert-item"><div><div class="nm">'+esc(j.order)+' · '+esc(j.customer)+' · '+esc(j.district)+'</div><div class="meta">Rider: '+esc(j.rider)+' · Tracking: <b>'+esc(j.tracking)+'</b> · COD '+fmt(j.cod)+'</div></div><span style="margin-left:auto;display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="badge '+(j.status==="In transit"?"b-shipped":"b-confirmed")+'">'+j.status+'</span><select class="status-sel" data-courier-for="'+i+'" aria-label="Courier for '+esc(j.order)+'">'+availableCouriers().map(function(c){ return '<option'+(j.courier===c?" selected":"")+'>'+c+'</option>'; }).join("")+'</select><button class="btn ghost sm" type="button" data-track-gen="'+i+'">New tracking ID</button></span></div>'; }).join("") : '<p class="note" style="margin:0">No packed/shipped orders yet — shipments appear here once sellers pack an order.</p>')
     + '</div>';
   Array.prototype.forEach.call(el.querySelectorAll("[data-courier-for]"), function(sel){ sel.addEventListener("change", function(){
     var j=jobs[parseInt(sel.getAttribute("data-courier-for"),10)]; var val=sel.value;
