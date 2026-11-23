@@ -3674,6 +3674,12 @@ if (sbReady()){
       enterApp(member);
       /* Re-audit fix (2026-11-21): a restored session previously logged nothing, so the Activity Log stayed empty after reload. Log the restore so the log shows entries from this session too. */
       try{ logActivity("Session restored — signed in as " + member.name); }catch(e){}
+      /* Settings fix (2026-11-23): the boot-time sbSettingsLoad() can fail while
+         the stored session token is still stale (it fires before getSession()
+         restores the session), so DB-only values like the platform payment
+         numbers never applied after reload. Re-run it now that the session is
+         valid — the boot call stays as the first attempt when the token is fresh. */
+      sbSettingsLoad().catch(function(){});
     }catch(e){ sbWarn("auth", e); showLoginView(); }
   }).catch(function(e){ sbWarn("auth", e); showLoginView(); });
   /* Safety net: if the session check ever hangs, never leave the boot screen
