@@ -329,6 +329,10 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 .timeline span{font-size:.8rem;color:var(--muted)}
 .modal{position:fixed;inset:0;z-index:95;display:none;place-items:center;padding:16px}
 .modal.open{display:grid}
+/* Invoice opens stacked OVER the Account dialog: every .modal shares
+   z-index 95 and authModal sits after invoiceModal in the DOM, so it
+   painted on top and the invoice ✕ was unclickable. */
+#invoiceModal{z-index:100}
 .modal-card{background:var(--surface);border-radius:26px;max-width:780px;width:100%;max-height:92dvh;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;position:relative;box-shadow:0 40px 90px rgba(0,0,0,.4)}
 .modal-card.single{grid-template-columns:1fr;max-width:560px}
 .modal-card .mimg{background:#fff}.modal-card .mimg img{width:100%;height:100%;object-fit:cover;min-height:280px}
@@ -3016,7 +3020,10 @@ var ANBOBD_DB = {
     return saved;
   },
   loadMyOrders: async function(user){
-    var sb = this.sb(); if(!sb || !user || !anboIsUuid(user.id)) return;
+    var sb = this.sb(); if(!sb || !user || !anboIsUuid(user.id)){ window.__anboMyOrdersLoaded = true; return; }
+    /* P1 follow-up: My Orders loading state — renderAccount shows
+       "… লোড হচ্ছে" until this first load settles, never a false empty. */
+    window.__anboMyOrdersLoading = true; window.__anboMyOrdersLoaded = false;
     /* আসল Supabase session না থাকলে (শুধু লোকাল identity-ওয়ালা guest) চুপচাপ
        ফিরে যাও, কোনো toast নয় — guest-এর orders-এ anon SELECT permission
        নেই, তাই query সবসময় 42501 দিয়ে fail করে "আপনার অর্ডারগুলো অনলাইন
@@ -3024,8 +3031,8 @@ var ANBOBD_DB = {
        Signed-in customer-এর session থাকলে আগের মতোই নিজের অর্ডার লোড হবে। */
     try{
       var sessRes = await sb.auth.getSession();
-      if(!sessRes || !sessRes.data || !sessRes.data.session) return;
-    }catch(e){ return; }
+      if(!sessRes || !sessRes.data || !sessRes.data.session){ __anboMyOrdersDone(); return; }
+    }catch(e){ __anboMyOrdersDone(); return; }
     try{
       /* orders table-এ user_id column নেই — ক্রেতার column-এর নাম customer_id */
       var r = await sb.from('orders').select('*').eq('customer_id', user.id).order('created_at', { ascending:false });
@@ -3034,7 +3041,8 @@ var ANBOBD_DB = {
         if(ANBOBD_STORE.orders.some(function(o){ return String(o.supabaseId||"")===String(row.id) || String(o.id)===String(row.id); })) return;
         ANBOBD_STORE.orders.push(anboOrderFromRow(row, user));
       });
-    }catch(e){ anboDbErr("আপনার অর্ডারগুলো অনলাইন থেকে লোড করা যায়নি", e); }
+      __anboMyOrdersDone();
+    }catch(e){ __anboMyOrdersDone(); anboDbErr("আপনার অর্ডারগুলো অনলাইন থেকে লোড করা যায়নি", e); }
   },
   /* যেসব অর্ডার অনলাইনে সেভ হয়নি (onlineSaved নয়, supabaseId নেই) সেগুলো
      আবার পাঠানোর চেষ্টা — পেজ লোডে, সাইন ইনে আর Admin/Seller প্যানেল
@@ -3052,6 +3060,15 @@ var ANBOBD_DB = {
     return savedCount;
   }
 };
+/* My Orders loading state (P1 follow-up): marks the first loadMyOrders for
+   the current user as settled and re-renders Account only if it is open and
+   still showing the loading line — never a false "no orders yet". */
+function __anboMyOrdersDone(){
+  window.__anboMyOrdersLoading = false; window.__anboMyOrdersLoaded = true;
+  var am = document.getElementById("authModal");
+  var mo = document.getElementById("auMyOrders");
+  if(window.renderAccount && am && am.classList.contains("open") && mo && mo.textContent.indexOf("লোড হচ্ছে") !== -1) window.renderAccount();
+}
 window.ANBOBD_DB = ANBOBD_DB;
 
 /* ---------- Write-back + remote loads (অনলাইন sync) ----------
@@ -3402,6 +3419,7 @@ var ANBOBD_AUTH = {
     var u = this.users.filter(function(x){ return x.email===email; })[0];
     if(!u || u.pass !== pass) return { ok:false, error:"ইমেইল বা পাসওয়ার্ড মেলেনি। অ্যাকাউন্ট না থাকলে আগে সাইন আপ করুন।" };
     this.session = u; window.__anboCurrentUser = u;
+    window.__anboMyOrdersLoaded = true; /* local-only sign-in: no online load to wait for */
     return { ok:true, user:u };
   },
   _loginSupabase: async function(emailRaw, passRaw){
@@ -3421,6 +3439,7 @@ var ANBOBD_AUTH = {
     var sb = ANBOBD_DB.sb();
     if(sb){ sb.auth.signOut().catch(function(){}); }
     this.session = null; window.__anboCurrentUser = null;
+    window.__anboMyOrdersLoaded = false; window.__anboMyOrdersLoading = false;
   },
   restoreSession: async function(){
     var sb = ANBOBD_DB.sb(); if(!sb) return null;
@@ -3631,7 +3650,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         '<div class="oitems">' + o.items.map(function(it){ return "• " + esc(it.name) + " × " + it.qty + " — " + fmt(it.lineTotal); }).join("<br>") + '</div>' +
         '<div class="ocust">📅 আনুমানিক ডেলিভারি: ' + o.estimatedDelivery + ' • 💵 ' + o.payment.method + (o.payment.transactionId ? '<br>📱 Transaction ID: <b>' + esc(o.payment.transactionId) + '</b> — ' + (o.status === 'AwaitingAdmin' ? '⏳ Admin পেমেন্ট যাচাইয়ের অপেক্ষায়' : '✅ পেমেন্ট যাচাই হয়েছে') : '') + '</div>' +
         '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">📦 ট্র্যাক করুন</button>' + ' <button class="btn-sec" data-invoice-order="' + o.id + '">🧾 ইনভয়েস</button>' + (o.status === "AwaitingAdmin" ? ' <button class="btn-sec" data-cancel-order="' + o.id + '">❌ বাতিল করুন</button>' : '') + (o.status === "Delivered" ? ' <button class="btn-sec" data-return-order="' + o.id + '">↩️ Return আবেদন</button>' + reviewBtnsFor(o, u) : '') + '</div></div>';
-    }).join("") : '<p style="color:var(--muted);margin:0;line-height:1.6">এখনো কোনো অর্ডার নেই — কেনাকাটা করে অর্ডার করলেই তা এখানে দেখা যাবে।</p>';
+    }).join("") : (window.__anboMyOrdersLoaded ? '<p style="color:var(--muted);margin:0;line-height:1.6">এখনো কোনো অর্ডার নেই — কেনাকাটা করে অর্ডার করলেই তা এখানে দেখা যাবে।</p>' : '<p style="color:var(--muted);margin:0;line-height:1.6">… লোড হচ্ছে</p>');
     var lbEl = document.getElementById("auLoyalty");
     if(lbEl){ var lb3 = loyaltyBalance(), cfg3 = loyaltyCfg(); lbEl.innerHTML = '<div class="ocard"><div style="font-size:1.05rem"><b>'+lb3.balance+' point</b> <span style="color:var(--muted);font-size:.85rem">(earned '+lb3.earned+' · used '+lb3.spent+')</span></div><div style="font-size:.88rem;color:var(--muted);margin-top:4px">Delivered order e proti ৳100 e '+cfg3.per100+' point — '+cfg3.points+' point = ৳'+cfg3.value+' discount, checkout e use kora jay.</div></div>'; }
     var msgEl = document.getElementById("auMessages");
