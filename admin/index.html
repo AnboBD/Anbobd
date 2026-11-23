@@ -4027,34 +4027,59 @@ $("#sellerForm").addEventListener("submit", async function(e){
   var btn = e.target.querySelector('button[type="submit"]');
   if (btn) btn.disabled = true;
   try{
-    /* Bug 5 fix (2026-11-23): the old handler wrote ONLY shop_name +
-       commission_rate to shops and kept everything else in a local-only
-       object with a fake SEL-xxx id — owner, phone, email, district,
-       category and licence vanished on reload. The columns DO exist
-       (proven by the Seller Center's own self-registration insert, which
-       writes them live), so now everything is saved for real:
-       1) a real Auth account + profiles row, via a throwaway client —
-       exactly like sbCreateStaffAccount, so the admin's own session is
-       never replaced; 2) a real shops row with every collected field.
-       No fake ids, no local-only fields. If the profiles write fails,
-       no shop row is created either — the admin sees the error and can
-       retry instead of getting a half-saved seller. */
+    /* Register-seller fix (2026-11-23, live failure): the old chain signed
+       the throwaway client OUT right after signUp and then wrote the
+       profiles row with `sb` — the ADMIN's client. profiles insert_own
+       only allows inserting your OWN row (id = auth.uid()), so the admin
+       client writing id = <new seller id> was rejected with a 42501 RLS
+       violation and no shop was ever created (the Auth account, made
+       first, was left orphaned). Fixed chain — same pattern as the Seller
+       Center staff-creation fix: (1) signUp on the throwaway client and
+       KEEP its session (belt-and-braces setSession, like staff creation);
+       (2) profiles + shops writes go through `tmp` AS the new seller, so
+       insert_own and the seller's own shops-insert policy both pass
+       (Seller Center self-registration proves the shops insert works
+       from the new-user client); (3) tmp signs out only at the very end,
+       in `finally`, so the admin session is never touched. If any write
+       fails, the real error is shown and NO shop row is created. */
     var tmp = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, { auth: { persistSession: false, storageKey: "anbobd-seller-signup" } });
+    var sellerId = null;
     var su = await tmp.auth.signUp({ email: email, password: pw, options: { data: { full_name: owner, role: "seller" } } });
-    try{ await tmp.auth.signOut(); }catch(e2){}
     if (su.error){
       var em = String(su.error.message || "");
-      if (/already registered|already exists|user already/i.test(em)) toast("⚠ Ei email diye account agei ache — onno email dao, or seller ke Seller Center e oi account diye registration complete korte bolo");
-      else sbSaveFailed("Seller registration", su.error);
-      return;
+      if (/already registered|already exists|user already/i.test(em)){
+        /* Orphan account (e.g. p3testseller@example.com): Auth exists but
+           no profile/shop row was ever created, because the old chain
+           died at the profiles insert. Sign in AS that account on the
+           throwaway client with the password the admin just typed, then
+           complete profile + shop creation below — but only if this user
+           has no shop row yet (checked right after). */
+        var si = await tmp.auth.signInWithPassword({ email: email, password: pw });
+        if (si.error || !si.data || !si.data.user){ toast("⚠ Ei email diye account agei ache, kintu deoa password diye sign in kora jay ni — thik password dao, or seller ke Seller Center e oi account diye registration complete korte bolo"); return; }
+        sellerId = si.data.user.id;
+      } else { sbSaveFailed("Seller registration", su.error); return; }
+    } else {
+      sellerId = su.data && su.data.user ? su.data.user.id : null;
+      if (!sellerId) throw new Error("Auth account toiri hoy ni — abar try koro");
+      /* signUp er session tmp client e in-memory thake (persistSession:
+         false holeo) — tobu setSession diye nischit kora holo, na hole
+         anon hoye profiles/shops insert RLS e atke jeto. Session na
+         thakle sign-in diye session toiri koro (Confirm email OFF, tai
+         eta sudhu safety net). */
+      if (su.data && su.data.session){ try{ await tmp.auth.setSession({ access_token: su.data.session.access_token, refresh_token: su.data.session.refresh_token }); }catch(e2){} }
+      else { var si2 = await tmp.auth.signInWithPassword({ email: email, password: pw }); if (si2.error || !si2.data || !si2.data.user) throw new Error("Auth account toiri hoyeche kintu session pelam na — abar try koro"); }
     }
-    var sellerId = su.data && su.data.user ? su.data.user.id : null;
-    if (!sellerId) throw new Error("Auth account toiri hoy ni — abar try koro");
-    var pr = await sb.from("profiles").upsert({ id: sellerId, email: email, full_name: owner, phone: phone, role: "seller" }, { onConflict: "id" });
+    /* Ei user er shop agei thakle notun kore register kora jabe na —
+       admin client diye check (admin sob shop dekhte pare). */
+    var exShop = await sb.from("shops").select("id").eq("owner_id", sellerId).maybeSingle();
+    if (exShop.error) throw exShop.error;
+    if (exShop.data){ toast("⚠ Ei seller er shop agei ache — notun kore register kora jabe na"); return; }
+    var pr = await tmp.from("profiles").upsert({ id: sellerId, email: email, full_name: owner, phone: phone, role: "seller" }, { onConflict: "id" }).select("id");
     if (pr.error) throw pr.error;
+    if (!pr.data || !pr.data.length) throw new Error("Profile row toiri hoy ni — database theke row fire asheni");
     var slug = shop.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "shop";
     var ins = { shop_name: shop, slug: slug, owner_id: sellerId, owner_phone: phone, category: category, district: district, pickup_address: "", payout_method: "bKash", payout_account: phone, payout_name: owner, nid_number: "", trade_licence: licence || null, commission_rate: commission, status: "pending", kyc_status: "pending" };
-    var r = await sb.from("shops").insert(ins).select("*").single();
+    var r = await tmp.from("shops").insert(ins).select("*").single();
     if (r.error) throw r.error;
     var rw = r.data;
     sellers.unshift({ id: rw.id, supabaseId: rw.id, shop: rw.shop_name, owner: owner, phone: phone, email: email, district: district, cat: category, joined: sbDateLabel(rw.created_at), status: "pending", products: 0, sold: 0, sales: 0, commissionRate: effectiveCommissionRate({ commissionRate: commission }, anboCatNorm(category)), payoutMethod: "bKash · " + phone, payoutAccount: phone, rating: 0, license: licence || "—", nidNumber: "", nidCopyUrl: "", tradeCopyUrl: "", ownerId: sellerId, kycStatus: "pending", applied: nowLabel() + ", just now", color: "amber" });
@@ -4067,6 +4092,10 @@ $("#sellerForm").addEventListener("submit", async function(e){
   }catch(err){
     sbSaveFailed("Seller registration", err);
   }finally{
+    /* Throwaway client ke ekhanei sign out koro — age signUp er porpori
+       sign out kora hoto, tai profiles/shops insert anon hoye RLS e
+       atke jeto. Admin er nijer session e haat dewa hoy na. */
+    try{ if (tmp) await tmp.auth.signOut(); }catch(e2){}
     if (btn) btn.disabled = false;
   }
 });
