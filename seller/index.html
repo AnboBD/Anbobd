@@ -776,8 +776,7 @@
             <h3>How your earning works</h3>
             <div class="csub">Proti order e hisab alada kore dekhano hoy</div>
             <div class="comm-row"><span>Order total</span><b>100%</b></div>
-            <div class="comm-row"><span>AnboBD commission (category onujayi)</span><b>5% – 12%</b></div>
-            <div class="comm-row"><span>Payment processing (bKash/Card)</span><b>1.5%</b></div>
+            <div class="comm-row"><span>AnboBD commission (category onujayi)</span><b>8% – 12%</b></div>
             <div class="comm-row"><span style="font-weight:800">Apnar earning</span><b style="color:var(--brand)">baki ongsho</b></div>
             <p style="font-size:.85rem;color:var(--muted);margin:.8rem 0 0">COD order e delivery charge customer dey, tai apnar earning theke kata hoy na. Return hole sei order er earning balance theke adjust hoy.</p>
           </div>
@@ -927,7 +926,11 @@
     return supabaseConnected;
   }
 
-  var COMMISSION = { "Electronics": 8, "Fashion": 10, "Home & Living": 7, "Beauty": 12, "Grocery": 5, "Sports": 9 };
+  /* Category list + display rates. Values MUST match adminCatRate() below
+     (Admin ledger is the source of truth: Grocery 8, Electronics 10,
+     Fashion 12, Home 10, Beauty 10, Sports 10). The old map showed wrong
+     rates (Grocery 5) — displays now call adminCatRate() directly. */
+  var COMMISSION = { "Electronics": 10, "Fashion": 12, "Home & Living": 10, "Beauty": 10, "Grocery": 8, "Sports": 10 };
   var CAT_COLORS = { "Electronics":"#2563eb", "Fashion":"#db2777", "Home & Living":"#0b7a55", "Beauty":"#7c4dff", "Grocery":"#e8862e", "Sports":"#0891b2" };
   var CAMPAIGN_TYPES = [
     { name:"Mega Sale", minDisc:20, color:"#d64545", note:"Homepage hero, push notification ar Flash Sale slot soho sobcheye boro campaign format." },
@@ -978,7 +981,7 @@
   /* Earning = subtotal − commission (Admin er formula). Ager 1.5%
      processing kata bad deya holo, jate Admin ar Seller er number mile.
      Rate hisabe Admin er category rate (adminCatRate) lage — Seller er
-     nijer COMMISSION map (Grocery 5) na, karon Admin ledger Grocery te 8% dhore. */
+     nijer COMMISSION map (age Grocery 5 chilo) na, karon Admin ledger Grocery te 8% dhore. */
   function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*adminCatRate(p.cat)/100; } }); return Math.round(e); }
   /* Wallet settlement — single source of truth, derived from the
      seller's OWN orders/payouts/returns (Admin derives it the same
@@ -1128,8 +1131,9 @@
   }
   /* Admin er category commission rate — Admin er ledger ei rate ei hisab
      kore (grocery 8, electronics 10, fashion 12, home 10, beauty 10,
-     shoesbags 11, default 10). Seller er nijer COMMISSION map er rate
-     (Grocery 5) earning hisabe bebohar hoy na. */
+     shoesbags 11, default 10). Display gulo (Products table, dashboard
+     summary) ekhon ei function tai bebohar kore — COMMISSION map sudhu
+     category list hisabe thake, ar tar value gulo ei rate er sathe milano. */
   function adminCatRate(cat){
     var k = String(cat || "").toLowerCase().replace(/[^a-z]/g, "");
     if (k.indexOf("grocer") > -1) return 8;
@@ -1247,12 +1251,21 @@
     roleBlocked = false;
     var staffRow = null, staffShopId = "";
     if (isStaffAccount || metaRole === "seller_staff"){
-      /* Staff: shop khujte hobe staff row / metadata diye, owner_id diye na.
-         staff table SELECT RLS e block hole metadata fallback cholbe. */
+      /* Staff: sign-in REQUIRES a live staff row — metadata-only access is
+         CLOSED. A removed staff member keeps their Auth user + user_metadata
+         (shop_id / shop_role), so falling back to metadata would let them
+         back in after removal. The anon-key client cannot delete/disable an
+         Auth user (that needs the service_role key), so this gate is the
+         enforcement: no staff row = no entry, even with valid metadata.
+         NOTE: this needs the staff SELECT policy to let a staff user read
+         their own row (staff.user_id = auth.uid()). If that policy is
+         missing, staff sign-in fails here with "ar sakriya nei" — fix the
+         policy in the Supabase dashboard, do NOT reopen the fallback. */
       try { var st = await supabase.from('staff').select('*').eq('user_id', authUser.id).limit(1); if (!st.error && st.data && st.data.length) staffRow = st.data[0]; } catch(e){}
-      if (staffRow && staffRow.active === false){ staffLoginBlocked = "Ei staff account ti deactivate kora hoyeche — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
-      staffShopId = (staffRow && staffRow.shop_id) || (authUser.user_metadata && authUser.user_metadata.shop_id) || "";
-      if (!staffShopId){ staffLoginBlocked = "Ei staff account er sathe kono shop jukto nei — shop owner ke janan."; return null; }
+      if (!staffRow){ staffLoginBlocked = "Ei staff account ti ar sakriya nei — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
+      if (staffRow.active === false){ staffLoginBlocked = "Ei staff account ti deactivate kora hoyeche — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
+      staffShopId = staffRow.shop_id || "";
+      if (!staffShopId){ staffLoginBlocked = "Ei staff account er sathe kono shop jukto nei — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
       try { var s2 = await supabase.from('shops').select('*').eq('id', staffShopId).single(); if (!s2.error) shop = s2.data; } catch(e){}
     } else {
       try { var s1 = await supabase.from('shops').select('*').eq('owner_id', authUser.id).single(); if (!s1.error) shop = s1.data; } catch(e){}
@@ -1261,7 +1274,7 @@
     var seller = sellerFromShopRow(profile, shop, authUser);
     if (isStaffAccount || metaRole === "seller_staff"){
       seller.isStaff = true;
-      seller.staffRole = (staffRow && staffRow.role) || (authUser.user_metadata && authUser.user_metadata.shop_role) || "Order Staff";
+      seller.staffRole = (staffRow && staffRow.role) || "Order Staff";
       seller.staffUserId = authUser.id;
     }
     var existing = sellerById(seller.id);
@@ -1878,8 +1891,8 @@
     products.forEach(function(p){ cats[p.cat] = true; });
     if (!Object.keys(cats).length) cats[s.category] = true;
     $("commSummary").innerHTML = Object.keys(cats).map(function(c){
-      return '<div class="comm-row"><span>' + esc(c) + '</span><b>' + COMMISSION[c] + '% commission</b></div>';
-    }).join("") + '<div class="comm-row"><span>Payment processing</span><b>1.5%</b></div><div class="comm-row"><span style="font-weight:800">Baki ongsho</span><b style="color:var(--brand)">apnar earning</b></div>';
+      return '<div class="comm-row"><span>' + esc(c) + '</span><b>' + adminCatRate(c) + '% commission</b></div>';
+    }).join("") + '<div class="comm-row"><span style="font-weight:800">Baki ongsho</span><b style="color:var(--brand)">apnar earning</b></div>';
 
     $("recentOrdersBody").innerHTML = orders.length ? orders.slice(0,5).map(function(o){
       return '<tr style="cursor:pointer" data-order="' + o.id + '"><td><b>' + esc(o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td>' + esc(o.customer) + '</td><td>' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b></td><td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td><td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span></td></tr>';
@@ -1909,7 +1922,7 @@
         + '<td><b>' + fmt(p.price) + '</b>' + (p.oldPrice ? '<div class="psku"><s>' + fmt(p.oldPrice) + '</s></div>' : '') + '</td>'
         + '<td><b>' + p.stock + '</b><div class="stockbar"><i class="' + cls + '" style="width:' + pct + '%"></i></div></td>'
         + '<td>' + (p.sold || 0).toLocaleString("en-IN") + '</td>'
-        + '<td>' + COMMISSION[p.cat] + '%</td>'
+        + '<td>' + adminCatRate(p.cat) + '%</td>'
         + '<td><span class="status ' + statusClass(p.status) + '">' + p.status + '</span>' + (p.approval==="Pending Approval" ? '<div style="margin-top:.3rem"><span class="status st-pendingapproval">Pending Approval — Admin moderation</span><div class="psku">Live na, Admin approve korle storefront e jabe</div></div>' : '') + (p.approval==="Rejected" ? '<div style="margin-top:.3rem"><span class="status st-rejected">Rejected by Admin</span><div class="psku">Edit kore abar moderation e pathan</div></div>' : '') + '</td>'
         + '<td><div class="row-actions">'
         + '<button class="mini-btn" data-act="stock" data-id="' + p.id + '" type="button">+ Stock</button>'
@@ -2539,14 +2552,14 @@
     $("staffGrid").querySelectorAll("[data-staff-toggle]").forEach(function(b){
       b.addEventListener("click", async function(){
         var x = ownStaff().filter(function(y){ return String(y.id)===String(b.getAttribute("data-staff-toggle")); })[0]; if (!x) return;
-        x.active = !x.active; if (supabaseConnected && supabase) { try { await supabase.from('staff').update({ active: x.active }).eq('id', x.id).eq('shop_id', me().shopId); } catch(e){} } toast(x.name + " ekhon " + (x.active ? "Active" : "Deactivated")); renderTeam();
+        var newActive = !x.active; if (supabaseConnected && supabase) { try { var up = await supabase.from('staff').update({ active: newActive }).eq('id', x.id).eq('shop_id', me().shopId); if (up && up.error) { toast("Staff status save hoy ni — " + (up.error.message || "database error") + ". Abar chesta korun."); renderTeam(); return; } } catch(e){ toast("Staff status save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderTeam(); return; } } x.active = newActive; toast(x.name + " ekhon " + (x.active ? "Active" : "Deactivated")); renderTeam();
       });
     });
     $("staffGrid").querySelectorAll("[data-staff-del]").forEach(function(b){
       b.addEventListener("click", function(){
         var x = ownStaff().filter(function(y){ return String(y.id)===String(b.getAttribute("data-staff-del")); })[0]; if (!x) return;
-        openConfirm("Staff remove korben?", x.name + " ar apnar shop e kaj korte parbe na, tar role ar permission o muche jabe.", async function(){
-          var s = me(); if (supabaseConnected && supabase) { try { await supabase.from('staff').delete().eq('id', x.id).eq('shop_id', s.shopId); } catch(e){} } s.staff = s.staff.filter(function(y){ return String(y.id)!==String(x.id); }); toast(x.name + " remove hoyeche"); renderTeam(); renderDashboard();
+        openConfirm("Staff remove korben?", x.name + " ar apnar shop e kaj korte parbe na, tar role ar permission o muche jabe. Tar login account Supabase e theke jabe — puropuri delete korte Supabase dashboard → Auth → Users theke delete korun.", async function(){
+          var s = me(); if (supabaseConnected && supabase) { try { var del = await supabase.from('staff').delete().eq('id', x.id).eq('shop_id', s.shopId); if (del && del.error) { toast("Staff remove hoy ni — " + (del.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Staff remove hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } } s.staff = s.staff.filter(function(y){ return String(y.id)!==String(x.id); }); toast(x.name + " remove hoyeche — se ar Seller Center e sign in korte parbe na"); renderTeam(); renderDashboard();
         });
       });
     });
