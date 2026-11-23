@@ -379,7 +379,7 @@ function mapProductRow(r){
    asol DB review dekhay (hunny: 5.0 / 1 review). Review na thakle 0-i
    thake — kokhono fake na. (index.html-er anboSyncProductRatings-er
    motoi, shop.html-er SH.products / shReviewsFor diye.) */
-function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s+" <span>("+r+")</span>"; }
+function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s+" <span>("+Number(r||0).toFixed(1)+")</span>"; }
 function shReviewsFor(p){ return (SH.productReviews && SH.productReviews[String(p.id)]) || []; }
 function shAvgRating(p){
   var rv = shReviewsFor(p);
