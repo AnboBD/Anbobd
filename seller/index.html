@@ -407,6 +407,8 @@
         </div>
         <p class="err" id="loginErr"></p>
         <button class="btn" id="loginBtn" type="submit" style="width:100%">Login to Seller Center</button>
+        <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;margin-top:12px"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
+        <button class="btn ghost" id="googleLoginBtn" type="button" style="width:100%;margin-top:12px">🔵 Google দিয়ে লগইন</button>
         <p style="margin:10px 0 0"><button type="button" id="forgotPwBtn" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit;padding:0">পাসওয়ার্ড ভুলে গেছেন?</button></p>
         <p id="forgotPwMsg" role="status" style="display:none;margin:10px 0 0;font-size:.9rem;line-height:1.6"></p>
         <div class="auth-note"><b>New to AnboBD?</b> Tap <b>Open a Shop</b> above, create your seller account and register your shop. Your shop goes live after AnboBD Admin verifies your KYC and approves the application — there is no instant access.</div>
@@ -547,6 +549,8 @@
 
         <p class="err" id="regErr"></p>
         <button class="btn" id="regSubmitBtn" type="submit" style="width:100%">Submit Application for Admin Approval</button>
+        <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;margin-top:12px"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
+        <button class="btn ghost" id="googleRegBtn" type="button" style="width:100%;margin-top:12px">🔵 Google দিয়ে লগইন</button>
       </form>
       <div class="auth-foot">
         <a href="/" target="_blank" rel="noopener">Storefront</a> · <a href="/pages/contact.html" target="_blank" rel="noopener">Help</a> · <a href="/pages/terms.html" target="_blank" rel="noopener">Terms</a>
@@ -1735,6 +1739,21 @@
     toast(s.status === "approved" ? ("Welcome back, " + s.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
   }
   $("loginForm").addEventListener("submit", function(e){ e.preventDefault(); tryLogin(); });
+  /* Social login (2026-11-24): Google OAuth — Supabase Auth. Provider dashboard-e
+     configure na thakle asol error dekhano hoy, kokhono fake success na.
+     Notun seller-er shop na thakle OAuth return-e "kono shop pawa jay ni" dekhabe —
+     age Open a Shop form theke shop registration korte hobe. */
+  async function sellerGoogleLogin(errElId){
+    var errEl = $(errElId || "loginErr");
+    if(!supabaseConnected || !supabase){ if(errEl) errEl.textContent = "Google লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ Seller Center সাইটে গিয়ে আবার চেষ্টা করুন।"; return; }
+    try{
+      var r = await supabase.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: location.origin + location.pathname } });
+      if(r && r.error && errEl){ errEl.textContent = "⚠ Google লগইন চালু হয়নি — " + (r.error.message || "আবার চেষ্টা করুন।"); }
+      /* success hole Supabase Google-e redirect korbe; fire asle boot getSession session nibe. */
+    }catch(e){ if(errEl) errEl.textContent = "⚠ Google লগইন চালু হয়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।"); }
+  }
+  $("googleLoginBtn").addEventListener("click", function(){ sellerGoogleLogin("loginErr"); });
+  $("googleRegBtn").addEventListener("click", function(){ sellerGoogleLogin("regErr"); });
   /* P0-5 — Forgot password (Admin er pattern, 2026-11-21): resetPasswordForEmail
      redirectTo ছাড়া — Supabase project er Site URL e recovery link jay. */
   $("forgotPwBtn").addEventListener("click", async function(){
@@ -4204,6 +4223,11 @@
     Object.keys(COMMISSION).forEach(function(c){ var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
     initSupabase();
     if (supabaseConnected && supabase) {
+      /* Social login (2026-11-24): OAuth callback-e error hole asol karon loginErr-e dekhao. */
+      try{
+        var oae = new URLSearchParams(location.search).get("error_description") || new URLSearchParams(location.search).get("error");
+        if(oae){ showLogin(); $("loginErr").textContent = "⚠ Google লগইন হয়নি — " + oae + "।"; }
+      }catch(e){}
       supabase.auth.getSession().then(async function(res){
         try {
           var sess = res && res.data && res.data.session;
