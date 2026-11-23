@@ -146,6 +146,11 @@
       nav.side button.on{background:var(--brand-soft);color:var(--brand-dark)}
       @media (prefers-color-scheme: dark){nav.side button.on{color:var(--brand)}}
       nav.side button .pill{margin-left:auto;background:var(--amber);color:#fff;font-size:.7rem;font-weight:800;border-radius:99px;padding:.05rem .5rem}
+      /* P3 (2026-11-23): role gating e lukano sidebar item — disabled
+         dekhay, 🔒 hint soho; title e kon permission lagbe lekha thake. */
+      nav.side button:disabled{opacity:.55;cursor:not-allowed}
+      nav.side button:disabled:hover{background:transparent;color:var(--muted)}
+      nav.side button .nav-lock{margin-left:auto;font-size:.75rem}
       .side-foot{margin-top:auto;border-top:1px solid var(--line);padding-top:.8rem}
       .side-foot button{display:flex;align-items:center;gap:.6rem;width:100%;border:0;background:transparent;padding:.55rem .7rem;border-radius:10px;font-weight:600;color:var(--muted)}
       .side-foot button:hover{background:var(--red-soft);color:var(--red)}
@@ -293,6 +298,7 @@
       .st-approved,.st-live{background:var(--brand-soft);color:var(--brand-dark)}
       .st-pendingapproval{background:var(--amber-soft);color:#b25f10}
       .st-rejected{background:var(--red-soft);color:var(--red)}
+      .st-withdrawn{background:var(--surface2);color:var(--muted)}
       @media (prefers-color-scheme: dark){.st-awaitingadmin,.st-pendingapproval{color:var(--amber)} .st-approved,.st-live{color:var(--brand)}}
       .flow-strip{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.1rem;margin-bottom:1.2rem}
       .flow-step{flex:1;min-width:130px;display:flex;gap:.6rem;align-items:flex-start}
@@ -470,6 +476,10 @@
             </select>
           </div>
         </div>
+        <div class="field hidden" id="regDistrictOtherWrap">
+          <label for="regDistrictOther">District likhun (আবশ্যক)</label>
+          <input id="regDistrictOther" type="text" placeholder="e.g. Panchagarh" />
+        </div>
         <div class="field">
           <label for="regAddress">Pickup address (আবশ্যক)</label>
           <textarea id="regAddress" rows="2" placeholder="House / road / area — courier will pick up parcels from here"></textarea>
@@ -490,6 +500,19 @@
           <label for="regPayAccount">Account number (আবশ্যক)</label>
           <input id="regPayAccount" type="text" placeholder="bKash / Nagad number or bank account number" />
           <div class="hint">Your earnings will be paid to this account after Admin releases each payout.</div>
+        </div>
+        <div id="regBankFields" class="hidden">
+          <div class="grid-2">
+            <div class="field">
+              <label for="regBankName">Bank name (আবশ্যক)</label>
+              <input id="regBankName" type="text" placeholder="e.g. Dutch-Bangla Bank" />
+            </div>
+            <div class="field">
+              <label for="regBankBranch">Branch (আবশ্যক)</label>
+              <input id="regBankBranch" type="text" placeholder="e.g. Banani Branch" />
+            </div>
+          </div>
+          <div class="hint">Bank name ar branch shops table e ekhono alada column nei — application er sathe form e thakbe ar pending page e dekhabe; Admin column add korle pore save kora jabe.</div>
         </div>
 
         <div class="form-section">4 · KYC verification</div>
@@ -605,8 +628,8 @@
         <button data-view="orders" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 5H5L6 3z"/><path d="M5 8h14v13H5z"/><path d="M9 12h6"/></svg>My Orders<span class="pill hidden" id="pendingPill">0</span></button>
         <button data-view="reviews" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Reviews</button>
         <button data-view="coupons" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V5a2 2 0 0 1 2-2h4l10 10v4a2 2 0 0 1-2 2H7L3 15V9z" transform="rotate(90 12 12)"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M13 13l3 3M16 13l-3 3"/></svg>Shop Coupons<span class="pill hidden" id="couponPill" style="background:var(--brand)">0 Live</span></button>
-        <button data-view="campaigns" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-6v14L3 13v-2z"/><path d="M7 13v5a2 2 0 0 0 4 0v-4M17 8a4 4 0 0 1 0 8"/></svg>Mega Sale &amp; Campaigns<span class="pill hidden" id="campPill">0</span></button>
         <button data-view="returns" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Returns &amp; Refunds<span class="pill hidden" id="returnPill">0</span></button>
+        <button data-view="campaigns" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-6v14L3 13v-2z"/><path d="M7 13v5a2 2 0 0 0 4 0v-4M17 8a4 4 0 0 1 0 8"/></svg>Mega Sale &amp; Campaigns<span class="pill hidden" id="campPill">0</span></button>
         <button data-view="payouts" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.01M18 12h.01"/></svg>My Wallet &amp; Payouts<span class="pill hidden" id="walletPill">৳0</span></button>
         <button data-view="team" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M16 15.2c2.6.3 4.6 1.9 5.3 4.8"/></svg>Team &amp; Staff</button>
         <button data-view="settings" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.14-1.4l2.1-1.63-2-3.46-2.49 1a7 7 0 0 0-2.42-1.4L13.66 2.6h-3.32l-.39 2.51a7 7 0 0 0-2.42 1.4l-2.49-1-2 3.46L5.14 10.6A7 7 0 0 0 5 12c0 .48.05.94.14 1.4L3.04 15.03l2 3.46 2.49-1a7 7 0 0 0 2.42 1.4l.39 2.51h3.32l.39-2.51a7 7 0 0 0 2.42-1.4l2.49 1 2-3.46-2.1-1.63c.09-.46.14-.92.14-1.4z"/></svg>Shop Settings</button>
@@ -1145,6 +1168,34 @@
      kore bosano hoy; false mane column/table ekhono database e nei, tokhon
      UI te sotyi kotha ("ekhono chalu hoy ni") dekhano hoy, vul save noy. */
   var DB_HAS = { variants: null, saleStart: null, saleEnd: null, couponPerCustomer: null, staffActivity: null };
+  /* P3 (2026-11-23): platform courier list — Admin er settings table er
+     courier_*_enabled key theke ase (Admin Courier & Delivery page er
+     sathe eki key). Key na thakle Admin er default dhora hoy
+     (Steadfast/Pathao/RedX on, Sundarban off); settings read fail holeo
+     ei default list-i use hobe, kokhono khali select noy. */
+  var COURIER_DEFAULTS = [
+    { key: "courier_steadfast_enabled", name: "Steadfast", on: true },
+    { key: "courier_pathao_enabled", name: "Pathao Courier", on: true },
+    { key: "courier_redx_enabled", name: "RedX", on: true },
+    { key: "courier_sundarban_enabled", name: "Sundarban Courier", on: false }
+  ];
+  var PLATFORM_COURIERS = null;
+  async function ensureCouriersLoaded(){
+    if (PLATFORM_COURIERS) return PLATFORM_COURIERS;
+    var list = COURIER_DEFAULTS.filter(function(c){ return c.on; }).map(function(c){ return c.name; });
+    if (supabaseConnected && supabase) {
+      try {
+        var res = await supabase.from('settings').select('key,value').in('key', COURIER_DEFAULTS.map(function(c){ return c.key; }));
+        if (!res.error && res.data) {
+          var map = {};
+          res.data.forEach(function(row){ map[row.key] = (row.value === true || row.value === "true"); });
+          list = COURIER_DEFAULTS.filter(function(c){ return map[c.key] == null ? c.on : map[c.key] === true; }).map(function(c){ return c.name; });
+        }
+      } catch(e){}
+    }
+    PLATFORM_COURIERS = list.length ? list : COURIER_DEFAULTS.filter(function(c){ return c.on; }).map(function(c){ return c.name; });
+    return PLATFORM_COURIERS;
+  }
   var COUPON_SCOPES = ["Shop-wide (sob product)", "Electronics only", "Fashion only", "Beauty only", "Home & Living only", "Grocery only", "Sports only"];
   /* Notification toggle er type — sellerNotifItems() er item gulor sathe mile. */
   var NOTIF_TYPES = [
@@ -1194,7 +1245,7 @@
     } catch(e){}
   }
   function prodById(id){ var l = ownProducts(); for (var i=0;i<l.length;i++) if (String(l[i].id)===String(id)) return l[i]; return null; }
-  function orderTotal(o){ if (o && typeof o._total === "number" && o._total) return o._total; var t=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p) t += p.price*(it.qty||1); else if (it.price) t += Number(it.price)*(it.qty||1); }); return t; }
+  function orderTotal(o){ if (o && typeof o._total === "number" && o._total) return o._total; var t=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id || it.productId); if(p) t += p.price*(it.qty||1); else if (it.price) t += Number(it.price)*(it.qty||1); }); return t; }
   /* Earning = subtotal − commission (Admin er formula). Ager 1.5%
      processing kata bad deya holo, jate Admin ar Seller er number mile.
      Rate hisabe Admin er category rate (adminCatRate) lage — Seller er
@@ -1225,7 +1276,7 @@
     s.balance = Math.max(0, bal);
     s.pendingClearance = Math.max(0, pend);
   }
-  function orderItemsText(o){ return (o.items||[]).map(function(it){ var p=prodById(it.pid || it.product_id); return p ? (p.name+" × "+(it.qty||1)) : (it.name ? (it.name+" × "+(it.qty||1)) : ""); }).filter(Boolean).join(", "); }
+  function orderItemsText(o){ return (o.items||[]).map(function(it){ var p=prodById(it.pid || it.product_id || it.productId); return p ? (p.name+" × "+(it.qty||1)) : (it.name ? (it.name+" × "+(it.qty||1)) : ""); }).filter(Boolean).join(", "); }
   function initials(name){ return String(name||"S").trim().split(/\s+/).map(function(w){return w[0];}).slice(0,2).join("").toUpperCase(); }
   function toast(msg){ var t=$("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(function(){ t.classList.remove("show"); }, 3000); }
   function esc(s){ return String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
@@ -1402,16 +1453,16 @@
     else payVis = r.pay_visibility || "";
     var masterCancelled = String(m.status || "").toLowerCase().indexOf("cancel") > -1;
     var status = masterCancelled ? "Cancelled" : subOrderStatusLabel(r.status);
-    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, localId: localId, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: m.customer_name || r.customer_name || r.customer || "", phone: m.customer_phone || r.customer_phone || r.phone || "", district: m.district || r.district || "", shipAddress: m.address || m.ship_address || r.ship_address || r.address || "", items: items, status: status, masterStatus: m.status || "", commissionRate: effRate, trackingId: r.tracking_id || m.tracking_id || "", codCollect: r.cod_collect || null, payVisibility: payVis, payment: payMethod, paymentStatus: m.payment_status || "", _total: subtotal, _earning: earning, deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false, createdAt: r.created_at || m.created_at || null, txnId: m.transaction_id || r.transaction_id || "" };
+    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, localId: localId, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: m.customer_name || r.customer_name || r.customer || "", phone: m.customer_phone || r.customer_phone || r.phone || "", district: m.district || r.district || "", shipAddress: m.address || m.ship_address || r.ship_address || r.address || "", items: items, status: status, masterStatus: m.status || "", commissionRate: effRate, trackingId: r.tracking_id || m.tracking_id || "", courier: r.courier || "", codCollect: r.cod_collect || null, payVisibility: payVis, payment: payMethod, paymentStatus: m.payment_status || "", _total: subtotal, _earning: earning, deliveredAt: r.delivered_at || r.updated_at || r.created_at || null, settled: false, createdAt: r.created_at || m.created_at || null, txnId: m.transaction_id || r.transaction_id || "" };
   }
   function mapMegaRow(r){
-    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : "Pending Approval")), adminNote: r.admin_note || "Admin er review er opekkhay ache." };
+    return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : (String(r.status || "").toLowerCase() === "withdrawn" ? "Withdrawn" : "Pending Approval"))), adminNote: r.admin_note || "Admin er review er opekkhay ache." };
   }
   /* returns table eo status_label bole kono column nei (asol column:
      id, shop_id, order_id, refund_amount, reason, status, created_at) —
      tai status sorasori r.status theke map kora hoy. */
   function mapReturnRow(r){
-    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", rejectReason: r.reject_reason || "", amount: Number(r.amount || r.refund_amount || 0), status: ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
+    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), createdAt: r.created_at || "", reason: r.reason || "", rejectReason: r.reject_reason || "", refundMethod: r.refund_method || "", refundChannel: r.refund_channel || "", amount: Number(r.amount || r.refund_amount || 0), status: ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
   }
   async function loadSellerDataFromSupabase(sellerObj){
     if (!supabaseConnected || !supabase || !sellerObj || !sellerObj.shopId) return;
@@ -1448,7 +1499,7 @@
     try { var ms = await supabase.from('mega_submissions').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!ms.error && ms.data) sellerObj.campSubs = ms.data.map(mapMegaRow); } catch(e){}
     try { var po = await supabase.from('payouts').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!po.error && po.data) sellerObj.payouts = po.data.map(function(r){ var pst = String(r.status || "pending").toLowerCase(); return { date: r.created_at ? fmtDate(r.created_at) : "", method: r.method || sellerObj.payMethod, account: maskAccount(r.account || sellerObj.payAccount), amount: Number(r.amount || 0), status: (pst === "paid" ? "Paid" : (pst === "approved" ? "Approved" : "Processing")) }; }); } catch(e){}
     try { var rt = await supabase.from('returns').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!rt.error && rt.data) sellerObj.returns = rt.data.map(mapReturnRow); } catch(e){}
-    try { var stf = await supabase.from('staff').select('*').eq('shop_id', shopId); if (!stf.error && stf.data) sellerObj.staff = stf.data.map(function(r){ return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, name: r.name || "", email: r.email || "", phone: r.phone || "", role: r.role || "Order Staff", active: r.active !== false, joined: r.created_at ? monthYear(r.created_at) : "", color: ROLE_COLORS[r.role] || "#0b7a55" }; }); } catch(e){}
+    try { var stf = await supabase.from('staff').select('*').eq('shop_id', shopId); if (!stf.error && stf.data) sellerObj.staff = stf.data.map(function(r){ return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, user_id: r.user_id || null, status: r.status || "", is_active: r.is_active, name: r.name || "", email: r.email || "", phone: r.phone || "", role: r.role || "Order Staff", active: r.active !== false, joined: r.created_at ? monthYear(r.created_at) : "", color: ROLE_COLORS[r.role] || "#0b7a55" }; }); } catch(e){}
     /* P2 (2026-11-23): notun column/table er capability probe — column na
        thakle select 42703 error dey; tokhon flag false hoy ar UI sotyi
        kotha ("ekhono chalu hoy ni") dekhay. Probe sudhu ekbar, load er somoy.
@@ -1464,7 +1515,7 @@
   }
   function sellerFromShopRow(profile, shop, authUser){
     var status = String(shop.status || "pending").toLowerCase();
-    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", nidCopyUrl: shop.nid_copy_url || "", tradeCopyUrl: shop.trade_licence_copy_url || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, kycStatus: shop.kyc_status || "pending", vacation: !!shop.vacation, logoUrl: shop.logo_url || "", bannerUrl: shop.banner_url || "", slug: shop.slug || "", deliveryFee: (shop.delivery_fee != null ? Number(shop.delivery_fee) : null), freeDeliveryThreshold: (shop.free_delivery_threshold != null ? Number(shop.free_delivery_threshold) : null), notifPrefs: (shop.notif_prefs && typeof shop.notif_prefs === "object" && !Array.isArray(shop.notif_prefs)) ? shop.notif_prefs : {}, lowStockThreshold: (shop.low_stock_threshold != null ? Number(shop.low_stock_threshold) : 5), kycRerequest: shop.kyc_rerequest || null, hasDeliveryCols: ('delivery_fee' in shop), hasNotifPrefsCol: ('notif_prefs' in shop), hasLowStockCol: ('low_stock_threshold' in shop), hasKycRerequestCol: ('kyc_rerequest' in shop), balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [], reviews: [], staffActivity: [] };
+    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", bankName: shop.bank_name || "", bankBranch: shop.bank_branch || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", nidCopyUrl: shop.nid_copy_url || "", tradeCopyUrl: shop.trade_licence_copy_url || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, kycStatus: shop.kyc_status || "pending", vacation: !!shop.vacation, logoUrl: shop.logo_url || "", bannerUrl: shop.banner_url || "", slug: shop.slug || "", deliveryFee: (shop.delivery_fee != null ? Number(shop.delivery_fee) : null), freeDeliveryThreshold: (shop.free_delivery_threshold != null ? Number(shop.free_delivery_threshold) : null), notifPrefs: (shop.notif_prefs && typeof shop.notif_prefs === "object" && !Array.isArray(shop.notif_prefs)) ? shop.notif_prefs : {}, lowStockThreshold: (shop.low_stock_threshold != null ? Number(shop.low_stock_threshold) : 5), kycRerequest: shop.kyc_rerequest || null, hasDeliveryCols: ('delivery_fee' in shop), hasNotifPrefsCol: ('notif_prefs' in shop), hasLowStockCol: ('low_stock_threshold' in shop), hasKycRerequestCol: ('kyc_rerequest' in shop), hasBankCols: ('bank_name' in shop), balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [], reviews: [], staffActivity: [] };
   }
   async function loadCurrentSellerFromSupabase(authUser){
     if (!supabaseConnected || !supabase || !authUser) return null;
@@ -1578,7 +1629,12 @@
        live yet, so the shop page honestly shows "not found" — correct. */
     var pvsl = $("pendViewShopLink");
     if (pvsl) pvsl.href = "/shop?id=" + encodeURIComponent(s.shopId || "");
-    $("pendRef").textContent = String(s.shopId || s.id).replace("SEL-", "APP-");
+    /* P3 (2026-11-23): application reference raw UUID akare dekhano
+       hoto — ekhon chhoto friendly ref (prothom 8 okkhor), puro UUID
+       sudhu hover/title e thake. */
+    var fullRef = String(s.shopId || s.id);
+    $("pendRef").textContent = "Application #" + fullRef.replace(/^SEL-/, "").slice(0, 8);
+    $("pendRef").title = "Full application reference: " + fullRef;
     $("pendSubmittedAt").textContent = "Received · " + fmtDate(s.appliedOn);
     $("pendSummary").innerHTML =
       '<div class="kv"><span>Owner</span><b>'+esc(s.owner)+'</b></div>'
@@ -1587,7 +1643,7 @@
       + '<div class="kv"><span>Shop</span><b>'+esc(s.shop)+' · '+esc(s.category)+'</b></div>'
       + '<div class="kv"><span>District</span><b>'+esc(s.district)+'</b></div>'
       + '<div class="kv"><span>Pickup address</span><b>'+esc(s.address)+'</b></div>'
-      + '<div class="kv"><span>Payout</span><b>'+esc(s.payMethod)+' · '+esc(maskAccount(s.payAccount))+'</b></div>'
+      + '<div class="kv"><span>Payout</span><b>'+esc(s.payMethod)+' · '+esc(maskAccount(s.payAccount))+(s.payMethod==="Bank Transfer" && s.bankName ? ' · '+esc(s.bankName)+(s.bankBranch ? ' ('+esc(s.bankBranch)+')' : '') : '')+'</b></div>'
       + '<div class="kv"><span>NID</span><b>'+esc(maskNid(s.nid))+'</b></div>'
       + '<div class="kv"><span>Trade license</span><b>'+esc(s.tradeLicense || "— (ঐচ্ছিক)")+'</b></div>'
       + '<div class="kv"><span>Status</span><b style="color:var(--amber)">' + (rejected ? "Application Rejected / Suspended" : "Pending — awaiting Admin approval") + '</b></div>';
@@ -1849,6 +1905,11 @@
   wireRegDoc("regNidFile", "regNidPrev", true);
   wireRegDoc("regTradeFile", "regTradePrev", false);
 
+  /* P3 (2026-11-23): District "Other" hole free-text field dekhay;
+     Bank Transfer hole bank name/branch field dekhay. */
+  $("regDistrict").addEventListener("change", function(){ $("regDistrictOtherWrap").classList.toggle("hidden", this.value !== "Other"); });
+  $("regPayMethod").addEventListener("change", function(){ $("regBankFields").classList.toggle("hidden", this.value !== "Bank Transfer"); });
+
   $("registerForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var owner = cleanText($("regName").value),
@@ -1858,11 +1919,16 @@
         pw2 = $("regPass2").value,
         shop = cleanText($("regShop").value),
         cat = $("regCat").value,
-        district = $("regDistrict").value,
+        district = $("regDistrict").value === "Other" ? cleanText($("regDistrictOther").value) : $("regDistrict").value,
         address = cleanText($("regAddress").value),
         payMethod = $("regPayMethod").value,
         payAccount = cleanText($("regPayAccount").value),
         payName = cleanText($("regPayName").value),
+        /* P3 micro-fix (2026-11-23): shops.bank_name / bank_branch column
+           ekhon ache — Bank Transfer hole shopPayload e pathano hobe.
+           Column kono karone na thakle (42703) bank field chara retry hobe. */
+        bankName = cleanText($("regBankName").value),
+        bankBranch = cleanText($("regBankBranch").value),
         nid = cleanText($("regNid").value).replace(/[-\s]/g, ""),
         trade = cleanText($("regTrade").value);
     function fail(msg){ $("regErr").textContent = msg; }
@@ -1872,7 +1938,9 @@
     if (pw.length < 6) { fail("Password kompokkhe 6 character hote hobe."); return; }
     if (pw !== pw2) { fail("Password ar confirm password mile ni."); return; }
     if (address.length < 8) { fail("Pickup address bistarito likhun — courier ekhan thekei parcel nibe."); return; }
+    if ($("regDistrict").value === "Other" && !district) { fail("District likhun — 'Other' beche nile nijer district er nam likhte hobe."); return; }
     if (!payAccount || !payName) { fail("Payout method er account number ar account holder er nam din."); return; }
+    if (payMethod === "Bank Transfer" && (!bankName || !bankBranch)) { fail("Bank Transfer er jonno bank name ar branch din."); return; }
     if ((payMethod === "bKash" || payMethod === "Nagad") && !/^01\d{9}$/.test(payAccount.replace(/[-\s]/g, ""))) { fail(payMethod + " account er jonno sothik 11 digit er number din."); return; }
     if (payMethod === "Bank Transfer" && payAccount.replace(/\s/g, "").length < 8) { fail("Sothik bank account number din (kompokkhe 8 character)."); return; }
     if (!/^\d{10,17}$/.test(nid)) { fail("Sothik NID number din (10–17 digit)."); return; }
@@ -1912,23 +1980,44 @@
         if (profileRes.error) { fail("Profile save hoy ni: " + profileRes.error.message); return; }
         var slug = shop.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + String(newUser.id).slice(0, 6);
         var shopPayload = { owner_id: newUser.id, shop_name: shop, slug: slug, category: cat, district: district, pickup_address: address, payout_method: payMethod, payout_account: payAccount, payout_name: payName, nid_number: nid, trade_licence: trade, nid_copy_url: nidCopyPath, trade_licence_copy_url: tradeCopyPath, owner_phone: ph, status: "pending" };
+        /* P3 micro-fix: Bank Transfer hole bank name/branch o save hobe
+           (shops.bank_name / bank_branch, 2026-11-23). Onno method e
+           khali string pathano hobe na. */
+        if (payMethod === "Bank Transfer" && bankName && bankBranch) { shopPayload.bank_name = bankName; shopPayload.bank_branch = bankBranch; }
         var shopRow = null;
+        var bankNotSaved = false;
         var existingShop = await supabase.from('shops').select('*').eq('owner_id', newUser.id).maybeSingle();
         if (!existingShop.error && existingShop.data) {
           var shopUpd = await supabase.from('shops').update(shopPayload).eq('id', existingShop.data.id).select().single();
+          if (shopUpd.error && shopUpd.error.code === "42703" && (shopPayload.bank_name || shopPayload.bank_branch)) {
+            var strippedUpd = {};
+            for (var kU in shopPayload) if (kU !== "bank_name" && kU !== "bank_branch") strippedUpd[kU] = shopPayload[kU];
+            shopUpd = await supabase.from('shops').update(strippedUpd).eq('id', existingShop.data.id).select().single();
+            if (!shopUpd.error) bankNotSaved = true;
+          }
           if (shopUpd.error) { fail("Shop save hoy ni: " + shopUpd.error.message); return; }
           shopRow = shopUpd.data;
         } else {
           var shopRes = await supabase.from('shops').insert(shopPayload).select().single();
+          if (shopRes.error && shopRes.error.code === "42703" && (shopPayload.bank_name || shopPayload.bank_branch)) {
+            var strippedIns = {};
+            for (var kI in shopPayload) if (kI !== "bank_name" && kI !== "bank_branch") strippedIns[kI] = shopPayload[kI];
+            shopRes = await supabase.from('shops').insert(strippedIns).select().single();
+            if (!shopRes.error) bankNotSaved = true;
+          }
           if (shopRes.error) { fail("Shop save hoy ni: " + shopRes.error.message); return; }
           shopRow = shopRes.data;
         }
         var sellerSb = sellerFromShopRow({ full_name: owner, email: em, phone: ph }, shopRow, newUser);
+        /* P3 micro-fix: bank name/branch ekhon shops row teo save hoy;
+           form-state copy ta pending page er Payout line er jonno thaklo. */
+        sellerSb.bankName = bankName; sellerSb.bankBranch = bankBranch;
         DB.sellers.push(sellerSb);
         session.sellerId = sellerSb.id;
         $("regErr").textContent = "";
         showPending();
-        toast("Application submit hoyeche — shop Under Review ache, Admin approve korle live hobe");
+        if (bankNotSaved) toast("Application submit hoyeche — kintu bank er nam/branch save hoy ni (database e column pai ni), Admin ke janan");
+        else toast("Application submit hoyeche — shop Under Review ache, Admin approve korle live hobe");
       } catch(err) { fail("Registration e somossa hoyeche — abar chesta korun."); }
       return;
     }
@@ -1941,6 +2030,7 @@
       shop: shop, category: cat, district: district, address: address,
       desc: "",
       payMethod: payMethod, payAccount: payAccount, payName: payName,
+      bankName: bankName, bankBranch: bankBranch,
       nid: nid, tradeLicense: trade,
       nidCopyUrl: regNidDoc ? regNidDoc.name : "", tradeCopyUrl: regTradeDoc ? regTradeDoc.name : "",
       status: "pending", appliedOn: now.toISOString(), approvedOn: null,
@@ -2041,11 +2131,31 @@
   }
   function staffCanEditProducts(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Product add / edit") > -1; }
   function staffCanStock(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Stock update") > -1 || (PERMS[s.staffRole] || []).indexOf("Product add / edit") > -1; }
+  /* P3 (2026-11-23): staff order advance — "Order manage" permission
+     thakle staff-o order egiye dite pare (sub_orders + orders update er
+     jonno staff RLS policy lagbe — na thakle DB update 0 row hoy ar
+     advanceOrder honest error dekhiye ager status e ferot jay). */
+  function staffCanManageOrders(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Order manage") > -1; }
+  /* P3 (2026-11-23): role gating e sidebar item ar chupchap gayeb hoy
+     na — disabled dekhay, 🔒 hint + title e karon lekha thake (kon
+     permission lagbe, apnar role ki). Disabled button click hoy na,
+     tai showView er toast-redirect er dorkar pore na. */
   function applyStaffNav(){
     var s = me();
     document.querySelectorAll("#sideNav button").forEach(function(b){
       var v = b.getAttribute("data-view");
-      b.style.display = (s && s.isStaff && !staffCanView(v)) ? "none" : "";
+      var locked = !!(s && s.isStaff && !staffCanView(v));
+      b.disabled = locked;
+      b.classList.toggle("nav-locked", locked);
+      var lock = b.querySelector(".nav-lock");
+      if (locked) {
+        var need = (v === "team") ? "Shop owner only" : (STAFF_VIEW_PERM[v] ? ("'" + STAFF_VIEW_PERM[v] + "' permission") : "Shop owner only");
+        b.title = "Ei section apnar role (" + (s.staffRole || "") + ") er jonno bondho — " + need + " lagbe.";
+        if (!lock) { lock = document.createElement("span"); lock.className = "nav-lock"; lock.textContent = "🔒"; b.appendChild(lock); }
+      } else {
+        b.title = "";
+        if (lock) lock.remove();
+      }
     });
     var ab = document.getElementById("addStaffBtn"); if (ab) ab.style.display = (s && s.isStaff) ? "none" : "";
   }
@@ -2119,7 +2229,15 @@
       el.textContent = suffix ? (n + suffix) : String(n);
       el.classList.toggle("hidden", !n);
     }
-    setPill("pendingPill", ready, "");
+    /* P3 (2026-11-23): My Orders pill age "ready to ship" (Ready to
+       Ship + Packed + Admin Confirmed) gunto — ekhon kaj baki order
+       gune: Admin confirmation er opekkhay (Awaiting Admin) + ship er
+       jonno prostut (Ready to Ship). Title e hisab ta khule bola ache,
+       jate pill er mane niye vul na hoy. */
+    var readyToShipCount = orders.filter(function(o){ return o.status==="Ready to Ship"; }).length;
+    setPill("pendingPill", awaiting + readyToShipCount, "");
+    var ordersNavBtn = document.querySelector('#sideNav button[data-view="orders"]');
+    if (ordersNavBtn) ordersNavBtn.title = "Kaj baki: " + (awaiting + readyToShipCount) + " ta order — " + awaiting + " ta Admin confirmation er opekkhay, " + readyToShipCount + " ta ship er jonno prostut (pack korte hobe)";
     var liveCoupons = ownCoupons().filter(function(c){ return c.status==="Live"; }).length;
     var cp = $("couponPill"); if (cp) { cp.textContent = liveCoupons + " Live"; cp.classList.toggle("hidden", !liveCoupons); }
     var campPending = ownSubs().filter(function(x){ return x.status==="Pending Approval"; }).length;
@@ -2251,7 +2369,14 @@
     $("analyticsRangeLbl").textContent = startLbl + " — " + endLbl + " · Sudhu apnar shop er confirmed order (Cancelled bad)";
     $("analyticsEmpty").classList.toggle("hidden", orders.length > 0);
     var staffNote = $("analyticsStaffNote");
-    if (staffNote) staffNote.innerHTML = s.isStaff ? '<div class="alert-strip"><div><b>Staff account:</b> order data shop owner er id diye scope kora — staff account e ekhane 0 dekhate pare (known limitation, scoping ei round e bodlano hoy ni).</div></div>' : "";
+    /* P3 (2026-11-23): order load age thekei shop_id diye scope kora —
+       staff er 0 dekhar karon code noy, RLS: sub_orders/orders er
+       seller policy sudhu shop owner (seller_id = auth.uid()) ke
+       pore. Staff policy gulo (sub_orders_select_seller_staff,
+       orders_select_seller_staff) Supabase SQL Editor e chalale staff-o
+       shop er asol order dekhte pabe; na chalano porjonto ekhane 0
+       dekhabe — seta data nei bole noy, permission baki bole. */
+    if (staffNote) staffNote.innerHTML = s.isStaff ? '<div class="alert-strip"><div><b>Staff account:</b> order data apnar shop-er sub-order diye ase (shop_id diye scope). Jodi ekhane 0 dekhay, Supabase e staff RLS policy (sub_orders_select_seller_staff, orders_select_seller_staff) ekhono chalano hoy ni — Admin ke bolun SQL Editor theke policy gulo chalate.</div></div>' : "";
     /* Sales by day — 31 din er beshi hole weekly bucket. */
     var spanDays = Math.max(1, Math.ceil((r.endMs - r.startMs) / (24*60*60*1000)));
     var weekly = spanDays > 31;
@@ -2780,7 +2905,7 @@
       var next = NEXT_STATUS[o.status];
       var src = o.status==="Awaiting Admin" ? '<div class="psku">Admin confirmation er opekkhay</div>' : (o.adminBy ? '<div class="psku">✓ ' + esc(o.adminBy) + '</div>' : '');
       return '<tr><td><b>' + esc(o.localId || o.subId || o.id) + '</b>' + (o.localId ? '<div class="psku">Master order</div>' : '') + '</td><td>' + esc(o.date) + '<div class="psku">' + esc(o.time) + '</div></td><td><b>' + esc(o.customer) + '</b><div class="psku">' + esc(o.phone) + (o.district ? ' · ' + esc(o.district) : '') + '</div>' + (o.shipAddress ? '<div class="psku">' + esc(o.shipAddress) + '</div>' : '') + '</td>'
-        + '<td style="max-width:240px">' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b><div class="psku">' + esc(o.payVisibility || "Prepaid — Admin verified") + (o.codCollect ? '<br>COD collect: <b>' + fmt(o.codCollect) + '</b>' : '') + (o.trackingId ? '<br>Tracking: <b>' + esc(o.trackingId) + '</b>' : '') + '</div></td>'
+        + '<td style="max-width:240px">' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b><div class="psku">' + esc(o.payVisibility || "Prepaid — Admin verified") + (o.codCollect ? '<br>COD collect: <b>' + fmt(o.codCollect) + '</b>' : '') + (o.courier ? '<br>Courier: <b>' + esc(o.courier) + '</b>' : '') + (o.trackingId ? '<br>Tracking: <b>' + esc(o.trackingId) + '</b>' : '') + '</div></td>'
         + '<td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td>'
         + '<td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span>' + src + '</td>'
         + '<td><div class="row-actions"><button class="mini-btn" data-view-order="' + o.id + '" type="button">View</button><button class="mini-btn" data-invoice="' + o.id + '" type="button">Invoice</button>' + (o.status === "Cancelled" ? '' : '<button class="mini-btn" data-label="' + o.id + '" type="button">Print Label</button>')
@@ -2809,7 +2934,7 @@
     var o = ownOrders().filter(function(x){ return x.id===id; })[0]; if (!o) return;
     openModal('<h2>Shipping Label — ' + esc(o.subId || o.id) + '</h2><div class="msub">Print kore parcel er gaye lagan. Sudhu apnar sub-order er item ache.</div>'
       + '<div style="border:2px dashed var(--line);border-radius:12px;padding:1rem"><div style="font-family:Sora;font-weight:800;font-size:1.1rem">AnboBD · ' + esc(s.shop) + '</div>'
-      + '<div style="font-size:.9rem;margin-top:.5rem"><b>To:</b> ' + esc(o.customer) + ' · ' + esc(o.phone) + '<br>' + esc(o.shipAddress || o.district) + ', ' + esc(o.district) + '<br><b>Items:</b> ' + esc(orderItemsText(o)) + '<br><b>Master Order:</b> ' + esc(o.localId || o.id) + ' · <b>Sub-Order:</b> ' + esc(o.subId || o.id) + (o.codCollect ? '<br><b>COD Collect:</b> ' + fmt(o.codCollect) : '<br><b>Prepaid</b> — kichu collect korte hobe na') + (o.trackingId ? '<br><b>Tracking:</b> ' + esc(o.trackingId) : '') + '</div></div>'
+      + '<div style="font-size:.9rem;margin-top:.5rem"><b>To:</b> ' + esc(o.customer) + ' · ' + esc(o.phone) + '<br>' + esc(o.shipAddress || o.district) + ', ' + esc(o.district) + '<br><b>Items:</b> ' + esc(orderItemsText(o)) + '<br><b>Master Order:</b> ' + esc(o.localId || o.id) + ' · <b>Sub-Order:</b> ' + esc(o.subId || o.id) + (o.codCollect ? '<br><b>COD Collect:</b> ' + fmt(o.codCollect) : '<br><b>Prepaid</b> — kichu collect korte hobe na') + (o.courier ? '<br><b>Courier:</b> ' + esc(o.courier) : '') + (o.trackingId ? '<br><b>Tracking:</b> ' + esc(o.trackingId) : '') + '</div></div>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn" id="lbPrint" type="button">Print / Save Label</button><button class="btn ghost" id="lbClose" type="button">Close</button></div>',
       function(){ $("lbPrint").addEventListener("click", function(){ window.print(); }); $("lbClose").addEventListener("click", closeModal); });
   }
@@ -2829,6 +2954,7 @@
       + '<div class="kv"><span>Ship to</span><b>' + esc(o.shipAddress || o.district) + '</b></div>'
       + '<div class="kv"><span>Payment method</span><b>' + esc(o.payment || "—") + '</b></div>'
       + (o.txnId ? '<div class="kv"><span>Transaction ID</span><b>' + esc(o.txnId) + '</b></div>' : '')
+      + (o.courier ? '<div class="kv"><span>Courier</span><b>' + esc(o.courier) + '</b></div>' : '')
       + (o.trackingId ? '<div class="kv"><span>Tracking ID</span><b>' + esc(o.trackingId) + '</b></div>' : '')
       + '<h3 style="font-size:.95rem;margin:1rem 0 .3rem">Items</h3>' + items
       + '<div class="kv"><span>Order total</span><b>' + fmt(orderTotal(o)) + '</b></div>'
@@ -2852,14 +2978,23 @@
     var payload = { status: DB_STATUS[o.status] || String(o.status).replace(/\s+/g, "") };
     if (extra) for (var k in extra) payload[k] = extra[k];
     try {
-      var res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId);
+      /* P3 (2026-11-23): .select("id") diye verify — RLS 0-row update
+         (policy nei ba USING milche na) error charai khali fire ase;
+         seta dhora na gele screen e status bodle jeto kintu DB te jeto
+         na. Staff er khetre staff update policy na chalale ekhanei
+         dhora porbe — toast e sotyi karon dekhabe. */
+      var res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId).select("id");
       if (res.error && payload.delivered_at) {
         /* delivered_at niye fail hole seta baad diye ekbar abar chesta */
         delete payload.delivered_at;
-        res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId);
+        res = await supabase.from('sub_orders').update(payload).eq('id', o.subId || o.id).eq('shop_id', me().shopId).select("id");
       }
       if (res.error) {
         toast("Status online e save hoy ni — " + (res.error.message || "database error") + " · Screen er status database e jay ni, page reload kore abar chesta korun.");
+        return false;
+      }
+      if (!res.data || !res.data.length) {
+        toast("Status online e save hoy ni (permission nei mone hochche — staff hole Admin ke staff RLS policy chalate bolun) · Screen er status database e jay ni.");
         return false;
       }
       return true;
@@ -2929,28 +3064,50 @@
   async function advanceOrder(id){
     var s = me(); if (!s) return;
     var o = ownOrders().filter(function(x){ return String(x.id)===String(id) || String(x.subId)===String(id); })[0]; if (!o) return;
+    /* P3 (2026-11-23): staff sudhu "Order manage" permission thakle
+       order egiye dite pare — na thakle view khola thakleo ekhane atke
+       jabe (defense in depth; showView er gating er upor nirbhor noy). */
+    if (!staffCanManageOrders()) { toast("Ei kaj ta apnar role (" + (s.staffRole || "") + ") er jonno noy — order advance korte 'Order manage' permission lagbe."); return; }
     if (o.status==="Cancelled") { toast("Ei order cancelled — pack/ship kora jabe na"); return; }
     if (o.status==="Awaiting Admin") { toast("Seller order confirm korte pare na — Admin confirm korlei apni ship korte parben"); return; }
     if (!NEXT_STATUS[o.status]) { toast("Ei order ekhon agano jabe na"); return; }
     if (o.status==="Packed" && !o.trackingId) {
-      openModal('<h2>Ship — Tracking ID din</h2><div class="msub">' + esc(o.subId || id) + ' courier e diye tracking ID ta likhun</div><div class="field"><label>Courier tracking ID</label><input id="trkId" placeholder="e.g. PTH-882910" /></div><p class="err" id="trkErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="trkCancel" type="button">Cancel</button><button class="btn" id="trkGo" type="button">Confirm Shipped</button></div>', function(){
+      var couriers = await ensureCouriersLoaded();
+      var courierOpts = couriers.map(function(c){ return '<option>' + esc(c) + '</option>'; }).join("") + '<option value="__other">Other — niche likhun</option>';
+      openModal('<h2>Ship — Courier ar Tracking ID din</h2><div class="msub">' + esc(o.subId || id) + ' courier e diye tracking ID ta likhun</div><div class="field"><label>Courier (Admin er platform courier list theke)</label><select id="trkCourier" aria-label="Courier">' + courierOpts + '</select></div><div class="field hidden" id="trkCourierOtherWrap"><label>Onno courier er nam</label><input id="trkCourierOther" placeholder="e.g. AJR Courier" /></div><div class="field"><label>Courier tracking ID</label><input id="trkId" placeholder="e.g. PTH-882910" /></div><p class="err" id="trkErr"></p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="trkCancel" type="button">Cancel</button><button class="btn" id="trkGo" type="button">Confirm Shipped</button></div>', function(){
+        $("trkCourier").addEventListener("change", function(){ $("trkCourierOtherWrap").classList.toggle("hidden", this.value !== "__other"); });
         $("trkCancel").addEventListener("click", closeModal);
-        $("trkGo").addEventListener("click", async function(){ var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; } o.trackingId = v; o.status = "Shipped"; var saved = await sbUpdateSubOrder(o, { tracking_id: v }); closeModal(); closeDrawer(); renderAll(); if (saved !== false) { toast(id + " shipped — Tracking: " + v); logStaffActivity("Order shipped", (o.localId || o.id) + " — Tracking: " + v); await sbPropagateMasterStatus(o, "Shipped"); } });
+        $("trkGo").addEventListener("click", async function(){
+          var v = $("trkId").value.trim(); if (v.length < 5) { $("trkErr").textContent = "Sothik tracking ID din."; return; }
+          var courier = $("trkCourier").value === "__other" ? $("trkCourierOther").value.trim() : $("trkCourier").value;
+          if (!courier || courier.length < 2) { $("trkErr").textContent = "Courier er nam din (Other hole niche likhun)."; return; }
+          /* P3: save fail hole local status/tracking ferot — age fail
+             holeo screen e "Shipped" dekhiye dito. */
+          var prevStatus = o.status, prevTracking = o.trackingId, prevCourier = o.courier;
+          o.trackingId = v; o.courier = courier; o.status = "Shipped";
+          var saved = await sbUpdateSubOrder(o, { tracking_id: v, courier: courier });
+          if (saved === false) { o.status = prevStatus; o.trackingId = prevTracking; o.courier = prevCourier; closeModal(); closeDrawer(); renderAll(); return; }
+          closeModal(); closeDrawer(); renderAll();
+          toast(id + " shipped — " + courier + " · Tracking: " + v); logStaffActivity("Order shipped", (o.localId || o.id) + " — " + courier + " — Tracking: " + v); await sbPropagateMasterStatus(o, "Shipped");
+        });
       });
       return;
     }
+    var prevStatus = o.status;
     o.status = NEXT_STATUS[o.status];
     var extra = o.trackingId ? { tracking_id: o.trackingId } : null;
+    if (o.trackingId && o.courier) { extra = extra || {}; extra.courier = o.courier; }
     if (o.status === "Delivered") { o.deliveredAt = new Date().toISOString(); extra = extra || {}; extra.delivered_at = o.deliveredAt; }
     var saved = await sbUpdateSubOrder(o, extra);
-    if (saved !== false) {
-      if (o.status === "Packed") toast(id + " packed — ekhon tracking ID diye ship korun");
-      else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
-      else if (o.status === "Delivered") { toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
-      else toast(id + " ekhon " + o.status);
-      logStaffActivity("Order " + o.status, o.localId || o.id);
-      await sbPropagateMasterStatus(o, o.status);
-    }
+    /* P3: save fail hole ager status e ferot — sbUpdateSubOrder nijei
+       toast dekhay; ekhane success toast/log/propagate cholbe na. */
+    if (saved === false) { o.status = prevStatus; renderAll(); closeDrawer(); return; }
+    if (o.status === "Packed") toast(id + " packed — ekhon tracking ID diye ship korun");
+    else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
+    else if (o.status === "Delivered") { toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
+    else toast(id + " ekhon " + o.status);
+    logStaffActivity("Order " + o.status, o.localId || o.id);
+    await sbPropagateMasterStatus(o, o.status);
     renderAll();
     closeDrawer();
   }
@@ -2961,7 +3118,7 @@
       { t:"Admin Confirmed", s: o.adminBy ? esc(o.adminBy) + " · " + esc(o.adminAt) : "Admin ekhono confirm koreni — seller confirm korte pare na" },
       { t:"Ready to Ship", s:"Admin confirm er por apnar sub-order ship er jonno prostut" },
       { t:"Packed", s:"Item pack kore label lagale complete hobe" },
-      { t:"Shipped", s: o.trackingId ? "Tracking ID: " + esc(o.trackingId) : "Tracking ID diye dispatch korle complete hobe" },
+      { t:"Shipped", s: o.trackingId ? ((o.courier ? "Courier: " + esc(o.courier) + " · " : "") + "Tracking ID: " + esc(o.trackingId)) : "Tracking ID diye dispatch korle complete hobe" },
       { t:"Delivered", s:"Delivery hole earning 7 diner return window e jabe, tarpor wallet e settle hobe" }
     ];
     var stageIdx = { "Awaiting Admin":0, "Admin Confirmed":1, "Ready to Ship":2, "Packed":3, "Shipped":4, "Delivered":5 };
@@ -2982,7 +3139,7 @@
       + '<div class="kv"><span>Name</span><b>' + esc(o.customer) + '</b></div>'
       + '<div class="kv"><span>Mobile</span><b>' + esc(o.phone) + '</b></div>'
       + '<div class="kv"><span>District</span><b>' + esc(o.district) + '</b></div>'
-      + '<div class="kv"><span>Payment (ship er jonno)</span><b>' + esc(o.payVisibility || "Prepaid — Admin verified") + '</b></div><div class="kv"><span>Ship to</span><b>' + esc(o.shipAddress || o.district) + '</b></div>' + (o.trackingId ? '<div class="kv"><span>Tracking ID</span><b>' + esc(o.trackingId) + '</b></div>' : '')
+      + '<div class="kv"><span>Payment (ship er jonno)</span><b>' + esc(o.payVisibility || "Prepaid — Admin verified") + '</b></div><div class="kv"><span>Ship to</span><b>' + esc(o.shipAddress || o.district) + '</b></div>' + (o.courier ? '<div class="kv"><span>Courier</span><b>' + esc(o.courier) + '</b></div>' : '') + (o.trackingId ? '<div class="kv"><span>Tracking ID</span><b>' + esc(o.trackingId) + '</b></div>' : '')
       + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Items</h3>' + items
       + '<div class="kv"><span>Order total</span><b>' + fmt(orderTotal(o)) + '</b></div>'
       + '<div class="kv"><span>Commission (' + (typeof o.commissionRate==="number" ? o.commissionRate + "%" : "category rate") + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
@@ -3225,8 +3382,9 @@
         + '<div style="font-size:.84rem;margin-top:.3rem">' + esc(x.adminNote) + '</div></div>'
         + '<span class="status ' + statusClass(x.status) + '">' + stTxt + '</span></div>'
         + (x.status==="Rejected" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-resubmit="' + x.id + '" type="button">Price bodle abar submit korun</button><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Remove</button></div>' : '')
-        + (x.status==="Pending Approval" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Submission withdraw korun</button></div>' : '')
-        + (x.status==="Approved" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Submission withdraw korun</button></div>' : '')
+        + (x.status==="Pending Approval" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn red" data-sub-withdraw="' + x.id + '" type="button">Submission withdraw korun</button></div>' : '')
+        + (x.status==="Approved" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn red" data-sub-withdraw="' + x.id + '" type="button">Submission withdraw korun</button></div>' : '')
+        + (x.status==="Withdrawn" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-resubmit="' + x.id + '" type="button">Abar submit korun</button></div>' : '')
         + '</div>';
     }).join("") : '<div class="empty"><div class="et">No campaign submissions yet</div><div>Admin-approved product thakle ekhane submit kore Mega Sale / Mega Discount er jonno pathate parben.</div></div>';
     $("campSubs").querySelectorAll("[data-resubmit]").forEach(function(b){
@@ -3241,6 +3399,32 @@
         if (supabaseConnected && supabase) { try { var delS = await supabase.from('mega_submissions').delete().eq('id', id).eq('shop_id', s.shopId); if (delS && delS.error) { toast("Submission sorano hoy ni — " + (delS.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Submission sorano hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } }
         s.campSubs = s.campSubs.filter(function(x){ return String(x.id)!==String(id); });
         toast("Submission sorano hoyeche"); renderAll();
+      });
+    });
+    /* P3 (2026-11-23): Mega withdraw — age "withdraw" button ta row
+       DELETE korto; ekhon status "withdrawn" hoy, row theke jay.
+       Abar join korte resubmit (status abar "pending" + Admin
+       approval). Staff withdraw korle staff_activity te log hoy.
+       NOTE: mega_submissions.status e check constraint "withdrawn"
+       na manle update 23514 error dibe — tokhon honest toast asbe ar
+       kichu bodlabe na; constraint widen korar SQL report e ache. */
+    $("campSubs").querySelectorAll("[data-sub-withdraw]").forEach(function(b){
+      b.addEventListener("click", function(){
+        var x = ownSubs().filter(function(y){ return String(y.id)===String(b.getAttribute("data-sub-withdraw")); })[0]; if (!x) return;
+        var p = prodById(x.pid);
+        openConfirm("Mega submission withdraw korben?", (p ? p.name : "Product") + " — " + x.camp + " theke sorano hobe. Abar join korte notun kore submit korte hobe, ar Admin approval lagbe.", async function(){
+          var s = me();
+          if (supabaseConnected && supabase) {
+            try {
+              var upW = await supabase.from('mega_submissions').update({ status: "withdrawn" }).eq('id', x.id).eq('shop_id', s.shopId).select("id");
+              if (upW.error || !upW.data || !upW.data.length) { toast("Withdraw hoy ni — " + ((upW.error && upW.error.message) || "database theke row fire asheni") + ". Abar chesta korun."); return; }
+            } catch(e){ toast("Withdraw hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; }
+          }
+          x.status = "Withdrawn"; x.adminNote = "Apni withdraw korechen — abar join korte notun kore submit korun, Admin approval lagbe.";
+          renderAll();
+          toast("Submission withdraw hoyeche — abar join korte notun kore submit korte hobe");
+          logStaffActivity("Mega submission withdrawn", (p ? p.name : "") + " · " + x.camp);
+        });
       });
     });
   }
@@ -3322,7 +3506,7 @@
         + '<div style="font-size:.88rem"><b>Refund amount:</b> <span style="color:var(--red);font-weight:800">' + fmt(r.amount) + '</span> <span style="color:var(--muted)">(accept korle apnar wallet theke kata hobe, Admin notify hobe)</span></div>'
         + (r.status==="Return Rejected" && r.rejectReason ? '<div style="font-size:.88rem"><b>Reject er karon:</b> ' + esc(r.rejectReason) + '</div>' : '') + '</div>'
         + '<span class="status ' + statusClass(r.status) + '">' + r.status + '</span></div>'
-        + (r.status==="Return Requested" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-ret-accept="' + r.id + '" type="button">Accept — Wallet theke Refund</button><button class="mini-btn red" data-ret-reject="' + r.id + '" type="button">Reject — Admin Review te Pathan</button></div>' : '')
+        + '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-ret-view="' + r.id + '" type="button">Details</button>' + (r.status==="Return Requested" ? '<button class="mini-btn" data-ret-accept="' + r.id + '" type="button">Accept — Wallet theke Refund</button><button class="mini-btn red" data-ret-reject="' + r.id + '" type="button">Reject — Admin Review te Pathan</button>' : '') + '</div>'
         + '</div>';
     }).join("") : '<div class="empty"><div class="et">No return requests</div><div>Apnar shop e customer return chaile request ekhane asbe.</div></div>';
     $("returnList").querySelectorAll("[data-ret-accept]").forEach(function(b){
@@ -3369,6 +3553,40 @@
           });
       });
     });
+    $("returnList").querySelectorAll("[data-ret-view]").forEach(function(b){
+      b.addEventListener("click", function(){ openReturnDrawer(b.getAttribute("data-ret-view")); });
+    });
+  }
+  /* P3 (2026-11-23): return detail drawer — karon, item, refund
+     method/channel, status timeline, reject hole reject er karon.
+     Timeline e sudhu ja database e ache tai dekhay (request er date +
+     bortoman status); accept/reject er alada somoy returns table e nei,
+     tai banano hoy na. */
+  function openReturnDrawer(id){
+    var r = ownReturns().filter(function(x){ return String(x.id)===String(id); })[0]; if (!r) return;
+    var pr = prodById(r.pid);
+    var tl = '<li class="done"><span class="tdot">✓</span><div><div class="tt">Return request eseche</div><div class="ts">' + esc(r.date) + ' · ' + esc(r.customer) + ' · Order ' + esc(r.orderId) + '</div></div></li>'
+      + (r.status === "Return Accepted"
+        ? '<li class="done"><span class="tdot">✓</span><div><div class="tt">Return Accepted — refund pending</div><div class="ts">Refund method: ' + esc(r.refundMethod || "—") + (r.refundChannel ? ' · ' + esc(r.refundChannel) : '') + ' · Amount: ' + fmt(r.amount) + '</div></div></li>'
+        : (r.status === "Return Rejected"
+          ? '<li class="done"><span class="tdot">!</span><div><div class="tt">Return Rejected</div><div class="ts">Karon: ' + esc(r.rejectReason || "—") + ' — Admin review te geche</div></div></li>'
+          : '<li><span class="tdot"></span><div><div class="tt">Siddhanto baki</div><div class="ts">Accept korle ' + fmt(r.amount) + ' wallet theke adjust hobe; reject korle karon soho Admin review te jabe</div></div></li>'));
+    $("drawerRoot").innerHTML = '<div class="drawer-wrap" id="drawerWrap"><div class="drawer">'
+      + '<button class="icon-btn modal-x" id="drawerX" type="button" aria-label="Close">✕</button>'
+      + '<h2 style="margin:.2rem 0 .2rem;font-size:1.3rem">Return — ' + esc(r.id) + '</h2>'
+      + '<div style="color:var(--muted);font-size:.88rem">' + esc(r.date) + ' · Order ' + esc(r.orderId) + '</div>'
+      + '<div style="margin:.8rem 0"><span class="status ' + statusClass(r.status) + '">' + r.status + '</span></div>'
+      + '<div class="kv"><span>Product</span><b>' + esc(pr ? pr.name : "Product") + ' × ' + r.qty + '</b></div>'
+      + '<div class="kv"><span>Customer</span><b>' + esc(r.customer) + '</b></div>'
+      + '<div class="kv"><span>Return er karon</span><b>' + esc(r.reason || "—") + '</b></div>'
+      + '<div class="kv"><span>Refund amount</span><b style="color:var(--red)">' + fmt(r.amount) + '</b></div>'
+      + '<div class="kv"><span>Refund method</span><b>' + esc(r.refundMethod || "—") + '</b></div>'
+      + '<div class="kv"><span>Refund channel / account</span><b>' + esc(r.refundChannel || "—") + '</b></div>'
+      + (r.status === "Return Rejected" && r.rejectReason ? '<div class="kv"><span>Reject er karon</span><b>' + esc(r.rejectReason) + '</b></div>' : '')
+      + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Status timeline</h3><ul class="timeline">' + tl + '</ul>'
+      + '</div></div>';
+    $("drawerX").addEventListener("click", closeDrawer);
+    $("drawerWrap").addEventListener("click", function(e){ if (e.target===this) closeDrawer(); });
   }
 
   /* ================= REVIEWS (own shop only, read-only) ================= */
@@ -3398,7 +3616,11 @@
     /* P1 (2026-11-23): Next payout cycle Admin er payout_day setting theke
        (hold din soho) — hardcoded "Sunday" ar nei. */
     $("payoutNote").textContent = "Payout method: " + s.payMethod + " · " + maskAccount(s.payAccount) + " · Next payout cycle: " + fmtDate(nextPayoutDate().toISOString()) + " · Hold " + sellerSettings.payoutHoldDays + " din";
-    var wp = $("walletPill"); if (wp) { wp.textContent = fmt(s.balance); wp.classList.remove("hidden"); }
+    /* P3 (2026-11-23): Wallet pill e ekhon pending payout due
+       (pendingClearance — Delivered earning, 7 diner return window
+       sesh hole Available balance e jabe) dekhay; age Available
+       balance dekhaito, jeta Wallet page ei ache. 0 hole pill lukay. */
+    var wp = $("walletPill"); if (wp) { wp.textContent = fmt(s.pendingClearance); wp.classList.toggle("hidden", !(s.pendingClearance > 0)); wp.title = "Pending payout — Delivered order er earning, 7 diner return window sesh hole Available balance e jabe"; }
     $("payoutHistoryBody").innerHTML = s.payouts.length ? s.payouts.map(function(p){
       return '<tr><td>' + esc(p.date) + '</td><td>' + esc(p.method) + '</td><td>' + esc(p.account) + '</td><td><b>' + fmt(p.amount) + '</b></td><td><span class="status ' + statusClass(p.status) + '">' + p.status + '</span></td></tr>';
     }).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.3rem">Ekhono kono payout hoy ni — prothom payout request ekhane dekhabe.</td></tr>';
@@ -3457,7 +3679,7 @@
         + '<div style="font-size:.83rem;color:var(--muted)">' + esc(x.phone) + ' · Joined ' + esc(x.joined) + '</div>'
         + '<ul class="perm-list">' + permHtml + '</ul>'
         + '<div style="display:flex;gap:.45rem;flex-wrap:wrap;margin-top:.6rem">'
-        + '<span class="status ' + (x.active ? "st-active" : "st-paused") + '">' + (x.active ? "Active" : "Deactivated") + '</span>'
+        + '<span class="status ' + (!x.user_id ? "st-pendingapproval" : (x.active ? "st-active" : "st-paused")) + '"' + (!x.user_id ? ' title="Staff row ache, kintu login account ekhono link hoy ni — se sign in korte parbe na"' : '') + '>' + (!x.user_id ? "Invited" : (x.active ? "Active" : "Deactivated")) + '</span>'
         + '<span style="flex:1"></span>'
         + '<button class="mini-btn" data-staff-toggle="' + x.id + '" type="button">' + (x.active ? "Deactivate" : "Activate") + '</button>'
         + '<button class="mini-btn" data-staff-role="' + x.id + '" type="button">Change Role</button>'
@@ -3467,7 +3689,28 @@
     $("staffGrid").querySelectorAll("[data-staff-toggle]").forEach(function(b){
       b.addEventListener("click", async function(){
         var x = ownStaff().filter(function(y){ return String(y.id)===String(b.getAttribute("data-staff-toggle")); })[0]; if (!x) return;
-        var newActive = !x.active; if (supabaseConnected && supabase) { try { var up = await supabase.from('staff').update({ active: newActive }).eq('id', x.id).eq('shop_id', me().shopId); if (up && up.error) { toast("Staff status save hoy ni — " + (up.error.message || "database error") + ". Abar chesta korun."); renderTeam(); return; } } catch(e){ toast("Staff status save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderTeam(); return; } } x.active = newActive; toast(x.name + " ekhon " + (x.active ? "Active" : "Deactivated")); renderTeam();
+        var newActive = !x.active;
+        /* P3 (2026-11-23): suspend/activate tin column ei eksathe
+           likhte hoy — active (gate ar list ei column pore), is_active
+           ar status — age sudhu active likhto, tai reload er por
+           state mile na. .select("id") diye verify kora hoy (RLS 0-row
+           update dhora pore). status column e check constraint thakle
+           (23514) sudhu boolean duto diye abar chesta kora hoy, jate
+           toggle ta na vange. */
+        if (supabaseConnected && supabase) {
+          try {
+            var patch = { active: newActive, is_active: newActive, status: newActive ? "active" : "suspended" };
+            var up = await supabase.from('staff').update(patch).eq('id', x.id).eq('shop_id', me().shopId).select("id");
+            if (up.error || !up.data || !up.data.length) {
+              var up2 = await supabase.from('staff').update({ active: newActive, is_active: newActive }).eq('id', x.id).eq('shop_id', me().shopId).select("id");
+              if (up2.error || !up2.data || !up2.data.length) { toast("Staff status save hoy ni — " + ((up2.error && up2.error.message) || (up.error && up.error.message) || "database theke row fire asheni") + ". Abar chesta korun."); renderTeam(); return; }
+              toast(x.name + " ekhon " + (newActive ? "Active" : "Deactivated") + " (note: status column e lekha jay ni — Admin ke janaben)");
+              x.active = newActive; x.is_active = newActive; renderTeam(); return;
+            }
+          } catch(e){ toast("Staff status save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderTeam(); return; }
+        }
+        x.active = newActive; x.is_active = newActive; x.status = newActive ? "active" : "suspended";
+        toast(x.name + " ekhon " + (x.active ? "Active" : "Deactivated")); renderTeam();
       });
     });
     $("staffGrid").querySelectorAll("[data-staff-del]").forEach(function(b){
@@ -3557,7 +3800,7 @@
           if (!pw || pw.length < 8) { $("nsErr").textContent = "Staff er jonno komপক্ষে 8 okkhorer password din."; return; }
           if (ownStaff().some(function(y){ return y.email.toLowerCase()===em.toLowerCase(); })) { $("nsErr").textContent = "Ei email diye agei ekjon staff ache."; return; }
           var role = $("nsRole").value;
-          var newStaff = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true, joined: monthYear(new Date().toISOString()), color: ROLE_COLORS[role] };
+          var newStaff = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, user_id: null, status: "active", is_active: true, name: name, email: em, phone: ph, role: role, active: true, joined: monthYear(new Date().toISOString()), color: ROLE_COLORS[role] };
           if (supabaseConnected && supabase) {
             try {
               /* Decision 7 — staff alada login: (1) staff row age (user_id
@@ -3602,6 +3845,9 @@
                   $("nsErr").textContent = "Staff row e login link bosano jay ni" + (linkRes.error ? (" — " + linkRes.error.message) : " — database theke row fire asheni") + ". Staff row toiri hoyeche, kintu se sign in korte parbe na — Admin ke staff policy check korte bolun.";
                   return;
                 }
+                /* P3: login link bosle local model eo user_id bosao —
+                   na hole list e "Invited" dekhabe jodio link hoye geche. */
+                newStaff.user_id = uid;
               }
             } catch(e){ $("nsErr").textContent = "Staff save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."; return; }
           }
