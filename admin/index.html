@@ -2278,8 +2278,10 @@ function renderProducts(){
 
 /* ==================== DECISION 5 — ADMIN PRODUCT EDIT ====================
    Admin CAN edit a product (price, stock, image, name, category,
-   description). Only REAL products columns are sent (live probe 2026-11-21):
-   name, category, price, old_price, stock, description, images, image_url.
+   description, pack size/unit/packaging). Only REAL products columns are
+   sent (live probe 2026-11-21; pack columns added 2026-11-23):
+   name, category, price, old_price, stock, description, images, image_url,
+   pack_size, unit, packaging.
    Status is NEVER changed here — Approve/Reject stays in the Moderation
    Queue. Every successful edit writes an activity-log entry with old → new
    values; a failed DB write shows the real error and logs nothing. The modal
@@ -2306,12 +2308,13 @@ function openProductEdit(pid){
   wrap.className = "modal-wrap show"; wrap.id = "prodEditWrap";
   wrap.innerHTML = '<div class="modal" style="max-width:560px">'
     + '<h3 style="margin-top:0">✏️ Edit product — ' + esc(p.name) + '</h3>'
-    + '<p class="hint" style="margin-top:0">Status: <b>' + esc(p.status || "") + '</b> (ekhane bodlabe na — Approve/Reject moderation theke hobe) · Sold: <b>' + (p.sold || 0) + '</b> (read-only) · SKU: ' + esc(p.sku || "") + ' · পরিমাণ: <b>' + esc(packLabel(p) || "—") + '</b> (read-only — ডাটাবেজে কলাম যোগ হলে এখান থেকে বদলানো যাবে)</p>'
+    + '<p class="hint" style="margin-top:0">Status: <b>' + esc(p.status || "") + '</b> (ekhane bodlabe na — Approve/Reject moderation theke hobe) · Sold: <b>' + (p.sold || 0) + '</b> (read-only) · SKU: ' + esc(p.sku || "") + ' · পরিমাণ: <b>' + esc(packLabel(p) || "—") + '</b></p>'
     + '<div class="form-grid"><div class="field full"><label>Product name</label><input id="peName" value="' + esc(p.name) + '" /></div>'
     + '<div class="field"><label>Category</label><select id="peCat">' + Object.keys(CATS).map(function(k){ return '<option value="' + k + '"' + (p.cat === k ? " selected" : "") + '>' + CATS[k] + '</option>'; }).join("") + '</select></div>'
     + '<div class="field"><label>Price (৳)</label><input id="pePrice" type="number" min="1" value="' + p.price + '" /></div>'
     + '<div class="field"><label>Old price (৳, optional)</label><input id="peOld" type="number" min="0" value="' + (p.old || "") + '" /></div>'
     + '<div class="field"><label>Stock</label><input id="peStock" type="number" min="0" value="' + p.stock + '" /></div></div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem"><div class="field"><label>পরিমাণ (Pack size)</label><input id="pePackSize" type="number" min="0" step="any" value="' + (p.packSize != null && p.packSize !== "" ? p.packSize : "") + '" placeholder="e.g. 500" /></div><div class="field"><label>একক (Unit)</label><select id="peUnit">' + ["", "g", "kg", "ml", "L", "pcs"].map(function(u){ return '<option value="' + u + '"' + (String(p.unit || "") === u ? " selected" : "") + '>' + (u === "" ? "— একক বাছুন —" : (u === "pcs" ? "pcs (পিস)" : u)) + '</option>'; }).join("") + '</select></div><div class="field"><label>প্যাকেজিং (Packaging)</label><select id="pePack">' + ["", "Jar", "Bottle", "Packet", "Box", "Piece", "Other"].map(function(k){ return '<option value="' + k + '"' + (String(p.packaging || "") === k ? " selected" : "") + '>' + (k === "" ? "— প্যাকেজিং বাছুন —" : k) + '</option>'; }).join("") + '</select></div></div>'
     + '<div class="field"><label>Product description</label><textarea id="peDesc" rows="3" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px">' + esc(p.desc || "") + '</textarea></div>'
     + '<div class="field"><label>Product images (prothom ta primary)</label><input id="peImages" type="file" accept="image/jpeg,image/png,image/webp" multiple /><div class="hint">Sorbochcho 5 ta chhobi, prottekta sorbochcho 2MB. Notun chhobi na dile ager chhobi-i thakbe.</div><div id="peImgGrid" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"></div></div>'
     + '<p class="err" id="peErr" style="color:#dc2626;font-size:.88rem"></p>'
@@ -2354,6 +2357,10 @@ function openProductEdit(pid){
     var oldP = +document.getElementById("peOld").value || null;
     var stock = +document.getElementById("peStock").value;
     var desc = document.getElementById("peDesc").value.trim();
+    var pePackSizeVal = document.getElementById("pePackSize").value.trim();
+    var pePackUnitVal = document.getElementById("peUnit").value;
+    var pePackVal = document.getElementById("pePack").value;
+    if (pePackSizeVal !== "" && !(+pePackSizeVal > 0)){ errEl.textContent = "পরিমাণ সঠিক সংখ্যায় দিন (e.g. 500)।"; return; }
     if (!name || !(price > 0) || isNaN(stock) || stock < 0){ errEl.textContent = "Name, sothik price ar stock din."; return; }
     if (imgItems.length < 1){ errEl.textContent = "Komপক্ষে ১টি chhobi rakhte hobe — sob chhobi sorale product save hobe na."; return; }
     var saveBtn = document.getElementById("peSave"); saveBtn.disabled = true; saveBtn.textContent = "Saving…";
@@ -2368,7 +2375,7 @@ function openProductEdit(pid){
       errEl.textContent = "Image upload hoy ni: " + (upErr && upErr.message ? upErr.message : "abar chesta korun.");
       return;
     }
-    var patch = { name: name, category: cat, price: price, old_price: oldP, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null };
+    var patch = { name: name, category: cat, price: price, old_price: oldP, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: pePackSizeVal === "" ? null : +pePackSizeVal, unit: pePackUnitVal, packaging: pePackVal };
     var r = await sbUpdate("products", "id", p.supabaseId || p.id, patch);
     saveBtn.disabled = false; saveBtn.textContent = "Save changes";
     if (!r || r.error){ errEl.textContent = "Database e save hoy ni — uporer toast e ashol karon dekhun."; return; }
@@ -2380,7 +2387,9 @@ function openProductEdit(pid){
     if (p.stock !== stock) diffs.push("stock: " + p.stock + " → " + stock);
     if ((p.desc || "") !== desc) diffs.push("description updated");
     if (JSON.stringify(p.images || []) !== JSON.stringify(finalImages)) diffs.push("images updated (" + finalImages.length + " ta)");
-    p.name = name; p.cat = cat; p.price = price; p.old = oldP || price; p.stock = stock; p.desc = desc; p.images = finalImages; p.img = finalImages.length ? finalImages[0] : "";
+    var newPack = { packSize: pePackSizeVal === "" ? null : +pePackSizeVal, unit: pePackUnitVal, packaging: pePackVal };
+    if ((packLabel(p) || "") !== (packLabel(newPack) || "")) diffs.push("পরিমাণ: " + (packLabel(p) || "—") + " → " + (packLabel(newPack) || "—"));
+    p.name = name; p.cat = cat; p.price = price; p.old = oldP || price; p.stock = stock; p.desc = desc; p.images = finalImages; p.img = finalImages.length ? finalImages[0] : ""; p.packSize = newPack.packSize; p.unit = newPack.unit; p.packaging = newPack.packaging;
     logActivity("Edited product " + name + " (" + (PRODUCT_SELLER[p.id] || "own") + ") — " + (diffs.length ? diffs.join("; ") : "no field changed"));
     closePe();
     toast("✓ Product update hoyeche — <b>" + esc(name) + "</b> (edit ta activity log e ache)");
