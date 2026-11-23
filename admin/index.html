@@ -2179,14 +2179,14 @@ function renderNotifBellDrop(){
 function globalSearchResults(q){
   q = String(q || "").trim().toLowerCase(); if (q.length < 2) return null;
   var out = { orders: [], products: [], customers: [], sellers: [] };
-  if (canSee("orders")) out.orders = orders.filter(function(o){ return ((o.localId || "") + " " + (o.id || "") + " " + o.customer + " " + o.phone).toLowerCase().indexOf(q) !== -1; }).slice(0, 5);
+  if (canSee("orders")) out.orders = orders.filter(function(o){ return ((o.localId || "") + " " + (o.id || "") + " " + (o.customer || "") + " " + (o.phone || "")).toLowerCase().indexOf(q) !== -1; }).slice(0, 5);
   if (canSee("products")) out.products = products.filter(function(p){ return ((p.name || "") + " " + (p.sku || "")).toLowerCase().indexOf(q) !== -1; }).slice(0, 5);
   if (canSee("customers")) out.customers = customers.filter(function(c){ return ((c.name || "") + " " + (c.email || "") + " " + (c.phone || "")).toLowerCase().indexOf(q) !== -1; }).slice(0, 5);
   if (canSee("sellers")) out.sellers = sellers.filter(function(s){ return ((s.shop || "") + " " + (s.owner || "") + " " + (s.email || "")).toLowerCase().indexOf(q) !== -1; }).slice(0, 5);
   return out;
 }
 function renderGlobalSearch(){
-  var inp = $("globalSearch"), drop = $("globalSearchDrop"); if (!inp || !drop) return;
+  var inp = $("#globalSearch"), drop = $("#globalSearchDrop"); if (!inp || !drop) return;
   var res = globalSearchResults(inp.value);
   if (!res){ drop.hidden = true; drop.innerHTML = ""; return; }
   var total = res.orders.length + res.products.length + res.customers.length + res.sellers.length;
@@ -2199,20 +2199,20 @@ function renderGlobalSearch(){
   drop.innerHTML = h; drop.hidden = false;
 }
 function jumpToSearchResult(kind, id, name){
-  var drop = $("globalSearchDrop"); if (drop){ drop.hidden = true; }
-  var inp = $("globalSearch"); if (inp) inp.value = "";
+  var drop = $("#globalSearchDrop"); if (drop){ drop.hidden = true; }
+  var inp = $("#globalSearch"); if (inp) inp.value = "";
   if (kind === "order"){ showView("orders"); openOrder(id); }
   else if (kind === "product"){ var pp = products.filter(function(p){ return String(p.id) === String(id); })[0]; prodQuery = pp ? pp.name : ""; showView("products"); }
   else if (kind === "customer"){ custQuery = name || ""; showView("customers"); }
   else if (kind === "seller"){ showView("sellers"); openSellerDetail(id); }
 }
 (function(){
-  var gsInp = $("globalSearch"); if (!gsInp) return;
+  var gsInp = $("#globalSearch"); if (!gsInp) return;
   gsInp.addEventListener("input", renderGlobalSearch);
   gsInp.addEventListener("focus", renderGlobalSearch);
-  gsInp.addEventListener("keydown", function(e){ if (e.key === "Escape"){ var d = $("globalSearchDrop"); if (d) d.hidden = true; gsInp.value = ""; } });
-  document.addEventListener("click", function(e){ var w = $("globalSearchWrap"); if (w && !w.contains(e.target)){ var d = $("globalSearchDrop"); if (d) d.hidden = true; } });
-  var gsDrop = $("globalSearchDrop");
+  gsInp.addEventListener("keydown", function(e){ if (e.key === "Escape"){ var d = $("#globalSearchDrop"); if (d) d.hidden = true; gsInp.value = ""; } });
+  document.addEventListener("click", function(e){ var w = $("#globalSearchWrap"); if (w && !w.contains(e.target)){ var d = $("#globalSearchDrop"); if (d) d.hidden = true; } });
+  var gsDrop = $("#globalSearchDrop");
   if (gsDrop) gsDrop.addEventListener("click", function(e){ var it = e.target.closest ? e.target.closest("[data-gs]") : null; if (!it) return; jumpToSearchResult(it.getAttribute("data-gs"), it.getAttribute("data-id"), it.getAttribute("data-name")); });
 })();
 function renderDashboard(){
@@ -3262,11 +3262,11 @@ function renderReports(){
     + '<p class="note">Scheduled email delivery nei — kono mailer/scheduler connect kora hoy ni. Report ekhane theke print/PDF ba CSV niye manually pathate hobe.</p></div>';
   var ra=$("#repApply"); if(ra) ra.addEventListener("click", function(){ var rf=$("#repFrom"), rt=$("#repTo"); reportFrom = rf ? rf.value : ""; reportTo = rt ? rt.value : ""; renderReports(); });
   var rc=$("#repClear"); if(rc) rc.addEventListener("click", function(){ reportFrom=""; reportTo=""; repSeller=""; renderReports(); });
-  var rsel=$("#repSellerSel"); if(rsel) rsel.addEventListener("change", function(){ repSeller = this.value; renderReports(); });
+  var rsel=$("#repSellerSel"); if(rsel) rsel.addEventListener("change", function(){ var rf=$("#repFrom"), rt=$("#repTo"); if (rf) reportFrom = rf.value; if (rt) reportTo = rt.value; repSeller = this.value; renderReports(); });
   var dc=$("#dlCustomers"); if(dc) dc.addEventListener("click", function(){ downloadCSV("anbobd-customers-" + todayStamp() + ".csv", customersCSV()); });
   var ds2=$("#dlSellers"); if(ds2) ds2.addEventListener("click", function(){ downloadCSV("anbobd-sellers-" + todayStamp() + ".csv", sellersCSV()); });
   var dbk=$("#dlBackup"); if(dbk) dbk.addEventListener("click", function(){ downloadJSON("anbobd-backup-" + todayStamp() + ".json", fullBackupJSON()); });
-  var msel=$("#repMonthSel"); if(msel) msel.addEventListener("change", function(){ repMonthSel = this.value; renderReports(); });
+  var msel=$("#repMonthSel"); if(msel) msel.addEventListener("change", function(){ var rf=$("#repFrom"), rt=$("#repTo"); if (rf) reportFrom = rf.value; if (rt) reportTo = rt.value; repMonthSel = this.value; renderReports(); });
   var mpr=$("#repMonthPrint"); if(mpr) mpr.addEventListener("click", function(){ printMonthlyReport(repMonth); });
   var mcsv=$("#repMonthCsv"); if(mcsv) mcsv.addEventListener("click", function(){ downloadCSV("anbobd-monthly-" + (repMonth || "none") + ".csv", monthlySummaryCSV(repMonth)); });
   $("#dlOrders").addEventListener("click", function(){ downloadCSV("anbobd-orders.csv", ordersCSV()); });
