@@ -1995,7 +1995,7 @@
       + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.8rem"><div class="field"><label>পরিমাণ (Pack size)</label><input id="mPackSize" aria-label="Pack size" type="number" min="0" step="any" value="' + (p.packSize != null && p.packSize !== "" ? p.packSize : "") + '" placeholder="e.g. 500" /></div>'
       + '<div class="field"><label>একক (Unit)</label><select id="mUnit" aria-label="Unit">' + unitOpts + '</select></div>'
       + '<div class="field"><label>প্যাকেজিং (Packaging)</label><select id="mPack" aria-label="Packaging">' + packOpts + '</select></div></div>'
-      + '<div class="hint">পরিমাণ + প্যাকেজিং customer product page e dekhabe — e.g. "500 g · Jar". ℹ️ এই তথ্য ডাটাবেজে সংরক্ষণের জন্য নতুন কলাম লাগবে; কলাম যোগ না হওয়া পর্যন্ত এখানে লেখা মান শুধু এই সেশনে দেখাবে, save করলে ডাটাবেজে যাবে না।</div>'
+      + '<div class="hint">পরিমাণ + প্যাকেজিং customer product page e dekhabe — e.g. "500 g · Jar".</div>'
       + '<div class="field"><label>Product description</label><textarea id="mDesc" aria-label="Product description" rows="4" placeholder="Ponner biboron likhun — size, material, ki ki ache, warranty ityadi. Customer product page e eta dekhbe.">' + esc(p.desc || "") + '</textarea></div>'
       + '<div class="field"><label>Product images</label><input id="mImages" type="file" accept="image/*" multiple aria-label="Product images" /><div class="hint">Sorbochcho 5 ta chhobi, prottekta sorbochcho 2MB (JPG, PNG, WebP). Prothom chhobi tai primary hobe.</div><div class="img-grid" id="mImgGrid"></div></div>'
       + '<p class="err" id="mErr"></p>'
@@ -2067,17 +2067,17 @@
           if (isEdit){
             p.name = name; p.cat = $("mCat").value; p.category = $("mCat").value; p.sku = $("mSku").value.trim() || p.sku; p.price = price;
             p.oldPrice = +$("mOld").value || null; p.stock = stock; p.desc = desc;
-            /* Pack size/unit/packaging: local product object ei update hoy — Supabase payload e pathano hoy na, karon products table e pack_size/unit/packaging column nei (REST probe 2026-11-21: 42703 "column products.unit does not exist"). Column jog korar SQL change log e ache; column jog hole insert/update payload e add korte hobe. */
+            /* Pack size/unit/packaging: products table er pack_size/unit/packaging column e save hoy (column jog hoyeche 2026-11-23). */
             p.packSize = packSizeVal === "" ? null : +packSizeVal; p.unit = packUnitVal; p.packaging = packVal;
             p.images = finalImages; p.imageUrl = finalImages.length ? finalImages[0] : "";
             if (p.approval === "Rejected") p.approval = "Pending Approval";
-            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
+            if (supabaseConnected && supabase) { try { var up = await supabase.from('products').update({ name: p.name, sku: p.sku, category: p.cat, price: p.price, old_price: p.oldPrice, stock: p.stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: p.packSize, unit: p.unit, packaging: p.packaging, status: p.approval === "Pending Approval" ? "pending" : "approved" }).eq('id', p.id).eq('shop_id', s.shopId); if (up.error) { $("mErr").textContent = up.error.message; return; } } catch(e){ $("mErr").textContent = "Update e somossa hoyeche."; return; } }
             toast("Product update hoyeche");
           } else {
             var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
             var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"Active", packSize: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "" };
             if (supabaseConnected && supabase) {
-              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
+              try { var ins = await supabase.from('products').insert({ shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, status: "pending" }).select().single(); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (ins.data) newProd = mapProductRow(ins.data); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
             }
             s.products.unshift(newProd);
             toast("Product add hoyeche — My Products e dekhun. Admin moderation approve korle live hobe: " + name);
