@@ -811,7 +811,7 @@ section{ padding-top:56px }
   </section>
 
   <!-- CAMPAIGN 11.11 STYLE -->
-  <section style="padding-top:6px">
+  <section id="campaigns" style="padding-top:6px">
     <div class="campaign">
       <h2 data-i18n="campTitle">অফার ও ক্যাম্পেইন</h2>
       <p data-i18n="campSub">ভাউচার আর ফ্ল্যাশ সেল একসাথে — তার উপর ৳2,000+ অর্ডারে ফ্রি ডেলিভারি। পণ্য লাইভ হলেই এখানে দেখতে পাবেন।</p>
@@ -964,7 +964,7 @@ section{ padding-top:56px }
   </section>
 
   <!-- HOW + TRUST -->
-  <section>
+  <section id="howto">
     <div class="sec-head"><div><h2 data-i18n="howTitle">কীভাবে অর্ডার করবেন?</h2><p data-i18n="howSub">মাত্র 3টি সহজ ধাপে</p></div></div>
     <div class="steps">
       <div><div class="n">1</div><b data-i18n="how1t">পণ্য বেছে কার্টে যোগ করুন</b><p data-i18n="how1s">পছন্দের পণ্য খুঁজুন, ছবিতে ক্লিক করে বিস্তারিত দেখুন, তারপর “কার্টে যোগ করুন” বা “এখনই কিনুন” চাপুন।</p></div>
@@ -993,8 +993,10 @@ section{ padding-top:56px }
       <details><summary>পণ্যে ওয়ারেন্টি আছে কি?</summary><p>ইলেকট্রনিক্স পণ্যে ব্র্যান্ডভেদে 6 মাস থেকে 1 বছরের অফিসিয়াল/সার্ভিস ওয়ারেন্টি থাকে — প্রতিটি পণ্যের বিবরণে ওয়ারেন্টির মেয়াদ উল্লেখ করা আছে। ওয়ারেন্টি ক্লেইমে ইনভয়েসটি সংরক্ষণ করুন।</p></details>
       <details><summary>আমি কীভাবে AnboBD-তে বিক্রি করতে পারি?</summary><p>নিচের “বিক্রেতা হতে চাই” সেকশন থেকে আবেদন করুন। কোনো মাসিক ফি নেই — শুধু বিক্রির উপর ছোট কমিশন। আবেদনের 1–2 কর্মদিবসের মধ্যে আমাদের টিম যাচাই করে যোগাযোগ করবে।</p></details>
     </div>
+  </section>
 
-    <!-- NEWSLETTER -->
+  <!-- NEWSLETTER -->
+  <section id="newsletter">
     <div class="newsletter">
       <div><h2 data-i18n="newsTitle">অফারের খবর সবার আগে পান 🎁</h2><p data-i18n="newsSub">নতুন পণ্য, এক্সক্লুসিভ কুপন আর ফ্ল্যাশ সেলের আপডেট সরাসরি আপনার ইমেইলে। স্প্যাম নয় — শুধু কাজের অফার, মাসে সর্বোচ্চ 4টি মেইল।</p></div>
       <div>
@@ -1006,8 +1008,10 @@ section{ padding-top:56px }
         <p id="newsErr" style="display:none;color:#ffb59f;font-weight:700;font-size:.86rem;margin:8px 2px 0">সঠিক ইমেইল ঠিকানা দিন (যেমন: name@example.com)।</p>
       </div>
     </div>
+  </section>
 
-    <!-- SELLER -->
+  <!-- SELLER -->
+  <section id="seller">
     <div class="seller">
       <div>
         <h2 data-i18n="sellTitle">আপনার দোকানও AnboBD-তে খুলুন 🏪</h2>
@@ -4048,9 +4052,16 @@ window.applyHomepageSettings = applyHomepageSettings;
 function applyHomepageSectionOrder(order){
   var main = document.querySelector("main"); if(!main) return;
   var kids = Array.prototype.slice.call(main.children);
+  /* P3 fix (2026-11-23): Admin logical id -> storefront asol element id.
+     "banners" asol id promoBannersSec, "shop-coupons" shopcoupons (hyphen
+     nei), "recent" recentSec. campaigns/howto/newsletter/seller section-e
+     id bosano hoyeche, tai alias lagbe na. hero <main>-er baire, tai kokhono
+     move hobe na — id na mille ignore (guard ochena id skip kore). */
+  var ANBO_SECTION_ALIAS = { "banners":"promoBannersSec", "shop-coupons":"shopcoupons", "recent":"recentSec" };
   var wanted = [];
   (order||[]).forEach(function(id){
-    var el = (typeof id==="string" && id) ? document.getElementById(id) : null;
+    var realId = ANBO_SECTION_ALIAS[id] || id;
+    var el = (typeof realId==="string" && realId) ? document.getElementById(realId) : null;
     if(el && el.parentNode === main && wanted.indexOf(el)===-1) wanted.push(el);
   });
   if(wanted.length < 2) return;
