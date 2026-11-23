@@ -1433,7 +1433,7 @@ function imgFallbackAttr(prod){ return ' onerror="this.onerror=null;this.src=\''
 /* P2 (2026-11-23): sale window-er baire thakle chhar 0 — effPrice/effOldPrice dekhe. */
 function offPct(p){ var ep = effPrice(p), eo = effOldPrice(p); if(!eo || eo <= ep) return 0; return Math.round((1 - ep/eo)*100); }
 function soldFmt(n){ return n>=1000 ? (n/1000).toFixed(1).replace(".0","")+"k" : ""+n; }
-function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s+" <span>("+r+")</span>"; }
+function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s+" <span>("+Number(r||0).toFixed(1)+")</span>"; }
 function etaDate(days){ var d=new Date(); d.setDate(d.getDate()+days); try{ return d.toLocaleDateString("bn-BD",{weekday:"long", day:"numeric", month:"long"}); }catch(e){ return d.toDateString(); } }
 function etaText(zone){ return zone==="dhaka" ? "ঢাকায় পাবেন: "+etaDate(1)+" (আগামীকাল)" : "পাবেন: "+etaDate(2)+" – "+etaDate(3)+" এর মধ্যে"; }
 /* P0-3 (2026-11-21): REVIEW_POOL fake reviewers deleted. Reviews come only from the reviews table (ANBOBD_STORE.productReviews, loaded by loadCatalog); with none, the product modal shows "No reviews yet" and no Verified Purchase badge. */
@@ -1522,7 +1522,7 @@ wishTitle:"❤️ উইশলিস্ট", wishNote:"পছন্দের প
 trackTitle:"📦 অর্ডার ট্র্যাক করুন", trackSub:"অর্ডার কনফার্মেশনে পাওয়া নম্বরটি দিন (যেমন <b>#ANBO123456</b>)। আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিন — অনলাইনে খুঁজে দেখা হবে।",
 trackNumPh:"অর্ডার নম্বর", trackPhonePh:"মোবাইল নম্বর (আগের অর্ডার হলে আবশ্যক)", trackBtn:"ট্র্যাক",
 cmpTitle:"⇄ পণ্য তুলনা", cmpSub:"পাশাপাশি দেখে সিদ্ধান্ত নিন — দাম, স্টক, দোকান, রেটিং সব এক জায়গায়।", cmpOpen:"⇄ তুলনা করুন", cmpClear:"✕ মুছুন",
-cardSold:"বিক্রি {n}", cardReviews:"{n} রিভিউ", cardFreeDel:"🚚 ফ্রি ডেলিভারি যোগ্য", cardCod:"💵 COD", cardAdd:"🛒 কার্টে যোগ", cardBuy:"এখনই কিনুন",
+cardSold:"বিক্রি {n}", cardReviews:"{n}টি রিভিউ", cardFreeDel:"🚚 ফ্রি ডেলিভারি যোগ্য", cardCod:"💵 COD", cardAdd:"🛒 কার্টে যোগ", cardBuy:"এখনই কিনুন",
 stockOut:"❌ স্টক শেষ", stockLow:"🔥 মাত্র {n}টি বাকি — দ্রুত করুন!", stockLimited:"স্টক সীমিত ({n}টি)", stockOk:"✓ স্টকে আছে",
 resultCount:"{n}টি পণ্য পাওয়া গেছে", resultLoading:"পণ্য লোড হচ্ছে…",
 emptyNoResult:"<b>দুঃখিত, কিছু পাওয়া যায়নি 😔</b>অন্য নামে খুঁজে দেখুন, দামের ফিল্টার বদলান অথবা সব পণ্য দেখুন।<br><button id=\"resetFilters\">সব ফিল্টার মুছে ফেলুন</button>",
@@ -1591,7 +1591,7 @@ wishTitle:"❤️ Wishlist", wishNote:"Your favourite products are saved here �
 trackTitle:"📦 Track your order", trackSub:"Enter the number from your order confirmation (e.g. <b>#ANBO123456</b>). For an order from an earlier session, also give the mobile number used for that order — we'll search online.",
 trackNumPh:"Order number", trackPhonePh:"Mobile number (required for earlier orders)", trackBtn:"Track",
 cmpTitle:"⇄ Compare products", cmpSub:"Decide side by side — price, stock, shop and rating in one place.", cmpOpen:"⇄ Compare", cmpClear:"✕ Clear",
-cardSold:"Sold {n}", cardReviews:"{n} reviews", cardFreeDel:"🚚 Free-delivery eligible", cardCod:"💵 COD", cardAdd:"🛒 Add to cart", cardBuy:"Buy now",
+cardSold:"Sold {n}", cardReviews:"{n} review{s}", cardFreeDel:"🚚 Free-delivery eligible", cardCod:"💵 COD", cardAdd:"🛒 Add to cart", cardBuy:"Buy now",
 stockOut:"❌ Out of stock", stockLow:"🔥 Only {n} left — hurry!", stockLimited:"Limited stock ({n})", stockOk:"✓ In stock",
 resultCount:"{n} products found", resultLoading:"Loading products…",
 emptyNoResult:"<b>Sorry, nothing found 😔</b>Try another name, change the price filter, or see all products.<br><button id=\"resetFilters\">Clear all filters</button>",
@@ -1738,7 +1738,7 @@ function cardHTML(p, flash){
     '<div class="pbody"><div class="pcat">'+escHtml(catLabel(p.categoryId))+' • '+shopNameHtml(p)+'</div><h3 class="pname"><a href="/product.html?id='+encodeURIComponent(p.id)+'">'+escHtml(p.name)+'</a></h3>' +
     (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
     '<div>'+(p.isNew?' <span style="display:inline-flex;align-items:center;gap:4px;background:#fff3c4;color:#7a5b00;font-size:.7rem;font-weight:800;border-radius:99px;padding:2px 8px">NEW</span>':'')+'</div>' +
-    '<div class="stars">'+stars(p.rating)+' <span>• '+t("cardReviews", {n:p.reviewCount})+'</span></div>' +
+    '<div class="stars">'+stars(p.rating)+' <span>• '+t("cardReviews", {n:p.reviewCount, s:(p.reviewCount===1?"":"s")})+'</span></div>' +
     '<div class="pmeta">'+(effPrice(p)>=2000?'<span>'+t("cardFreeDel")+'</span>':'')+'<span>'+t("cardCod")+'</span></div>' +
     stockLine(p) +
     '<div class="deldate">🚚 '+etaText("dhaka")+'</div>' +
@@ -2152,7 +2152,7 @@ function openCompare(){
         { k:"cmpRowStock", fn:function(p){ return p.stockQty>0 ? String(p.stockQty)+"টি" : "❌"; } },
         { k:"cmpRowCat", fn:function(p){ return escHtml(catLabel(p.categoryId)); } },
         { k:"cmpRowShop", fn:function(p){ var s = SL(p.sellerId); return s ? escHtml(s.name) : "—"; } },
-        { k:"cmpRowRating", fn:function(p){ var a = anboAvgRating(p); return a>0 ? stars(a)+" ("+a.toFixed(1)+")" : t("cmpNoRating"); } },
+        { k:"cmpRowRating", fn:function(p){ var a = anboAvgRating(p); return a>0 ? stars(a) : t("cmpNoRating"); } },
         { k:"cmpRowPack", fn:function(p){ return packLabel(p) ? escHtml(packLabel(p)) : "—"; } }
       ];
       var head = '<tr><th></th>' + ps.map(function(p){ return '<th><img src="'+safeImgFor(p)+'" style="width:56px;height:56px;object-fit:cover;border-radius:10px;display:block;margin-bottom:6px" alt=""><a href="/product.html?id='+encodeURIComponent(p.id)+'" style="color:inherit">'+escHtml(p.name)+'</a><br><button class="btn-sec" type="button" data-compare-rm="'+escHtml(p.id)+'" style="margin-top:6px">✕ '+t("cmpRowRemove")+'</button></th>'; }).join("") + '</tr>';
@@ -2292,7 +2292,7 @@ function openModal(id){
   document.getElementById("mImg").alt = p.name+" — "+p.bn;
   document.getElementById("mCat").textContent = catLabel(p.categoryId)+" • "+(SL(p.sellerId) ? SL(p.sellerId).name : "No brand");
   document.getElementById("mName").textContent = p.name+" — "+p.bn;
-  document.getElementById("mStars").innerHTML = stars(p.rating)+" <span>• "+(p.reviewCount>0 ? t("cardReviews", {n:p.reviewCount}) : "এখনো কোনো রিভিউ নেই")+" • "+t("cardSold", {n:soldFmt(p.soldCount)})+"</span>";
+  document.getElementById("mStars").innerHTML = stars(p.rating)+" <span>• "+(p.reviewCount>0 ? t("cardReviews", {n:p.reviewCount, s:(p.reviewCount===1?"":"s")}) : "এখনো কোনো রিভিউ নেই")+" • "+t("cardSold", {n:soldFmt(p.soldCount)})+"</span>";
   document.getElementById("mDesc").textContent = p.desc;
   document.getElementById("mSpecs").innerHTML = (packLabel(p) ? "📦 <b>পরিমাণ:</b> "+escHtml(packLabel(p))+"<br>" : "") + "📋 <b>স্পেসিফিকেশন:</b><br>• "+p.specs.map(function(s){ return escHtml(s); }).join("<br>• ")+"<br>🛡️ "+escHtml(p.warranty)+"<br>🏷️ SKU: "+escHtml(p.sku);
   document.getElementById("mPrice").textContent = fmt(effPrice(p));
@@ -2331,7 +2331,7 @@ function openModal(id){
   var bars = [5,4,3,2,1].map(function(st){ return '<div><span>'+st+'★</span><i><b style="width:'+dist[st-1]+'%"></b></i><span>'+dist[st-1]+'%</span></div>'; }).join("");
   document.getElementById("mReviews").innerHTML =
     (p.reviewCount>0 && r>0
-      ? '<div class="rbreak"><div><span class="big">'+r+'</span><div class="stars">'+stars(r)+'</div><span style="font-size:.78rem;color:var(--muted)">'+p.reviewCount+'টি রিভিউ</span></div><div class="bars">'+bars+'</div></div>'
+      ? '<div class="rbreak"><div><span class="big">'+Number(r||0).toFixed(1)+'</span><div class="stars">'+stars(r)+'</div><span style="font-size:.78rem;color:var(--muted)">'+p.reviewCount+'টি রিভিউ</span></div><div class="bars">'+bars+'</div></div>'
       : '<p style="color:var(--muted);margin:0 0 10px">এখনো কোনো রিভিউ নেই।</p>') +
     (realReviews.length ? realReviews.map(function(rv){
       return '<div class="review"><div class="rh"><span class="av">'+escHtml(String(rv.n||"C").charAt(0))+'</span><div><b style="font-size:.92rem">'+escHtml(rv.n||"Customer")+'</b> <span style="color:var(--muted);font-size:.78rem">• '+escHtml(rv.d||"")+(rv.w ? ' • '+escHtml(rv.w) : '')+'</span></div><span class="stars" style="margin-left:auto">'+stars(rv.rating||p.rating).split(" <span>")[0]+'</span></div><p>'+escHtml(rv.t||"")+'</p></div>';
