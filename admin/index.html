@@ -723,17 +723,24 @@ function sbLog(what){
 function sbProfileRole(adminRole){
   return {"Super Admin":"admin","Manager":"manager","Order Manager":"order_manager","Support":"support","Warehouse":"warehouse"}[adminRole] || "staff";
 }
-/* profiles_role_check allows only customer/seller/admin/staff/seller_staff —
-   the granular admin roles (manager/order_manager/support/warehouse) are
-   NOT in the constraint, so a profiles row for Admin staff must carry the
-   generic value: Super Admin -> "admin", every other Admin staff role ->
-   "staff". The granular role lives in that user's `staff` table row and is
-   resolved back at sign-in (sbFetchMember) and in the Staff list
-   (sbLoadAll) — storing "staff" alone in profiles must never be read as
-   the display role, because sbAdminRole("staff") is null and the account
-   would be rejected at sign-in and leaked into the Customers list. */
+/* profiles.role MUST carry the granular Admin role, not the generic
+   "staff" bucket: every RLS policy that gates admin data checks
+   profiles.role in ('admin','manager','order_manager','support','warehouse')
+   (see the SQL bundle — settings admin write, orders/sub_orders/products/
+   customers admin policies, all of them), and 'staff' matches NONE of
+   them, so a staff member stored as profiles.role "staff" signs in fine
+   but reads 0 orders / 0 customers (live-verified 2026-11-23: a Manager
+   dashboard showed "0 master orders · 0 sub-orders" and Customers
+   "TOTAL CUSTOMERS 0" while the DB held 21 orders / 4 customers). This
+   REQUIRES profiles_role_check to allow the granular values
+   (manager/order_manager/support/warehouse) — the parent widens that
+   constraint by SQL; until that lands, a profiles write with a granular
+   role 23514-fails. The "staff" value survives only as the sbProfileRole
+   fallback for unknown roles, and existing 'staff' rows keep working
+   through the staff-table resolution in sbFetchMember / sbLoadAll (plus
+   the Customers exclusion) until they are migrated to granular roles. */
 function sbProfileDbRole(adminRole){
-  return adminRole === "Super Admin" ? "admin" : "staff";
+  return sbProfileRole(adminRole);
 }
 function sbAdminRole(profileRole){
   var m = {"admin":"Super Admin","manager":"Manager","order_manager":"Order Manager","support":"Support","warehouse":"Warehouse"};
@@ -2352,7 +2359,7 @@ function renderDashboard(){
 
   html += '<div class="grid-2"><div class="card"><h3>Team — Staff</h3><p class="hint">'+staff.filter(function(s){return s.status==="active";}).length+' active of '+staff.length+' staff · 5 roles with fixed permissions</p>'
     + staff.slice(0,4).map(function(s){ return '<div class="alert-item"><span class="avatar" style="width:38px;height:38px;font-size:13px">'+staffInitials(s.name)+'</span><div><div class="nm">'+esc(s.name)+'</div><div class="meta">'+esc(s.last)+'</div></div><span class="badge '+(ROLE_BADGE[s.role]||"b-draft")+'" style="margin-left:auto">'+s.role+'</span></div>'; }).join("")
-    + '<button class="btn ghost sm" type="button" data-goto="staff" style="margin-top:12px">Manage staff &amp; roles →</button></div>'
+    + (canSee('staff') ? '<button class="btn ghost sm" type="button" data-goto="staff" style="margin-top:12px">Manage staff &amp; roles →</button>' : '') + '</div>'
     + '<div class="card"><h3>Marketplace — Sellers</h3><p class="hint">'+plural(sellers.filter(function(s){return s.status==="approved";}).length,"approved seller","approved sellers")+' · '+plural(pendingSellerCount(),"seller","sellers")+' waiting for approval · Payout due '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</p>'
     + sellers.filter(function(s){return s.status==="approved";}).slice(0,4).map(function(s){ return '<div class="alert-item"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><div class="nm">'+esc(s.shop)+'</div><div class="meta">'+s.cat+' · '+s.products+' products · ★ '+s.rating+'</div></div><b class="num" style="margin-left:auto">'+fmt(sellerRealTotals(s).sales)+'</b></div>'; }).join("")
     + '<button class="btn ghost sm" type="button" data-goto="sellers" style="margin-top:12px">Manage sellers &amp; payouts →</button></div></div>';
