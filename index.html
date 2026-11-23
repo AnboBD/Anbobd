@@ -682,7 +682,7 @@ section{ padding-top:56px }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<div class="topstrip">🚚 ঢাকায় ডেলিভারি <b>৳60</b> • সারা দেশে <b>৳120</b> &nbsp;•&nbsp; <span id="topFreeDel">ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b></span> &nbsp;•&nbsp; প্রোমো কোড <b>ANBO10</b> = 10% ছাড়</div>
+<div class="topstrip">🚚 ঢাকায় ডেলিভারি <b id="topDhakaFee">৳60</b> • সারা দেশে <b id="topOutsideFee">৳120</b><span id="topFreeDelWrap">&nbsp;•&nbsp; <span id="topFreeDel">ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b></span></span> &nbsp;•&nbsp; প্রোমো কোড <b>ANBO10</b> = 10% ছাড়</div>
 <div class="supanotice" id="supabaseNotice" style="display:none">⚠️ অ্যাকাউন্ট ও অর্ডার এখন শুধু এই ব্রাউজারে সংরক্ষিত হচ্ছে — অনলাইন অ্যাকাউন্ট চালু হলে এখানেই জানিয়ে দেওয়া হবে।</div>
 
 <header class="site">
@@ -1089,7 +1089,7 @@ section{ padding-top:56px }
       <p id="mStock" style="font-size:.88rem;font-weight:700;margin:8px 0 0"></p>
       <p class="deldate" id="mDelivery" style="margin:6px 0 0"></p>
       <p style="font-size:.88rem;color:var(--muted);margin:6px 0 0">💵 ক্যাশ অন ডেলিভারি • bKash / Nagad / Rocket ম্যানুয়াল পেমেন্ট • ↩️ 7 দিনের সহজ রিটার্ন</p>
-      <div class="delbox">🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে ৳60 — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে ৳120 — 48–72 ঘণ্টায় ডেলিভারি • ঢাকায় ৳2,000+ অর্ডারে ডেলিভারি <b>ফ্রি</b> • 💵 ক্যাশ অন ডেলিভারি (COD) সুবিধা আছে<br>↩️ <b>রিটার্ন পলিসি:</b> 7 দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন</div>
+      <div class="delbox" id="mDelBox">🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে ৳60 — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে ৳120 — 48–72 ঘণ্টায় ডেলিভারি • ঢাকায় ৳2,000+ অর্ডারে ডেলিভারি <b>ফ্রি</b> • 💵 ক্যাশ অন ডেলিভারি (COD) সুবিধা আছে<br>↩️ <b>রিটার্ন পলিসি:</b> 7 দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন</div>
       <div class="sellercard" id="mSeller"></div>
       <div class="mqty"><span style="font-weight:700">পরিমাণ:</span><span class="qty"><button id="mDec" aria-label="কমান">−</button><b id="mQty">1</b><button id="mInc" aria-label="বাড়ান">+</button></span>
       <button class="wishbtn" id="mWish" style="position:static" aria-label="উইশলিস্টে যোগ করুন">🤍</button>
@@ -1439,7 +1439,7 @@ function renderProducts(){
   }
   document.getElementById("resultCount").textContent = list.length + "টি পণ্য পাওয়া গেছে";
 }
-function renderFlash(){ var list = flashList(); var sec = document.getElementById("flash"); if(sec) sec.style.display = list.length ? "" : "none"; var cta = document.getElementById("heroFlashCta"); if(cta) cta.style.display = list.length ? "" : "none"; document.getElementById("flashGrid").innerHTML = list.map(function(p){return cardHTML(p,true);}).join(""); }
+function renderFlash(){ var list = flashList(); var show = platformFlag("flashSale", true) && list.length>0; var sec = document.getElementById("flash"); if(sec) sec.style.display = show ? "" : "none"; var cta = document.getElementById("heroFlashCta"); if(cta) cta.style.display = show ? "" : "none"; document.getElementById("flashGrid").innerHTML = show ? list.map(function(p){return cardHTML(p,true);}).join("") : ""; }
 function renderUnder(){ document.getElementById("underGrid").innerHTML = PRODUCTS.filter(function(p){return p.status==="active" && p.price<999;}).map(function(p){return cardHTML(p,false);}).join(""); }
 function renderCats(){
   document.getElementById("catTiles").innerHTML = CATS.map(function(c){
@@ -1540,10 +1540,21 @@ function couponEligibleSub(c){
   var t=0; for(var k in cart){ var p=P(k); if(p && p.sellerId===c.sellerId) t += p.price*cart[k]; }
   return t;
 }
+/* Mega stacking (Admin Settings: mega_stacking_allowed, default OFF — Admin
+   couponCheck-er moto): seller coupon tokhon-i block jokhon oi seller-er
+   cart-er SOB item Mega price-e. Platform coupon-e ei niyom nei. */
+function megaStackingBlocked(c){
+  if(!c || !c.sellerId) return false;
+  if(platformFlag("megaStacking", false)) return false;
+  var hasSellerItem = false, allMega = true;
+  for(var k in cart){ var p = P(k); if(p && p.sellerId===c.sellerId){ hasSellerItem = true; if(!p.megaDeal) allMega = false; } }
+  return hasSellerItem && allMega;
+}
 function promoDiscount(sub){
   if(!promoCode) return 0;
   var c = findCouponAny(promoCode);
   if(!c || !c.active) return 0;
+  if(megaStackingBlocked(c)) return 0;
   var es = c.sellerId ? couponEligibleSub(c) : sub;
   if(es < c.minSpend) return 0;
   if(c.type==="percent") return Math.min(Math.round(es*c.value/100), c.maxDiscount||es);
@@ -1562,12 +1573,22 @@ function totals(){
   return { sub:sub, bundleSave:bSave, promoDisc:pDisc, loyaltyDisc:lDisc, discount:discount, ship:ship, total: Math.max(0, sub - discount + ship), count: cartCount() };
 }
 
+/* 2026-11-23 (P0 #6 follow-up): Admin Settings er notun key-gulo DB theke
+   pore window.__anboPlatformSettings e ase (fetchPlatformSettings); na ele
+   niche default — storefront kokhono settings row chara cholte parbe na emon
+   hobe na. window.__anboDbSettings bole dey kon key-ta asol DB row theke
+   eseche, jate DB value localStorage-er cheye age pay. */
+function anboPlatform(){ return window.__anboPlatformSettings || null; }
+function platformFlag(key, dflt){ var c = anboPlatform(); if(!c) return dflt; var v = c[key]; return (v==null) ? dflt : !!v; }
+function platformNum(key, dflt){ var c = anboPlatform(); if(!c) return dflt; var v = c[key]; return (v==null || isNaN(+v)) ? dflt : +v; }
+
 /* Free delivery mode (2026-11-21, user decision): Admin Settings decides
-   "dhaka" (default) vs "nationwide"; threshold stays 2000. Admin settings
-   persist in localStorage under "anbobd-admin-settings-v1" on this same
-   origin, so the storefront reads that key when present; otherwise it uses
-   its own default (Dhaka-only). A mode change needs a storefront reload. */
+   "dhaka" (default) vs "nationwide"; threshold stays 2000. Priority:
+   DB row (thakle) > same-browser Admin localStorage > built-in default.
+   A mode change needs a storefront reload. */
 function freeDeliveryMode(){
+  var cfg = window.__anboPlatformSettings;
+  if(cfg && window.__anboDbSettings && window.__anboDbSettings["free_delivery_mode"] && (cfg.freeMode==="dhaka" || cfg.freeMode==="nationwide")) return cfg.freeMode;
   try{ var raw = localStorage.getItem("anbobd-admin-settings-v1");
     if(raw){ var sv = JSON.parse(raw); var m = sv && sv.settings && sv.settings.freeDeliveryMode;
       if(m==="dhaka" || m==="nationwide") return m; } }catch(e){}
@@ -1578,20 +1599,37 @@ function freeDeliveryApplies(sub, z){
   return freeDeliveryMode()==="nationwide" ? true : (z==="dhaka");
 }
 function freeDeliveryText(){
+  var th = ANBOBD_STORE.settings.freeShipThreshold || 2000;
   return freeDeliveryMode()==="nationwide"
-    ? "৳2,000 বা তার বেশি অর্ডারে সারা দেশে ডেলিভারি সম্পূর্ণ FREE"
-    : "ঢাকার ভিতরে ৳2,000 বা তার বেশি অর্ডারে ডেলিভারি সম্পূর্ণ FREE (ঢাকার বাইরে ডেলিভারি চার্জ ৳120 প্রযোজ্য)";
+    ? fmt(th)+" বা তার বেশি অর্ডারে সারা দেশে ডেলিভারি সম্পূর্ণ FREE"
+    : "ঢাকার ভিতরে "+fmt(th)+" বা তার বেশি অর্ডারে ডেলিভারি সম্পূর্ণ FREE (ঢাকার বাইরে ডেলিভারি চার্জ "+fmt(ANBOBD_STORE.settings.outsideFee||120)+" প্রযোজ্য)";
 }
 function deliveryPolicyHtml(){
-  return "<p>• <b>ঢাকার ভিতরে:</b> ৳60, 24 ঘণ্টায় ডেলিভারি<br>• <b>ঢাকার বাইরে (চট্টগ্রাম, সিলেটসহ 64 জেলা):</b> ৳120, 48–72 ঘণ্টা<br>• <b>" + freeDeliveryText() + "</b></p><p>অর্ডারের পর আমাদের টিম ফোনে কনফার্ম করে। ক্যাশ অন ডেলিভারিতে পণ্য হাতে পেয়ে টাকা পরিশোধ করুন। অর্ডার করার সময়ই আনুমানিক ডেলিভারির তারিখ দেখিয়ে দেওয়া হয়।</p>";
+  var s = ANBOBD_STORE.settings;
+  return "<p>• <b>ঢাকার ভিতরে:</b> "+fmt(s.dhakaFee||60)+", 24 ঘণ্টায় ডেলিভারি<br>• <b>ঢাকার বাইরে (চট্টগ্রাম, সিলেটসহ 64 জেলা):</b> "+fmt(s.outsideFee||120)+", 48–72 ঘণ্টা<br>• <b>" + freeDeliveryText() + "</b></p><p>অর্ডারের পর আমাদের টিম ফোনে কনফার্ম করে। ক্যাশ অন ডেলিভারিতে পণ্য হাতে পেয়ে টাকা পরিশোধ করুন। অর্ডার করার সময়ই আনুমানিক ডেলিভারির তারিখ দেখিয়ে দেওয়া হয়।</p>";
 }
 function syncFreeDeliveryText(){
+  var s = ANBOBD_STORE.settings, th = s.freeShipThreshold || 2000;
+  var df = document.getElementById("topDhakaFee"); if(df) df.textContent = fmt(s.dhakaFee||60);
+  var of = document.getElementById("topOutsideFee"); if(of) of.textContent = fmt(s.outsideFee||120);
+  var wrap = document.getElementById("topFreeDelWrap");
+  if(wrap) wrap.style.display = platformFlag("bannerFreeDel", true) ? "" : "none";
   var top = document.getElementById("topFreeDel");
-  if(top) top.innerHTML = freeDeliveryMode()==="nationwide" ? "৳2,000+ অর্ডারে সারা দেশে <b>FREE ডেলিভারি</b>" : "ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b>";
+  if(top) top.innerHTML = freeDeliveryMode()==="nationwide" ? fmt(th)+"+ অর্ডারে সারা দেশে <b>FREE ডেলিভারি</b>" : "ঢাকায় "+fmt(th)+"+ অর্ডারে <b>FREE ডেলিভারি</b>";
   var faq = document.getElementById("faqFreeDelText");
-  if(faq) faq.textContent = "ঢাকার ভিতরে ডেলিভারি চার্জ ৳60 (24 ঘণ্টা), ঢাকার বাইরে ৳120 (48–72 ঘণ্টা)। " + freeDeliveryText() + "। অর্ডারের পর AnboBD Admin যাচাই করে কনফার্ম করে Seller-এর কাছে পাঠায় — Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি প্রক্রিয়া শুরু হয়।";
+  if(faq) faq.textContent = "ঢাকার ভিতরে ডেলিভারি চার্জ "+fmt(s.dhakaFee||60)+" (24 ঘণ্টা), ঢাকার বাইরে "+fmt(s.outsideFee||120)+" (48–72 ঘণ্টা)। " + freeDeliveryText() + "। অর্ডারের পর AnboBD Admin যাচাই করে কনফার্ম করে Seller-এর কাছে পাঠায় — Seller প্যাক করে কুরিয়ারে দিলেই ডেলিভারি প্রক্রিয়া শুরু হয়।";
+  syncModalDelBox();
 }
-function promoDiscountApplies(){ var c=findCouponAny(promoCode); if(!c) return false; return (c.sellerId ? couponEligibleSub(c) : cartSubtotal()) >= c.minSpend; }
+/* Quick-view modal-er delivery/return box — settings bodle gele text-o bodlay. */
+function syncModalDelBox(){
+  var box = document.getElementById("mDelBox"); if(!box) return;
+  var s = ANBOBD_STORE.settings, th = s.freeShipThreshold || 2000, rw = platformNum("returnWindow", 7);
+  var pays = [];
+  if(platformFlag("payCod", true)) pays.push("ক্যাশ অন ডেলিভারি (COD)");
+  ["bKash","Nagad","Rocket"].forEach(function(m){ if(platformFlag("pay"+m, true)) pays.push(m+" ম্যানুয়াল পেমেন্ট"); });
+  box.innerHTML = "🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে "+fmt(s.dhakaFee||60)+" — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে "+fmt(s.outsideFee||120)+" — 48–72 ঘণ্টায় ডেলিভারি • " + (freeDeliveryMode()==="nationwide" ? fmt(th)+"+ অর্ডারে সারা দেশে ডেলিভারি <b>ফ্রি</b>" : "ঢাকায় "+fmt(th)+"+ অর্ডারে ডেলিভারি <b>ফ্রি</b>") + (pays.length ? " • 💵 " + pays.join(" • ") + " সুবিধা আছে" : "") + "<br>↩️ <b>রিটার্ন পলিসি:</b> "+rw+" দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন";
+}
+function promoDiscountApplies(){ var c=findCouponAny(promoCode); if(!c) return false; if(megaStackingBlocked(c)) return false; return (c.sellerId ? couponEligibleSub(c) : cartSubtotal()) >= c.minSpend; }
 function renderBadges(){
   var n = cartCount(), w = Object.keys(wishlist).length;
   ["cartCount","cartCountM"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=n; });
@@ -1622,7 +1660,7 @@ function renderCart(){
   document.getElementById("shipBox").innerHTML = freeShipNow
     ? "🎉 অভিনন্দন! আপনি <b>FREE ডেলিভারি</b> পেয়েছেন।<br><span class='deldate'>"+etaText(zone)+"</span>"
     : freeBlockedOutside
-    ? "FREE ডেলিভারি শুধু <b>ঢাকার ভিতরে ৳2,000+</b> অর্ডারে — ঢাকার বাইরে ডেলিভারি ৳120।<br><span class='deldate'>"+etaText(zone)+"</span>"
+    ? "FREE ডেলিভারি শুধু <b>ঢাকার ভিতরে "+fmt(ANBOBD_STORE.settings.freeShipThreshold||2000)+"+</b> অর্ডারে — ঢাকার বাইরে ডেলিভারি "+fmt(ANBOBD_STORE.settings.outsideFee||120)+"।<br><span class='deldate'>"+etaText(zone)+"</span>"
     : "আর মাত্র <b>"+fmt(ANBOBD_STORE.settings.freeShipThreshold - t.sub)+"</b> কিনলেই FREE ডেলিভারি!<div class='bar'><i style='width:"+pct+"%'></i></div><span class='deldate'>"+etaText(zone)+"</span>";
   syncFreeDeliveryText();
   var box = document.getElementById("cartItems");
@@ -1886,6 +1924,34 @@ function syncManualPay(){
     }
   }
 }
+/* 2026-11-23 (P0 #6 follow-up): checkout-e payment method Admin Settings
+   (payment_*_enabled, DB theke) onujayi dekhanu/lukano. Settings na ele
+   ajker acharon-i thake (Card chara sob khola). Card-er kono gateway nei —
+   Admin on korleo card shudhu disabled obosthay dekhabe, select kora jabe na. */
+function platformPayEnabled(method){
+  var cfg = window.__anboPlatformSettings;
+  if(!cfg) return method !== "Card";
+  if(method==="COD") return cfg.payCod !== false;
+  if(method==="bKash") return cfg.payBkash !== false;
+  if(method==="Nagad") return cfg.payNagad !== false;
+  if(method==="Rocket") return cfg.payRocket !== false;
+  if(method==="Card") return !!cfg.payCard;
+  return true;
+}
+function syncPaymentMethods(){
+  var map = { "ক্যাশ অন ডেলিভারি":"COD", "bKash":"bKash", "Nagad":"Nagad", "Rocket":"Rocket", "কার্ড":"Card" };
+  var firstVisible = null, checkedVisible = false;
+  document.querySelectorAll('input[name="pay"]').forEach(function(r){
+    var m = map[r.value]; if(!m) return;
+    var on = platformPayEnabled(m);
+    var label = r.closest ? r.closest("label") : null;
+    if(label) label.style.display = on ? "" : "none";
+    if(m==="Card") r.disabled = true; /* gateway nei — kokhono select kora jabe na */
+    if(on){ if(!firstVisible) firstVisible = r; if(r.checked) checkedVisible = true; }
+  });
+  if(firstVisible && !checkedVisible) firstVisible.checked = true;
+  syncManualPay();
+}
 function checkoutSubmit(e){
   e.preventDefault();
   var name = document.getElementById("coName").value.trim();
@@ -1898,7 +1964,9 @@ function checkoutSubmit(e){
   ok = fldBad("fAddr", addr.length<8) && ok;
   ok = fldBad("fDist", !dist) && ok;
   if(!ok){ toast("⚠️ লাল দাগ দেওয়া ঘরগুলো ঠিক করে দিন"); return; }
-  var pay = document.querySelector('input[name="pay"]:checked').value;
+  var payEl = document.querySelector('input[name="pay"]:checked');
+  if(!payEl || payEl.disabled || (payEl.closest && payEl.closest("label") && payEl.closest("label").style.display === "none")){ toast("⚠️ এই মুহূর্তে কোনো পেমেন্ট মাধ্যম চালু নেই — পরে আবার চেষ্টা করুন"); return; }
+  var pay = payEl.value;
   var isManual = (pay==="bKash" || pay==="Nagad" || pay==="Rocket");
   var paySender = "", trxId = "";
   if(isManual){
@@ -1988,12 +2056,17 @@ function renderTracking(order){
   } else if(order.payment && order.payment.method==="ক্যাশ অন ডেলিভারি"){
     html += '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">💵 ক্যাশ অন ডেলিভারি — পণ্য হাতে পেয়ে কুরিয়ারকে <b>'+fmt(order.amounts.total)+'</b> পরিশোধ করুন।</div>';
   }
-  /* P1-13 — Return আবেদন (Delivered order, delivery-r 7 diner moddhe). */
+  /* P1-13 — Return আবেদন (Delivered order, delivery-r return window-er moddhe;
+     window + on/off Admin Settings theke: returns_enabled / return_window_days). */
   if(order.status==="Delivered"){
-    html += '<div id="retBox" style="margin-top:14px;border-top:1.5px dashed var(--line);padding-top:12px">'
-      + '<b>↩️ রিটার্ন আবেদন</b><p style="color:var(--muted);margin:6px 0 10px;line-height:1.6">পণ্যে ত্রুটি থাকলে, ভুল বা ভাঙা পণ্য এলে ডেলিভারির <b>7 দিনের</b> মধ্যে রিটার্ন আবেদন করতে পারবেন। Admin review করে refund-এর বিষয়ে জানাবে — এখানে কোনো নির্দিষ্ট refund amount প্রতিশ্রুতি দেওয়া হয় না।</p>'
-      + '<button class="btn-sec" type="button" id="retStartBtn">↩️ Return আবেদন করুন</button>'
-      + '<div id="retFormWrap" style="margin-top:10px"></div></div>';
+    if(platformFlag("returnsOn", true)){
+      html += '<div id="retBox" style="margin-top:14px;border-top:1.5px dashed var(--line);padding-top:12px">'
+        + '<b>↩️ রিটার্ন আবেদন</b><p style="color:var(--muted);margin:6px 0 10px;line-height:1.6">পণ্যে ত্রুটি থাকলে, ভুল বা ভাঙা পণ্য এলে ডেলিভারির <b>'+platformNum("returnWindow", 7)+' দিনের</b> মধ্যে রিটার্ন আবেদন করতে পারবেন। Admin review করে refund-এর বিষয়ে জানাবে — এখানে কোনো নির্দিষ্ট refund amount প্রতিশ্রুতি দেওয়া হয় না।</p>'
+        + '<button class="btn-sec" type="button" id="retStartBtn">↩️ Return আবেদন করুন</button>'
+        + '<div id="retFormWrap" style="margin-top:10px"></div></div>';
+    } else {
+      html += '<p style="color:var(--muted);font-weight:700;margin-top:14px">↩️ রিটার্ন আবেদন এখন বন্ধ আছে (Admin Settings) — সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>';
+    }
   }
   if(order.status==="Cancelled"){ html += '<p style="color:var(--danger);font-weight:800">❌ এই অর্ডারটি Cancelled (বাতিল) হয়েছে। সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>'; }
   else html += '<div class="timeline">' + flow.map(function(st,i){
@@ -2018,6 +2091,7 @@ async function anboStartReturn(order){
   var wrap = document.getElementById("retFormWrap");
   var btn = document.getElementById("retStartBtn");
   if(!wrap || !order) return;
+  if(!platformFlag("returnsOn", true)){ wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">↩️ রিটার্ন আবেদন এখন বন্ধ আছে (Admin Settings) — সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>'; if(btn) btn.disabled = true; return; }
   if(btn) btn.disabled = true;
   wrap.innerHTML = '<p style="font-weight:700">⏳ ডেলিভারির তথ্য যাচাই করা হচ্ছে…</p>';
   var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
@@ -2050,8 +2124,9 @@ async function anboStartReturn(order){
   if(!deliveredAt) deliveredAt = order.placedAt || null;
   var days = null;
   if(deliveredAt){ days = Math.floor((Date.now() - Date.parse(deliveredAt)) / 86400000); }
-  if(days !== null && days > 7){
-    wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">ডেলিভারির 7 দিন পার হয়ে গেছে (' + days + ' দিন আগে ডেলিভারি হয়েছিল) — অনলাইনে আর রিটার্ন আবেদন করা যাবে না। সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>';
+  var retWindow = platformNum("returnWindow", 7);
+  if(days !== null && days > retWindow){
+    wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">ডেলিভারির '+retWindow+' দিন পার হয়ে গেছে (' + days + ' দিন আগে ডেলিভারি হয়েছিল) — অনলাইনে আর রিটার্ন আবেদন করা যাবে না। সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555</p>';
     return;
   }
   wrap.innerHTML = '<form id="retForm" style="display:grid;gap:10px">'
@@ -2170,8 +2245,8 @@ function ensureDrawers(){
     if(cartCount()===0){ toast("🛒 কার্ট খালি — আগে পণ্য যোগ করুন!"); return; }
     document.getElementById("cartMain").style.display="none";
     document.getElementById("checkoutForm").classList.add("open");
-    if(window.ANBOBD_DB && ANBOBD_DB.fetchPlatformSettings){ ANBOBD_DB.fetchPlatformSettings().then(function(){ fillCheckoutSummary(); syncManualPay(); }).catch(function(){ fillCheckoutSummary(); syncManualPay(); }); }
-    else { fillCheckoutSummary(); syncManualPay(); }
+    if(window.ANBOBD_DB && ANBOBD_DB.fetchPlatformSettings){ ANBOBD_DB.fetchPlatformSettings().then(function(){ fillCheckoutSummary(); syncPaymentMethods(); }).catch(function(){ fillCheckoutSummary(); syncPaymentMethods(); }); }
+    else { fillCheckoutSummary(); syncPaymentMethods(); }
   });
   document.getElementById("backToCart").addEventListener("click", function(){ document.getElementById("checkoutForm").classList.remove("open"); document.getElementById("cartMain").style.display="flex"; });
   document.getElementById("checkoutForm").addEventListener("submit", checkoutSubmit);
@@ -2184,6 +2259,7 @@ function applyPromo(){
   var c = findCouponAny(code);
   if(!c || !c.active){ promoCode=null; renderCart(); toast("❌ কোডটি সঠিক নয়, মেয়াদ শেষ বা Pause করা আছে"); return; }
   if(c.sellerId && couponEligibleSub(c)===0){ promoCode=null; renderCart(); toast("🏪 "+code+" শুধু <b>"+escHtml(SL(c.sellerId).name)+"</b>-এর পণ্যে চলবে — কার্টে ওই দোকানের পণ্য নেই"); return; }
+  if(megaStackingBlocked(c)){ promoCode=null; renderCart(); toast("🔥 Mega price-এর পণ্যে এই শপ কুপন চলবে না — Admin Settings-এ Mega stacking OFF আছে"); return; }
   var es = c.sellerId ? couponEligibleSub(c) : cartSubtotal();
   if(es < c.minSpend){ promoCode=null; renderCart(); toast("⚠️ "+code+" পেতে "+(c.sellerId?"ওই দোকানের ":"")+"কমপক্ষে "+fmt(c.minSpend)+" অর্ডার লাগবে"); return; }
   promoCode = code; c.used = (c.used||0)+1; renderCart(); toast("🎉 কুপন <b>"+code+"</b> প্রযোজ্য হয়েছে!"+(c.sellerId?" (শপ কুপন — "+escHtml(SL(c.sellerId).name)+")":""));
@@ -2470,20 +2546,54 @@ var ANBOBD_DB = {
        Admin localStorage fallback (freeDeliveryMode er moto) use hobe; dutotei
        na thakle checkout e "not configured" dekhabe, kokhono fake number na. */
     /* 2026-11-21: platform number user nije diyeche — 01710370902, bKash/Nagad/Rocket tin tar jonno ek number (public). Admin Settings e number bosale setai override korbe; DB te khali string thakle default muchbe na. */
-    var out = { bkash:"01710370902", nagad:"01710370902", rocket:"01710370902", heroTitle:"", heroLead:"", loyaltyPer100:1, loyaltyRedeemPoints:100, loyaltyRedeemValue:50 };
+    var out = { bkash:"01710370902", nagad:"01710370902", rocket:"01710370902", heroTitle:"", heroLead:"", loyaltyPer100:1, loyaltyRedeemPoints:100, loyaltyRedeemValue:50,
+      /* 2026-11-23 (P0 #6 follow-up): Admin Settings er baki key-gulo — delivery
+         fee/threshold/mode, payment toggle, flash/returns/banner, return window,
+         mega stacking. Default = ajker acharon (Admin L1313-er sathe milano). */
+      dhakaFee:60, outsideFee:120, freeThreshold:2000, freeMode:"dhaka",
+      payCod:true, payBkash:true, payNagad:true, payRocket:true, payCard:false,
+      flashSale:true, returnsOn:true, bannerMega:true, bannerFreeDel:true, bannerNewSeller:false,
+      returnWindow:7, megaStacking:false };
+    var dbKeys = {}; /* kon key asol DB row theke eseche — DB value localStorage-er cheye age pay */
+    function toBool(v, d){ if(typeof v==="boolean") return v; if(v==="true") return true; if(v==="false") return false; return d; }
     try{
       var raw = localStorage.getItem("anbobd-admin-settings-v1");
       if(raw){ var sv = JSON.parse(raw); if(sv && sv.settings){ if(sv.settings.bkashNumber) out.bkash = String(sv.settings.bkashNumber); if(sv.settings.nagadNumber) out.nagad = String(sv.settings.nagadNumber); if(sv.settings.rocketNumber) out.rocket = String(sv.settings.rocketNumber); if(sv.settings.heroTitle) out.heroTitle = String(sv.settings.heroTitle); if(sv.settings.heroLead) out.heroLead = String(sv.settings.heroLead); if(!isNaN(+sv.settings.loyaltyPer100)) out.loyaltyPer100 = +sv.settings.loyaltyPer100; if(!isNaN(+sv.settings.loyaltyRedeemPoints)) out.loyaltyRedeemPoints = +sv.settings.loyaltyRedeemPoints; if(!isNaN(+sv.settings.loyaltyRedeemValue)) out.loyaltyRedeemValue = +sv.settings.loyaltyRedeemValue; } }
+    }catch(e){}
+    /* 2026-11-23 (P0 #6): notun key-gulo — same-browser Admin localStorage
+       thekeo pora hoy; DB row thakle DB jitbe (niche dbKeys dekhe). */
+    try{
+      var raw2 = localStorage.getItem("anbobd-admin-settings-v1");
+      if(raw2){ var sv2 = JSON.parse(raw2); var st2 = sv2 && sv2.settings; if(st2){
+        if(!isNaN(+st2.dhakaFee)) out.dhakaFee = +st2.dhakaFee;
+        if(!isNaN(+st2.outsideFee)) out.outsideFee = +st2.outsideFee;
+        if(!isNaN(+st2.freeAbove)) out.freeThreshold = +st2.freeAbove;
+        if(st2.freeDeliveryMode==="dhaka" || st2.freeDeliveryMode==="nationwide") out.freeMode = st2.freeDeliveryMode;
+        if(typeof st2.cod==="boolean") out.payCod = st2.cod;
+        if(typeof st2.bkash==="boolean") out.payBkash = st2.bkash;
+        if(typeof st2.nagad==="boolean") out.payNagad = st2.nagad;
+        if(typeof st2.rocket==="boolean") out.payRocket = st2.rocket;
+        if(typeof st2.card==="boolean") out.payCard = st2.card;
+        if(typeof st2.flash==="boolean") out.flashSale = st2.flash;
+        if(typeof st2.returns==="boolean") out.returnsOn = st2.returns;
+        if(typeof st2.bannerMega==="boolean") out.bannerMega = st2.bannerMega;
+        if(typeof st2.bannerFreeDel==="boolean") out.bannerFreeDel = st2.bannerFreeDel;
+        if(typeof st2.bannerNewSeller==="boolean") out.bannerNewSeller = st2.bannerNewSeller;
+        if(!isNaN(+st2.returnWindowDays)) out.returnWindow = +st2.returnWindowDays;
+        if(typeof st2.megaStacking==="boolean") out.megaStacking = st2.megaStacking;
+      } }
     }catch(e){}
     var sb = this.sb();
     if(sb){
       try{
         var r = await sb.from("settings").select("key,value");
-        if(!r.error && r.data){ r.data.forEach(function(row){ var v=row.value; try{ v=JSON.parse(row.value); }catch(e){} if(row.key==="platform_bkash_number" && typeof v==="string" && v) out.bkash=v; if(row.key==="platform_nagad_number" && typeof v==="string" && v) out.nagad=v; if(row.key==="platform_rocket_number" && typeof v==="string" && v) out.rocket=v; if(row.key==="hero_title" && typeof v==="string") out.heroTitle=v; if(row.key==="hero_sub" && typeof v==="string") out.heroLead=v; if(row.key==="loyalty_per_100" && !isNaN(+v)) out.loyaltyPer100=+v; if(row.key==="loyalty_redeem_points" && !isNaN(+v)) out.loyaltyRedeemPoints=+v; if(row.key==="loyalty_redeem_value" && !isNaN(+v)) out.loyaltyRedeemValue=+v; }); }
+        if(!r.error && r.data){ r.data.forEach(function(row){ var v=row.value; try{ v=JSON.parse(row.value); }catch(e){} dbKeys[row.key]=true; if(row.key==="platform_bkash_number" && typeof v==="string" && v) out.bkash=v; if(row.key==="platform_nagad_number" && typeof v==="string" && v) out.nagad=v; if(row.key==="platform_rocket_number" && typeof v==="string" && v) out.rocket=v; if(row.key==="hero_title" && typeof v==="string") out.heroTitle=v; if(row.key==="hero_sub" && typeof v==="string") out.heroLead=v; if(row.key==="loyalty_per_100" && !isNaN(+v)) out.loyaltyPer100=+v; if(row.key==="loyalty_redeem_points" && !isNaN(+v)) out.loyaltyRedeemPoints=+v; if(row.key==="loyalty_redeem_value" && !isNaN(+v)) out.loyaltyRedeemValue=+v; if(row.key==="delivery_dhaka_fee" && !isNaN(+v)) out.dhakaFee=+v; if(row.key==="delivery_outside_fee" && !isNaN(+v)) out.outsideFee=+v; if(row.key==="free_delivery_threshold" && !isNaN(+v)) out.freeThreshold=+v; if(row.key==="free_delivery_mode" && (v==="dhaka"||v==="nationwide")) out.freeMode=v; if(row.key==="payment_cod_enabled") out.payCod=toBool(v,true); if(row.key==="payment_bkash_enabled") out.payBkash=toBool(v,true); if(row.key==="payment_nagad_enabled") out.payNagad=toBool(v,true); if(row.key==="payment_rocket_enabled") out.payRocket=toBool(v,true); if(row.key==="payment_card_enabled") out.payCard=toBool(v,false); if(row.key==="flash_sale_enabled") out.flashSale=toBool(v,true); if(row.key==="returns_enabled") out.returnsOn=toBool(v,true); if(row.key==="banner_mega_enabled") out.bannerMega=toBool(v,true); if(row.key==="banner_free_delivery_enabled") out.bannerFreeDel=toBool(v,true); if(row.key==="banner_new_seller_enabled") out.bannerNewSeller=toBool(v,false); if(row.key==="return_window_days" && !isNaN(+v)) out.returnWindow=+v; if(row.key==="mega_stacking_allowed") out.megaStacking=toBool(v,false); }); }
       }catch(e){}
     }
     window.__anboPlatformSettings = out;
+    window.__anboDbSettings = dbKeys;
     if(window.syncHeroText) window.syncHeroText();
+    if(window.applyPlatformSettings) window.applyPlatformSettings();
     return out;
   },
   loadCatalog: async function(){
@@ -2767,6 +2877,25 @@ ANBOBD_DB.loadSellerOrders = async function(shopId){
     });
   }catch(e){ anboDbErr("দোকানের অর্ডার অনলাইন থেকে লোড করা যায়নি", e); }
 };
+/* 2026-11-23 (P0 #6 follow-up): DB/localStorage theke asa platform settings
+   storefront-er live state-e bosano — fee/threshold/mode ANBOBD_STORE.settings-e
+   (totals()/freeDeliveryApplies() ekhan thekei pore), tarpor UI sync.
+   fetchPlatformSettings-er seshe daka hoy; settings row na thakle kichui
+   bodlay na — ajker default acharon-i thake. */
+function applyPlatformSettings(){
+  var cfg = window.__anboPlatformSettings; if(!cfg) return;
+  var s = ANBOBD_STORE.settings;
+  if(!isNaN(+cfg.dhakaFee)) s.dhakaFee = +cfg.dhakaFee;
+  if(!isNaN(+cfg.outsideFee)) s.outsideFee = +cfg.outsideFee;
+  if(!isNaN(+cfg.freeThreshold)) s.freeShipThreshold = +cfg.freeThreshold;
+  if(cfg.freeMode==="dhaka" || cfg.freeMode==="nationwide") s.freeDeliveryMode = cfg.freeMode;
+  if(window.syncPaymentMethods) syncPaymentMethods();
+  if(window.syncFreeDeliveryText) syncFreeDeliveryText();
+  if(window.renderFlash) renderFlash();
+  if(window.renderMega) renderMega();
+  if(window.renderCart) renderCart();
+}
+window.applyPlatformSettings = applyPlatformSettings;
 ANBOBD_DB.loadMegaRequests = async function(shopId){
   var sb = this.sb(); if(!sb) return;
   try{
@@ -3078,8 +3207,9 @@ function esc(s){ return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,
 function renderMega(){
   var grid = document.getElementById("megaGrid"); if(!grid) return;
   var deals = PRODUCTS.filter(function(p){ return p.megaDeal && p.status==="active"; });
-  document.getElementById("mega").style.display = deals.length ? "" : "none";
-  grid.innerHTML = deals.map(function(p){ return cardHTML(p, true); }).join("");
+  var show = platformFlag("bannerMega", true) && deals.length>0;
+  document.getElementById("mega").style.display = show ? "" : "none";
+  grid.innerHTML = show ? deals.map(function(p){ return cardHTML(p, true); }).join("") : "";
 }
 window.renderMega = renderMega;
 function shopCouponDesc(c){
