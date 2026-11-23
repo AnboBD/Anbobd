@@ -31,6 +31,12 @@
 // Deploy this file to the repo at scripts/inject-supabase-config.mjs
 // together with product.html, or product.html will ship unconfigured
 // (it then shows "এই পণ্যটি এখন লাইভ নেই" instead of the product).
+//
+// 2026-11-23: shop.html target added (shop pages, /shop and
+// /shop?id=<uuid>) — mirrors the product.html entry: same IIFE that
+// reads a pre-set window.ANBOBD_SUPABASE, same early <script> fallback.
+// Deploy together with shop.html, or shop pages will ship unconfigured
+// (they then show "এই দোকানটি পাওয়া যায়নি" instead of the shop).
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -65,6 +71,15 @@ const targets = [
     // storefront: its IIFE reads a pre-set window.ANBOBD_SUPABASE, so
     // the early <script> after <head> is what fills it at build time.
     file: "product.html",
+    pattern: /var ANBOBD_SUPABASE = \{[^}]*\};/,
+    replacement: `var ANBOBD_SUPABASE = { url:${JSON.stringify(url)}, anonKey:${JSON.stringify(anonKey)}, configured:true };`,
+    early: `<script>window.ANBOBD_SUPABASE = { url:${JSON.stringify(url)}, anonKey:${JSON.stringify(anonKey)}, configured:true };</script>`,
+  },
+  {
+    // 2026-11-23: shop pages — same pattern as product.html: its IIFE
+    // reads a pre-set window.ANBOBD_SUPABASE, so the early <script>
+    // after <head> is what fills it at build time.
+    file: "shop.html",
     pattern: /var ANBOBD_SUPABASE = \{[^}]*\};/,
     replacement: `var ANBOBD_SUPABASE = { url:${JSON.stringify(url)}, anonKey:${JSON.stringify(anonKey)}, configured:true };`,
     early: `<script>window.ANBOBD_SUPABASE = { url:${JSON.stringify(url)}, anonKey:${JSON.stringify(anonKey)}, configured:true };</script>`,
