@@ -2942,7 +2942,8 @@
               var insS = await supabase.from('staff').insert({ shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true }).select().single();
               if (insS.error) { $("nsErr").textContent = insS.error.message; return; }
               if (insS.data) { newStaff.id = insS.data.id; }
-              var tmp = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, { auth: { persistSession: false, storageKey: "anbobd-staff-signup" } });
+              if (!supabaseLib || typeof supabaseLib.createClient !== "function") { $("nsErr").textContent = "Staff login account toiri kora jachhe na — database library pawa jay ni. Page reload kore abar chesta korun."; return; }
+              var tmp = supabaseLib.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, { auth: { persistSession: false, storageKey: "anbobd-staff-signup" } });
               var su = await tmp.auth.signUp({ email: em, password: pw, options: { data: { name: name, role: "seller_staff", shop_id: s.shopId, shop_role: role } } });
               if (su.error) { $("nsErr").textContent = "Staff login account toiri hoy ni: " + su.error.message + " (staff row toiri hoyeche — login chara staff hisebe thakbe)"; return; }
               var uid = su.data && su.data.user ? su.data.user.id : null;
@@ -2951,7 +2952,7 @@
                 var pr = await supabase.from('profiles').insert({ id: uid, full_name: name, email: em, phone: ph, role: "seller_staff" });
                 if (pr.error) { newStaff._profileWarn = true; }
               }
-            } catch(e){ $("nsErr").textContent = "Staff save hoy ni — abar chesta korun."; return; }
+            } catch(e){ $("nsErr").textContent = "Staff save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."; return; }
           }
           s.staff.unshift(newStaff);
           closeModal(); renderTeam();
