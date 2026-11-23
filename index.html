@@ -4183,7 +4183,7 @@ ANBOBD_DB.saveShopCoupon = async function(c, mode){
     } else if(mode==="update"){
       r = await sb.from('coupons').update({ status: c.active ? "live" : "paused" }).eq('code', c.code).eq('shop_id', c.sellerId);
     } else {
-      r = await sb.from('coupons').insert({ shop_id: c.sellerId, code: c.code, type: c.type, discount_type: c.type, value: c.value, discount_value: c.value, min_order: c.minSpend, max_discount: c.maxDiscount, expiry: c.expires || null, status: c.active ? "live" : "paused" }).select();
+      r = await sb.from('coupons').insert({ shop_id: c.sellerId, code: c.code, type: c.type, discount_type: String(c.type).toLowerCase(), value: c.value, discount_value: c.value, min_order: c.minSpend, max_discount: c.maxDiscount, expiry: c.expires || null, status: c.active ? "live" : "paused" }).select();
       if(!r.error && r.data && r.data[0]) c.supabaseId = r.data[0].id;
     }
     if(r.error) throw r.error;
