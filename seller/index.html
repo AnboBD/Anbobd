@@ -124,6 +124,21 @@
       .shop-chip .smeta{font-size:.74rem;color:var(--muted)}
       .badge-verified{display:inline-block;background:var(--brand-soft);color:var(--brand-dark);font-size:.66rem;font-weight:800;padding:.08rem .45rem;border-radius:99px;vertical-align:middle;margin-left:.3rem}
       @media (prefers-color-scheme: dark){.badge-verified{color:var(--brand)}}
+      .badge-verified.badge-pending{background:var(--amber-soft);color:var(--amber)}
+      .badge-verified.badge-rejected{background:var(--red-soft);color:var(--red)}
+      .side-foot a.side-link{display:flex;align-items:center;gap:.6rem;width:100%;padding:.55rem .7rem;border-radius:10px;font-weight:600;color:var(--muted);text-decoration:none}
+      .side-foot a.side-link:hover{background:var(--brand-soft);color:var(--brand-dark)}
+      .consent{display:flex;gap:.55rem;align-items:flex-start;font-size:.92rem;line-height:1.55;margin:.4rem 0 1rem}
+      .consent input{margin-top:.2rem;flex:none;width:18px;height:18px;accent-color:var(--brand)}
+      .auth-foot{margin-top:1.2rem;padding-top:.9rem;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted);text-align:center}
+      .auth-foot a{color:var(--teal);font-weight:700;text-decoration:none;margin:0 .45rem}
+      /* P1 (2026-11-23): shipping label print — sudhu label modal ta print hobe, puro panel na. */
+      @media print{
+        body > *:not(#modalRoot){display:none !important}
+        #modalRoot{position:static !important}
+        #modalRoot .overlay{position:static;background:none;padding:0;align-items:flex-start}
+        #modalRoot .modal{max-width:none;max-height:none;border-radius:0;animation:none;box-shadow:none;overflow:visible}
+      }
       nav.side{display:flex;flex-direction:column;gap:.2rem}
       nav.side button{display:flex;align-items:center;gap:.65rem;border:0;background:transparent;text-align:left;padding:.6rem .7rem;border-radius:10px;font-weight:600;font-size:.93rem;color:var(--muted);width:100%}
       nav.side button svg{flex:none}
@@ -407,46 +422,46 @@
 
         <div class="form-section">1 · Your account</div>
         <div class="field">
-          <label for="regName">Your full name</label>
+          <label for="regName">Your full name (আবশ্যক)</label>
           <input id="regName" type="text" autocomplete="name" placeholder="Full name (as on NID)" />
         </div>
         <div class="grid-2">
           <div class="field">
-            <label for="regEmail">Email (login)</label>
+            <label for="regEmail">Email (login) (আবশ্যক)</label>
             <input id="regEmail" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@yourshop.com" />
           </div>
           <div class="field">
-            <label for="regMobile">Mobile number</label>
+            <label for="regMobile">Mobile number (আবশ্যক)</label>
             <input id="regMobile" type="tel" autocomplete="tel" placeholder="01XXXXXXXXX" />
           </div>
         </div>
         <div class="grid-2">
           <div class="field">
-            <label for="regPass">Password</label>
+            <label for="regPass">Password (আবশ্যক)</label>
             <input id="regPass" type="password" autocomplete="new-password" placeholder="Minimum 6 characters" />
           </div>
           <div class="field">
-            <label for="regPass2">Confirm password</label>
+            <label for="regPass2">Confirm password (আবশ্যক)</label>
             <input id="regPass2" type="password" autocomplete="new-password" placeholder="Repeat the password" />
           </div>
         </div>
 
         <div class="form-section">2 · Your shop</div>
         <div class="field">
-          <label for="regShop">Shop name</label>
+          <label for="regShop">Shop name (আবশ্যক)</label>
           <input id="regShop" type="text" placeholder="e.g. Dhaka Fashion House" />
           <div class="hint">This is the name customers will see on the AnboBD website.</div>
         </div>
         <div class="grid-2">
           <div class="field">
-            <label for="regCat">Main category</label>
+            <label for="regCat">Main category (আবশ্যক)</label>
             <select id="regCat">
               <option>Fashion</option><option>Electronics</option><option>Home &amp; Living</option>
               <option>Beauty</option><option>Grocery</option><option>Sports</option>
             </select>
           </div>
           <div class="field">
-            <label for="regDistrict">District</label>
+            <label for="regDistrict">District (আবশ্যক)</label>
             <select id="regDistrict">
               <option>Dhaka</option><option>Gazipur</option><option>Narayanganj</option><option>Chattogram</option>
               <option>Cox's Bazar</option><option>Cumilla</option><option>Sylhet</option><option>Khulna</option>
@@ -456,23 +471,23 @@
           </div>
         </div>
         <div class="field">
-          <label for="regAddress">Pickup address</label>
+          <label for="regAddress">Pickup address (আবশ্যক)</label>
           <textarea id="regAddress" rows="2" placeholder="House / road / area — courier will pick up parcels from here"></textarea>
         </div>
 
         <div class="form-section">3 · Payout method</div>
         <div class="grid-2">
           <div class="field">
-            <label for="regPayMethod">Method</label>
+            <label for="regPayMethod">Method (আবশ্যক)</label>
             <select id="regPayMethod"><option>bKash</option><option>Nagad</option><option>Bank Transfer</option></select>
           </div>
           <div class="field">
-            <label for="regPayName">Account holder name</label>
+            <label for="regPayName">Account holder name (আবশ্যক)</label>
             <input id="regPayName" type="text" placeholder="Name on the account" />
           </div>
         </div>
         <div class="field">
-          <label for="regPayAccount">Account number</label>
+          <label for="regPayAccount">Account number (আবশ্যক)</label>
           <input id="regPayAccount" type="text" placeholder="bKash / Nagad number or bank account number" />
           <div class="hint">Your earnings will be paid to this account after Admin releases each payout.</div>
         </div>
@@ -480,7 +495,7 @@
         <div class="form-section">4 · KYC verification</div>
         <div class="grid-2">
           <div class="field">
-            <label for="regNid">NID number</label>
+            <label for="regNid">NID number (আবশ্যক)</label>
             <input id="regNid" type="text" inputmode="numeric" placeholder="NID number (digits only)" />
           </div>
           <div class="field">
@@ -505,9 +520,14 @@
         </div>
         <p style="font-size:.85rem;color:var(--muted);margin:.2rem 0 .9rem">Admin will verify your NID before approving your shop — trade licence thakle setao verify kora hobe, na thakleo approve hobe. Submitting false information will get the application rejected.</p>
 
+        <label class="consent"><input type="checkbox" id="regTerms" /> <span>আমি AnboBD এর <a href="/pages/terms.html" target="_blank" rel="noopener">শর্তাবলী</a> পড়েছি ও মানতে রাজি (আবশ্যক)</span></label>
+
         <p class="err" id="regErr"></p>
         <button class="btn" id="regSubmitBtn" type="submit" style="width:100%">Submit Application for Admin Approval</button>
       </form>
+      <div class="auth-foot">
+        <a href="/" target="_blank" rel="noopener">Storefront</a> · <a href="/pages/contact.html" target="_blank" rel="noopener">Help</a> · <a href="/pages/terms.html" target="_blank" rel="noopener">Terms</a>
+      </div>
     </div>
   </section>
 
@@ -572,7 +592,7 @@
       <div class="shop-chip">
         <div class="shop-avatar" id="shopAvatar">S</div>
         <div>
-          <div class="sname"><span id="shopNameLbl">My Shop</span><span class="badge-verified">KYC Verified</span></div>
+          <div class="sname"><span id="shopNameLbl">My Shop</span><span class="badge-verified" id="kycBadge">KYC Pending</span></div>
           <div class="smeta" id="shopMetaLbl"></div>
         </div>
       </div>
@@ -580,14 +600,16 @@
         <button data-view="dashboard" class="on" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>Dashboard</button>
         <button data-view="products" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg>My Products</button>
         <button data-view="orders" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 5H5L6 3z"/><path d="M5 8h14v13H5z"/><path d="M9 12h6"/></svg>My Orders<span class="pill hidden" id="pendingPill">0</span></button>
+        <button data-view="reviews" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>Reviews</button>
         <button data-view="coupons" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9V5a2 2 0 0 1 2-2h4l10 10v4a2 2 0 0 1-2 2H7L3 15V9z" transform="rotate(90 12 12)"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M13 13l3 3M16 13l-3 3"/></svg>Shop Coupons<span class="pill hidden" id="couponPill" style="background:var(--brand)">0 Live</span></button>
         <button data-view="campaigns" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l14-6v14L3 13v-2z"/><path d="M7 13v5a2 2 0 0 0 4 0v-4M17 8a4 4 0 0 1 0 8"/></svg>Mega Sale &amp; Campaigns<span class="pill hidden" id="campPill">0</span></button>
         <button data-view="returns" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Returns &amp; Refunds<span class="pill hidden" id="returnPill">0</span></button>
-        <button data-view="payouts" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.01M18 12h.01"/></svg>My Wallet &amp; Payouts</button>
+        <button data-view="payouts" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6 12h.01M18 12h.01"/></svg>My Wallet &amp; Payouts<span class="pill hidden" id="walletPill">৳0</span></button>
         <button data-view="team" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.2 3.4-5 6.5-5s5.7 1.8 6.5 5"/><circle cx="17.5" cy="9" r="2.6"/><path d="M16 15.2c2.6.3 4.6 1.9 5.3 4.8"/></svg>Team &amp; Staff</button>
         <button data-view="settings" type="button"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.2"/><path d="M19 12a7 7 0 0 0-.14-1.4l2.1-1.63-2-3.46-2.49 1a7 7 0 0 0-2.42-1.4L13.66 2.6h-3.32l-.39 2.51a7 7 0 0 0-2.42 1.4l-2.49-1-2 3.46L5.14 10.6A7 7 0 0 0 5 12c0 .48.05.94.14 1.4L3.04 15.03l2 3.46 2.49-1a7 7 0 0 0 2.42 1.4l.39 2.51h3.32l.39-2.51a7 7 0 0 0 2.42-1.4l2.49 1 2-3.46-2.1-1.63c.09-.46.14-.92.14-1.4z"/></svg>Shop Settings</button>
       </nav>
       <div class="side-foot">
+        <a class="side-link" id="viewShopLink" href="#" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 9.5V21h14V9.5"/></svg>View my shop ↗</a>
         <button id="logoutBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
       </div>
     </aside>
@@ -604,6 +626,7 @@
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <input id="globalSearch" type="search" placeholder="Product ba order khujun…" />
         </div>
+        <a class="btn ghost" id="viewShopBtn" href="#" target="_blank" rel="noopener">View my shop ↗</a>
         <button class="icon-btn" id="bellBtn" type="button" aria-label="Notifications"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M10.3 21a2 2 0 0 0 3.4 0"/></svg><span class="dot hidden" id="bellDot"></span></button>
       <div id="bellPanel" style="display:none;position:fixed;top:64px;right:16px;z-index:200;width:min(360px,92vw);background:#ffffff;border:1.5px solid #e5e7eb;border-radius:14px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:12px"></div>
       </div>
@@ -649,7 +672,7 @@
             <option value="">All categories</option>
           </select>
           <select id="prodStatusFilter" aria-label="Status filter">
-            <option value="">All status</option><option>Active</option><option>Paused</option><option>Pending Approval</option>
+            <option value="">All status</option><option>Active</option><option>Paused</option><option>Pending Approval</option><option>Rejected</option>
           </select>
           <div class="spacer" style="flex:1"></div>
           <button class="btn" id="addProductBtn" type="button">+ Add Product</button>
@@ -684,6 +707,10 @@
           <div><b>Order confirm apni koren na — Admin kore.</b> Notun order prothome “Awaiting Admin” thakbe. Admin confirm korlei seta “Ready to Ship” hoye apnar kache asbe, tokhon e apni ship korte parben. Awaiting order e ship button thakbe na.</div>
         </div>
         <div class="filter-row">
+          <div class="search-box" style="flex:0 1 260px">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input id="orderSearch" type="search" placeholder="Order / customer / phone khujun…" />
+          </div>
           <div class="chip-row" id="orderChips">
             <button class="fchip on" data-f="All" type="button">All My Sub-Orders</button>
             <button class="fchip" data-f="Awaiting Admin" type="button">Awaiting Admin</button>
@@ -707,6 +734,16 @@
             <div>Customer order kore Admin confirm korle apnar sub-order ekhane asbe. Notun shop e order aste kichu somoy lagte pare — product live ache kina check korun.</div>
           </div>
         </div>
+      </section>
+
+      <!-- REVIEWS -->
+      <section id="view-reviews" class="hidden">
+        <div class="alert-strip" style="background:var(--brand-soft);border-color:var(--brand)">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <div><b>Sudhu apnar shop-er review:</b> Customer apnar product e je review diyeche, setai ekhane dekhabe. Review er jobab dewar option ekhono nei.</div>
+        </div>
+        <div class="grid-stats" id="reviewSummary" style="grid-template-columns:repeat(3,1fr)"></div>
+        <div id="reviewsList"></div>
       </section>
 
       <!-- COUPONS -->
@@ -932,18 +969,51 @@
      rates (Grocery 5) — displays now call adminCatRate() directly. */
   var COMMISSION = { "Electronics": 10, "Fashion": 12, "Home & Living": 10, "Beauty": 10, "Grocery": 8, "Sports": 10 };
   var CAT_COLORS = { "Electronics":"#2563eb", "Fashion":"#db2777", "Home & Living":"#0b7a55", "Beauty":"#7c4dff", "Grocery":"#e8862e", "Sports":"#0891b2" };
+  /* P1 (2026-11-23): campaign dates come from the Admin settings table
+     (keys mega_campaign_<1..3>_<name|start|end|min_discount> — same key
+     names the Admin panel writes). Defaults below apply until Admin sets
+     dates; empty dates are shown honestly as "Admin date dey ni". */
   var CAMPAIGN_TYPES = [
-    { name:"Mega Sale", minDisc:20, color:"#d64545", note:"Homepage hero, push notification ar Flash Sale slot soho sobcheye boro campaign format." },
-    { name:"Mega Discount", minDisc:15, color:"#e8862e", note:"Category page er top banner ar “Mega Discount” badge pabe approved product." },
-    { name:"Daily Flash Sale", minDisc:25, color:"#7c4dff", note:"Limited-time flash slot — stock limited, price sobcheye kom hote hobe." }
+    { name:"Mega Sale", minDisc:20, start:"", end:"", color:"#d64545", note:"Homepage hero, push notification ar Flash Sale slot soho sobcheye boro campaign format." },
+    { name:"Mega Discount", minDisc:15, start:"", end:"", color:"#e8862e", note:"Category page er top banner ar “Mega Discount” badge pabe approved product." },
+    { name:"Daily Flash Sale", minDisc:25, start:"", end:"", color:"#7c4dff", note:"Limited-time flash slot — stock limited, price sobcheye kom hote hobe." }
   ];
+  /* P1 (2026-11-23): Admin-controlled settings read via the public anon
+     select on the settings table (same pattern as the storefront). */
+  var sellerSettings = { payoutDay: "Thursday", payoutHoldDays: 3 };
+  function sellerSettingsVal(v){ try { return JSON.parse(v); } catch(e){ return v; } }
+  async function loadSellerSettings(){
+    if (!supabaseConnected || !supabase) return;
+    try {
+      var r = await supabase.from("settings").select("key,value");
+      if (r.error || !r.data) return;
+      r.data.forEach(function(row){
+        var v = sellerSettingsVal(row.value);
+        if (row.key === "payout_day" && typeof v === "string" && v) sellerSettings.payoutDay = v;
+        if (row.key === "payout_hold_days" && !isNaN(+v)) sellerSettings.payoutHoldDays = +v;
+        var m = /^mega_campaign_([123])_(name|start|end|min_discount)$/.exec(row.key);
+        if (m) {
+          var cp = CAMPAIGN_TYPES[+m[1] - 1]; if (!cp) return;
+          if (m[2] === "min_discount") { if (!isNaN(+v) && +v > 0) cp.minDisc = +v; }
+          else if (typeof v === "string") cp[m[2]] = v;
+        }
+      });
+      renderCampaigns(); renderPayouts();
+    } catch(e){}
+  }
+  function nextPayoutDate(){
+    var days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    var target = days.indexOf(sellerSettings.payoutDay); if (target < 0) target = 4; /* Thursday default */
+    var d = new Date(); d.setDate(d.getDate() + ((target - d.getDay() + 7) % 7));
+    return d;
+  }
   var PERMS = {
-    "Shop Manager": ["Product add / edit","Order manage","Customer support","Payout request","Shop settings"],
+    "Shop Manager": ["Product add / edit","Order manage","Returns & refunds","Payout request","Shop settings"],
     "Order Staff":  ["Order manage"],
-    "Support":      ["Customer support"],
+    "Support":      ["Returns & refunds"],
     "Warehouse":    ["Stock update"]
   };
-  var ALL_PERMS = ["Product add / edit","Order manage","Customer support","Stock update","Payout request","Shop settings"];
+  var ALL_PERMS = ["Product add / edit","Order manage","Returns & refunds","Stock update","Payout request","Shop settings"];
   var ROLE_COLORS = { "Shop Manager":"#0b7a55", "Order Staff":"#2563eb", "Support":"#7c4dff", "Warehouse":"#e8862e" };
   /* Seller sudhu Admin-confirmed order ship kore — confirm er kaj Admin er.
      Tai seller er advance map e "Confirm" nei. */
@@ -957,7 +1027,7 @@
   var session = { sellerId: null };
   var roleBlocked = false; /* set when the signed-in account is not a seller (e.g. an Admin/owner account) */
   var staffLoginBlocked = ""; /* Decision 7: staff login keno block holo, setar karon */
-  var orderFilter = "All", currentView = "dashboard";
+  var orderFilter = "All", orderQuery = "", currentView = "dashboard";
 
   function sellerById(id){ for (var i=0;i<DB.sellers.length;i++) if (String(DB.sellers[i].id)===String(id)) return DB.sellers[i]; return null; }
   function sellerByEmail(em){ em = String(em||"").toLowerCase(); for (var i=0;i<DB.sellers.length;i++) if (DB.sellers[i].email===em) return DB.sellers[i]; return null; }
@@ -975,6 +1045,7 @@
   function ownCoupons(){ var s = me(); return s ? s.coupons : []; }
   function ownSubs(){ var s = me(); return s ? s.campSubs : []; }
   function ownReturns(){ var s = me(); return s ? s.returns : []; }
+  function ownReviews(){ var s = me(); return s ? (s.reviews || []) : []; }
   function ownStaff(){ var s = me(); return s ? s.staff : []; }
   function prodById(id){ var l = ownProducts(); for (var i=0;i<l.length;i++) if (String(l[i].id)===String(id)) return l[i]; return null; }
   function orderTotal(o){ if (o && typeof o._total === "number" && o._total) return o._total; var t=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id); if(p) t += p.price*(it.qty||1); else if (it.price) t += Number(it.price)*(it.qty||1); }); return t; }
@@ -1194,12 +1265,24 @@
      id, shop_id, order_id, refund_amount, reason, status, created_at) —
      tai status sorasori r.status theke map kora hoy. */
   function mapReturnRow(r){
-    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", amount: Number(r.amount || r.refund_amount || 0), status: ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
+    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), reason: r.reason || "", rejectReason: r.reject_reason || "", amount: Number(r.amount || r.refund_amount || 0), status: ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
   }
   async function loadSellerDataFromSupabase(sellerObj){
     if (!supabaseConnected || !supabase || !sellerObj || !sellerObj.shopId) return;
     var shopId = sellerObj.shopId;
     try { var pr = await supabase.from('products').select('*').eq('shop_id', shopId).order('created_at', { ascending: false }); if (!pr.error && pr.data) sellerObj.products = pr.data.map(mapProductRow); } catch(e){}
+    /* P1 (2026-11-23): Reviews — sudhu nijer product er review, storefront er
+       motoi select('*') + product_id diye filter. Review mane comment-soho
+       row (storefront o tai dhore); rating-only row count hoy na. */
+    try {
+      var pids = sellerObj.products.map(function(p){ return p.id; });
+      if (pids.length) {
+        var rv = await supabase.from('reviews').select('*').in('product_id', pids).order('created_at', { ascending: false });
+        if (!rv.error && rv.data) sellerObj.reviews = rv.data.map(function(r){
+          return { id: r.id, pid: r.product_id || r.productId, rating: Number(r.rating || 0), comment: r.comment || r.text || r.review || r.body || "", customer: r.customer_name || r.name || r.reviewer || r.customer || "Customer", date: r.created_at ? fmtDate(r.created_at) : "" };
+        }).filter(function(r){ return !!String(r.comment).trim(); });
+      } else sellerObj.reviews = [];
+    } catch(e){}
     try {
       var so = await supabase.from('sub_orders').select('*').eq('shop_id', shopId).order('created_at', { ascending: false });
       if (!so.error && so.data) {
@@ -1223,7 +1306,7 @@
   }
   function sellerFromShopRow(profile, shop, authUser){
     var status = String(shop.status || "pending").toLowerCase();
-    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", nidCopyUrl: shop.nid_copy_url || "", tradeCopyUrl: shop.trade_licence_copy_url || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, vacation: !!shop.vacation, logoUrl: shop.logo_url || "", bannerUrl: shop.banner_url || "", balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [] };
+    return { id: authUser ? authUser.id : shop.owner_id, userId: authUser ? authUser.id : shop.owner_id, shopId: shop.id, owner: (profile && profile.full_name) || shop.owner_name || "", email: (profile && profile.email) || (authUser && authUser.email) || shop.email || "", phone: (profile && profile.phone) || shop.phone || "", shop: shop.name || shop.shop_name || "", category: shop.category || "Fashion", district: shop.district || "", address: shop.pickup_address || shop.address || "", desc: shop.description || "", payMethod: shop.payout_method || "bKash", payAccount: shop.payout_account || "", payName: shop.payout_name || "", nid: shop.nid_number || "", tradeLicense: shop.trade_licence || shop.trade_license || "", nidCopyUrl: shop.nid_copy_url || "", tradeCopyUrl: shop.trade_licence_copy_url || "", status: status === "approved" ? "approved" : (status === "suspended" || status === "rejected" ? "suspended" : "pending"), appliedOn: shop.created_at || new Date().toISOString(), approvedOn: shop.approved_at || null, kycStatus: shop.kyc_status || "pending", vacation: !!shop.vacation, logoUrl: shop.logo_url || "", bannerUrl: shop.banner_url || "", balance: Number(shop.balance || 0), pendingClearance: Number(shop.pending_clearance || 0), products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [], reviews: [] };
   }
   async function loadCurrentSellerFromSupabase(authUser){
     if (!supabaseConnected || !supabase || !authUser) return null;
@@ -1333,6 +1416,7 @@
     $("appView").classList.remove("hidden");
     syncShopUI();
     applyStaffNav();
+    loadSellerSettings(); /* P1: payout day + campaign dates Admin settings theke */
     initSellerMfa(); sellerRefreshMfaStatus();
     refreshKycDocs();
     try { renderAll(); } catch (err) { /* render e somossa holeo panel khola thakbe */ }
@@ -1351,7 +1435,7 @@
     if (supabaseConnected && supabase) { try { await supabase.auth.signOut(); } catch(e){} }
     session.sellerId = null;
     DB.sellers.length = 0;
-    ["statGrid","todoGrid","recentOrdersBody","productsBody","ordersBody","couponGrid","campGrid","returnList","payoutHistoryBody","earningsBody","staffGrid","permMatrixBody"].forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = ""; });
+    ["statGrid","todoGrid","recentOrdersBody","productsBody","ordersBody","reviewSummary","reviewsList","couponGrid","campGrid","returnList","payoutHistoryBody","earningsBody","staffGrid","permMatrixBody"].forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = ""; });
     $("sidebar").classList.remove("open");
     closeDrawer(); closeModal();
     /* Logout e login form ekdom khali thakbe — ager email/password/error jeno na thake, ar Login tab active thakbe. */
@@ -1609,6 +1693,8 @@
     if (!/^\d{10,17}$/.test(nid)) { fail("Sothik NID number din (10–17 digit)."); return; }
     if (trade && trade.length < 5) { fail("Trade license number thakle sothik number din (kompokkhe 5 character)."); return; }
     if (!regNidDoc) { fail("NID er copy upload korte hobe"); return; }
+    /* P1 (2026-11-23): Terms & Conditions e raji na hole application jabe na. */
+    if (!$("regTerms") || !$("regTerms").checked) { fail("শর্তাবলীতে রাজি হতে হবে — checkbox ta tick korun."); return; }
     if (!supabaseConnected && sellerByEmail(em)) { fail("Ei email diye agei ekta seller account ache. Login korun, ba onno email use korun."); return; }
 
     if (supabaseConnected && supabase) {
@@ -1675,7 +1761,7 @@
       status: "pending", appliedOn: now.toISOString(), approvedOn: null,
       vacation: false,
       balance: 0, pendingClearance: 0,
-      products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: []
+      products: [], orders: [], coupons: [], campSubs: [], returns: [], payouts: [], staff: [], reviews: []
     };
     seller.shopId = seller.id;
     DB.sellers.push(seller);
@@ -1700,6 +1786,18 @@
   function syncShopUI(){
     var s = me(); if (!s) return;
     $("shopNameLbl").textContent = s.shop;
+    /* P1 (2026-11-23): KYC badge data-driven — shops.kyc_status theke. */
+    var kb = $("kycBadge");
+    if (kb) {
+      var ks = String(s.kycStatus || "pending").toLowerCase();
+      kb.textContent = ks === "approved" ? "KYC Verified" : (ks === "rejected" ? "KYC Rejected" : "KYC Pending");
+      kb.classList.toggle("badge-pending", ks !== "approved" && ks !== "rejected");
+      kb.classList.toggle("badge-rejected", ks === "rejected");
+    }
+    /* P1 (2026-11-23): "View my shop" — storefront shop page (/shop?id=...). */
+    var shopUrl = "/shop?id=" + encodeURIComponent(s.shopId || "");
+    var vsb = $("viewShopBtn"); if (vsb) vsb.href = shopUrl;
+    var vsl = $("viewShopLink"); if (vsl) vsl.href = shopUrl;
     var sav = $("shopAvatar");
     if (s.logoUrl) { sav.innerHTML = '<img src="' + esc(s.logoUrl) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:block" />'; sav.style.background = "transparent"; sav.style.overflow = "hidden"; }
     else { sav.textContent = initials(s.shop); sav.style.background = ""; sav.style.overflow = ""; }
@@ -1720,6 +1818,7 @@
     dashboard: ["Dashboard","Sudhu amar shop — platform total ekhane nei"],
     products: ["My Products","Product add, edit, stock ar price manage korun"],
     orders: ["My Orders","Admin confirm korar por order apnar kache ashe — apni sudhu ship koren"],
+    reviews: ["Reviews","Customer ra apnar product e ki review diyeche — sudhu apnar shop-er review"],
     coupons: ["Shop Coupons","Nijer shop er coupon banan — website e live show hobe"],
     campaigns: ["Mega Sale & Campaigns","Mega Sale / Mega Discount e product din — Admin approval sapekkhe"],
     returns: ["Returns & Refunds","Sudhu apnar shop-er return request — wallet theke refund adjust hoy"],
@@ -1733,13 +1832,19 @@
   });
   /* Decision 7 — staff permission gating: staff sudhu tar role er view
      khulte parbe; Team & Staff shudhu owner er. */
-  var STAFF_VIEW_PERM = { dashboard: null, products: "Product add / edit", orders: "Order manage", coupons: "Product add / edit", campaigns: "Product add / edit", returns: "Customer support", payouts: "Payout request", team: null, settings: "Shop settings" };
+  var STAFF_VIEW_PERM = { dashboard: null, products: "Product add / edit", orders: "Order manage", coupons: "Product add / edit", campaigns: "Product add / edit", returns: "Returns & refunds", payouts: "Payout request", team: null, settings: "Shop settings", reviews: "Product add / edit" };
   function staffCanView(v){
     var s = me(); if (!s || !s.isStaff) return true;
     if (v === "team") return false;
+    /* P1 (2026-11-23): Warehouse staff (sudhu "Stock update") — Products
+       view khulte parbe, kintu sudhu stock bodlate parbe (Add/Edit/Delete
+       renderProducts e lukano thake). */
+    if (v === "products" && (PERMS[s.staffRole] || []).indexOf("Stock update") > -1) return true;
     var p = STAFF_VIEW_PERM[v]; if (!p) return true;
     return (PERMS[s.staffRole] || []).indexOf(p) > -1;
   }
+  function staffCanEditProducts(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Product add / edit") > -1; }
+  function staffCanStock(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Stock update") > -1 || (PERMS[s.staffRole] || []).indexOf("Product add / edit") > -1; }
   function applyStaffNav(){
     var s = me();
     document.querySelectorAll("#sideNav button").forEach(function(b){
@@ -1752,7 +1857,7 @@
     if (!staffCanView(v)){ toast("Ei view ta apnar role (" + (me() ? me().staffRole : "") + ") er jonno noy."); v = "dashboard"; }
     currentView = v;
     document.querySelectorAll("#sideNav button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-view")===v); });
-    ["dashboard","products","orders","coupons","campaigns","returns","payouts","team","settings"].forEach(function(x){ $("view-"+x).classList.toggle("hidden", x!==v); });
+    ["dashboard","products","orders","reviews","coupons","campaigns","returns","payouts","team","settings"].forEach(function(x){ $("view-"+x).classList.toggle("hidden", x!==v); });
     $("viewTitle").textContent = VIEW_META[v][0]; $("viewSub").textContent = VIEW_META[v][1];
     $("sidebar").classList.remove("open");
     window.scrollTo(0,0);
@@ -1904,6 +2009,9 @@
 
   /* ================= PRODUCTS ================= */
   function renderProducts(){
+    /* P1 (2026-11-23): Warehouse staff (sudhu Stock update) — Add button
+       lukano thake, sudhu stock bodlate pare. */
+    $("addProductBtn").style.display = staffCanEditProducts() ? "" : "none";
     var q = $("prodSearch").value.trim().toLowerCase();
     var cat = $("prodCatFilter").value, st = $("prodStatusFilter").value;
     /* The list renders from the signed-in seller's OWN products array —
@@ -1911,25 +2019,31 @@
        always shows in My Products. No other seller's product can appear. */
     var list = ownProducts().filter(function(p){
       return (!q || p.name.toLowerCase().indexOf(q)>-1 || p.sku.toLowerCase().indexOf(q)>-1)
-        && (!cat || p.cat===cat) && (!st || p.status===st || (st==="Pending Approval" && p.approval==="Pending Approval"));
+        && (!cat || p.cat===cat) && (!st || p.status===st || (st==="Pending Approval" && p.approval==="Pending Approval") || (st==="Rejected" && p.approval==="Rejected"));
     });
     $("productsEmpty").classList.toggle("hidden", ownProducts().length > 0);
     $("productsBody").innerHTML = list.map(function(p){
       var pct = Math.min(100, Math.round(p.stock/150*100));
       var cls = p.stock===0 || p.stock<5 ? "low" : (p.stock<25 ? "mid" : "");
       var thumbHtml = (p.images && p.images.length) ? '<img class="thumb" src="' + esc(p.images[0]) + '" alt="' + esc(p.name) + '" style="object-fit:cover" />' : '<div class="thumb" style="background:' + (CAT_COLORS[p.cat]||"#666") + '">' + catIcon(p.cat) + '</div>';
+      /* P1 (2026-11-23): Warehouse staff sudhu Stock pabe; Edit/Pause/Delete
+         sudhu "Product add / edit" permission thakle. Pending-Approval
+         product er Pause button disabled — pause likhle reload e fire asto. */
+      var acts = "";
+      if (staffCanStock()) acts += '<button class="mini-btn" data-act="stock" data-id="' + p.id + '" type="button">+ Stock</button>';
+      if (staffCanEditProducts()) {
+        acts += '<button class="mini-btn" data-act="edit" data-id="' + p.id + '" type="button">Edit</button>';
+        var isPending = p.approval === "Pending Approval";
+        acts += '<button class="mini-btn" data-act="toggle" data-id="' + p.id + '" type="button"' + (isPending ? ' disabled title="Approval er opekkhay — pause kora jabe na"' : '') + '>' + (p.status==="Active" ? "Pause" : "Activate") + '</button>';
+        acts += '<button class="mini-btn red" data-act="del" data-id="' + p.id + '" type="button">Delete</button>';
+      }
       return '<tr><td><div class="prod-cell">' + thumbHtml + '<div><div class="pname">' + esc(p.name) + '</div><div class="psku">' + esc(p.sku) + ' · ' + esc(p.cat) + '</div>' + (packLabel(p) ? '<div class="psku">📦 ' + esc(packLabel(p)) + '</div>' : '') + '</div></div></td>'
         + '<td><b>' + fmt(p.price) + '</b>' + (p.oldPrice ? '<div class="psku"><s>' + fmt(p.oldPrice) + '</s></div>' : '') + '</td>'
         + '<td><b>' + p.stock + '</b><div class="stockbar"><i class="' + cls + '" style="width:' + pct + '%"></i></div></td>'
         + '<td>' + (p.sold || 0).toLocaleString("en-IN") + '</td>'
         + '<td>' + adminCatRate(p.cat) + '%</td>'
         + '<td><span class="status ' + statusClass(p.status) + '">' + p.status + '</span>' + (p.approval==="Pending Approval" ? '<div style="margin-top:.3rem"><span class="status st-pendingapproval">Pending Approval — Admin moderation</span><div class="psku">Live na, Admin approve korle storefront e jabe</div></div>' : '') + (p.approval==="Rejected" ? '<div style="margin-top:.3rem"><span class="status st-rejected">Rejected by Admin</span><div class="psku">Edit kore abar moderation e pathan</div></div>' : '') + '</td>'
-        + '<td><div class="row-actions">'
-        + '<button class="mini-btn" data-act="stock" data-id="' + p.id + '" type="button">+ Stock</button>'
-        + '<button class="mini-btn" data-act="edit" data-id="' + p.id + '" type="button">Edit</button>'
-        + '<button class="mini-btn" data-act="toggle" data-id="' + p.id + '" type="button">' + (p.status==="Active" ? "Pause" : "Activate") + '</button>'
-        + '<button class="mini-btn red" data-act="del" data-id="' + p.id + '" type="button">Delete</button>'
-        + '</div></td></tr>';
+        + '<td><div class="row-actions">' + acts + '</div></td></tr>';
     }).join("");
     if (ownProducts().length && !list.length) {
       $("productsBody").innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:1.4rem">Ei filter e kono product mile ni — search ba filter bodle dekhun.</td></tr>';
@@ -1939,6 +2053,7 @@
         var id = b.getAttribute("data-id"), act = b.getAttribute("data-act"), p = prodById(id);
         if (!p) return;
         if (act==="stock"){
+          if (!staffCanStock()) { toast("Ei kaj ta apnar role er jonno noy."); return; }
           /* P1-23 (2026-11-21): no more one-click +20. Seller types a quantity
              (default 1), confirms, and the row is re-read from Supabase after
              the update — the displayed total is the stored total, not a guess. */
@@ -1966,9 +2081,26 @@
               });
             });
         }
-        if (act==="toggle"){ p.status = p.status==="Active" ? "Paused" : "Active"; if (supabaseConnected && supabase) { try { var dbSt = p.approval === "Pending Approval" ? "pending" : (p.approval === "Rejected" ? "rejected" : (p.status === "Paused" ? "paused" : "approved")); await supabase.from('products').update({ status: dbSt }).eq('id', p.id).eq('shop_id', me().shopId); } catch(e){} } toast(p.name + " ekhon " + p.status); renderAll(); }
-        if (act==="del"){ openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', async function(){ var s = me(); if (supabaseConnected && supabase) { try { await supabase.from('products').delete().eq('id', p.id).eq('shop_id', s.shopId); } catch(e){} } s.products = s.products.filter(function(x){ return String(x.id)!==String(id); }); toast("Product delete hoyeche"); renderAll(); }); }
-        if (act==="edit"){ openProductModal(p); }
+        if (act==="toggle"){
+          /* P1 (2026-11-23): Pending-Approval product pause kora jay na —
+             DB te "pending" likhle loader abar Active baniye dito (reload e
+             fire asto), tai ekhane agei atkano hoy. DB error hole local
+             status fire jay — UI te vul state thake na. */
+          if (p.approval === "Pending Approval") { toast("Approval er opekkhay — pause kora jabe na, Admin approve korar por parben."); return; }
+          if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; }
+          var prevStatus = p.status;
+          p.status = p.status==="Active" ? "Paused" : "Active";
+          if (supabaseConnected && supabase) {
+            try {
+              var dbSt = p.approval === "Rejected" ? "rejected" : (p.status === "Paused" ? "paused" : "approved");
+              var upT = await supabase.from('products').update({ status: dbSt }).eq('id', p.id).eq('shop_id', me().shopId);
+              if (upT && upT.error) { p.status = prevStatus; toast("Product status save hoy ni — " + (upT.error.message || "database error") + ". Abar chesta korun."); renderAll(); return; }
+            } catch(e){ p.status = prevStatus; toast("Product status save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderAll(); return; }
+          }
+          toast(p.name + " ekhon " + p.status); renderAll();
+        }
+        if (act==="del"){ if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; } openConfirm("Product delete korben?", '"' + p.name + '" delete hole storefront theke sore jabe.', async function(){ var s = me(); if (supabaseConnected && supabase) { try { var delR = await supabase.from('products').delete().eq('id', p.id).eq('shop_id', s.shopId); if (delR && delR.error) { toast("Product delete hoy ni — " + (delR.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Product delete hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } } s.products = s.products.filter(function(x){ return String(x.id)!==String(id); }); toast("Product delete hoyeche"); renderAll(); }); }
+        if (act==="edit"){ if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; } openProductModal(p); }
       });
     });
   }
@@ -2094,8 +2226,16 @@
     document.querySelectorAll("#orderChips .fchip").forEach(function(c){ c.classList.toggle("on", c===b); });
     renderOrders();
   });
+  /* P1 (2026-11-23): order search box. */
+  $("orderSearch").addEventListener("input", function(){ orderQuery = this.value.trim().toLowerCase(); renderOrders(); });
   function renderOrders(){
-    var list = ownOrders().filter(function(o){ return orderFilter==="All" || o.status===orderFilter; });
+    /* P1 (2026-11-23): order search — #ANBO number, customer name, phone. */
+    var list = ownOrders().filter(function(o){
+      if (orderFilter!=="All" && o.status!==orderFilter) return false;
+      if (!orderQuery) return true;
+      var hay = [o.localId, o.subId, o.id, o.customer, o.phone].join(" ").toLowerCase();
+      return hay.indexOf(orderQuery) > -1;
+    });
     $("ordersEmpty").classList.toggle("hidden", ownOrders().length > 0);
     $("ordersBody").innerHTML = list.map(function(o){
       var next = NEXT_STATUS[o.status];
@@ -2110,7 +2250,7 @@
         + '</div></td></tr>';
     }).join("");
     if (ownOrders().length && !list.length) {
-      $("ordersBody").innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:1.4rem">Ei status e kono order nei.</td></tr>';
+      $("ordersBody").innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:1.4rem">Ei filter/search e kono order nei.</td></tr>';
     }
     $("ordersBody").querySelectorAll("[data-view-order]").forEach(function(b){
       b.addEventListener("click", function(){ openOrderDrawer(b.getAttribute("data-view-order")); });
@@ -2284,8 +2424,16 @@
           var cExpMs = c.expiry ? Date.parse(c.expiry) : NaN;
           if (isNaN(cExpMs) || cExpMs <= Date.now()) { toast("Coupon er expiry date sesh ba bojha jay ni — future expiry date chara Live kora jabe na."); return; }
         }
+        /* P1 (2026-11-23): DB error hole local status fire jay — UI te vul
+           state thake na. */
+        var prevCStatus = c.status;
         c.status = c.status==="Live" ? "Paused" : "Live";
-        if (supabaseConnected && supabase) { try { await supabase.from('coupons').update({ status: c.status === "Live" ? "live" : "paused" }).eq('id', c.id).eq('shop_id', me().shopId); } catch(e){} }
+        if (supabaseConnected && supabase) {
+          try {
+            var upC = await supabase.from('coupons').update({ status: c.status === "Live" ? "live" : "paused" }).eq('id', c.id).eq('shop_id', me().shopId);
+            if (upC && upC.error) { c.status = prevCStatus; toast("Coupon status save hoy ni — " + (upC.error.message || "database error") + ". Abar chesta korun."); renderAll(); return; }
+          } catch(e){ c.status = prevCStatus; toast("Coupon status save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderAll(); return; }
+        }
         toast(c.code + (c.status==="Live" ? " ekhon website e LIVE" : " pause hoyeche — website theke sore geche"));
         renderAll();
       });
@@ -2294,7 +2442,7 @@
       b.addEventListener("click", function(){
         var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-del")); })[0]; if (!c) return;
         openConfirm("Coupon delete korben?", '"' + c.code + '" delete hole website theke sore jabe ar customer ar use korte parbe na.', async function(){
-          var ss = me(); if (supabaseConnected && supabase) { try { await supabase.from('coupons').delete().eq('id', c.id).eq('shop_id', ss.shopId); } catch(e){} } ss.coupons = ss.coupons.filter(function(x){ return String(x.id)!==String(c.id); }); toast("Coupon delete hoyeche"); renderAll();
+          var ss = me(); if (supabaseConnected && supabase) { try { var delC = await supabase.from('coupons').delete().eq('id', c.id).eq('shop_id', ss.shopId); if (delC && delC.error) { toast("Coupon delete hoy ni — " + (delC.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Coupon delete hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } } ss.coupons = ss.coupons.filter(function(x){ return String(x.id)!==String(c.id); }); toast("Coupon delete hoyeche"); renderAll();
         });
       });
     });
@@ -2341,9 +2489,24 @@
 
   /* ================= CAMPAIGNS / MEGA SALE ================= */
   function campTypeByName(n){ for (var i=0;i<CAMPAIGN_TYPES.length;i++) if (CAMPAIGN_TYPES[i].name===n) return CAMPAIGN_TYPES[i]; return null; }
+  /* P1 (2026-11-23): campaign date/status — Admin settings theke asha
+     start/end diye; date na thakle sottie "Admin date dey ni". */
+  function campDateStatus(cp){
+    if (!cp.start || !cp.end) return { txt: "Admin date dey ni", cls: "st-pendingapproval" };
+    var now = new Date(); now.setHours(0,0,0,0);
+    var st = new Date(cp.start); st.setHours(0,0,0,0);
+    var en = new Date(cp.end); en.setHours(0,0,0,0);
+    if (isNaN(st.getTime()) || isNaN(en.getTime())) return { txt: "Admin date dey ni", cls: "st-pendingapproval" };
+    if (now < st) return { txt: "Upcoming — " + fmtDate(cp.start) + " theke", cls: "st-pendingapproval" };
+    if (now > en) return { txt: "Ended — " + fmtDate(cp.end) + " e sesh", cls: "st-rejected" };
+    return { txt: "Live — " + fmtDate(cp.end) + " porjonto", cls: "st-active" };
+  }
   function renderCampaigns(){
     $("campGrid").innerHTML = CAMPAIGN_TYPES.map(function(cp){
-      return '<div class="camp-card"><div class="camp-banner" style="background:' + cp.color + '"><div class="ct">' + esc(cp.name) + '</div><div style="font-size:.85rem;opacity:.92">Admin jokhon campaign khulbe, tar date ekhane dekhabe</div></div>'
+      var ds = campDateStatus(cp);
+      var dateTxt = (cp.start && cp.end) ? fmtDate(cp.start) + " — " + fmtDate(cp.end) : "Admin date dey ni";
+      return '<div class="camp-card"><div class="camp-banner" style="background:' + cp.color + '"><div class="ct">' + esc(cp.name) + '</div><div style="font-size:.85rem;opacity:.92">' + esc(dateTxt) + '</div></div>'
+        + '<div class="comm-row"><span>Status</span><b><span class="status ' + ds.cls + '">' + esc(ds.txt) + '</span></b></div>'
         + '<div class="comm-row"><span>Minimum discount</span><b>' + cp.minDisc + '%</b></div>'
         + '<div class="comm-row"><span>Product lagbe</span><b>Admin-approved product</b></div>'
         + '<div class="comm-row"><span>Approval</span><b>Admin approval lagbe</b></div>'
@@ -2366,6 +2529,7 @@
         + '<span class="status ' + statusClass(x.status) + '">' + stTxt + '</span></div>'
         + (x.status==="Rejected" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-resubmit="' + x.id + '" type="button">Price bodle abar submit korun</button><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Remove</button></div>' : '')
         + (x.status==="Pending Approval" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Submission withdraw korun</button></div>' : '')
+        + (x.status==="Approved" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn red" data-sub-del="' + x.id + '" type="button">Submission withdraw korun</button></div>' : '')
         + '</div>';
     }).join("") : '<div class="empty"><div class="et">No campaign submissions yet</div><div>Admin-approved product thakle ekhane submit kore Mega Sale / Mega Discount er jonno pathate parben.</div></div>';
     $("campSubs").querySelectorAll("[data-resubmit]").forEach(function(b){
@@ -2377,7 +2541,7 @@
     $("campSubs").querySelectorAll("[data-sub-del]").forEach(function(b){
       b.addEventListener("click", async function(){
         var id = b.getAttribute("data-sub-del"), s = me();
-        if (supabaseConnected && supabase) { try { await supabase.from('mega_submissions').delete().eq('id', id).eq('shop_id', s.shopId); } catch(e){} }
+        if (supabaseConnected && supabase) { try { var delS = await supabase.from('mega_submissions').delete().eq('id', id).eq('shop_id', s.shopId); if (delS && delS.error) { toast("Submission sorano hoy ni — " + (delS.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Submission sorano hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } }
         s.campSubs = s.campSubs.filter(function(x){ return String(x.id)!==String(id); });
         toast("Submission sorano hoyeche"); renderAll();
       });
@@ -2458,7 +2622,8 @@
         + '<div style="flex:1;min-width:200px"><div style="font-weight:800">' + esc(r.id) + ' · Order ' + esc(r.orderId) + ' — ' + (pr ? esc(pr.name) : "Product") + ' × ' + r.qty + '</div>'
         + '<div style="font-size:.85rem;color:var(--muted)">Customer: ' + esc(r.customer) + ' · ' + esc(r.date) + '</div>'
         + '<div style="font-size:.88rem;margin-top:.3rem"><b>Karon:</b> ' + esc(r.reason) + '</div>'
-        + '<div style="font-size:.88rem"><b>Refund amount:</b> <span style="color:var(--red);font-weight:800">' + fmt(r.amount) + '</span> <span style="color:var(--muted)">(accept korle apnar wallet theke kata hobe, Admin notify hobe)</span></div></div>'
+        + '<div style="font-size:.88rem"><b>Refund amount:</b> <span style="color:var(--red);font-weight:800">' + fmt(r.amount) + '</span> <span style="color:var(--muted)">(accept korle apnar wallet theke kata hobe, Admin notify hobe)</span></div>'
+        + (r.status==="Return Rejected" && r.rejectReason ? '<div style="font-size:.88rem"><b>Reject er karon:</b> ' + esc(r.rejectReason) + '</div>' : '') + '</div>'
         + '<span class="status ' + statusClass(r.status) + '">' + r.status + '</span></div>'
         + (r.status==="Return Requested" ? '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-ret-accept="' + r.id + '" type="button">Accept — Wallet theke Refund</button><button class="mini-btn red" data-ret-reject="' + r.id + '" type="button">Reject — Admin Review te Pathan</button></div>' : '')
         + '</div>';
@@ -2467,16 +2632,65 @@
       b.addEventListener("click", function(){
         var r = ownReturns().filter(function(x){ return String(x.id)===String(b.getAttribute("data-ret-accept")); })[0]; if (!r) return;
         openConfirm("Return accept korben?", r.id + " — " + fmt(r.amount) + " apnar wallet balance theke adjust hobe ar Admin ke notify kora hobe.", async function(){
-          r.status = "Return Accepted"; if (supabaseConnected && supabase) { try { await supabase.from('returns').update({ status: "approved" }).eq('id', r.id).eq('shop_id', s.shopId); } catch(e){} } renderAll(); toast("Return accept hoyeche — " + fmt(r.amount) + " wallet theke adjust, Admin notified");
+          /* P1 (2026-11-23): DB error hole local status bodlay na. */
+          if (supabaseConnected && supabase) { try { var upA = await supabase.from('returns').update({ status: "approved" }).eq('id', r.id).eq('shop_id', s.shopId); if (upA && upA.error) { toast("Return accept hoy ni — " + (upA.error.message || "database error") + ". Abar chesta korun."); return; } } catch(e){ toast("Return accept hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); return; } }
+          r.status = "Return Accepted"; renderAll(); toast("Return accept hoyeche — " + fmt(r.amount) + " wallet theke adjust, Admin notified");
         });
       });
     });
     $("returnList").querySelectorAll("[data-ret-reject]").forEach(function(b){
-      b.addEventListener("click", async function(){
+      b.addEventListener("click", function(){
         var r = ownReturns().filter(function(x){ return String(x.id)===String(b.getAttribute("data-ret-reject")); })[0]; if (!r) return;
-        r.status = "Return Rejected"; if (supabaseConnected && supabase) { try { await supabase.from('returns').update({ status: "rejected" }).eq('id', r.id).eq('shop_id', s.shopId); } catch(e){} } renderAll(); toast("Return reject hoyeche — Admin review er jonno pathano hoyeche");
+        /* P1 (2026-11-23): Reject e karon abosshok — info strip "karon soho"
+           bole, age karon na niye reject hoto. Karon returns.reject_reason e
+           jay (status "rejected" er sathe). DB error hole kichui bodlay na. */
+        var reasons = ["পণ্য ঠিক আছে — ফেরতের কারণ গ্রহণযোগ্য নয়", "কাস্টমার ভুল তথ্য দিয়েছেন", "পণ্য ব্যবহার করা হয়েছে / ক্ষতিগ্রস্ত", "অন্য কারণ — নিচে লিখুন"];
+        openModal('<h2>Return reject korben?</h2><div class="msub">' + esc(r.id) + ' — reject korle karon soho Admin review te jabe.</div>'
+          + '<div class="field"><label>Karon beche nin (আবশ্যক)</label>'
+          + reasons.map(function(opt){ return '<label style="display:flex;gap:.5rem;align-items:flex-start;font-size:.92rem;line-height:1.5;margin-bottom:.45rem"><input type="radio" name="rejReason" value="' + esc(opt) + '" style="margin-top:.2rem" /> ' + esc(opt) + '</label>'; }).join("")
+          + '</div>'
+          + '<div class="field"><label>নিজের ভাষায় কারণ লিখুন (অন্য কারণ হলে আবশ্যক)</label><textarea id="rejReasonText" rows="2" placeholder="Reject er karon bistarito likhun"></textarea></div>'
+          + '<p class="err" id="rejReasonErr"></p>'
+          + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="rejCancel" type="button">Cancel</button><button class="btn amber" id="rejGo" type="button">Reject — Admin Review te Pathan</button></div>',
+          function(){
+            $("rejCancel").addEventListener("click", closeModal);
+            $("rejGo").addEventListener("click", async function(){
+              var picked = "";
+              Array.prototype.forEach.call(document.querySelectorAll('input[name="rejReason"]'), function(rd){ if (rd.checked) picked = rd.value; });
+              var typed = $("rejReasonText").value.trim();
+              var reason = picked === "অন্য কারণ — নিচে লিখুন" ? typed : (picked ? (typed ? picked + " — " + typed : picked) : typed);
+              if (!reason) { $("rejReasonErr").textContent = "Reject er karon dite hobe — ekta karon beche nin ba likhun."; return; }
+              if (supabaseConnected && supabase) {
+                try {
+                  var upR = await supabase.from('returns').update({ status: "rejected", reject_reason: reason }).eq('id', r.id).eq('shop_id', s.shopId);
+                  if (upR && upR.error) { $("rejReasonErr").textContent = "Reject save hoy ni — " + (upR.error.message || "database error") + ". Abar chesta korun."; return; }
+                } catch(e){ $("rejReasonErr").textContent = "Reject save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."; return; }
+              }
+              r.status = "Return Rejected"; r.rejectReason = reason;
+              closeModal(); renderAll(); toast("Return reject hoyeche — karon soho Admin review er jonno pathano hoyeche");
+            });
+          });
       });
     });
+  }
+
+  /* ================= REVIEWS (own shop only, read-only) ================= */
+  function renderReviews(){
+    var list = ownReviews();
+    var rated = list.filter(function(r){ return r.rating > 0; });
+    var avg = rated.length ? (rated.reduce(function(a,r){ return a + r.rating; }, 0) / rated.length) : 0;
+    function stars(n){ var out = ""; for (var i=1;i<=5;i++) out += i <= Math.round(n) ? "★" : "☆"; return out; }
+    $("reviewSummary").innerHTML = '<div class="stat"><div class="lbl">Average rating</div><div class="val">' + (rated.length ? avg.toFixed(1) + " ★" : "—") + '</div></div>'
+      + '<div class="stat"><div class="lbl">Mot review</div><div class="val">' + list.length + '</div></div>'
+      + '<div class="stat"><div class="lbl">5★ review</div><div class="val">' + list.filter(function(r){ return r.rating === 5; }).length + '</div></div>';
+    $("reviewsList").innerHTML = list.length ? list.map(function(r){
+      var p = prodById(r.pid);
+      return '<div class="sub-card"><div style="display:flex;gap:.8rem;flex-wrap:wrap;align-items:flex-start">'
+        + '<div class="thumb" style="background:' + (p ? (CAT_COLORS[p.cat]||"#666") : "#666") + '">' + (p ? catIcon(p.cat) : "") + '</div>'
+        + '<div style="flex:1;min-width:200px"><div style="font-weight:800">' + esc(p ? p.name : "Product") + ' <span style="color:#f59e0b">' + stars(r.rating) + '</span> <span style="color:var(--muted);font-weight:600;font-size:.85rem">' + (r.rating || 0) + '/5</span></div>'
+        + '<div style="font-size:.88rem;margin-top:.3rem">' + esc(r.comment) + '</div>'
+        + '<div style="font-size:.85rem;color:var(--muted);margin-top:.3rem">' + esc(r.customer) + ' · ' + esc(r.date) + '</div></div></div></div>';
+    }).join("") : '<div class="empty"><div class="et">Ekhono kono review nei</div><div>Customer apnar product e review dile seta ekhane dekhabe — ekhono keu review dey ni.</div></div>';
   }
 
   /* ================= PAYOUTS ================= */
@@ -2484,7 +2698,10 @@
     var s = me(); if (!s) return;
     $("payoutBalance").textContent = fmt(s.balance);
     $("payoutPending").textContent = fmt(s.pendingClearance);
-    $("payoutNote").textContent = "Payout method: " + s.payMethod + " · " + maskAccount(s.payAccount) + " · Next payout cycle: Sunday";
+    /* P1 (2026-11-23): Next payout cycle Admin er payout_day setting theke
+       (hold din soho) — hardcoded "Sunday" ar nei. */
+    $("payoutNote").textContent = "Payout method: " + s.payMethod + " · " + maskAccount(s.payAccount) + " · Next payout cycle: " + fmtDate(nextPayoutDate().toISOString()) + " · Hold " + sellerSettings.payoutHoldDays + " din";
+    var wp = $("walletPill"); if (wp) { wp.textContent = fmt(s.balance); wp.classList.remove("hidden"); }
     $("payoutHistoryBody").innerHTML = s.payouts.length ? s.payouts.map(function(p){
       return '<tr><td>' + esc(p.date) + '</td><td>' + esc(p.method) + '</td><td>' + esc(p.account) + '</td><td><b>' + fmt(p.amount) + '</b></td><td><span class="status ' + statusClass(p.status) + '">' + p.status + '</span></td></tr>';
     }).join("") : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:1.3rem">Ekhono kono payout hoy ni — prothom payout request ekhane dekhabe.</td></tr>';
@@ -2596,8 +2813,14 @@
         $("srRole").addEventListener("change", showPerms);
         $("srCancel").addEventListener("click", closeModal);
         $("srSave").addEventListener("click", async function(){
+          var prevRole = x.role, prevColor = x.color;
           x.role = $("srRole").value; x.color = ROLE_COLORS[x.role];
-          if (supabaseConnected && supabase) { try { await supabase.from('staff').update({ role: x.role }).eq('id', x.id).eq('shop_id', me().shopId); } catch(e){} }
+          if (supabaseConnected && supabase) {
+            try {
+              var upRole = await supabase.from('staff').update({ role: x.role }).eq('id', x.id).eq('shop_id', me().shopId);
+              if (upRole && upRole.error) { x.role = prevRole; x.color = prevColor; toast("Role save hoy ni — " + (upRole.error.message || "database error") + ". Abar chesta korun."); renderTeam(); return; }
+            } catch(e){ x.role = prevRole; x.color = prevColor; toast("Role save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderTeam(); return; }
+          }
           closeModal(); renderTeam(); toast(x.name + " er role ekhon " + x.role);
         });
       });
@@ -2666,6 +2889,9 @@
   $("shopForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var s = me(); if (!s) return;
+    /* P1 (2026-11-23): DB error hole ager value fire jay — form e vul
+       save dekhano hoy na. */
+    var prevShop = { shop: s.shop, owner: s.owner, phone: s.phone, address: s.address, desc: s.desc };
     s.shop = $("setShopName").value.trim();
     s.owner = $("setOwner").value.trim();
     s.phone = $("setPhone").value.trim();
@@ -2675,27 +2901,59 @@
     if (!s.owner) { toast("Owner er nam din."); return; }
     if (!/^01\d{9}$/.test(s.phone.replace(/[-\s]/g, ""))) { toast("Sothik 11 digit er mobile number din (01 diye shuru)."); return; }
     if (s.address.length < 8) { toast("Pickup address bistarito likhun."); return; }
-    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ shop_name: s.shop, pickup_address: s.address, description: s.desc }).eq('id', s.shopId); await supabase.from('profiles').update({ full_name: s.owner, phone: s.phone }).eq('id', s.id); } catch(err){} }
+    if (supabaseConnected && supabase && s.shopId) {
+      try {
+        var upSh = await supabase.from('shops').update({ shop_name: s.shop, pickup_address: s.address, description: s.desc }).eq('id', s.shopId);
+        if (upSh && upSh.error) throw new Error(upSh.error.message);
+        var upPr = await supabase.from('profiles').update({ full_name: s.owner, phone: s.phone }).eq('id', s.id);
+        if (upPr && upPr.error) throw new Error(upPr.error.message);
+      } catch(err){
+        s.shop = prevShop.shop; s.owner = prevShop.owner; s.phone = prevShop.phone; s.address = prevShop.address; s.desc = prevShop.desc;
+        syncShopUI(); toast("Shop information save hoy ni — " + (err && err.message ? err.message : "database error") + ". Abar chesta korun."); return;
+      }
+    }
     syncShopUI(); toast("Shop information save hoyeche");
   });
   $("payoutForm").addEventListener("submit", async function(e){
     e.preventDefault();
     var s = me(); if (!s) return;
+    /* P1 (2026-11-23): DB error hole ager payout method fire jay. */
+    var prevPay = { payMethod: s.payMethod, payAccount: s.payAccount, payName: s.payName };
     s.payMethod = $("payMethod").value;
     s.payAccount = $("payAccount").value.trim();
     s.payName = $("payName").value.trim();
     if (!s.payName) { toast("Account holder er nam din."); return; }
     if ((s.payMethod === "bKash" || s.payMethod === "Nagad") && !/^01\d{9}$/.test(s.payAccount.replace(/[-\s]/g, ""))) { toast(s.payMethod + " account er jonno sothik 11 digit er number din."); return; }
     if (s.payMethod === "Bank Transfer" && s.payAccount.length < 8) { toast("Sothik bank account number din."); return; }
-    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ payout_method: s.payMethod, payout_account: s.payAccount, payout_name: s.payName }).eq('id', s.shopId); } catch(err){} }
+    if (supabaseConnected && supabase && s.shopId) {
+      try {
+        var upPay = await supabase.from('shops').update({ payout_method: s.payMethod, payout_account: s.payAccount, payout_name: s.payName }).eq('id', s.shopId);
+        if (upPay && upPay.error) throw new Error(upPay.error.message);
+      } catch(err){
+        s.payMethod = prevPay.payMethod; s.payAccount = prevPay.payAccount; s.payName = prevPay.payName;
+        renderPayouts(); toast("Payout method save hoy ni — " + (err && err.message ? err.message : "database error") + ". Abar chesta korun."); return;
+      }
+    }
     renderPayouts(); toast("Payout method save hoyeche");
   });
   $("vacationBtn").addEventListener("click", async function(){
     var s = me(); if (!s) return;
+    var btn = this, prevVac = s.vacation;
     s.vacation = !s.vacation;
-    this.textContent = "Vacation mode: " + (s.vacation ? "On" : "Off");
-    this.classList.toggle("amber", s.vacation);
-    if (supabaseConnected && supabase && s.shopId) { try { await supabase.from('shops').update({ vacation: s.vacation }).eq('id', s.shopId); } catch(err){} }
+    btn.textContent = "Vacation mode: " + (s.vacation ? "On" : "Off");
+    btn.classList.toggle("amber", s.vacation);
+    if (supabaseConnected && supabase && s.shopId) {
+      /* P1 (2026-11-23): DB error hole vacation state fire jay. */
+      try {
+        var upV = await supabase.from('shops').update({ vacation: s.vacation }).eq('id', s.shopId);
+        if (upV && upV.error) throw new Error(upV.error.message);
+      } catch(err){
+        s.vacation = prevVac;
+        btn.textContent = "Vacation mode: " + (s.vacation ? "On" : "Off");
+        btn.classList.toggle("amber", s.vacation);
+        toast("Vacation mode save hoy ni — " + (err && err.message ? err.message : "database error") + ". Abar chesta korun."); return;
+      }
+    }
     toast(s.vacation ? "Vacation mode on — product gulo samoyik hide" : "Vacation mode off — shop abar live");
   });
   (function(){ var lt = $("setLogoText"); if (lt) lt.addEventListener("input", function(){ var v = lt.value.trim().toUpperCase().slice(0,2); var lp = $("logoPreview"); if (lp) lp.textContent = v || initials(me() ? me().shop : "S"); var av = $("shopAvatar"); if (av && v && !(me() && me().logoUrl)) av.textContent = v; }); })();
@@ -2822,7 +3080,7 @@
   }
 
   /* ================= INIT ================= */
-  function renderAll(){ var s = me(); if (s) recomputeWallet(s); renderDashboard(); renderProducts(); renderOrders(); renderCoupons(); renderCampaigns(); renderReturns(); renderPayouts(); renderTeam(); }
+  function renderAll(){ var s = me(); if (s) recomputeWallet(s); renderDashboard(); renderProducts(); renderOrders(); renderReviews(); renderCoupons(); renderCampaigns(); renderReturns(); renderPayouts(); renderTeam(); }
   (function init(){
     var sel = $("prodCatFilter");
     Object.keys(COMMISSION).forEach(function(c){ var o = document.createElement("option"); o.textContent = c; sel.appendChild(o); });
