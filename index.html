@@ -725,7 +725,7 @@ section{ padding-top:56px }
       <div class="suggest" id="searchSuggest" role="listbox" aria-label="সার্চ সাজেশন"></div>
       </div>
       <div class="navbtns">
-        <button class="rolebtn" id="accountBtn" data-i18n="loginSignup">👤 লগইন / সাইন আপ</button>
+        <button class="rolebtn" id="accountBtn">👤 লগইন / সাইন আপ</button>
         <button class="iconbtn langbtn" id="langBtn" aria-label="ভাষা বদলান / Switch language">EN</button>
         <button class="iconbtn hideS" id="trackBtn" aria-label="অর্ডার ট্র্যাক করুন">📦</button>
         <button class="iconbtn" id="wishBtn" aria-label="উইশলিস্ট খুলুন">❤️<span class="cartcount lime" id="wishCount">0</span></button>
@@ -1099,7 +1099,7 @@ section{ padding-top:56px }
       <div class="fld" id="fTrx"><label for="coTrxId">Transaction ID *</label><input id="coTrxId" placeholder="যেমন: 9H7XXXXXXX" style="text-transform:uppercase" /><span class="err">পেমেন্টের Transaction ID দিন (কমপক্ষে 6 অক্ষর) — Admin এটি মিলিয়ে যাচাই করবে।</span></div>
       <!-- P2 (2026-11-23): saved payment number — shudhu nijer sender number, per method, per account, localStorage-e; card kokhono na. -->
       <label style="display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:600;margin:4px 0 2px"><input type="checkbox" id="coSavePay" style="min-height:0"> <span data-i18n="coSavePay">💾 আমার এই নম্বরটি মনে রাখুন — পরের বার এই মাধ্যমে ব্যবহার করব</span></label>
-      <button type="button" class="btn-sec" id="coForgetPay" style="display:none;margin-top:6px">🗑️ সেভ করা নম্বর ভুলে যান</button>
+      <button type="button" class="btn-sec" id="coForgetPay" data-i18n="coForgetPay" style="display:none;margin-top:6px">🗑️ সেভ করা নম্বর ভুলে যান</button>
     </div>
     <div class="fld"><label for="coNote" data-i18n="coNote">বিশেষ নির্দেশনা (ঐচ্ছিক)</label><input id="coNote" placeholder="যেমন: বিকেলে ডেলিভারি দিলে ভালো হয়" data-i18n-ph="coNotePh" /></div>
     <div id="loyaltyBox"></div>
@@ -1513,7 +1513,7 @@ promoPh:"প্রোমো / ভাউচার কোড", promoApply:"অ্�
 coTitle:"ডেলিভারির তথ্য দিন", coGuestT:"গেস্ট চেকআউট", coGuestS:"অ্যাকাউন্ট বা লগইন লাগবে না। নিচে অর্ডারের <b>পুরো হিসাব আগেই</b> দেখানো হয়েছে, লুকানো কোনো চার্জ নেই।",
 coName:"আপনার নাম *", coNamePh:"যেমন: মোঃ রফিকুল ইসলাম", coPhone:"মোবাইল নম্বর *", coAddr:"পুরো ঠিকানা *", coAddrPh:"বাসা/হোল্ডিং, রোড, এলাকা, থানা", coDist:"জেলা *",
 coSlot:"ডেলিভারির সময় (স্লট) *", slotAny:"যেকোনো সময়", slotMorning:"সকাল ৯টা–১২টা", slotAfternoon:"দুপুর ১২টা–৩টা", slotEvening:"বিকেল ৩টা–৬টা", slotNight:"সন্ধ্যা ৬টা–৯টা",
-coPay:"পেমেন্ট মাধ্যম *", coSavePay:"💾 আমার এই নম্বরটি মনে রাখুন — পরের বার এই মাধ্যমে ব্যবহার করব",
+coPay:"পেমেন্ট মাধ্যম *", coSavePay:"💾 আমার এই নম্বরটি মনে রাখুন — পরের বার এই মাধ্যমে ব্যবহার করব", coForgetPay:"🗑️ সেভ করা নম্বর ভুলে যান",
 coNote:"বিশেষ নির্দেশনা (ঐচ্ছিক)", coNotePh:"যেমন: বিকেলে ডেলিভারি দিলে ভালো হয়", coGrand:"সর্বমোট (ডেলিভারিসহ)", placeOrder:"✅ অর্ডার কনফার্ম করুন",
 coFlowNote:"অর্ডারটি প্রথমে AnboBD Admin যাচাই করে কনফার্ম করবে, তারপর Seller-এর কাছে পাঠানো হবে — Seller প্যাক করে পাঠিয়ে দেবে।",
 okTitle:"অর্ডার হয়ে গেছে!", okSub:"ধন্যবাদ! অর্ডারটি এখন <b style=\"color:var(--ink)\">Admin-এর যাচাইয়ে</b> আছে — Admin কনফার্ম করলেই Seller-এর কাছে পাঠানো হবে, Seller প্যাক করে কুরিয়ারে দিয়ে দেবে।",
@@ -1582,7 +1582,7 @@ promoPh:"Promo / voucher code", promoApply:"Apply", subtotal:"Subtotal", promoDi
 coTitle:"Enter delivery details", coGuestT:"Guest checkout", coGuestS:"No account or login needed. The <b>full bill is shown up front</b> below — no hidden charges.",
 coName:"Your name *", coNamePh:"e.g. Md. Rafiqul Islam", coPhone:"Mobile number *", coAddr:"Full address *", coAddrPh:"House/holding, road, area, thana", coDist:"District *",
 coSlot:"Delivery time (slot) *", slotAny:"Any time", slotMorning:"Morning 9 AM–12 PM", slotAfternoon:"Afternoon 12–3 PM", slotEvening:"Evening 3–6 PM", slotNight:"Night 6–9 PM",
-coPay:"Payment method *", coSavePay:"💾 Remember this number — use it next time with this method",
+coPay:"Payment method *", coSavePay:"💾 Remember this number — use it next time with this method", coForgetPay:"🗑️ Forget saved number",
 coNote:"Special instructions (optional)", coNotePh:"e.g. afternoon delivery would be better", coGrand:"Grand total (with delivery)", placeOrder:"✅ Confirm order",
 coFlowNote:"AnboBD Admin will first verify and confirm your order, then send it to the seller — the seller packs it and ships it.",
 okTitle:"Order placed!", okSub:"Thank you! Your order is now <b style=\"color:var(--ink)\">under Admin review</b> — once Admin confirms, it goes to the seller, who packs it and hands it to the courier.",
@@ -1613,7 +1613,10 @@ function t(k, vars){
 function applyLang(){
   document.documentElement.lang = ANBO_LANG === "en" ? "en" : "bn";
   var btn = document.getElementById("langBtn"); if(btn) btn.textContent = ANBO_LANG === "en" ? "বাং" : "EN";
-  document.querySelectorAll("[data-i18n]").forEach(function(el){ el.innerHTML = t(el.getAttribute("data-i18n")); });
+  /* P2 fix (2026-11-23) — Bug B: #accountBtn-er text refreshPanels-er
+     malikana; data-i18n loop etake "লগইন / সাইন আপ"-e firiye dito — settings
+     load-er por applyLang cholle signed-in header-o guest hoye jeto. */
+  document.querySelectorAll("[data-i18n]").forEach(function(el){ if(el.id === "accountBtn") return; el.innerHTML = t(el.getAttribute("data-i18n")); });
   document.querySelectorAll("[data-i18n-ph]").forEach(function(el){ el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))); });
   /* Hero title/lead — Admin override thakle setai thakbe; na thakle dict. */
   var st = window.__anboPlatformSettings;
@@ -1623,9 +1626,13 @@ function applyLang(){
     if(ht) ht.innerHTML = t("heroTitle");
     if(hl) hl.textContent = t("heroLead");
   }
-  /* Account button — signed-in hole restoreSession nam bosay; signed-out holei dict. */
+  /* Account button — refreshPanels-er malikana: signed-in hole nam/role (ba
+     auth restore na howa porjonto "👤 …"), signed-out holei dict. */
   var ab = document.getElementById("accountBtn");
-  if(ab && !window.__anboCurrentUser) ab.textContent = t("loginSignup");
+  if(ab){
+    if(window.__anboCurrentUser){ if(typeof refreshPanels === "function") refreshPanels(); }
+    else ab.textContent = t("loginSignup");
+  }
   syncCatNav();
   renderCompareBar();
   if(window.__anboRender) window.__anboRender();
@@ -1694,6 +1701,19 @@ function anboAvgRating(p){
   var rv = reviewsFor(p);
   if(rv.length){ var sum = 0, n = 0; rv.forEach(function(r){ if(r.rating>0){ sum += r.rating; n++; } }); if(n) return sum/n; }
   return p.rating || 0;
+}
+/* P2 fix (2026-11-23) — Bug A: products table-e rating / review_count column
+   nei, tai anboMapProductRow sobsomoy rating 0 / reviewCount 0 dey — kintu
+   card / modal / rating sort / rating filter oi duti field-e pore. Asol
+   gar + count reviews table theke ase (productReviews, loadCatalog-e pore);
+   catalog load-er por prottek product-e asol man bosiye dao, jate homepage
+   asol DB review dekhay. Review na thakle 0-i thake — kokhono fake na. */
+function anboSyncProductRatings(){
+  PRODUCTS.forEach(function(p){
+    var rv = reviewsFor(p);
+    p.reviewCount = rv.length;
+    p.rating = anboAvgRating(p);
+  });
 }
 /* Re-audit A11 (2026-11-21): FLASH_IDS [1,10,4,5] were dead demo IDs (real products are UUIDs) — the tile counted 0 while the section fell back to active products. One source of truth now: flash = live products with a real discount (oldPrice > price), capped at 4. P2: sale window-er baire thaka product flash-e asbe na (effPrice dekhe). */
 function flashList(){ return PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && effOldPrice(p) && effOldPrice(p) > effPrice(p); }).slice(0,4); }
@@ -2600,14 +2620,26 @@ function anboForgetPayNumber(method){
   var fb = document.getElementById("coForgetPay"); if(fb) fb.style.display = "none";
   var cb = document.getElementById("coSavePay"); if(cb) cb.checked = false;
 }
+/* P2 fix (2026-11-23) — Check C: Forget button shudhu saved number thakle
+   noy, field-e number thakleo dekhabe — type kora number-o ekhane theke
+   vulte parbe (age save na howa porjonto button lukiye thakto, tai live
+   check-e khuje pawa jay ni). Kichu na thakle lukiye thake. */
+function anboSyncForgetPayBtn(){
+  var fb = document.getElementById("coForgetPay"); if(!fb) return;
+  var ps = document.getElementById("coPaySender");
+  var payEl = document.querySelector('input[name="pay"]:checked');
+  var m = payEl ? payEl.value : "";
+  var hasSaved = (m==="bKash" || m==="Nagad" || m==="Rocket") && !!anboPayMem()[m];
+  fb.style.display = (hasSaved || (ps && ps.value.trim())) ? "" : "none";
+}
 function anboPrefillPaySender(){
   var payEl = document.querySelector('input[name="pay"]:checked');
-  var ps = document.getElementById("coPaySender"), fb = document.getElementById("coForgetPay");
+  var ps = document.getElementById("coPaySender");
   if(!ps) return;
   var method = payEl ? payEl.value : "";
   var saved = (method && (method==="bKash" || method==="Nagad" || method==="Rocket")) ? (anboPayMem()[method] || "") : "";
   if(saved && !ps.value) ps.value = saved;
-  if(fb) fb.style.display = saved ? "" : "none";
+  anboSyncForgetPayBtn();
 }
 function syncManualPay(){
   var payEl = document.querySelector('input[name="pay"]:checked');
@@ -3093,6 +3125,10 @@ function ensureDrawers(){
   document.querySelectorAll('input[name="slot"]').forEach(function(r){ r.addEventListener("change", function(){ fillCheckoutSummary(); }); });
   var fp = document.getElementById("coForgetPay");
   if(fp) fp.addEventListener("click", function(){ var pe = document.querySelector('input[name="pay"]:checked'); anboForgetPayNumber(pe ? pe.value : ""); });
+  /* P2 fix (2026-11-23) — Check C: sender field-e type korle / muchle
+     Forget button-er visibility sathe sathe bodlay (prefill-er opekkha na). */
+  var psIn = document.getElementById("coPaySender");
+  if(psIn) psIn.addEventListener("input", function(){ anboSyncForgetPayBtn(); });
   if(window.applyLang) applyLang(); /* P2: cloned drawer-er data-i18n apply. */
   document.querySelectorAll('input[name="pay"]').forEach(function(r){ r.addEventListener("change", syncManualPay); });
   document.getElementById("promoBtn").addEventListener("click", applyPromo);
@@ -3577,6 +3613,7 @@ var ANBOBD_DB = {
         });
       }
     }catch(e){ console.warn("Reviews load failed (showing No reviews yet):", e); }
+    anboSyncProductRatings(); /* P2 fix (2026-11-23) — Bug A: asol review gar/count product-e bosao, tarpor render. */
     catalogLoading = false; /* P0-1: catalog (products + reviews) finished loading. */
     if(window.__anboRender) window.__anboRender();
     if(window.renderShopCoupons) window.renderShopCoupons();
@@ -4469,6 +4506,10 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       if(txtEl) txtEl.value = "";
       if(m){ m.style.display=""; m.textContent = "✅ রিভিউ জমা হয়েছে — product page e dekhabe।"; }
       renderAccount();
+      /* P2 fix (2026-11-23) — Bug A: notun review sathe sathe homepage
+         card-eo asol gar dekhabe — reload-er opekkha na. */
+      if(typeof anboSyncProductRatings === "function") anboSyncProductRatings();
+      if(window.__anboRender) window.__anboRender();
     }catch(e){ if(m){ m.style.display=""; m.textContent = "⚠ রিভিউ জমা হয়নি — " + ((e && e.message) || "database error") + "।"; } }
   }
   /* Re-audit B6 (2026-11-21): signed-in profile edit (profiles: full_name + phone — the only profile columns that exist) + password change (Supabase updateUser). Address save nei: profiles.address column DB-te nei (REST probe 42703) — SQL na howa porjonto address save fake kora hobe na. */
