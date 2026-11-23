@@ -100,7 +100,7 @@ const targets = [
 
 // Info/policy pages (pages/*.html): same SUPABASE_CONFIG slot, so an Admin
 // edit in site_pages can override each page's built-in text at load time.
-const pageSlugs = ["return-refund", "delivery", "warranty", "privacy", "contact", "about", "terms", "career"];
+const pageSlugs = ["return-refund", "delivery", "warranty", "privacy", "contact", "about", "terms", "career", "help"];
 for (const slug of pageSlugs) {
   targets.push({
     file: "pages/" + slug + ".html",
