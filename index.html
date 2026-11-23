@@ -1129,7 +1129,7 @@ section{ padding-top:56px }
 <!-- INVOICE MODAL (P1) — printable invoice; @media print prints ONLY this modal -->
 <div class="modal" id="invoiceModal" role="dialog" aria-modal="true" aria-label="অর্ডারের ইনভয়েস">
   <div class="modal-card single">
-    <button class="xbtn noprint" data-close aria-label="বন্ধ করুন">✕</button>
+    <button class="xbtn noprint" data-close-invoice aria-label="বন্ধ করুন">✕</button>
     <div class="mbody" id="invoiceBody"></div>
     <div style="padding:0 24px 24px" class="noprint"><button class="checkout" id="invoicePrintBtn" type="button" style="margin:0">🖨️ প্রিন্ট করুন</button></div>
   </div>
@@ -1349,6 +1349,7 @@ var flashOnly = false; /* P1: Flash Sale cube filter — true hole grid-e shudhu
 var promoCode = null, zone = "dhaka", modalId = null, modalQty = 1, lastOrder = null;
 var loyaltyRedeem = false; /* Decision 7: checkout e loyalty redeem on/off */
 var catalogLoading = true; /* P0-1: true until loadCatalog finishes (or Supabase is unconfigured) — renderProducts shows a loading state, never demo products. */
+window.__anboAuthPending = true; /* P1 follow-up (2026-11-23): true until restoreSession settles — header cart/wishlist badge + account button stay neutral, never the guest state for a signed-in user. Cleared in the boot IIFE (both branches + no-auth else). */
 var modalImages = [], modalSlide = 0;
 /* Re-audit A11 (2026-11-21): FLASH_IDS [1,10,4,5] were dead demo IDs (real products are UUIDs) — the tile counted 0 while the section fell back to active products. One source of truth now: flash = live products with a real discount (oldPrice > price), capped at 4. */
 function flashList(){ return PRODUCTS.filter(function(p){ return p.status==="active" && catEnabled(p.categoryId) && p.oldPrice && p.oldPrice > p.price; }).slice(0,4); }
@@ -1433,7 +1434,9 @@ function renderUnder(){ var list = PRODUCTS.filter(function(p){ return p.status=
 function renderCats(){
   document.getElementById("catTiles").innerHTML = CATS.filter(function(c){ return c.id==="flash" || catEnabled(c.id); }).map(function(c){
     var n = c.id==="flash" ? flashList().length : PRODUCTS.filter(function(p){return p.categoryId===c.id && p.status==="active";}).length;
-    return '<button class="cat" data-tile="'+c.id+'"><span class="cat-media" style="background:'+(c.grad||'#0e7c6f')+'"><img loading="lazy" src="'+(c.img||'/assets/hero-3d.webp')+'" alt="'+escHtml(catLabel(c.id))+'" onerror="this.style.display=\'none\'"><span class="cat-shade"></span><span class="go">↗</span></span><span class="cat-body"><b>'+escHtml(catLabel(c.id))+'</b><span class="cat-note">'+escHtml(c.note)+'</span><span class="cnt">'+n+'টি পণ্য</span></span></button>';
+    /* P1 follow-up (2026-11-23): catalog load howar age PRODUCTS khali — "0টি পণ্য" dekhale vul tothyo hoy. Load na howa porjonto "…" dekhabe. */
+    var cntTxt = (typeof catalogLoading !== "undefined" && catalogLoading) ? "…" : (n + "টি পণ্য");
+    return '<button class="cat" data-tile="'+c.id+'"><span class="cat-media" style="background:'+(c.grad||'#0e7c6f')+'"><img loading="lazy" src="'+(c.img||'/assets/hero-3d.webp')+'" alt="'+escHtml(catLabel(c.id))+'" onerror="this.style.display=\'none\'"><span class="cat-shade"></span><span class="go">↗</span></span><span class="cat-body"><b>'+escHtml(catLabel(c.id))+'</b><span class="cat-note">'+escHtml(c.note)+'</span><span class="cnt">'+cntTxt+'</span></span></button>';
   }).join("");
 }
 /* Re-audit A6/A10 (2026-11-21): promo banners + search copy must not advertise categories with 0 live products. A banner hides when its category has no live stock (the whole row hides when none have stock); search placeholder + popular searches derive from live products only. */
@@ -1635,8 +1638,10 @@ function syncModalDelBox(){
 function promoDiscountApplies(){ var c=findCouponAny(promoCode); if(!c || couponExpired(c)) return false; if(megaStackingBlocked(c)) return false; return (c.sellerId ? couponEligibleSub(c) : cartSubtotal()) >= c.minSpend; }
 function renderBadges(){
   var n = cartCount(), w = Object.keys(wishlist).length;
-  ["cartCount","cartCountM"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=n; });
-  ["wishCount","wishCountM"].forEach(function(id){ var e=document.getElementById(id); if(e) e.textContent=w; });
+  /* P1 follow-up (2026-11-23): session restore na howa porjonto header badge-e guest cart/wishlist count dekhano jabe na — signed-in user-er jonno vul number (e.g. guest cart 2) ek jholok dekhay. */
+  var pend = !!window.__anboAuthPending;
+  ["cartCount","cartCountM"].forEach(function(id){ var e=document.getElementById(id); if(e){ e.textContent=n; e.style.visibility = pend ? "hidden" : ""; } });
+  ["wishCount","wishCountM"].forEach(function(id){ var e=document.getElementById(id); if(e){ e.textContent=w; e.style.visibility = pend ? "hidden" : ""; } });
   var dc = document.getElementById("drawerCount"); if(dc) dc.textContent = n;
   var wc = document.getElementById("wishDrawerCount"); if(wc) wc.textContent = w;
 }
@@ -1723,6 +1728,8 @@ function openDrawer(id){
 function openCart(){ ensureDrawers(); document.getElementById("cartMain").style.display="flex"; document.getElementById("checkoutForm").classList.remove("open"); document.getElementById("orderSuccess").classList.remove("show"); renderCart(); openDrawer("cartDrawer"); }
 function openWish(){ ensureDrawers(); renderWish(); openDrawer("wishDrawer"); }
 function openModalEl(id){ closeAll(true); document.getElementById("scrim").classList.add("open"); document.getElementById(id).classList.add("open"); }
+/* P1 follow-up (2026-11-23): open a modal ON TOP of the current one without closing it — the invoice opens from inside the Account modal and must not kill it. */
+function openModalStacked(id){ document.getElementById("scrim").classList.add("open"); document.getElementById(id).classList.add("open"); }
 function closeAll(keepScrim){
   document.querySelectorAll(".drawer").forEach(function(d){ d.classList.remove("open"); });
   document.querySelectorAll(".modal").forEach(function(m){ m.classList.remove("open"); });
@@ -1990,6 +1997,9 @@ async function anboCancelOrder(orderId, btn){
   var r1 = await sb.from("orders").update({ status:"Cancelled" }).eq("id", oid);
   if(r1.error){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml(r1.error.message || "database error")+")"); return; }
   o.status = "Cancelled"; if(window.__anboPersistState) window.__anboPersistState();
+  /* P1 follow-up (2026-11-23): undo this session's optimistic stock reservation (see finishCheckoutUI) — the order never sold, so stock returns. Only reservations made in THIS session exist in __anboReservedStock, so a cancel days later cannot inflate stock. */
+  var resv = (window.__anboReservedStock || {})[orderId];
+  if(resv){ resv.forEach(function(rv){ var p = P(rv.id); if(p) p.stockQty = (p.stockQty || 0) + rv.qty; }); delete window.__anboReservedStock[orderId]; if(window.__anboRender) window.__anboRender(); }
   toast("✅ অর্ডার <b>"+escHtml(orderId)+"</b> বাতিল হয়েছে"+(subWarn?" — সেলারের কপি আপডেট হয়নি, Admin দেখে নেবে":""));
   if(window.renderAccount) renderAccount();
 }
@@ -2012,7 +2022,7 @@ function openInvoice(orderId){
   var o = ANBOBD_STORE.orders.filter(function(x){ return x.id === orderId; })[0];
   if(!o){ toast("❌ অর্ডারটি পাওয়া যায়নি"); return; }
   document.getElementById("invoiceBody").innerHTML = anboInvoiceHtml(o);
-  openModalEl("invoiceModal");
+  openModalStacked("invoiceModal");
 }
 /* ---------- P1: customer notification bell ---------- */
 function anboNotifLastSeen(){ try{ return +localStorage.getItem("anbobd-notif-seen") || 0; }catch(e){ return 0; } }
@@ -2237,7 +2247,10 @@ function finishCheckoutUI(name, phone, addr, dist, pay, isManual, trxId, paySend
   var cust = ANBOBD_STORE.customers.filter(function(c){return c.phone===phone;})[0];
   if(cust){ cust.totalOrders++; cust.totalSpent += t.total; }
   else ANBOBD_STORE.customers.push({ name:name, phone:phone, address:addr, district:dist, totalOrders:1, totalSpent:t.total });
-  order.items.forEach(function(it){ var p=P(it.productId); if(p){ p.stockQty = Math.max(0, p.stockQty - it.qty); p.soldCount += it.qty; } });
+  /* P1 follow-up (2026-11-23): soldCount is DB-driven ONLY (Admin bumpSoldCounts on transition INTO "confirmed") — it must NOT +1 at placement, or a placed-then-cancelled order (e.g. #ANBO970305) counts as sold. Stock IS reserved optimistically here; the reservation is tracked session-only (window.__anboReservedStock) so a cancel in this session restores it — a later session re-reads DB stock, so no restore is needed or safe there. */
+  window.__anboReservedStock = window.__anboReservedStock || {};
+  window.__anboReservedStock[order.id] = [];
+  order.items.forEach(function(it){ var p=P(it.productId); if(p){ p.stockQty = Math.max(0, p.stockQty - it.qty); window.__anboReservedStock[order.id].push({ id: it.productId, qty: it.qty }); } });
   lastOrder = order;
   document.getElementById("orderSummary").innerHTML =
     "অর্ডার নম্বর: <b>"+order.id+"</b><br>নাম: "+escHtml(name)+" • "+escHtml(phone)+"<br>ঠিকানা: "+escHtml(addr)+", "+escHtml(dist)+"<br>আইটেম: "+order.items.map(function(i){return escHtml(i.name)+" × "+i.qty;}).join(", ")+"<br>পেমেন্ট: <b>"+pay+"</b>"+(isManual ? "<br>Transaction ID: <b>"+escHtml(trxId)+"</b> (প্রেরকের নম্বর: "+escHtml(paySender)+")<br>⏳ <b>পেমেন্ট যাচাইয়ের অপেক্ষায়:</b> Admin ট্রান্সাকশন ID মিলিয়ে যাচাই করে কনফার্ম করলেই অর্ডারটি Seller-এর কাছে যাবে — ততক্ষণ অর্ডার AwaitingAdmin অবস্থায় থাকবে।" : "")+"<br>সর্বমোট: <b>"+fmt(t.total)+"</b>"+(t.discount>0?" (ছাড় "+fmt(t.discount)+" সহ)":"")+"<br>📅 আনুমানিক ডেলিভারি: <b>"+order.estimatedDelivery+"</b>";
@@ -2419,6 +2432,8 @@ document.addEventListener("click", function(e){
     else if(key==="seller"){ window.location.href = "/seller/"; } /* P0-4: one seller road. */
     return; }
   var sa = e.target.closest("[data-showall]"); if(sa){ resetFilters(); return; }
+  /* P1 follow-up (2026-11-23): invoice-er X shudhu invoice bondho korbe — Account modal niche khola thakbe. */
+  var ci = e.target.closest("[data-close-invoice]"); if(ci){ document.getElementById("invoiceModal").classList.remove("open"); return; }
   var cl = e.target.closest("[data-close]"); if(cl){ closeAll(); return; }
   if(!e.target.closest(".searchwrap")) hideSuggest();
 });
@@ -3481,7 +3496,7 @@ function refreshPanels(){
   var u = window.__anboCurrentUser || null;
   var role = (u && u.role) ? String(u.role).trim().toLowerCase() : "";
   var ab = document.getElementById("accountBtn");
-  if(ab) ab.textContent = u ? "👤 "+u.name.split(" ")[0]+" • "+(role==="seller"?"Seller":role==="admin"?"Admin":"Customer") : "👤 লগইন / সাইন আপ";
+  if(ab) ab.textContent = window.__anboAuthPending ? "👤 …" : (u ? "👤 "+u.name.split(" ")[0]+" • "+(role==="seller"?"Seller":role==="admin"?"Admin":"Customer") : "👤 লগইন / সাইন আপ");
   /* Footer: Seller Center / Admin Panel বোতাম শুধু matching logged-in role দেখবে — guest/customer-এর জন্য সবসময় hidden */
   var fsb = document.getElementById("footSellerBtn");
   if(fsb){ var showSeller = (role==="seller"); fsb.hidden = !showSeller; fsb.style.display = showSeller ? "block" : "none"; }
@@ -3888,9 +3903,16 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
   /* অনলাইন Auth configured থাকলে আগের সেশন ফিরিয়ে আনা */
   if(window.ANBOBD_AUTH && ANBOBD_AUTH.restoreSession){
     ANBOBD_AUTH.restoreSession().then(function(u){
+      /* P1 follow-up (2026-11-23): session settle holo — neutral header state sesh, asol badge/button render koro (u null holeo, na hole guest-er badge chirokal lukiye thakbe). */
+      window.__anboAuthPending = false;
       if(u){ snapshotState(); loadState(u.id); rerenderStore(); if(window.refreshPanels) refreshPanels(); }
+      else { if(window.refreshPanels) refreshPanels(); renderCart(); }
       renderNotifs();
-    }).catch(function(){ renderNotifs(); });
+    }).catch(function(){ window.__anboAuthPending = false; if(window.refreshPanels) refreshPanels(); renderCart(); renderNotifs(); });
+  } else {
+    /* No Auth configured — kono session restore hobe na, tai neutral state ekhanei sesh. */
+    window.__anboAuthPending = false;
+    if(window.refreshPanels) refreshPanels(); renderCart();
   }
   /* P1: /index.html#track khulle track modal khulbe (product page footer theke). */
   if(String(location.hash || "") === "#track"){ openModalEl("trackModal"); if(lastOrder){ document.getElementById("trackInput").value = lastOrder.id; renderTracking(lastOrder); } }
