@@ -160,13 +160,24 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 .toast.show{transform:translate(-50%,0)}
 .toast b{color:var(--lime)}
 .bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:70;background:color-mix(in srgb, var(--surface) 94%, transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
-.bottomnav nav{display:grid;grid-template-columns:repeat(5,1fr)}
+.bottomnav nav{display:grid;grid-template-columns:repeat(6,1fr)}
 .bottomnav button,.bottomnav a{background:none;border:0;color:var(--muted);font-family:inherit;font-weight:700;font-size:.68rem;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px;text-decoration:none;position:relative;min-height:44px;justify-content:center}
 .bottomnav .bi{font-size:1.25rem;line-height:1}
 .bottomnav .bdg{position:absolute;top:0;right:calc(50% - 20px);background:var(--coral);color:#fff;font-size:.62rem;min-width:18px;height:18px;border-radius:99px;display:grid;place-items:center;padding:0 4px}
 @media (max-width:860px){ .bottomnav{display:block} }
 .totop{position:fixed;right:16px;bottom:86px;z-index:65;width:46px;height:46px;border-radius:50%;border:2px solid var(--ink);background:var(--lime);color:var(--lime-ink);font-size:1.15rem;font-weight:800;box-shadow:3px 3px 0 var(--ink);opacity:0;pointer-events:none;transition:opacity .25s}
 .totop.show{opacity:1;pointer-events:auto}
+/* P3 (2026-11-23): header category nav + related products. */
+.catnav{display:flex;gap:8px;overflow-x:auto;padding:0 0 12px;scrollbar-width:none}
+.catnav::-webkit-scrollbar{display:none}
+.catnav a{flex:0 0 auto;text-decoration:none;font-weight:700;font-size:.88rem;border:2px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:8px 16px;white-space:nowrap}
+.catnav a:hover{border-color:var(--teal)}
+.relgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media (max-width:860px){ .relgrid{grid-template-columns:repeat(2,1fr)} }
+.relcard{display:block;text-decoration:none;color:inherit;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
+.relcard img{width:100%;aspect-ratio:1;object-fit:cover}
+.relname{font-weight:700;font-size:.92rem;padding:10px 12px 0;line-height:1.4}
+.relprice{font-weight:800;padding:4px 12px 12px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -185,9 +196,24 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
       </form>
       <div class="navbtns">
         <a class="iconbtn" id="pdAccountBtn" href="/index.html?auth=signin" aria-label="লগইন / সাইন আপ">👤</a>
+        <!-- P3 (2026-11-23): header parity — homepage-er moto Track + Wishlist. -->
+        <a class="iconbtn" href="/index.html#track" aria-label="অর্ডার ট্র্যাক করুন">📦</a>
+        <a class="iconbtn" href="/index.html?wish=1" aria-label="উইশলিস্ট খুলুন">❤️<span class="cartcount lime" id="pdWishCountH">0</span></a>
         <a class="iconbtn" href="/index.html?checkout=1" aria-label="কার্ট খুলুন">🛒<span class="cartcount" id="pdCartCount">0</span></a>
       </div>
     </div>
+    <!-- P3 (2026-11-23): category nav — homepage-er moto; click-e ?cat= niye
+         homepage-e oi category filter hobe. -->
+    <nav class="catnav" id="pdCatNav" aria-label="ক্যাটাগরি">
+      <a href="/?cat=all">সব পণ্য</a>
+      <a href="/?cat=electronics">ইলেকট্রনিক্স</a>
+      <a href="/?cat=fashion">ফ্যাশন</a>
+      <a href="/?cat=shoesbags">জুতা ও ব্যাগ</a>
+      <a href="/?cat=home">হোম ও কিচেন</a>
+      <a href="/?cat=beauty">বিউটি</a>
+      <a href="/?cat=grocery">গ্রোসারি</a>
+      <a href="/?cat=sports">স্পোর্টস</a>
+    </nav>
   </div>
 </header>
 
@@ -281,6 +307,13 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
     <ul class="specs" id="pdSpecs"></ul>
     <p class="muted" style="margin:10px 0 0" id="pdSku"></p>
   </div>
+
+  <!-- P3 (2026-11-23): Related products — eki category-r asol live product
+       (nijeke bad diye, sorbochcho 8); khali hole honest empty state. -->
+  <section class="box" id="pdRelatedBox" style="display:none;margin-top:22px">
+    <h3 style="margin:0 0 6px">🛍️ সম্পর্কিত পণ্য</h3>
+    <div id="pdRelatedList"><p style="color:var(--muted);margin:0">সম্পর্কিত পণ্য লোড হচ্ছে…</p></div>
+  </section>
 </main>
 
 <footer>
@@ -304,6 +337,7 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
   <a href="/#flash"><span class="bi">⚡</span>ফ্ল্যাশ সেল</a>
   <a href="/index.html?wish=1"><span class="bi">❤️</span>উইশলিস্ট<span class="bdg" id="pdWishCountM">0</span></a>
   <a href="/index.html?checkout=1"><span class="bi">🛒</span>কার্ট<span class="bdg" id="pdCartCountM">0</span></a>
+  <a href="/index.html?auth=account"><span class="bi">👤</span>অ্যাকাউন্ট</a>
 </nav></div>
 <button class="totop" id="pdToTop" aria-label="উপরে যান">↑</button>
 <div class="toast" id="pdToast"></div>
@@ -451,7 +485,7 @@ function syncCartCount(){
 function syncWishCount(){
   var w = readState().wishlist, n = 0;
   for(var k in w) n++;
-  var el = document.getElementById("pdWishCountM"); if(el) el.textContent = String(n);
+  ["pdWishCountM","pdWishCountH"].forEach(function(id){ var e2 = document.getElementById(id); if(e2) e2.textContent = String(n); });
 }
 </script>
 <script>
@@ -673,6 +707,28 @@ function renderProduct(){
   syncWishBtn();
   syncCompareBtn(); /* P2 */
   loadQa(); /* P2 — Q&A section. */
+  loadRelated(); /* P3 — Related products. */
+}
+
+/* P3 (2026-11-23): Related products — eki category-r approved live product
+   (nijeke bad diye, sorbochcho 8). DB category text ("Grocery" ityadi)
+   slug-e map kore client-side filter kora hoy — category slug-i ekmatro
+   nirbhorjoggo mil. Khali hole honest empty state. */
+async function loadRelated(){
+  var box = document.getElementById("pdRelatedBox"); if(!box || !PD.product) return;
+  box.style.display = "block";
+  var listEl = document.getElementById("pdRelatedList");
+  var sb = pdSb();
+  if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই ক্যাটাগরিতে এখন আর কোনো পণ্য নেই।</p>'; return; }
+  try{
+    var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category").eq("status", "approved").limit(50);
+    if(r.error) throw r.error;
+    var items = (r.data||[]).map(function(row){ return mapProductRow(row); }).filter(function(p){ return p && p.status==="active" && String(p.id)!==String(PD.id) && p.categoryId===PD.product.categoryId; }).slice(0, 8);
+    if(!items.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই ক্যাটাগরিতে এখন আর কোনো পণ্য নেই — শীঘ্রই আসছে।</p>'; return; }
+    listEl.innerHTML = '<div class="relgrid">' + items.map(function(p){
+      return '<a class="relcard" href="/product.html?id='+encodeURIComponent(p.id)+'"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'"><div class="relname">'+escHtml(p.name)+'</div><div class="relprice">'+fmt(p.price)+(p.oldPrice>p.price?' <s style="color:var(--muted);font-weight:400">'+fmt(p.oldPrice)+'</s>':'')+'</div></a>';
+    }).join("") + '</div>';
+  }catch(e){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">সম্পর্কিত পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন।</p>'; }
 }
 
 /* ---------- slider ---------- */
