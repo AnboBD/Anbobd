@@ -1126,7 +1126,7 @@ section{ padding-top:56px }
       <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">অর্ডার কনফার্মেশনে পাওয়া নম্বরটি দিন (যেমন <b>#ANBO123456</b>)। আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিন — অনলাইনে খুঁজে দেখা হবে।</p>
       <form id="trackForm" style="display:flex;gap:8px;flex-wrap:wrap">
         <input id="trackInput" placeholder="অর্ডার নম্বর" aria-label="অর্ডার নম্বর" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);min-width:0" />
-        <input id="trackPhone" inputmode="tel" placeholder="মোবাইল নম্বর (প্রয়োজনে)" aria-label="মোবাইল নম্বর" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);min-width:0" />
+        <input id="trackPhone" inputmode="tel" placeholder="মোবাইল নম্বর (আগের অর্ডার হলে আবশ্যক)" aria-label="মোবাইল নম্বর" style="flex:1;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink);min-width:0" />
         <button class="checkout" type="submit" style="width:auto;margin:0;padding:11px 20px">ট্র্যাক</button>
       </form>
       <div id="trackResult" style="margin-top:14px"></div>
@@ -1747,6 +1747,16 @@ function closeAll(keepScrim){
   hideSuggest();
   /* P1-15 — product modal bondho hole #product- hash soriye dao. */
   try{ if(String(location.hash || "").indexOf("#product-") === 0) history.replaceState(null, "", location.pathname + location.search); }catch(e){}
+}
+/* Track Order modal sobsomoy khali khulbe — ager session/account-er kono
+   order pre-populate kora jabe na (age lastOrder render hoto, tai bhul
+   mobile-eo ager order dekhate thakto, ar sign-out-er por guest-er
+   lastOrder #ANBO356351 dekhate). */
+function openTrackModalEmpty(){
+  openModalEl("trackModal");
+  document.getElementById("trackInput").value = "";
+  var tp = document.getElementById("trackPhone"); if(tp) tp.value = "";
+  document.getElementById("trackResult").innerHTML = "";
 }
 
 /* ---------- Quick view ---------- */
@@ -2470,7 +2480,7 @@ document.addEventListener("click", function(e){
   var nb = e.target.closest("#notifBtn"); if(nb){ e.stopPropagation(); renderNotifs(); document.getElementById("notifDrop").classList.toggle("open"); return; }
   if(!e.target.closest(".notifwrap")){ var nd = document.getElementById("notifDrop"); if(nd) nd.classList.remove("open"); }
   var pol = e.target.closest("[data-policy]"); if(pol){ var key = pol.dataset.policy;
-    if(key==="track"){ openModalEl("trackModal"); if(lastOrder){ document.getElementById("trackInput").value = lastOrder.id; renderTracking(lastOrder); } }
+    if(key==="track"){ openTrackModalEmpty(); }
     else if(key==="seller"){ window.location.href = "/seller/"; } /* P0-4: one seller road. */
     return; }
   var sa = e.target.closest("[data-showall]"); if(sa){ resetFilters(); return; }
@@ -2493,7 +2503,7 @@ document.getElementById("cartBtn").addEventListener("click", openCart);
 document.getElementById("cartBtnM").addEventListener("click", openCart);
 document.getElementById("wishBtn").addEventListener("click", openWish);
 document.getElementById("wishBtnM").addEventListener("click", openWish);
-document.getElementById("trackBtn").addEventListener("click", function(){ openModalEl("trackModal"); if(lastOrder){ document.getElementById("trackInput").value = lastOrder.id; renderTracking(lastOrder); } });
+document.getElementById("trackBtn").addEventListener("click", function(){ openTrackModalEmpty(); });
 document.getElementById("scrim").addEventListener("click", function(){ closeAll(); });
 function ensureDrawers(){
   if(document.getElementById("cartDrawer")) return;
@@ -2517,7 +2527,7 @@ function ensureDrawers(){
   /* P1: checkout address selector — saved address bosle form prefill hobe. */
   var coSel = document.getElementById("coAddrSel");
   if(coSel) coSel.addEventListener("change", function(){ if(this.value !== "") anboApplyAddress(+this.value); });
-  document.getElementById("trackFromSuccess").addEventListener("click", function(){ closeAll(); openModalEl("trackModal"); if(lastOrder){ document.getElementById("trackInput").value=lastOrder.id; renderTracking(lastOrder); } });
+  document.getElementById("trackFromSuccess").addEventListener("click", function(){ closeAll(); openTrackModalEmpty(); });
   renderCart();
 }
 function applyPromo(){
@@ -2531,14 +2541,29 @@ function applyPromo(){
   if(es < c.minSpend){ promoCode=null; renderCart(); toast("⚠️ "+code+" পেতে "+(c.sellerId?"ওই দোকানের ":"")+"কমপক্ষে "+fmt(c.minSpend)+" অর্ডার লাগবে"); return; }
   promoCode = code; c.used = (c.used||0)+1; renderCart(); toast("🎉 কুপন <b>"+code+"</b> প্রযোজ্য হয়েছে!"+(c.sellerId?" (শপ কুপন — "+escHtml(SL(c.sellerId).name)+")":""));
 }
+/* Track Order: phone chara kon order khola jabe — sudhu ei session/account-er
+   nijer order (ekhoni place kora, ba sign-in kora owner-er order). Onno
+   customer-er order (RPC adoption-e array-te asa) phone na mille kokhono
+   render hobe na. */
+function isOwnSessionOrder(o){
+  if(!o) return false;
+  if(o === lastOrder) return true;
+  if(o.source === "web-checkout") return true;
+  var u = window.__anboCurrentUser || null;
+  if(u && o.userId && String(o.userId) === String(u.id)) return true;
+  return false;
+}
 document.getElementById("trackForm").addEventListener("submit", function(e){
   e.preventDefault();
   var raw = document.getElementById("trackInput").value.trim();
   var phoneEl = document.getElementById("trackPhone");
   var phone = phoneEl ? phoneEl.value.trim() : "";
+  var normPhone = (typeof anboNormPhone === "function") ? anboNormPhone(phone) : String(phone||"").replace(/[^0-9]/g,"");
   var res = document.getElementById("trackResult");
   function notFound(){
-    res.innerHTML = '<p style="color:var(--danger);font-weight:700">😔 এই তথ্যে কোনো অর্ডার পাওয়া যায়নি। অর্ডার নম্বরটি ঠিকমতো লিখুন'+(lastOrder ? ' — আপনার সর্বশেষ অর্ডার: <b>'+lastOrder.id+'</b>' : ' — আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিয়ে আবার চেষ্টা করুন।')+'</p>';
+    /* ager order-er number hint hisebe dekhano hoto (lastOrder.id) — seta
+       sorano holo: not-found mane sudhu not-found, ar kichu na. */
+    res.innerHTML = '<p style="color:var(--danger);font-weight:700">😔 এই তথ্যে কোনো অর্ডার পাওয়া যায়নি। অর্ডার নম্বরটি ঠিকমতো লিখুন — আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিয়ে আবার চেষ্টা করুন।</p>';
   }
   if(!raw && !phone){ notFound(); return; }
   var vUp = raw.toUpperCase();
@@ -2546,10 +2571,25 @@ document.getElementById("trackForm").addEventListener("submit", function(e){
     var xid = String(x.id).toUpperCase();
     return xid===vUp || xid===("#"+vUp) || (x.supabaseId && String(x.supabaseId)===raw);
   })[0];
-  if(!o && phone){
-    o = ANBOBD_STORE.orders.filter(function(x){ return x.customer && x.customer.phone===phone; }).slice(-1)[0];
+  if(o){
+    /* ROOT CAUSE (CHECK 3/4): age local lookup phone na dekhei render korto —
+       ar CHECK 1-er RPC success _adoptTrackedOrder (L3363) #ANBO366551-ke
+       local array-te push kore diyechilo, tai bhul/no mobile-eo local hit
+       hoto ar RPC kokhono dakai hoto na. Ekhon: phone type kora thakle seta
+       order-er phone-er sathe (normalized) miltei hobe — nijer order holeo;
+       phone na dile sudhu ei session/account-er nijer order khulbe. */
+    var phoneOk = !!(normPhone && o.customer && anboNormPhone(o.customer.phone) === normPhone);
+    if(phone && !phoneOk){ notFound(); return; }
+    if(isOwnSessionOrder(o) || phoneOk){ renderTracking(o); return; }
+    notFound(); return;
   }
-  if(o){ renderTracking(o); return; }
+  if(phone && !raw){
+    /* Phone-only lookup: sudhu tokhoni, jokhon kono order number-i type kora
+       hoy ni. Number type kore miss hole phone-er latest order kokhono ferot
+       deoa jabe na (age #ANBO366551 + bhul phone-e #ANBO970305 ferot asto). */
+    var po = ANBOBD_STORE.orders.filter(function(x){ return x.customer && anboNormPhone(x.customer.phone)===normPhone; }).slice(-1)[0];
+    if(po){ renderTracking(po); return; }
+  }
   if(window.ANBOBD_DB && ANBOBD_DB.configured() && typeof ANBOBD_DB.findOrderForTracking==="function"){
     res.innerHTML = '<p style="font-weight:700">⏳ অনলাইনে অর্ডারটি খোঁজা হচ্ছে…</p>';
     ANBOBD_DB.findOrderForTracking(raw, phone).then(function(found){
@@ -4000,7 +4040,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     if(window.refreshPanels) refreshPanels(); renderCart();
   }
   /* P1: /index.html#track khulle track modal khulbe (product page footer theke). */
-  if(String(location.hash || "") === "#track"){ openModalEl("trackModal"); if(lastOrder){ document.getElementById("trackInput").value = lastOrder.id; renderTracking(lastOrder); } }
+  if(String(location.hash || "") === "#track"){ openTrackModalEmpty(); }
   renderNotifs();
   /* P0-5 — Recovery link theke fire asha: Supabase hash e type=recovery pathay;
      supabase-js client toiri holei session auto-detect hoy, tai getSession
