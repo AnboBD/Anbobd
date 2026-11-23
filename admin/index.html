@@ -723,6 +723,18 @@ function sbLog(what){
 function sbProfileRole(adminRole){
   return {"Super Admin":"admin","Manager":"manager","Order Manager":"order_manager","Support":"support","Warehouse":"warehouse"}[adminRole] || "staff";
 }
+/* profiles_role_check allows only customer/seller/admin/staff/seller_staff —
+   the granular admin roles (manager/order_manager/support/warehouse) are
+   NOT in the constraint, so a profiles row for Admin staff must carry the
+   generic value: Super Admin -> "admin", every other Admin staff role ->
+   "staff". The granular role lives in that user's `staff` table row and is
+   resolved back at sign-in (sbFetchMember) and in the Staff list
+   (sbLoadAll) — storing "staff" alone in profiles must never be read as
+   the display role, because sbAdminRole("staff") is null and the account
+   would be rejected at sign-in and leaked into the Customers list. */
+function sbProfileDbRole(adminRole){
+  return adminRole === "Super Admin" ? "admin" : "staff";
+}
 function sbAdminRole(profileRole){
   var m = {"admin":"Super Admin","manager":"Manager","order_manager":"Order Manager","support":"Support","warehouse":"Warehouse"};
   if (m[profileRole]) return m[profileRole];
@@ -850,7 +862,10 @@ async function sbLoadAll(){
     var mapped = profs.map(function(rw){
       return { id: rw.id, supabaseId: rw.id, name: rw.name || rw.full_name || rw.email || "Admin", email: rw.email || "", phone: rw.phone || "—", role: sbAdminRole(rw.role), status: rw.status || "active", last: "From Supabase", joined: sbDateLabel(rw.created_at), _profileRole: rw.role };
     });
-    customerProfiles = mapped.filter(function(m){ return !m.role; });
+    /* A "staff" profile is Admin staff by construction (see
+       sbProfileDbRole) — it must never fall through into the Customers
+       list just because sbAdminRole("staff") is null. */
+    customerProfiles = mapped.filter(function(m){ return !m.role && m._profileRole !== "staff"; });
     var staffMapped = mapped.filter(function(m){ return !!m.role; });
     var me = staffMapped.filter(function(m){ return currentUserId && m.id === currentUserId; })[0];
     staff = staffMapped;
@@ -859,6 +874,16 @@ async function sbLoadAll(){
     }
   }
   var staffRows = await fetchTable("staff");
+  if (staffRows && staffRows.length){
+    /* Resolve "staff" profiles to their granular role from the staff
+       table (see sbProfileDbRole) — without this a Manager stored as
+       profiles.role "staff" would vanish from the Staff list. Entries
+       with no staff row stay role-less and are filtered out below. */
+    var staffRoleByUser = {};
+    staffRows.forEach(function(rw){ if (rw.user_id) staffRoleByUser[rw.user_id] = rw.role; });
+    staff.forEach(function(m){ if (m._profileRole === "staff" && staffRoleByUser[m.supabaseId]) m.role = sbAdminRole(staffRoleByUser[m.supabaseId]); });
+    staff = staff.filter(function(m){ return !!m.role; });
+  }
   if (staffRows && staffRows.length && !staff.length){
     /* staff table is only {id, user_id, role, created_at} — identity comes
        from profiles via user_id. Seller shop-staff rows also live here;
@@ -3713,7 +3738,7 @@ async function sbCreateStaffAccount(data, pw){
     var ex = await sb.from("staff").select("id").eq("user_id", uid).maybeSingle();
     if (ex.error) throw ex.error;
     if (ex.data) throw new Error("Ei staff er record agei ache — notun kore create kora jabe na");
-    var pr = await tmp.from("profiles").upsert({ id: uid, full_name: data.name, email: data.email, phone: data.phone, role: sbProfileRole(data.role) }, { onConflict: "id" }).select("id");
+    var pr = await tmp.from("profiles").upsert({ id: uid, full_name: data.name, email: data.email, phone: data.phone, role: sbProfileDbRole(data.role) }, { onConflict: "id" }).select("id");
     if (pr.error) throw pr.error;
     if (!pr.data || !pr.data.length) throw new Error("Profile row toiri hoy ni — database theke row fire asheni");
     var sr = await sb.from("staff").insert({ user_id: uid, role: sbProfileRole(data.role) }).select("id");
@@ -3729,8 +3754,17 @@ async function sbCreateStaffAccount(data, pw){
 }
 function sbSyncStaffRow(s){
   if (!sbReady() || !s || !s.supabaseId) return;
-  sbUpdate("profiles", "id", s.supabaseId, { full_name: s.name, phone: s.phone, role: sbProfileRole(s.role) });
+  /* The staff row carries the granular role and is admin-writable
+     (staff_admin_all) — that update always runs. The profiles row is NOT
+     admin-writable for another user (update_own rejects it), so
+     name/phone/role in profiles can only be updated when this IS the
+     signed-in admin's own row; for anyone else the profiles update is
+     skipped entirely — never attempted as if it succeeded. The caller
+     says so in its toast when name/phone actually changed. */
   sbUpdate("staff", "user_id", s.supabaseId, { role: sbProfileRole(s.role) });
+  if (String(s.supabaseId) === String(currentUserId)){
+    sbUpdate("profiles", "id", s.supabaseId, { full_name: s.name, phone: s.phone, role: sbProfileDbRole(s.role) });
+  }
   /* NOTE: neither profiles nor staff has a status column in the live
      schema, so Suspended/Invited does not persist to Postgres yet — it
      applies for this session and is written to the activity log. */
@@ -3746,11 +3780,17 @@ $("#staffForm").addEventListener("submit", async function(e){
   if(id){
     var s = staff.filter(function(x){ return String(x.id)===String(id) || x.id===parseInt(id,10); })[0];
     if (!s){ toast("⚠ Staff record paowa jay ni"); return; }
+    var oldName = s.name, oldPhone = s.phone;
     Object.keys(data).forEach(function(k){ s[k]=data[k]; });
     if(newPw) s.passwordHash = hashPw(newPw);
     sbSyncStaffRow(s);
     logActivity("Updated staff account " + s.name + " (" + s.role + ")");
-    toast('<span class="lime">✓ Saved</span> — '+esc(s.name)+" is now "+s.role+(newPw ? (sbReady() ? " · password saved for offline fallback only — use 'Send password reset email' to change their real sign-in password" : " · password updated") : ""));
+    /* Name/phone live in profiles, which the admin can only update for
+       their OWN row (update_own) — for another staff member a name/phone
+       change is session-only, so say so instead of claiming it saved.
+       The role itself always persists via the staff row. */
+    var profNote = (String(s.supabaseId) !== String(currentUserId) && (oldName !== data.name || oldPhone !== data.phone)) ? " — name/phone database e save hoy ni (onno staff er profile bodlano jay na); role update hoyeche." : "";
+    toast('<span class="lime">✓ Saved</span> — '+esc(s.name)+" is now "+s.role+(newPw ? (sbReady() ? " · password saved for offline fallback only — use 'Send password reset email' to change their real sign-in password" : " · password updated") : "")+profNote);
   } else {
     if(staff.some(function(x){ return x.email.toLowerCase()===data.email.toLowerCase(); })){ toast("⚠ <b>"+esc(data.email)+"</b> is already a staff member"); return; }
     /* DB first: the Auth account + profile + staff rows must exist before
@@ -4431,6 +4471,19 @@ document.getElementById("forgotPwBtn").addEventListener("click", async function(
   }
   this.disabled = false;
 });
+/* A profiles row with role "staff" carries no granular role — the real
+   Admin role (Manager / Order Manager / Support / Warehouse) lives in
+   that user's `staff` table row. Resolve it, or null if there is no row
+   (a "staff" profile with no staff row is a broken record and must stay
+   rejected, not silently become some other role). */
+async function sbGranularRoleForStaff(uid){
+  if (!sbReady() || !uid) return null;
+  try{
+    var r = await sb.from("staff").select("role").eq("user_id", uid).maybeSingle();
+    if (r.error || !r.data) return null;
+    return sbAdminRole(r.data.role);
+  }catch(e){ sbWarn("staff", e); return null; }
+}
 async function sbFetchMember(user){
   var prof = null;
   try{
@@ -4438,7 +4491,15 @@ async function sbFetchMember(user){
     if (!r.error) prof = r.data;
   }catch(e){ sbWarn("profiles", e); }
   var meta = user.user_metadata || {};
-  if (prof) return { id: user.id, supabaseId: user.id, name: prof.full_name || prof.name || meta.name || user.email, email: prof.email || user.email, phone: prof.phone || "—", role: sbAdminRole(prof.role), status: "active", last: "Now · signed in", joined: sbDateLabel(prof.created_at) };
+  if (prof){
+    var profRole = sbAdminRole(prof.role);
+    /* profiles.role "staff" is the generic bucket for all non-owner Admin
+       staff (profiles_role_check forbids the granular values) — the
+       display role comes from the staff table row. Without this, a
+       Manager created by sbCreateStaffAccount would be rejected here. */
+    if (!profRole && prof.role === "staff") profRole = await sbGranularRoleForStaff(user.id);
+    return { id: user.id, supabaseId: user.id, name: prof.full_name || prof.name || meta.name || user.email, email: prof.email || user.email, phone: prof.phone || "—", role: profRole, status: "active", last: "Now · signed in", joined: sbDateLabel(prof.created_at) };
+  }
   /* No profile row: the owner account was created in the Supabase dashboard
      and has no profiles row (verified: profiles is empty). Bootstrap rule —
      such an account is Super Admin ONLY while no admin profile exists at
@@ -4449,7 +4510,7 @@ async function sbFetchMember(user){
   var bootstrap = false;
   if (!role){
     try{
-      var chk = await sb.from("profiles").select("id").in("role", ["admin","manager","order_manager","support","warehouse"]).limit(1);
+      var chk = await sb.from("profiles").select("id").in("role", ["admin","manager","order_manager","support","warehouse","staff"]).limit(1);
       var hasAdmin = !chk.error && chk.data && chk.data.length > 0;
       if (!hasAdmin){ role = "Super Admin"; bootstrap = true; }
     }catch(e){ role = null; }
