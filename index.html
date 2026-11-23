@@ -3311,18 +3311,46 @@ ANBOBD_DB.fetchShopByOwner = async function(ownerId){
     return r.data[0];
   }catch(e){ return null; }
 };
+/* 2026-11-23 (Track Order fix): phone normalizer — 01710370902, +8801710370902
+   ar 8801710370902 sob-i 01710370902-e ase, tai typed phone jekono format-e
+   thakleo DB-te stored 01... number-er sathe milbe. */
+function anboNormPhone(p){ var d = String(p||"").replace(/[^0-9]/g,""); if(d.length===13 && d.indexOf("880")===0) d = "0" + d.slice(3); else if(d.length===12 && d.indexOf("88")===0) d = "0" + d.slice(2); return d; }
 ANBOBD_DB.findOrderForTracking = async function(rawId, phone){
   var sb = this.sb(); if(!sb) return null;
-  var id = String(rawId||"").trim().replace(/^#/, "");
+  var raw = String(rawId||"").trim();
+  var id = raw.replace(/^#/, "");
+  var normPhone = anboNormPhone(phone);
+  var hasId = !!id;
   try{
     if(anboIsUuid(id)){
       var q = sb.from('orders').select('*').eq('id', id);
-      if(phone) q = q.eq('customer_phone', phone);
+      if(normPhone) q = q.eq('customer_phone', normPhone);
       var r = await q.limit(1);
       if(!r.error && r.data && r.data.length) return this._adoptTrackedOrder(r.data[0]);
     }
-    if(phone){
-      var r2 = await sb.from('orders').select('*').eq('customer_phone', phone).order('created_at', { ascending:false }).limit(1);
+    /* NEW ANBO-number branch: "#ANBO366551" sudhu items jsonb-er meta.localId-te
+       thake (orders table-e er kono column nei), ar orders table-e anon SELECT
+       policy-o nei — tai column query diye ager session-er / onno customer-er
+       order kokhono pawa jabe na. Somadhan: SECURITY DEFINER RPC
+       public.anbo_track_order(p_local_id text, p_phone text) — returns setof
+       orders, server-side-e normalized customer_phone AND items-jsonb
+       meta.localId miliye dey. RPC-ti parent-ke Supabase dashboard-e toiri
+       korte hobe (existing public.anbo_customer_owns_order(uuid) helper-er
+       motoi pattern); RPC na thakle (404) ba row na pele ekhane chupchap
+       not-found-e jabe — kono technical error na, onno kono order-o na. */
+    if(/^ANBO\d+$/i.test(id) && normPhone){
+      try{
+        var rpc = await sb.rpc('anbo_track_order', { p_local_id: "#"+id.toUpperCase(), p_phone: normPhone });
+        if(!rpc.error && rpc.data && rpc.data.length) return this._adoptTrackedOrder(rpc.data[0]);
+      }catch(e){ console.warn("Track-order RPC unavailable:", e); }
+      return null; /* number deoa hoyeche kintu RPC kichu pay ni — phone-er
+        latest order kokhono ferot deoa jabe na (age #ANBO366551 + phone-e
+        onno order #ANBO970305 ferot asto — sei bug-er fix). */
+    }
+    /* Phone-only branch: sudhu tokhoni chole jokhon kono order number-i type
+       kora hoy ni. Number type kora thakle uporei not-found hoye geche. */
+    if(!hasId && normPhone){
+      var r2 = await sb.from('orders').select('*').eq('customer_phone', normPhone).order('created_at', { ascending:false }).limit(1);
       if(!r2.error && r2.data && r2.data.length) return this._adoptTrackedOrder(r2.data[0]);
     }
   }catch(e){ console.warn("Order tracking lookup failed:", e); }
