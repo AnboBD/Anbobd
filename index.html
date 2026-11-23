@@ -1283,6 +1283,15 @@ section{ padding-top:56px }
           <p style="font-size:.86rem;margin:0"><button type="button" id="auForgotBtn" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0;text-decoration:underline;text-underline-offset:3px">পাসওয়ার্ড ভুলে গেছেন?</button></p>
           <p class="notice" id="auForgotMsg" role="status" style="display:none;margin:0"></p>
           <p style="font-size:.86rem;color:var(--muted);margin:0">অ্যাকাউন্ট নেই? <button type="button" id="auGoUp" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0">সাইন আপ করুন</button> — নাম, ইমেইল, মোবাইল আর পাসওয়ার্ড দিলেই হবে।</p>
+          <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <button type="button" class="btn-sec" id="auGoogleBtn" style="width:100%">🔵 Google দিয়ে লগইন</button>
+          <div style="display:grid;gap:10px;border-top:1px solid var(--line);padding-top:12px">
+            <div class="fld"><label for="auPhone">মোবাইল নম্বর দিয়ে লগইন</label><input id="auPhone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /></div>
+            <button type="button" class="btn-sec" id="auOtpSendBtn">📩 OTP পাঠান</button>
+            <div class="fld" id="auOtpWrap" style="display:none"><label for="auOtp">OTP কোড (6 ডিজিট)</label><input id="auOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" /></div>
+            <button type="button" class="checkout" id="auOtpVerifyBtn" style="display:none">✅ OTP দিয়ে লগইন</button>
+            <p class="notice" id="auOtpMsg" role="status" style="display:none;margin:0"></p>
+          </div>
         </form>
         <form id="auUpForm" novalidate style="display:none;gap:12px">
           <div class="fld"><label for="auName">আপনার নাম *</label><input id="auName" autocomplete="name" placeholder="পুরো নাম লিখুন" /></div>
@@ -1298,6 +1307,8 @@ section{ padding-top:56px }
           <div class="fld"><label for="auPass2">পাসওয়ার্ড আবার দিন *</label><input id="auPass2" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
           <div class="login-err" id="auUpErr"></div>
           <button class="checkout" type="submit" style="margin-top:2px">অ্যাকাউন্ট তৈরি করুন →</button>
+          <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <button type="button" class="btn-sec" id="auGoogleBtnUp" style="width:100%">🔵 Google দিয়ে সাইন আপ</button>
           <p style="font-size:.82rem;color:var(--muted);margin:0;line-height:1.55">সাইন আপ করলেই সাইন ইন হয়ে যাবেন। নতুন অ্যাকাউন্ট একদম খালি থাকে — কোনো অর্ডার, কার্ট বা উইশলিস্ট আগে থেকে থাকে না।</p>
         </form>
       </div>
@@ -4326,7 +4337,7 @@ function anboUserFromProfile(authUser, prof){
   var meta = (authUser && authUser.user_metadata) || {};
   var user = {
     id: authUser.id,
-    name: (prof && prof.full_name) || meta.full_name || (authUser.email||"").split("@")[0],
+    name: (prof && prof.full_name) || meta.full_name || (authUser.email||"").split("@")[0] || authUser.phone || "",
     email: authUser.email || (prof && prof.email) || "",
     mobile: (prof && prof.phone) || meta.phone || "",
     role: String((prof && prof.role) || meta.role || "customer").trim().toLowerCase(),
@@ -4351,7 +4362,7 @@ async function anboEnsureProfile(authUser){
     var r = await sb.from("profiles").select("id").eq("id", authUser.id).single();
     if(r && r.data) return r.data;
     var meta = authUser.user_metadata || {};
-    var ins = await sb.from("profiles").insert({ id:authUser.id, email:authUser.email || "", full_name:meta.full_name || "", phone:meta.phone || "", role:String(meta.role || "customer").toLowerCase() });
+    var ins = await sb.from("profiles").insert({ id:authUser.id, email:authUser.email || null, full_name:meta.full_name || "", phone:meta.phone || authUser.phone || "", role:String(meta.role || "customer").toLowerCase() });
     if(ins.error){ console.warn("profiles ensure:", ins.error.message); return null; }
     return { id:authUser.id };
   }catch(e){ console.warn("profiles ensure failed:", e); return null; }
@@ -4924,6 +4935,81 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
   }
   window.anboLogout = doLogout;
 
+  /* Social login + phone OTP (2026-11-24): Google OAuth ar phone OTP Supabase Auth diye.
+     Provider dashboard-e configure na thakle Supabase asol error dey — setai toast-e dekhano hoy, kokhono fake success na. */
+  function anboNormBdPhone(raw){
+    var d = String(raw||"").replace(/\D/g,"");
+    if(d.length===11 && /^01[3-9]\d{8}$/.test(d)) return "+880"+d.slice(1);
+    if(d.length===13 && /^8801[3-9]\d{8}$/.test(d)) return "+"+d;
+    return null;
+  }
+  async function anboGoogleLogin(){
+    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ toast("⚠ Google লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    try{
+      var sb = ANBOBD_DB.sb();
+      var r = await sb.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: location.origin + location.pathname } });
+      if(r && r.error) toast("⚠ Google লগইন চালু হয়নি — " + (r.error.message || "আবার চেষ্টা করুন।"));
+      /* success hole Supabase Google-e redirect korbe; fire asle restoreSession session nibe. */
+    }catch(e){ toast("⚠ Google লগইন চালু হয়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।")); }
+  }
+  /* Google / phone OTP diye sign-in-er por local session toiri — email login-er motoi (profile ensure + seller shop resolve). */
+  async function anboFinishSupabaseLogin(authUser){
+    try{
+      var prof = await ANBOBD_DB.fetchProfile(authUser.id);
+      var isNew = !prof;
+      if(!prof){ await anboEnsureProfile(authUser); prof = await ANBOBD_DB.fetchProfile(authUser.id); }
+      var user = anboUserFromProfile(authUser, prof);
+      await anboResolveSellerShop(user);
+      ANBOBD_AUTH.session = user; window.__anboCurrentUser = user;
+      ANBOBD_DB.loadMyOrders(user).then(function(){ if(window.renderAccount) renderAccount(); }).catch(function(){});
+      afterAuth(user, isNew);
+      return true;
+    }catch(e){ console.warn("anboFinishSupabaseLogin:", e); return false; }
+  }
+  document.getElementById("auGoogleBtn").addEventListener("click", anboGoogleLogin);
+  document.getElementById("auGoogleBtnUp").addEventListener("click", anboGoogleLogin);
+  document.getElementById("auOtpSendBtn").addEventListener("click", async function(){
+    var msgEl = document.getElementById("auOtpMsg");
+    function show(t){ msgEl.textContent = t; msgEl.style.display = "block"; }
+    hideErr("auInErr");
+    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show("⚠ OTP লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    var ph = anboNormBdPhone(document.getElementById("auPhone").value);
+    if(!ph){ show("সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।"); return; }
+    window.__anboOtpPhone = ph;
+    this.disabled = true;
+    try{
+      var sb = ANBOBD_DB.sb();
+      var r = await sb.auth.signInWithOtp({ phone: ph });
+      if(r && r.error){ show("⚠ OTP পাঠানো যায়নি — " + (r.error.message || "আবার চেষ্টা করুন।")); }
+      else {
+        document.getElementById("auOtpWrap").style.display = "";
+        document.getElementById("auOtpVerifyBtn").style.display = "";
+        show("✅ OTP পাঠানো হয়েছে " + ph + "-এ — 6 ডিজিটের কোডটি লিখে Verify চাপ দিন।");
+      }
+    }catch(e){ show("⚠ OTP পাঠানো যায়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।")); }
+    this.disabled = false;
+  });
+  document.getElementById("auOtpVerifyBtn").addEventListener("click", async function(){
+    var msgEl = document.getElementById("auOtpMsg");
+    function show(t){ msgEl.textContent = t; msgEl.style.display = "block"; }
+    hideErr("auInErr");
+    var ph = window.__anboOtpPhone || anboNormBdPhone(document.getElementById("auPhone").value);
+    var code = String(document.getElementById("auOtp").value || "").replace(/\D/g,"");
+    if(!ph){ show("আগে সঠিক মোবাইল নম্বর দিয়ে OTP পাঠান।"); return; }
+    if(code.length !== 6){ show("6 ডিজিটের OTP কোডটি লিখুন।"); return; }
+    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show("⚠ OTP লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    this.disabled = true;
+    try{
+      var sb = ANBOBD_DB.sb();
+      var r = await sb.auth.verifyOtp({ phone: ph, token: code, type: "sms" });
+      if(r && (r.error || !r.data || !r.data.user)){ show("⚠ OTP মেলেনি — কোডটি ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।"); return; }
+      var ok = await anboFinishSupabaseLogin(r.data.user);
+      if(ok){ var f = document.getElementById("auInForm"); if(f) f.reset(); }
+      else show("⚠ লগইন হয়েছে, কিন্তু প্রোফাইল লোড হয়নি — পেজ রিলোড করে আবার চেষ্টা করুন।");
+    }catch(e){ show("⚠ OTP যাচাই করা যায়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।")); }
+    this.disabled = false;
+  });
+
   /* header + gate buttons */
   document.getElementById("accountBtn").addEventListener("click", function(){
     if(window.__anboCurrentUser){ closeAll(); renderAccount(); openModalEl("authModal"); }
@@ -5104,7 +5190,23 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       }, 1800);
     }).catch(function(err){ errEl.textContent = "পাসওয়ার্ড বদলানো যায়নি — " + ((err && err.message) || "আবার চেষ্টা করুন।"); });
   });
+  /* Social login (2026-11-24): OAuth callback theke fire asha — error hole asol karon toast-e, success hole welcome toast. */
+  function anboCheckOAuthReturn(){
+    try{
+      var sp = new URLSearchParams(location.search);
+      var errDesc = sp.get("error_description") || sp.get("error");
+      if(errDesc){ openAuth("signin"); toast("⚠ Google লগইন হয়নি — " + errDesc + "।"); return; }
+      if(String(location.hash || "").indexOf("access_token") < 0) return;
+      var tries = 0;
+      (function waitUser(){
+        var u = window.__anboCurrentUser;
+        if(u){ toast("👋 স্বাগতম ফিরে আসায়, <b>" + esc(u.name) + "</b>! (" + roleLabel(u.role) + ")"); return; }
+        if(tries++ < 10) setTimeout(waitUser, 500);
+      })();
+    }catch(e){}
+  }
   anboCheckRecovery();
+  anboCheckOAuthReturn();
   /* /login, /register, /signup redirect (?auth=...) — vercel.json theke ase.
      ?checkout=1 — product.html theke Buy Now: catalog load howar por cart
      drawer khule (renderCart-er age catalog dorkar — retry loop).
