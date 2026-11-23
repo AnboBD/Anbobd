@@ -2006,15 +2006,15 @@ async function anboCancelOrder(orderId, btn){
      cancel" policy-r USING clause-e master AwaitingAdmin thaka lage.
      .select("id") dewa hoyeche karon RLS-blocked UPDATE 200 + 0 row dey,
      error dey na — khali data manei row flip hoy ni (Admin resend-er motoi). */
-  var subWarn = false;
-  try{ var r2 = await sb.from("sub_orders").update({ status:"Cancelled" }).eq("order_id", oid).select("id"); if(r2.error || !r2.data || !r2.data.length) subWarn = true; }catch(e){ subWarn = true; }
+  var subWarn = false, subErr = "";
+  try{ var r2 = await sb.from("sub_orders").update({ status:"Cancelled" }).eq("order_id", oid).select("id"); if(r2.error || !r2.data || !r2.data.length){ subWarn = true; if(r2.error) subErr = " (DB: " + escHtml((r2.error.code ? r2.error.code + " — " : "") + (r2.error.message || "database error")) + ")"; } }catch(e){ subWarn = true; subErr = " (DB: " + escHtml((e && e.message) ? e.message : "exception") + ")"; }
   var r1 = await sb.from("orders").update({ status:"Cancelled" }).eq("id", oid);
   if(r1.error){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml(r1.error.message || "database error")+")"); return; }
   o.status = "Cancelled"; if(window.__anboPersistState) window.__anboPersistState();
   /* P1 follow-up (2026-11-23): undo this session's optimistic stock reservation (see finishCheckoutUI) — the order never sold, so stock returns. Only reservations made in THIS session exist in __anboReservedStock, so a cancel days later cannot inflate stock. */
   var resv = (window.__anboReservedStock || {})[orderId];
   if(resv){ resv.forEach(function(rv){ var p = P(rv.id); if(p) p.stockQty = (p.stockQty || 0) + rv.qty; }); delete window.__anboReservedStock[orderId]; if(window.__anboRender) window.__anboRender(); }
-  toast("✅ অর্ডার <b>"+escHtml(orderId)+"</b> বাতিল হয়েছে"+(subWarn?" — সেলারের কপি আপডেট হয়নি (সেলারের কাছে এখনো pending দেখাতে পারে), Admin Orders থেকে ঠিক করে নেবে":""));
+  toast("✅ অর্ডার <b>"+escHtml(orderId)+"</b> বাতিল হয়েছে"+(subWarn?" — সেলারের কপি আপডেট হয়নি (সেলারের কাছে এখনো pending দেখাতে পারে), Admin Orders থেকে ঠিক করে নেবে"+subErr:""));
   if(window.renderAccount) renderAccount();
 }
 /* ---------- P1: printable invoice ---------- */
