@@ -2947,12 +2947,14 @@
               /* Decision 7 — staff alada login: (1) staff row age (user_id
                  pore bosbe — user_id nullable, 2026-11-20 fix), (2) throwaway
                  client diye ashol Auth user toiri (Admin staff er moto),
-                 metadata te shop_id + shop role — staff nije staff row porte
-                 na parleo (RLS) login metadata diye cholbe, (3) staff row e
-                 user_id bosano + verify kora (na bosle error dekhabe, success
-                 toast asbe na), (4) profiles row best-effort (seller session
-                 theke profiles INSERT policy na thakle warn dekhabe, kintu
-                 login atke jabe na). */
+                 metadata te shop_id + shop role, (3) profiles row throwaway
+                 client diye notun user hisebe (profiles insert_own:
+                 id = auth.uid()) — owner client diye likhle RLS block kore,
+                 ar staff.user_id FK (staff_user_id_fkey -> profiles.id) er
+                 jonno profiles row AGE thaka lagbe, (4) staff row e user_id
+                 bosano + verify kora. (3) ba (4) fail korle ekhanei thambe —
+                 error dekhabe, success toast asbe na, adha toiri staff
+                 thakbe na. */
               var insS = await supabase.from('staff').insert({ shop_id: s.shopId, name: name, email: em, phone: ph, role: role, active: true }).select().single();
               if (insS.error) { $("nsErr").textContent = insS.error.message; return; }
               if (insS.data) { newStaff.id = insS.data.id; }
@@ -2962,24 +2964,35 @@
               if (su.error) { $("nsErr").textContent = "Staff login account toiri hoy ni: " + su.error.message + " (staff row toiri hoyeche — login chara staff hisebe thakbe)"; return; }
               var uid = su.data && su.data.user ? su.data.user.id : null;
               if (uid){
-                /* Link update VERIFY kora hoy — age check chara chalano hoto,
-                   tai user_id na bosleo success toast asto ar staff pore
-                   sign in korte parto na ("ar sakriya nei"). RLS 0-row ba
-                   FK error — duita khetrei ekhane dhora porbe. */
+                /* (3) profiles row AGE — throwaway client diye, notun user
+                   hisebe. signUp er session tmp client e in-memory thake
+                   (persistSession:false holeo), tobu setSession diye
+                   nischit kora holo — na hole anon hoye RLS e atke jeto.
+                   Profiles row na thakle porer link update FK error
+                   (23503, staff_user_id_fkey) dito — eitai age hoto. */
+                if (su.data && su.data.session) { try { await tmp.auth.setSession({ access_token: su.data.session.access_token, refresh_token: su.data.session.refresh_token }); } catch(e2){} }
+                var pr = await tmp.from('profiles').insert({ id: uid, full_name: name, email: em, phone: ph, role: "seller_staff" }).select('id');
+                if (pr.error || !pr.data || !pr.data.length) {
+                  $("nsErr").textContent = "Staff er profile toiri hoy ni" + (pr.error ? (" — " + pr.error.message) : " — database theke row fire asheni") + ". Staff row ar login account toiri hoyeche, kintu login link bosano hoy ni — abar chesta korun.";
+                  return;
+                }
+                /* (4) Link update VERIFY kora hoy — age check chara chalano
+                   hoto, tai user_id na bosleo success toast asto ar staff
+                   pore sign in korte parto na ("ar sakriya nei"). Profiles
+                   row ekhon ache, tai FK ar badha dibe na; RLS 0-row ba
+                   onno error — duita khetrei ekhane dhora porbe. */
                 var linkRes = await supabase.from('staff').update({ user_id: uid }).eq('id', newStaff.id).eq('shop_id', s.shopId).select('id, user_id');
                 if (linkRes.error || !linkRes.data || !linkRes.data.length || String(linkRes.data[0].user_id || "") !== String(uid)) {
                   $("nsErr").textContent = "Staff row e login link bosano jay ni" + (linkRes.error ? (" — " + linkRes.error.message) : " — database theke row fire asheni") + ". Staff row toiri hoyeche, kintu se sign in korte parbe na — Admin ke staff policy check korte bolun.";
                   return;
                 }
-                var pr = await supabase.from('profiles').insert({ id: uid, full_name: name, email: em, phone: ph, role: "seller_staff" });
-                if (pr.error) { newStaff._profileWarn = true; }
               }
             } catch(e){ $("nsErr").textContent = "Staff save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."; return; }
           }
           s.staff.unshift(newStaff);
           closeModal(); renderTeam();
           var doneMsg = name + " staff hisebe add hoyeche — role: " + role;
-          if (supabaseConnected && supabase) doneMsg += " — se ekhon ei email + password diye Seller Center e sign in korte parbe." + (newStaff._profileWarn ? " (Profile row create hoy ni — login metadata diye cholbe, Admin ke profiles policy check korte bolun.)" : "");
+          if (supabaseConnected && supabase) doneMsg += " — se ekhon ei email + password diye Seller Center e sign in korte parbe.";
           else doneMsg += " (offline — live site e abar add korle tobei login pabe)";
           toast(doneMsg);
         });
