@@ -54,8 +54,8 @@ header.site{position:sticky;top:0;z-index:60;background:color-mix(in srgb, var(-
 @keyframes anboBin{0%{transform:translateX(-18px);opacity:0}13%{transform:translateX(3px);opacity:1}18%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(-18px);opacity:0}}
 .logo .bd .ld{animation:anboDin 3.4s ease-in-out infinite}
 @keyframes anboDin{0%,10%{transform:translateX(18px);opacity:0}23%{transform:translateX(-3px);opacity:1}28%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(18px);opacity:0}}
-.logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:2px solid #a8e10c;animation:anboRipple 3.4s ease-out infinite;pointer-events:none}
-@keyframes anboRipple{0%,32%{transform:scale(1);opacity:0}44%{opacity:.9}78%,100%{transform:scale(1.55);opacity:0}}
+.logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:3px solid #7fb800;box-shadow:0 0 14px rgba(127,184,0,.55);animation:anboRipple 3.4s ease-out infinite;pointer-events:none}
+@keyframes anboRipple{0%,32%{transform:scale(1);opacity:0}44%{opacity:.9}78%,100%{transform:scale(1.7);opacity:0}}
 @media (prefers-reduced-motion:reduce){.logo .bd .lb,.logo .bd .ld,.logo .bd::after{animation:none}}
 .searchbar{flex:1;display:flex;background:var(--surface);border:2px solid var(--ink);border-radius:999px;overflow:hidden;box-shadow:4px 4px 0 var(--ink);min-width:0}
 .searchbar input{flex:1;border:0;outline:0;padding:10px 18px;font:inherit;font-size:.98rem;background:transparent;color:var(--ink);min-width:0}
