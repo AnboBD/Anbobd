@@ -90,6 +90,10 @@
     {
       "destination": "/api/og",
       "source": "/product"
+    },
+    {
+      "destination": "/api/og",
+      "source": "/og-test"
     }
   ]
 }
