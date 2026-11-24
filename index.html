@@ -122,7 +122,7 @@ section{padding:52px 0 8px}
 /* Category tiles */
 .cats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
 .cat{border:1px solid var(--line);text-align:left;background:var(--surface);border-radius:20px;padding:18px 14px 14px;box-shadow:var(--card-shadow);transform-style:preserve-3d;transition:transform .25s, box-shadow .25s;position:relative;overflow:hidden;font-family:inherit;color:var(--ink)}
-.cat:hover{transform:perspective(700px) rotateX(7deg) rotateY(-7deg) translateY(-4px);box-shadow:0 24px 40px rgba(16,40,32,.18)}
+.cat:hover{transform:perspective(900px) rotateX(9deg) rotateY(-8deg) translateY(-6px);box-shadow:0 30px 48px rgba(16,40,32,.22)}
 .cat .ic{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;font-size:1.55rem;margin-bottom:12px;box-shadow:inset 0 -6px 0 rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.12)}
 .cat b{display:block;font-size:1rem;line-height:1.25}
 .cat span{font-size:.8rem;color:var(--muted)}
@@ -163,10 +163,11 @@ section{padding:52px 0 8px}
 /* Product cards */
 .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .pcard{background:var(--surface);border:1px solid var(--line);border-radius:22px;overflow:hidden;box-shadow:var(--card-shadow);display:flex;flex-direction:column;transition:transform .25s, box-shadow .25s;transform-style:preserve-3d;position:relative}
-.pcard:hover{transform:perspective(800px) rotateX(3deg) translateY(-5px);box-shadow:0 26px 44px rgba(16,40,32,.16)}
+.pcard:hover{transform:perspective(900px) rotateX(8deg) rotateY(-6deg) translateY(-6px);box-shadow:0 32px 54px rgba(16,40,32,.22)}
 .pimg{position:relative;display:block;background:#fff;aspect-ratio:1/1;overflow:hidden;cursor:pointer;border:0;padding:0;width:100%;text-decoration:none}
 .pimg img{width:100%;height:100%;object-fit:cover;transition:transform .4s}
 .pcard:hover .pimg img{transform:scale(1.06) rotate(-1deg)}
+@media (prefers-reduced-motion: reduce){ .pcard:hover{transform:none} }
 .badge{position:absolute;bottom:10px;right:10px;background:var(--coral);color:#fff;font-weight:800;font-size:.78rem;border-radius:9px;padding:4px 9px;box-shadow:0 4px 0 rgba(0,0,0,.18);transform:rotate(-3deg);z-index:2}
 /* P0-4 (2026-11-25): skeleton cards — catalog load howar somoy khali
    empty-state lekhar bodle card-er moto jholokano placeholder.
@@ -725,7 +726,7 @@ section{ padding-top:56px }
 /* --- Category 3D: photo header, gradient, smooth tilt --- */
 .cats{ gap:16px }
 .cat{ padding:0; text-align:left; box-shadow:var(--shadow-soft) }
-.cat:hover{ transform:perspective(900px) rotateX(4deg) rotateY(-4deg) translateY(-5px); box-shadow:var(--shadow-lift) }
+.cat:hover{ transform:perspective(900px) rotateX(9deg) rotateY(-8deg) translateY(-6px); box-shadow:var(--shadow-lift) }
 .cat-media{ display:block; position:relative; height:104px; overflow:hidden }
 .cat-media img{ width:100%; height:100%; object-fit:cover; display:block; transition:transform .45s ease }
 .cat:hover .cat-media img{ transform:scale(1.07) }
@@ -2843,7 +2844,7 @@ function renderWish(){
   box.innerHTML = ids.map(function(k){
     var p = P(k);
     if(!p) return ""; /* catalog-e na thaka item skip — renderWish renderCart theke daka hoy, ekhane throw holeo AUTH IIFE morto. */
-    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div><button class="rm" data-wishrm="'+p.id+'">'+t("wishRemove")+'</button></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+p.id+'">🛒 কার্টে যোগ করুন</button></div>';
+    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div><button class="rm" data-wishrm="'+p.id+'">'+t("wishRemove")+'</button></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+p.id+'">'+t("modalAdd")+'</button></div>';
   }).join("");
 }
 var toastTimer;
@@ -2926,7 +2927,7 @@ function openSharedWishlist(ids){
   if(!live.length){ body.innerHTML = '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("wishSharedEmpty")+'</p>'; }
   else {
     body.innerHTML = live.map(function(p){
-      return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>🛒 কার্টে যোগ করুন</button></div>';
+      return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>'+t("modalAdd")+'</button></div>';
     }).join("");
   }
   openModalEl("sharedWishModal");
