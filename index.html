@@ -48,7 +48,15 @@ a{color:inherit}
 header.site{position:sticky;top:0;z-index:60;background:color-mix(in srgb, var(--bg) 88%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .nav{display:flex;align-items:center;gap:12px;padding:12px 0}
 .logo{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.7rem;letter-spacing:-.02em;text-decoration:none;line-height:1;white-space:nowrap}
-.logo .an{color:var(--teal)} .logo .bo{color:var(--coral)} .logo .bd{background:var(--lime);color:var(--lime-ink);border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg);display:inline-block}
+.logo .an{color:var(--teal)} .logo .bo{color:var(--coral)} .logo .bd{background:var(--lime);color:var(--lime-ink);border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg);display:inline-block;position:relative}
+.logo .bd .lb,.logo .bd .ld{display:inline-block}
+.logo .bd .lb{animation:anboBin 3.4s ease-in-out infinite}
+@keyframes anboBin{0%{transform:translateX(-18px);opacity:0}13%{transform:translateX(3px);opacity:1}18%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(-18px);opacity:0}}
+.logo .bd .ld{animation:anboDin 3.4s ease-in-out infinite}
+@keyframes anboDin{0%,10%{transform:translateX(18px);opacity:0}23%{transform:translateX(-3px);opacity:1}28%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(18px);opacity:0}}
+.logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:2px solid #a8e10c;animation:anboRipple 3.4s ease-out infinite;pointer-events:none}
+@keyframes anboRipple{0%,32%{transform:scale(1);opacity:0}44%{opacity:.9}78%,100%{transform:scale(1.55);opacity:0}}
+@media (prefers-reduced-motion:reduce){.logo .bd .lb,.logo .bd .ld,.logo .bd::after{animation:none}}
 .searchbar{flex:1;display:flex;background:var(--surface);border:2px solid var(--ink);border-radius:999px;overflow:hidden;box-shadow:4px 4px 0 var(--ink);min-width:0}
 .searchbar input{flex:1;border:0;outline:0;padding:10px 18px;font:inherit;font-size:.98rem;background:transparent;color:var(--ink);min-width:0}
 .searchbar button{border:0;background:var(--lime);color:var(--lime-ink);font-weight:700;padding:0 22px;font-size:.95rem;white-space:nowrap}
@@ -719,7 +727,7 @@ section{ padding-top:56px }
 <header class="site">
   <div class="wrap">
     <div class="nav">
-      <a class="logo" href="/" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
+      <a class="logo" href="/" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></a>
       <div class="searchwrap">
       <form class="searchbar" id="searchForm" role="search">
         <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন…" data-i18n-ph="searchPh" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
@@ -1030,7 +1038,7 @@ section{ padding-top:56px }
 <footer>
   <div class="wrap foot">
     <div>
-      <a class="logo" href="/" style="font-size:1.5rem"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
+      <a class="logo" href="/" style="font-size:1.5rem"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></a>
       <p>বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — সব ধরনের পণ্য, সেরা দামে, আপনার দরজায়।</p>
       <p>📍 বনানী, ঢাকা 1213, বাংলাদেশ<br>📞 হটলাইন: <b style="display:inline;color:var(--ink)">09638-555555</b> (সকাল 9টা – রাত 11টা)<br>✉️ support@anbobd.com</p>
       <div class="payrow"><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span><span>COD</span></div>
