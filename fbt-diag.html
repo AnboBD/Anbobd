@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="bn"><head><meta charset="utf-8"><title>FBT diag (temporary)</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head>
+<body><h1>FBT diag</h1><pre id="out">running…</pre>
+<script>
+(async function(){
+  var out = document.getElementById('out');
+  function log(s){ out.textContent += s + "\n"; }
+  try{
+    var html = await (await fetch('/product-page.html')).text();
+    var m = html.match(/ANBOBD_SUPABASE\s*=\s*\{\s*url:"([^"]+)",\s*anonKey:"([^"]+)"/);
+    if(!m){ log('CONFIG NOT FOUND'); return; }
+    var sb = window.supabase.createClient(m[1], m[2], {auth:{storageKey:'fbt-diag-auth'}});
+    var pr = await sb.from('products').select('*').eq('id','9edffb43-ce92-4f04-9682-7c6d2acca431').eq('status','approved').maybeSingle();
+    log('loadProduct error: ' + (pr.error ? pr.error.message : 'none'));
+    log('bundle_with: ' + JSON.stringify(pr.data && pr.data.bundle_with));
+    log('category: ' + (pr.data && pr.data.category) + ' | status: ' + (pr.data && pr.data.status));
+    var r = await sb.from('products').select('id,name,price,old_price,image_url,images,stock,category').eq('status','approved').limit(50);
+    log('list error: ' + (r.error ? r.error.message : 'none'));
+    log('list rows: ' + (r.data||[]).length);
+    (r.data||[]).forEach(function(x){ log(' - ' + x.name + ' | cat=' + x.category + ' | price=' + x.price); });
+    function slug(v){ var s=String(v==null?'':v).toLowerCase().trim(); var map={grocery:'grocery'}; return map[s]||'electronics'; }
+    var ids = (pr.data && Array.isArray(pr.data.bundle_with)) ? pr.data.bundle_with.map(String) : [];
+    var fbt = (r.data||[]).filter(function(x){ return ids.indexOf(String(x.id))>=0; });
+    log('FBT matches: ' + fbt.length + ' -> ' + fbt.map(function(x){return x.name;}).join(' | '));
+    var rel = (r.data||[]).filter(function(x){ return String(x.id)!=='9edffb43-ce92-4f04-9682-7c6d2acca431' && slug(x.category)===slug(pr.data.category); });
+    log('Related matches: ' + rel.length + ' -> ' + rel.map(function(x){return x.name;}).join(' | '));
+    log('DONE');
+  }catch(e){ log('EXCEPTION: ' + (e && e.message)); }
+})();
+</script></body></html>
