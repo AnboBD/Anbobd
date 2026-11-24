@@ -515,6 +515,51 @@ section[id]{scroll-margin-top:150px}
 .acct-head{display:flex;gap:13px;align-items:center;margin-bottom:14px}
 .acct-head .av{width:50px;height:50px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.25rem;flex:none}
 .rolebadge{display:inline-block;font-size:.72rem;font-weight:800;border-radius:99px;padding:2px 9px;background:#e2f4ee;color:#0a5c50}
+/* ---------- Account drawer — premium redesign (2026-11-25) ----------
+   All rules scoped under #auAccount: nothing outside the account area changes. */
+/* 1. Profile header — gradient card */
+#auAccount .acct-head{background:linear-gradient(135deg,#0e7c6f,#07332f);border-radius:18px;padding:18px;margin-bottom:14px;box-shadow:0 8px 22px rgba(7,51,47,.25)}
+#auAccount .acct-head .av{width:64px;height:64px;font-size:1.6rem;border:3px solid #a8e10c;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+#auAccount .acct-head b#auProfileName{display:block;font-family:"Bricolage Grotesque",sans-serif;font-size:1.25rem;color:#fff}
+#auAccount .acct-head #auProfileMeta{color:rgba(255,255,255,.75);font-size:.85rem}
+#auAccount .acct-head .rolebadge{background:#a8e10c;color:#243b00}
+/* 2. Section cards */
+#auAccount .acct-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 2px 10px rgba(16,40,32,.05)}
+/* 3. Section heading row: icon chip + title + divider */
+#auAccount .acct-h{display:flex;align-items:center;gap:10px;margin:0 0 12px;padding-bottom:12px;border-bottom:1px solid var(--line)}
+#auAccount .acct-ic{width:34px;height:34px;flex:none;border-radius:10px;background:#eef7c8;display:grid;place-items:center;font-size:1.05rem}
+#auAccount .acct-h h4{margin:0;font-family:"Bricolage Grotesque",sans-serif;font-size:1.05rem}
+/* 4. Inputs inside the account area */
+#auAccount .fld label{font-size:.82rem;font-weight:700;color:var(--ink)}
+#auAccount input,#auAccount select,#auAccount textarea{border-radius:12px;padding:12px 14px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;width:100%}
+#auAccount input:focus,#auAccount select:focus,#auAccount textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,124,111,.15)}
+#auAccount .passwrap input{padding-right:74px}
+/* 5. Primary buttons inside the account area (full-width lime) */
+#auAccount .btn-sec{background:#a8e10c;color:#243b00;font-weight:800;border:0;border-radius:12px;padding:12px;width:100%;box-shadow:0 3px 0 #6f9a06;transition:transform .15s ease,box-shadow .15s ease}
+#auAccount .btn-sec:hover{transform:translateY(-1px)}
+#auAccount .btn-sec:active{transform:translateY(2px);box-shadow:0 1px 0 #6f9a06}
+/* Row buttons stay inline: order actions + address-card actions */
+#auAccount .oacts .btn-sec{width:auto;flex:1 1 auto;padding:10px 12px;box-shadow:0 2px 0 #6f9a06}
+#auAccount #auAddressBox .ocard .btn-sec{width:auto;padding:9px 12px;box-shadow:0 2px 0 #6f9a06}
+/* 6. Loyalty — highlighted lime-tinted card, big points number */
+#auLoyalty .ocard{background:linear-gradient(135deg,#f4fbd9,#eef7c8);border-color:#d8ec9a}
+#auLoyalty .ocard b{font-family:"Bricolage Grotesque",sans-serif;font-size:1.5rem}
+/* Inner list cards inside a section card read as items, not nested cards */
+#auAccount .acct-card .ocard{background:var(--surface2);margin-bottom:10px}
+#auAccount .acct-card .ocard:last-child{margin-bottom:0}
+#auAccount .acct-card #auLoyalty .ocard{background:linear-gradient(135deg,#f4fbd9,#eef7c8)}
+/* 7. Empty states — dashed box */
+#auAccount #auAddressBox>p{border:1.5px dashed var(--line);border-radius:12px;padding:14px;text-align:center;margin:0 0 10px}
+#auAccount #auMyReviews>p,#auAccount #auVouchers>p,#auAccount #auMessages>p,#auAccount #auMyOrders>p{border:1.5px dashed var(--line);border-radius:12px;padding:14px;text-align:center;margin:0}
+/* Voucher code chip (JS renders .vcode outside .voucher here) */
+#auAccount .vcode{display:inline-block;background:var(--surface2);border-radius:8px;padding:2px 9px;font-weight:800;letter-spacing:.06em;color:var(--teal)}
+/* Review box is a card in its own right (shown by JS on demand) */
+#auAccount #auReviewBox{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 10px rgba(16,40,32,.05)}
+@media (prefers-color-scheme:dark){
+  #auAccount .acct-ic{background:rgba(168,225,12,.16)}
+  #auLoyalty .ocard{background:linear-gradient(135deg,#1d2f1a,#16241a);border-color:#2c4a2a}
+  #auAccount .acct-card #auLoyalty .ocard{background:linear-gradient(135deg,#1d2f1a,#16241a)}
+}
 .gatebtns{display:grid;gap:9px;margin-top:6px}
 /* ---------- v4: Seller Center + Admin approval flow ---------- */
 .rolebtn{border:2px solid var(--ink);background:var(--surface);color:var(--ink);border-radius:999px;padding:9px 14px;font-weight:800;font-size:.85rem;box-shadow:3px 3px 0 var(--ink);white-space:nowrap}
@@ -1334,18 +1379,23 @@ section{ padding-top:56px }
         <p class="notice" id="auResetMsg" role="status" style="display:none;margin-top:12px"></p>
       </div>
       <div id="auAccount" style="display:none">
-        <div class="acct-head"><span class="av" id="auAv">?</span><div><b id="auProfileName" style="font-size:1.1rem;display:block"></b><span id="auProfileMeta" style="color:var(--muted);font-size:.88rem"></span><br><span class="rolebadge" id="auProfileRole"></span></div></div>
+        <div class="acct-head"><span class="av" id="auAv">?</span><div><b id="auProfileName"></b><span id="auProfileMeta"></span><br><span class="rolebadge" id="auProfileRole"></span></div></div>
         <div id="auSellerPending" style="display:none;margin-top:12px"></div>
-        <h4 style="margin:14px 0 8px">✏️ প্রোফাইল এডিট করুন</h4>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">✏️</span><h4>প্রোফাইল এডিট করুন</h4></div>
         <form id="auEditForm" style="display:grid;gap:8px">
           <div class="fld"><label for="auEditName">আপনার নাম *</label><input id="auEditName" autocomplete="name" /></div>
           <div class="fld"><label for="auEditPhone">মোবাইল নম্বর *</label><input id="auEditPhone" inputmode="tel" autocomplete="tel" /></div>
           <button class="btn-sec" type="submit">💾 প্রোফাইল সেভ করুন</button>
           <p class="notice" id="auEditMsg" role="status" style="display:none;margin:0"></p>
         </form>
-        <h4 style="margin:14px 0 8px">📍 আমার ঠিকানা</h4>
+        </section>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">📍</span><h4>আমার ঠিকানা</h4></div>
         <div id="auAddressBox"><p style="color:var(--muted);margin:0;font-size:.88rem;line-height:1.6">ঠিকানা লোড হচ্ছে…</p></div>
-        <h4 style="margin:14px 0 8px">🔑 পাসওয়ার্ড বদলান</h4>
+        </section>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">🔑</span><h4>পাসওয়ার্ড বদলান</h4></div>
         <form id="auPassForm" style="display:grid;gap:8px">
           <div class="fld"><label for="auNewPass3">নতুন পাসওয়ার্ড * (কমপক্ষে 6 অক্ষর)</label>
             <div class="passwrap"><input id="auNewPass3" type="password" autocomplete="new-password" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auNewPass3">Show</button></div>
@@ -1354,16 +1404,26 @@ section{ padding-top:56px }
           <button class="btn-sec" type="submit">🔑 পাসওয়ার্ড বদলান</button>
           <p class="notice" id="auPassMsg" role="status" style="display:none;margin:0"></p>
         </form>
-        <h4 style="margin:14px 0 8px">⭐ আমার Loyalty Point</h4>
+        </section>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">⭐</span><h4>আমার Loyalty Point</h4></div>
         <div id="auLoyalty"></div>
+        </section>
         <!-- P3 (2026-11-23): My reviews + collected vouchers (renderAccount theke bhorbe). -->
-        <h4 style="margin:14px 0 8px">⭐ আমার রিভিউ</h4>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">⭐</span><h4>আমার রিভিউ</h4></div>
         <div id="auMyReviews"><p class="muted" style="font-size:.9rem">লোড হচ্ছে…</p></div>
-        <h4 style="margin:14px 0 8px">🎟️ আমার সংগ্রহ করা ভাউচার</h4>
+        </section>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">🎟️</span><h4>আমার সংগ্রহ করা ভাউচার</h4></div>
         <div id="auVouchers"><p class="muted" style="font-size:.9rem">লোড হচ্ছে…</p></div>
-        <h4 style="margin:14px 0 8px">💬 AnboBD থেকে মেসেজ</h4>
+        </section>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">💬</span><h4>AnboBD থেকে মেসেজ</h4></div>
         <div id="auMessages"></div>
-        <h4 style="margin:14px 0 8px">✉️ সাপোর্টে লিখুন</h4>
+        </section>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">✉️</span><h4>সাপোর্টে লিখুন</h4></div>
         <div id="auSupportBox"><p style="color:var(--muted);margin:0 0 8px;font-size:.88rem">অর্ডার, পেমেন্ট বা ডেলিভারি নিয়ে সমস্যা হলে এখানে লিখুন — Admin Support পেজে দেখবে।</p>
         <form id="auSupportForm" style="display:grid;gap:8px">
         <select id="auSupTopic"><option>অর্ডার সংক্রান্ত</option><option>পেমেন্ট / Transaction ID</option><option>ডেলিভারি</option><option>রিটার্ন / রিফান্ড</option><option>অন্যান্য</option></select>
@@ -1371,10 +1431,13 @@ section{ padding-top:56px }
         <button class="btn-sec" type="submit">📩 টিকিট পাঠান</button>
         <p class="notice" id="auSupMsg2" role="status" style="display:none;margin:0"></p>
         </form></div>
-        <h4 style="margin:14px 0 8px">📦 আমার অর্ডার</h4>
+        </section>
+        <section class="acct-card">
+        <div class="acct-h"><span class="acct-ic">📦</span><h4>আমার অর্ডার</h4></div>
         <div id="auMyOrders"></div>
-        <div id="auReviewBox" style="display:none;margin-top:12px;border-top:1.5px dashed var(--line);padding-top:12px">
-        <h4 style="margin:0 0 8px">⭐ রিভিউ দিন — <span id="auReviewProd"></span></h4>
+        </section>
+        <div id="auReviewBox" style="display:none">
+        <div class="acct-h"><span class="acct-ic">⭐</span><h4>রিভিউ দিন — <span id="auReviewProd"></span></h4></div>
         <form id="auReviewForm" style="display:grid;gap:8px">
         <select id="auRevRating"><option value="5">★★★★★ (5)</option><option value="4">★★★★ (4)</option><option value="3">★★★ (3)</option><option value="2">★★ (2)</option><option value="1">★ (1)</option></select>
         <textarea id="auRevText" rows="3" placeholder="পণ্যটা কেমন লেগেছে লিখুন…" required></textarea>
