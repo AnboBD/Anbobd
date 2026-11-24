@@ -1160,7 +1160,7 @@ async function sbLoadAll(){
       var orderNo = ord ? (ord.localId || ord.id) : (rw.order_id || "");
       var itemTxt = (ord && ord.items && ord.items.length) ? ord.items.map(function(it, ii){ var d = storedItemDisplay(ord, ii, it); var nm = d.name || d.sku || ""; return nm ? nm + " ×" + it[1] : ""; }).filter(function(s){ return !!s; }).join("; ") : "";
       if (!itemTxt) itemTxt = "—";
-      return { id: rw.id, supabaseId: rw.id, item: itemTxt, order: orderNo, customer: ord ? (ord.customer || "—") : "—", seller: shopNameById[rw.shop_id] || "Shop", date: sbDateLabel(rw.created_at), reason: rw.reason || "", amount: rw.refund_amount || 0, status: disp, rejectReason: rw.reject_reason || "", refundMethod: rw.refund_method || "", refundChannel: rw.refund_channel || "" };
+      return { id: rw.id, supabaseId: rw.id, item: itemTxt, order: orderNo, customer: ord ? (ord.customer || "—") : "—", phone: ord ? (ord.phone || "—") : "—", seller: shopNameById[rw.shop_id] || "Shop", date: sbDateLabel(rw.created_at), reason: rw.reason || "", amount: rw.refund_amount || 0, status: disp, rejectReason: rw.reject_reason || "", refundMethod: rw.refund_method || "", refundChannel: rw.refund_channel || "" };
     });
   }
   var actRows = await fetchTable("activity_log");
@@ -2241,7 +2241,7 @@ function computeNotifItems(){
   var _unansQa = productQa.filter(function(q){ return !q.answer; });
   if (_unansQa.length) notifItems.push({ id:"qa-unanswered", count:_unansQa.length, t: _unansQa.length + " ta product question er answer baki", sub: _unansQa.slice(0,3).map(function(q){ return q.product; }).join(", "), view: "support", tab: "qa" });
   var _openRet = returnRequests.filter(function(r){ return r.status === "Requested"; });
-  if (_openRet.length) notifItems.push({ id:"returns-open", count:_openRet.length, t: _openRet.length + " ta return request er siddhanto baki", sub: _openRet.slice(0,3).map(function(r){ return r.order || r.id; }).join(", "), view: "returns" });
+  if (_openRet.length) notifItems.push({ id:"returns-open", count:_openRet.length, t: _openRet.length + " ta return request er siddhanto baki", sub: _openRet.slice(0,3).map(function(r){ var s = (r.order || r.id) + " · " + (r.customer || "—") + " · " + (r.item || "—") + " · " + fmt(r.amount); if (r.reason) s += " · " + (r.reason.length > 40 ? r.reason.slice(0, 40) + "…" : r.reason); return s; }).join("  |  "), view: "returns" });
   var _payQ = orders.filter(function(o){ return isManualPay(o) && orderPaymentStatus(o) === "pending" && orderTxnId(o) && o.status !== "cancelled"; });
   if (_payQ.length) notifItems.push({ id:"pay-queue", count:_payQ.length, t: _payQ.length + " ta manual payment TrxID jachai er opekkhay", sub: _payQ.slice(0,3).map(function(o){ return (o.localId || o.id) + " · " + o.pay; }).join(", "), view: "finance" });
   var _pendMega = megaRequests.filter(function(m){ return m.status === "pending"; });
@@ -4562,10 +4562,12 @@ async function sbFetchMember(user){
   var meta = user.user_metadata || {};
   if (prof){
     var profRole = sbAdminRole(prof.role);
-    /* profiles.role "staff" is the generic bucket for all non-owner Admin
-       staff (profiles_role_check forbids the granular values) — the
-       display role comes from the staff table row. Without this, a
-       Manager created by sbCreateStaffAccount would be rejected here. */
+    /* Legacy rows only: profiles.role "staff" was the old generic bucket
+       for all non-owner Admin staff. profiles_role_check now allows the
+       granular values, so new staff get manager/order_manager/support/
+       warehouse directly and never hit this branch. An older "staff" row
+       still resolves its display role from the staff table — without
+       this, such a Manager would be rejected here. */
     if (!profRole && prof.role === "staff") profRole = await sbGranularRoleForStaff(user.id);
     return { id: user.id, supabaseId: user.id, name: prof.full_name || prof.name || meta.name || user.email, email: prof.email || user.email, phone: prof.phone || "—", role: profRole, status: prof.status || "active", last: "Now · signed in", joined: sbDateLabel(prof.created_at) };
   }
@@ -4709,11 +4711,44 @@ function renderReturns(){
     + kpi("Return policy", settings.returns ? "7-day easy returns ON" : "Returns OFF", '<span class="sub">Settings theke on/off kora jay</span>')
     + '</div>'
     + '<div class="card"><h3>Return &amp; refund requests</h3><p class="hint">Approve korle refund process shuru hoy, seller er payout theke oi order er earning hold thake jotokkhon na product ferot ashe. Reject korle karon customer ke janano hoy. Approve er somoy refund method + channel dite hobe — seta database e save hoy.</p>'
-    + (returnRequests.length ? returnRequests.map(function(r,i){ return '<div class="alert-item"><div><div class="nm">'+esc(r.order)+' · '+esc(r.item)+'</div><div class="meta">Order '+esc(r.order)+' · '+esc(r.customer)+' · Seller: '+esc(r.seller)+' · '+r.date+'<br />Karon: '+esc(r.reason)+(r.refundMethod?'<br />Refund: <b>'+esc(r.refundMethod)+'</b>'+(r.refundChannel?' · '+esc(r.refundChannel):''):"")+(r.status==="Rejected"&&r.rejectReason?'<br />Reject karon: '+esc(r.rejectReason):"")+'</div></div><span style="margin-left:auto;text-align:right"><b class="num">'+fmt(r.amount)+'</b><br /><span class="badge '+(r.status==="Refunded"?"b-delivered":r.status==="Requested"?"b-low":"b-confirmed")+'">'+r.status+'</span>'+(r.status==="Requested"?'<br /><button class="btn sm" type="button" data-ret-ok="'+i+'" style="margin-top:6px">Approve refund</button> <button class="btn danger sm" type="button" data-ret-no="'+i+'" style="margin-top:6px">Reject</button>':"")+(r.status.indexOf("refund pending")!==-1?'<br /><button class="btn lime sm" type="button" data-ret-pay="'+i+'" style="margin-top:6px">Mark refunded</button>':"")+'</span></div>'; }).join("") : '<p class="note" style="margin:0">No return requests — customers request returns from the storefront.</p>')
+    + (returnRequests.length ? returnRequests.map(function(r,i){ return '<div class="alert-item" data-ret-open="'+i+'" style="cursor:pointer"><div><div class="nm">'+esc(r.order)+' · '+esc(r.item)+'</div><div class="meta">Order '+esc(r.order)+' · '+esc(r.customer)+' · Seller: '+esc(r.seller)+' · '+r.date+'<br />Karon: '+esc(r.reason)+(r.refundMethod?'<br />Refund: <b>'+esc(r.refundMethod)+'</b>'+(r.refundChannel?' · '+esc(r.refundChannel):''):"")+(r.status==="Rejected"&&r.rejectReason?'<br />Reject karon: '+esc(r.rejectReason):"")+'</div></div><span style="margin-left:auto;text-align:right"><b class="num">'+fmt(r.amount)+'</b><br /><span class="badge '+(r.status==="Refunded"?"b-delivered":r.status==="Requested"?"b-low":"b-confirmed")+'">'+r.status+'</span>'+(r.status==="Requested"?'<br /><button class="btn sm" type="button" data-ret-ok="'+i+'" style="margin-top:6px">Approve refund</button> <button class="btn danger sm" type="button" data-ret-no="'+i+'" style="margin-top:6px">Reject</button>':"")+(r.status.indexOf("refund pending")!==-1?'<br /><button class="btn lime sm" type="button" data-ret-pay="'+i+'" style="margin-top:6px">Mark refunded</button>':"")+'</span></div>'; }).join("") : '<p class="note" style="margin:0">No return requests — customers request returns from the storefront.</p>')
     + '</div>';
   Array.prototype.forEach.call(el.querySelectorAll("[data-ret-ok]"), function(b){ b.addEventListener("click", function(){ var r=returnRequests[parseInt(b.getAttribute("data-ret-ok"),10)]; openRefundModal(r); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-ret-no]"), function(b){ b.addEventListener("click", function(){ var r=returnRequests[parseInt(b.getAttribute("data-ret-no"),10)]; askConfirmReason("Reject this return?", r.id+" — "+r.item+" — karon ta activity log e record thakbe.", function(reason){ r.status="Rejected"; r.rejectReason=reason; sbUpdate("returns", "id", r.supabaseId || r.id, { status: "rejected", reject_reason: reason }); logActivity("Rejected return "+r.id+" — Reason: "+reason); toast("Return rejected — <b>"+esc(r.id)+"</b>"); renderAll(); }); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-ret-pay]"), function(b){ b.addEventListener("click", function(){ var r=returnRequests[parseInt(b.getAttribute("data-ret-pay"),10)]; r.status="Refunded"; sbUpdate("returns", "id", r.supabaseId || r.id, { status: "refunded" }); logActivity("Refunded "+fmt(r.amount)+" for "+r.id); toast("<span class='lime'>✓ Refunded</span> — "+fmt(r.amount)); renderAll(); }); });
+  /* Row click (not a button click) opens the return detail drawer. */
+  Array.prototype.forEach.call(el.querySelectorAll("[data-ret-open]"), function(row){ row.addEventListener("click", function(e){ var t = e.target; if (t && t.closest && t.closest("button")) return; openReturnDrawer(parseInt(row.getAttribute("data-ret-open"),10)); }); });
+}
+/* Return detail drawer — Orders drawer er moto pattern: ekoi #orderDrawer
+   + #drawerOverlay, closeAllOverlays() diye khole/bondho hoy. Row click e
+   khole; Approve/Reject/Mark refunded button e click korle row handler
+   (data-ret-open listener) drawer khole na. Actions gulo row er button er
+   motoi handler e badha — approve modal (openRefundModal) ar reject
+   confirm (askConfirmReason) ekoi. */
+function openReturnDrawer(i){
+  var r = returnRequests[i]; if (!r) return;
+  closeAllOverlays();
+  var isRequested = r.status === "Requested";
+  var isPendingRefund = r.status.indexOf("refund pending") !== -1;
+  $("#orderDrawer").innerHTML = '<button class="icon-btn x" type="button" id="drawerClose" aria-label="Close details">✕</button>'
+    + '<h3>Return ' + esc(r.order || r.id) + '</h3><p class="sub">' + esc(r.date) + ' · ' + esc(r.status) + '</p>'
+    + '<div class="kv"><span>Customer</span><b>' + esc(r.customer || "—") + '</b></div>'
+    + '<div class="kv"><span>Phone</span><b class="num">' + esc(r.phone || "—") + '</b></div>'
+    + '<div class="kv"><span>Product</span><b>' + esc(r.item || "—") + '</b></div>'
+    + '<div class="kv"><span>Amount</span><b class="num">' + fmt(r.amount) + '</b></div>'
+    + '<div class="kv"><span>Seller</span><b>' + esc(r.seller || "—") + '</b></div>'
+    + (r.reason ? '<div class="kv"><span>Karon</span><b style="max-width:230px">' + esc(r.reason) + '</b></div>' : "")
+    + (r.refundMethod ? '<div class="kv"><span>Refund method</span><b>' + esc(r.refundMethod) + (r.refundChannel ? ' · ' + esc(r.refundChannel) : "") + '</b></div>' : "")
+    + (r.status === "Rejected" && r.rejectReason ? '<div class="kv"><span>Reject karon</span><b style="max-width:230px">' + esc(r.rejectReason) + '</b></div>' : "")
+    + '<div class="drawer-actions">'
+    + (isRequested ? '<button class="btn" type="button" id="retDrawerOk">Approve refund</button><button class="btn danger" type="button" id="retDrawerNo">Reject</button>' : "")
+    + (isPendingRefund ? '<button class="btn lime" type="button" id="retDrawerPay">Mark refunded</button>' : "")
+    + '</div>';
+  $("#orderDrawer").classList.add("show"); $("#drawerOverlay").classList.add("show");
+  $("#drawerClose").addEventListener("click", closeDrawer);
+  var ok = $("#retDrawerOk"); if (ok) ok.addEventListener("click", function(){ openRefundModal(r); });
+  var no = $("#retDrawerNo"); if (no) no.addEventListener("click", function(){ askConfirmReason("Reject this return?", r.id + " — " + r.item + " — karon ta activity log e record thakbe.", function(reason){ r.status = "Rejected"; r.rejectReason = reason; sbUpdate("returns", "id", r.supabaseId || r.id, { status: "rejected", reject_reason: reason }); logActivity("Rejected return " + r.id + " — Reason: " + reason); toast("Return rejected — <b>" + esc(r.id) + "</b>"); renderAll(); closeAllOverlays(); }); });
+  var pay = $("#retDrawerPay"); if (pay) pay.addEventListener("click", function(){ r.status = "Refunded"; sbUpdate("returns", "id", r.supabaseId || r.id, { status: "refunded" }); logActivity("Refunded " + fmt(r.amount) + " for " + r.id); toast("<span class='lime'>✓ Refunded</span> — " + fmt(r.amount)); renderAll(); closeAllOverlays(); });
 }
 /* P1 (2026-11-23): refund method/channel — refund approve korar somoy
    kothay taka ferot jabe ta record korte hobe (returns.refund_method /
