@@ -339,7 +339,7 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
       <a class="logo" href="/" style="font-size:1.5rem"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
       <p data-i18n="footTag">বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — সব ধরনের পণ্য, সেরা দামে, আপনার দরজায়।</p>
       <p data-i18n="footAddr">📍 বনানী, ঢাকা 1213, বাংলাদেশ<br>📞 হটলাইন: <b style="display:inline;color:var(--ink)">09638-555555</b> (সকাল 9টা – রাত 11টা)<br>✉️ support@anbobd.com</p>
-      <div class="payrow"><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span><span>COD</span></div>
+      <div class="payrow"><span data-i18n="payBkash">bKash (ম্যানুয়াল)</span><span data-i18n="payNagad">Nagad (ম্যানুয়াল)</span><span data-i18n="payRocket">Rocket (ম্যানুয়াল)</span><span>COD</span></div>
     </div>
     <div><b data-i18n="footShop">কেনাকাটা</b><a href="/#flash" data-i18n="footFlash">ফ্ল্যাশ সেল</a><a href="/#products" data-i18n="footAll">সব পণ্য</a><a href="/#categories" data-i18n="footCats">ক্যাটাগরি</a><a href="/#faq" data-i18n="footFaq">সাধারণ জিজ্ঞাসা</a><a href="/index.html#track" data-i18n="footTrack">অর্ডার ট্র্যাক করুন</a></div>
     <div><b data-i18n="footCare">কাস্টমার কেয়ার</b><a href="/pages/help.html" data-i18n="footHelp">সাহায্য কেন্দ্র (Help Center)</a><a href="/pages/return-refund.html" data-i18n="footReturn">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html" data-i18n="footDel">ডেলিভারি তথ্য</a><a href="/pages/warranty.html" data-i18n="footWarr">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html" data-i18n="footPriv">প্রাইভেসি পলিসি</a><a href="/pages/contact.html" data-i18n="footContact">যোগাযোগ করুন</a></div>
@@ -456,6 +456,7 @@ function pdLang(){ try{ var l = localStorage.getItem("anbobd-lang"); return (l==
 var PD_LANG = pdLang();
 var PD_I18N = {
 bn:{
+payBkash:"bKash (ম্যানুয়াল)", payNagad:"Nagad (ম্যানুয়াল)", payRocket:"Rocket (ম্যানুয়াল)",
 searchPh:"পণ্য খুঁজুন…", searchBtn:"খুঁজুন",
 topDelDhaka:"🚚 ঢাকায় ডেলিভারি", topDelCountry:"সারা দেশে",
 topFreeDhaka:"ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b>", topFreeNat:"৳2,000+ অর্ডারে সারা দেশে <b>FREE ডেলিভারি</b>",
@@ -522,10 +523,11 @@ reportLogin:"পণ্য রিপোর্ট করতে <a href=\"/index.ht
 reportFail:"⚠️ রিপোর্ট পাঠানো যায়নি — "
 },
 en:{
+payBkash:"bKash (Manual)", payNagad:"Nagad (Manual)", payRocket:"Rocket (Manual)",
 searchPh:"Search products…", searchBtn:"Search",
 topDelDhaka:"🚚 Delivery in Dhaka", topDelCountry:"Across the country",
-topFreeDhaka:"৳2,000+ orders in Dhaka get <b>FREE delivery</b>", topFreeNat:"৳2,000+ orders get <b>FREE delivery nationwide</b>",
-topPromo:"Promo code <b>ANBO10</b> = 10% off",
+topFreeDhaka:"৳2,000+ orders in Dhaka get FREE delivery", topFreeNat:"৳2,000+ orders get FREE delivery nationwide",
+topPromo:"Promo code ANBO10 = 10% off",
 catAll:"All products", catElectronics:"Electronics", catFashion:"Fashion", catShoesbags:"Shoes & Bags", catHome:"Home & Kitchen", catBeauty:"Beauty", catGrocery:"Grocery", catSports:"Sports",
 crumbHome:"Home", crumbDetail:"Product details",
 skipLink:"Skip to product details",
