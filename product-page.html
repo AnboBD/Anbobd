@@ -81,6 +81,11 @@ header.site{position:sticky;top:0;z-index:60;background:color-mix(in srgb, var(-
 @media (max-width:860px){ .gallery{position:static} }
 .gmain{position:relative;aspect-ratio:1/1;background:#fff;overflow:hidden;touch-action:pan-y}
 .gmain img{width:100%;height:100%;object-fit:cover}
+/* P2-12 (2026-11-25): 3D drag-to-rotate — mouse/pen drag-e main image 3D-te ghore; chharle spring-back. */
+.gmain img{transform-style:preserve-3d;will-change:transform;transition:transform .45s cubic-bezier(.2,.9,.3,1.2);cursor:grab;-webkit-user-drag:none;user-select:none}
+.gmain img.rotating{transition:none;cursor:grabbing}
+.pd-rotate-hint{position:absolute;top:12px;right:12px;z-index:2;background:rgba(7,30,26,.82);color:#d9f5c8;font-size:.74rem;font-weight:700;border-radius:999px;padding:4px 11px;pointer-events:none}
+@media (prefers-reduced-motion: reduce){ .gmain img{transition:none} }
 .gmain .badge{position:absolute;top:12px;left:12px;background:var(--coral);color:#fff;font-weight:800;font-size:.82rem;border-radius:9px;padding:4px 10px;box-shadow:0 4px 0 rgba(0,0,0,.18);transform:rotate(-3deg);z-index:2}
 .gmain .soldtag{position:absolute;bottom:12px;left:12px;background:rgba(7,30,26,.82);color:#d9f5c8;font-size:.74rem;font-weight:600;border-radius:999px;padding:3px 11px;z-index:2}
 .garrow{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border-radius:50%;border:2px solid var(--ink);background:var(--surface);color:var(--ink);font-size:1.15rem;font-weight:800;display:grid;place-items:center;box-shadow:2px 2px 0 var(--ink);z-index:3}
@@ -241,6 +246,7 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
     <div class="gallery">
       <div class="gmain" id="pdImgWrap">
         <img id="pdImg" src="/assets/hero-3d.webp" alt="পণ্যের ছবি" />
+        <span class="pd-rotate-hint" data-i18n="pdRotateHint">🔄 টেনে ঘুরিয়ে দেখুন</span>
         <span class="badge" id="pdBadge" style="display:none"></span>
         <span class="soldtag" id="pdSoldTag"></span>
         <button type="button" class="garrow prev" id="pdPrev" aria-label="আগের ছবি" style="display:none">‹</button>
@@ -467,7 +473,7 @@ skipLink:"পণ্যের বিবরণে যান",
 loadingT:"পণ্য লোড হচ্ছে…", loadingS:"অনলাইন ক্যাটালগ থেকে আসল পণ্যের তথ্য আনা হচ্ছে।",
 notLiveT:"এই পণ্যটি এখন লাইভ নেই 😔", notLiveS:"লিংকটি ভুল হতে পারে, অথবা পণ্যটি এখনো অনুমোদিত হয়নি / সরিয়ে নেওয়া হয়েছে।<br>অন্য পণ্য দেখতে হোমপেজে যান।", notLiveBtn:"🛍️ সব পণ্য দেখুন",
 qtyLbl:"পরিমাণ:", addToCart:"🛒 কার্টে যোগ", buyNow:"এখনই কিনুন",
-wishAdd:"🤍 উইশলিস্টে রাখুন", wishOn:"❤️ উইশলিস্টে আছে",
+wishAdd:"🤍 উইশলিস্টে রাখুন", wishOn:"❤️ উইশলিস্টে আছে", pdRotateHint:"🔄 টেনে ঘুরিয়ে দেখুন",
 shareBtn:"🔗 শেয়ার করুন", compareBtn:"⚖️ তুলনা করুন", compareOn:"⚖️ তুলনায় আছে ✓", reportBtn:"🚩 রিপোর্ট করুন",
 delTitle:"🚚 ডেলিভারি তথ্য",
 delNote:"অর্ডারের পর আমাদের টিম ফোনে কনফার্ম করে। ক্যাশ অন ডেলিভারিতে পণ্য হাতে পেয়ে টাকা পরিশোধ করুন।",
@@ -534,7 +540,7 @@ skipLink:"Skip to product details",
 loadingT:"Loading product…", loadingS:"Fetching the real product info from the online catalogue.",
 notLiveT:"This product isn't live right now 😔", notLiveS:"The link may be wrong, or the product isn't approved yet / has been removed.<br>Go to the homepage to see other products.", notLiveBtn:"🛍️ See all products",
 qtyLbl:"Quantity:", addToCart:"🛒 Add to cart", buyNow:"Buy now",
-wishAdd:"🤍 Save to wishlist", wishOn:"❤️ In wishlist",
+wishAdd:"🤍 Save to wishlist", wishOn:"❤️ In wishlist", pdRotateHint:"🔄 Drag to rotate",
 shareBtn:"🔗 Share", compareBtn:"⚖️ Compare", compareOn:"⚖️ In comparison ✓", reportBtn:"🚩 Report",
 delTitle:"🚚 Delivery info",
 delNote:"Our team will confirm by phone after you order. Pay in cash when the product reaches you (Cash on Delivery).",
@@ -1139,6 +1145,34 @@ document.getElementById("pdFbt").addEventListener("click", function(e){
     var dx = e.changedTouches[0].clientX - x0; x0 = null;
     if(Math.abs(dx) > 40){ setSlide(PD.slide + (dx<0 ? 1 : -1)); }
   }, {passive:true});
+})();
+/* P2-12 (2026-11-25): 3D drag-to-rotate — mouse/pen drag-e main image rotateY ±25deg; chharle spring-back. Touch-e ager swipe-to-change-slide-i thake. */
+(function(){
+  var wrap = document.getElementById("pdImgWrap");
+  var img = document.getElementById("pdImg");
+  var startX = null, rotY = 0, dragging = false, pid = null;
+  function applyRot(){ img.style.transform = "perspective(900px) rotateY(" + rotY + "deg)"; }
+  wrap.addEventListener("pointerdown", function(e){
+    if(e.pointerType !== "mouse" && e.pointerType !== "pen") return;
+    if(e.target.closest(".garrow")) return;
+    if(e.button != null && e.button !== 0) return;
+    startX = e.clientX; rotY = 0; dragging = true; pid = e.pointerId;
+    try{ wrap.setPointerCapture(e.pointerId); }catch(_){ }
+    img.classList.add("rotating");
+  });
+  wrap.addEventListener("pointermove", function(e){
+    if(!dragging || e.pointerId !== pid) return;
+    rotY = Math.max(-25, Math.min(25, (e.clientX - startX) * 0.18));
+    applyRot();
+  });
+  function endDrag(e){
+    if(!dragging || (e.pointerId != null && e.pointerId !== pid)) return;
+    dragging = false; pid = null; startX = null;
+    img.classList.remove("rotating");
+    rotY = 0; applyRot();
+  }
+  wrap.addEventListener("pointerup", endDrag);
+  wrap.addEventListener("pointercancel", endDrag);
 })();
 document.getElementById("pdQtyMinus").addEventListener("click", function(){
   PD.qty = Math.max(1, PD.qty-1);
