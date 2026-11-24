@@ -169,9 +169,18 @@ section{padding:52px 0 8px}
 .pcard:hover .pimg img{transform:scale(1.06) rotate(-1deg)}
 .badge{position:absolute;bottom:10px;right:10px;background:var(--coral);color:#fff;font-weight:800;font-size:.78rem;border-radius:9px;padding:4px 9px;box-shadow:0 4px 0 rgba(0,0,0,.18);transform:rotate(-3deg);z-index:2}
 /* P0-4 (2026-11-25): skeleton cards — catalog load howar somoy khali
-   empty-state lekhar bodle card-er moto jholokano placeholder. */
-.skel{border-radius:22px;min-height:380px;background:linear-gradient(100deg,#edf0e9 40%,#f9fbf6 50%,#edf0e9 60%);background-size:200% 100%;animation:anboSkelShimmer 1.3s linear infinite}
+   empty-state lekhar bodle card-er moto jholokano placeholder.
+   A2 (2026-11-25): ager #edf0e9/#f9fbf6 page bg #f4f6f1-er sathe pray mile
+   jeto, tai live-e shimmer dekha jeto na — contrast barano holo ar card-er
+   moto vitore image/text block deoa holo, jate placeholder-ti asolei chokhe pore. */
+.skel{border-radius:22px;min-height:380px;background:#dde5d8;overflow:hidden;display:flex;flex-direction:column}
+.skel-img{aspect-ratio:1/1;background:linear-gradient(100deg,#c9d6c1 40%,#f2f6ee 50%,#c9d6c1 60%);background-size:200% 100%;animation:anboSkelShimmer 1.3s linear infinite}
+.skel-line{height:14px;margin:14px 16px 0;border-radius:7px;background:linear-gradient(100deg,#c9d6c1 40%,#f2f6ee 50%,#c9d6c1 60%);background-size:200% 100%;animation:anboSkelShimmer 1.3s linear infinite}
+.skel-line:last-child{height:12px;margin-top:10px}
 @keyframes anboSkelShimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+/* A2 (2026-11-25): category tile skeleton — catalog load howar somoy asol
+   tile-er bodle; load sesh hole asol tile (shudhu live category) ase. */
+.cat-skel{border:1px solid var(--line);border-radius:20px;min-height:172px;background:linear-gradient(100deg,#dde5d8 40%,#f2f6ee 50%,#dde5d8 60%);background-size:200% 100%;animation:anboSkelShimmer 1.3s linear infinite}
 .soldtag{position:absolute;bottom:10px;left:10px;background:rgba(7,30,26,.82);color:#d9f5c8;font-size:.72rem;font-weight:600;border-radius:999px;padding:3px 10px;z-index:2}
 .wishbtn{position:absolute;top:8px;right:8px;z-index:3;width:38px;height:38px;min-height:38px;border-radius:50%;border:1.5px solid var(--line);background:rgba(255,255,255,.94);font-size:1.05rem;display:grid;place-items:center;color:#10201c;box-shadow:0 6px 14px rgba(0,0,0,.14)}
 .wishbtn.on{background:#ffe4dc;border-color:var(--coral)}
@@ -1523,7 +1532,7 @@ var ANBOBD_STORE = {
     {id:"shoesbags", label:"জুতা ও ব্যাগ", icon:"👟", bg:"#e2e9ff", note:"স্নিকার্স, হ্যান্ডব্যাগ", img:"/assets/sneakers.webp", grad:"linear-gradient(135deg,#2456c8,#122f6e)"},
     {id:"home", label:"হোম ও কিচেন", icon:"🏠", bg:"#fff3c4", note:"ঘরের সব প্রয়োজনীয়", img:"/assets/airfryer.jpg", grad:"linear-gradient(135deg,#b07d10,#6e4d00)"},
     {id:"beauty", label:"বিউটি", icon:"💄", bg:"#ffd9ec", note:"স্কিনকেয়ার, পারফিউম", img:"/assets/cream.webp", grad:"linear-gradient(135deg,#c22e7a,#7c1450)"},
-    {id:"grocery", label:"গ্রোসারি", icon:"🧺", bg:"#dcf5d2", note:"তেল, মধু, বাজার-সদাই", img:"/assets/grocery.jpg", grad:"linear-gradient(135deg,#3d7a1e,#1e4d0c)"},
+    {id:"grocery", label:"গ্রোসারি", icon:"🧺", bg:"#dcf5d2", note:"মধু ও বাজার-সদাই", img:"/assets/grocery.jpg", grad:"linear-gradient(135deg,#3d7a1e,#1e4d0c)"},
     {id:"sports", label:"স্পোর্টস", icon:"🏅", bg:"#e8f0ff", note:"খেলাধুলার সামগ্রী", img:"/assets/hero-3d.webp", grad:"linear-gradient(135deg,#2456c8,#122f6e)"},
     {id:"flash", label:"ফ্ল্যাশ সেল", icon:"⚡", bg:"#ffe1e1", note:"ফ্ল্যাশ সেলের কালেকশন", img:"/assets/speaker.jpg", grad:"linear-gradient(135deg,#c22e1e,#7a1206)"}
   ],
@@ -1956,7 +1965,9 @@ function filteredList(){
 }
 /* P0-4 (2026-11-25): skeleton cards — load howar somoy empty-state lekhar
    bodle card-er moto placeholder; khali lekha shudhu load seshe 0 item hole. */
-function skelHTML(n){ var h=""; for(var i=0;i<n;i++) h+='<div class="skel" aria-hidden="true"></div>'; return h; }
+function skelHTML(n){ var h=""; for(var i=0;i<n;i++) h+='<div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div>'; return h; }
+/* A2 (2026-11-25): category tile skeleton — renderCats loading branch-e. */
+function catSkelHTML(n){ var h=""; for(var i=0;i<n;i++) h+='<div class="cat-skel" aria-hidden="true"></div>'; return h; }
 function renderProducts(){
   var grid = document.getElementById("productGrid"), emptyEl = document.getElementById("emptyState");
   var noResultHTML = t("emptyNoResult");
@@ -2006,12 +2017,13 @@ function renderTopRated(){
   document.getElementById("topEmpty").style.display = list.length ? "none" : "block";
 }
 function renderCats(){
-  /* P0-1 (2026-11-25): khali category-r tile dekhabe na — shudhu ≥1 live
-     product thakle. Load howar age ("…") ager motoi dekhabe. */
-  var loading = (typeof catalogLoading !== "undefined" && catalogLoading);
+  /* A2 (2026-11-25): load howar age kono asol category tile noy — shudhu
+     skeleton tile; ager code loading-e sob enabled category dekhiye 8 ta
+     tile flash korto. Load sesh hole shudhu ≥1 live product-er tile. */
+  if(typeof catalogLoading !== "undefined" && catalogLoading){ document.getElementById("catTiles").innerHTML = catSkelHTML(4); return; }
   document.getElementById("catTiles").innerHTML = CATS.filter(function(c){
-    if(c.id==="flash") return loading || flashList().length>0;
-    return catEnabled(c.id) && (loading || liveCatCount(c.id)>0);
+    if(c.id==="flash") return flashList().length>0;
+    return catEnabled(c.id) && liveCatCount(c.id)>0;
   }).map(function(c){
     var n = c.id==="flash" ? flashList().length : PRODUCTS.filter(function(p){return p.categoryId===c.id && p.status==="active";}).length;
     /* P1 follow-up (2026-11-23): catalog load howar age PRODUCTS khali — "0টি পণ্য" dekhale vul tothyo hoy. Load na howa porjonto "…" dekhabe. */
@@ -2157,12 +2169,13 @@ function couponExpired(c){ var d = couponExpiryDate(c); return d ? (Date.now() >
 function shopNameHtml(p){ var s = SL(p.sellerId); if(!s) return "No brand"; var nm = escHtml(s.name); return anboIsUuid(s.id) ? '<a href="/shop?id='+encodeURIComponent(s.id)+'" style="color:inherit;text-decoration:underline;text-underline-offset:2px">'+nm+'</a>' : nm; }
 /* P1: category pills — DB label bosano + disabled category lukano. */
 function syncCatNav(){
-  /* P0-1 (2026-11-25): 0 live product-er category nav-eo dekhabe na.
-     Load howar age ager motoi (catEnabled) dekhabe. */
+  /* A2 (2026-11-25): load sesh na howa porjonto "সব পণ্য" chara kono nav
+     button noy — ager code loading-e sob enabled category dekhiye 8 ta
+     button flash korto. */
   var loading = (typeof catalogLoading !== "undefined" && catalogLoading);
   document.querySelectorAll("#catNav button").forEach(function(b){
     var id = b.dataset.cat; if(!id || id==="all") return;
-    b.style.display = (loading ? catEnabled(id) : liveCatCount(id)>0) ? "" : "none";
+    b.style.display = (!loading && liveCatCount(id)>0) ? "" : "none";
     var lbl = catLabel(id); if(lbl && b.textContent !== lbl) b.textContent = lbl;
   });
 }
