@@ -473,14 +473,13 @@ function renderShopSingle(){
     '<div class="shmeta">'+escHtml(catLabel(s.category))+' • 📍 '+escHtml(s.district)+(since ? ' • বিক্রেতা হিসেবে আছেন '+escHtml(since)+' থেকে' : '')+'</div>' +
     (s.description ? '<p class="shdesc">'+escHtml(s.description)+'</p>' : '') +
     '<div class="shmeta">🛍️ '+SH.products.length+'টি লাইভ পণ্য</div></div>';
+  /* A2 (2026-11-25): search placeholder overwrite sorano — input-e shudhu
+     static "পণ্য খুঁজুন…" thake (P1-5). */
   var grid = document.getElementById("shProdGrid");
   var empty = document.getElementById("shProdEmpty");
   if(!SH.products.length){ grid.innerHTML = ""; empty.style.display = "block"; return; }
   empty.style.display = "none";
   grid.innerHTML = SH.products.map(shCardHtml).join("");
-  /* Search placeholder — dokan-er live product-er naam theke (khali thakle neutral). */
-  var si = document.getElementById("shSearchInput");
-  if(si && SH.products.length){ si.placeholder = "খুঁজুন — " + SH.products.slice(0,3).map(function(p){ return p.name; }).join(", ") + "…"; }
 }
 
 /* ---------- load ---------- */
