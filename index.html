@@ -904,7 +904,9 @@ section{ padding-top:56px }
     <div class="sec-head">
       <div><h2 data-i18n="catTitle">ক্যাটাগরি — 3D কিউবে সাজানো</h2><p data-i18n="catSub">যেকোনো ক্যাটাগরিতে ক্লিক করলেই নিচের পণ্য ফিল্টার হয়ে যাবে</p></div>
     </div>
-    <div class="cats" id="catTiles"></div>
+    <!-- Static first-paint skeletons (A2 fix): JS overwrites with identical
+         skeletons on first render, then real tiles — blank thake na. -->
+    <div class="cats" id="catTiles"><div class="cat-skel" aria-hidden="true"></div><div class="cat-skel" aria-hidden="true"></div><div class="cat-skel" aria-hidden="true"></div><div class="cat-skel" aria-hidden="true"></div></div>
   </section>
 
   <!-- PROMO BANNERS -->
@@ -1013,7 +1015,9 @@ section{ padding-top:56px }
       </label>
       <button class="ghostbtn" id="clearFilters2" style="width:auto;margin:0;padding:9px 16px" data-i18n="resetFilters">সব ফিল্টার রিসেট</button>
     </div>
-    <div class="grid" id="productGrid"></div>
+    <!-- Static first-paint skeletons (A2 fix): JS overwrites with identical
+         skeletons on first render, then real cards — blank thake na. -->
+    <div class="grid" id="productGrid"><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div></div>
     <div class="empty" id="emptyState"><b>দুঃখিত, কিছু পাওয়া যায়নি 😔</b>অন্য নামে খুঁজে দেখুন, দামের ফিল্টার বদলান অথবা সব পণ্য দেখুন।<br><button id="resetFilters">সব ফিল্টার মুছে ফেলুন</button></div>
   </section>
 
@@ -1047,7 +1051,7 @@ section{ padding-top:56px }
       <div><h2 data-i18n="newTitle">🆕 নতুন এসেছে</h2><p data-i18n="newSub">সবচেয়ে নতুন পণ্যগুলো — আগে আসে, আগে দেখুন</p></div>
       <a href="#products" data-showall data-i18n="showAllLink2">সব পণ্য দেখুন ↑</a>
     </div>
-    <div class="grid" id="newGrid"></div>
+    <div class="grid" id="newGrid"><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div></div>
     <div class="empty" id="newEmpty" style="display:none"><b data-i18n="newEmptyT">এখনো নতুন পণ্য আসেনি</b><span data-i18n="newEmptyS">নতুন পণ্য অনুমোদিত হলেই এখানে দেখা যাবে।</span></div>
   </section>
 
@@ -1056,7 +1060,7 @@ section{ padding-top:56px }
       <div><h2 data-i18n="bestTitle">🏆 সবচেয়ে বেশি বিক্রি</h2><p data-i18n="bestSub">ক্রেতাদের সবচেয়ে পছন্দের পণ্য — আসল বিক্রির হিসাবে সাজানো</p></div>
       <a href="#products" data-showall data-i18n="showAllLink3">সব পণ্য দেখুন ↑</a>
     </div>
-    <div class="grid" id="bestGrid"></div>
+    <div class="grid" id="bestGrid"><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div></div>
     <div class="empty" id="bestEmpty" style="display:none"><b data-i18n="bestEmptyT">এখনো কোনো পণ্য বিক্রি হয়নি</b><span data-i18n="bestEmptyS">প্রথম বিক্রি হলেই এখানে সেরা পণ্য দেখা যাবে।</span></div>
   </section>
 
@@ -1065,7 +1069,7 @@ section{ padding-top:56px }
       <div><h2 data-i18n="topTitle">⭐ সেরা রেটিং</h2><p data-i18n="topSub">আসল কাস্টমার রিভিউয়ের গড় রেটিং অনুযায়ী সেরা পণ্য</p></div>
       <a href="#products" data-showall data-i18n="showAllLink4">সব পণ্য দেখুন ↑</a>
     </div>
-    <div class="grid" id="topGrid"></div>
+    <div class="grid" id="topGrid"><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div><div class="skel" aria-hidden="true"><div class="skel-img"></div><div class="skel-line" style="width:72%"></div><div class="skel-line" style="width:45%"></div></div></div>
     <div class="empty" id="topEmpty" style="display:none"><b data-i18n="topEmptyT">এখনো কোনো রিভিউ নেই</b><span data-i18n="topEmptyS">কাস্টমার রিভিউ দিলেই সেরা রেটিংয়ের পণ্য এখানে দেখা যাবে।</span></div>
   </section>
 
