@@ -50,6 +50,8 @@ header.site{position:sticky;top:0;z-index:60;background:color-mix(in srgb, var(-
 .navbtns{display:flex;gap:8px;align-items:center}
 .iconbtn{position:relative;border:2px solid var(--ink);background:var(--surface);border-radius:14px;width:46px;height:46px;display:grid;place-items:center;font-size:1.15rem;box-shadow:3px 3px 0 var(--ink);transition:transform .15s;text-decoration:none;color:var(--ink)}
 .iconbtn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+/* Batch C (2026-11-25): language toggle button — storefront-er #langBtn-er motoi. */
+.iconbtn.langbtn{font-weight:800;font-size:.85rem;padding:0 12px;min-width:46px;width:auto}
 .cartcount{position:absolute;top:-9px;right:-9px;background:var(--coral);color:#fff;font-size:.72rem;font-weight:700;min-width:22px;height:22px;border-radius:999px;display:grid;place-items:center;border:2px solid var(--bg);padding:0 4px}
 .cartcount.lime{background:var(--teal)}
 .supanotice{background:#fff3c4;color:#7a5b00;text-align:center;padding:9px 12px;font-size:.86rem;font-weight:600}
@@ -143,11 +145,11 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 .totop{position:fixed;right:16px;bottom:86px;z-index:65;width:46px;height:46px;border-radius:50%;border:2px solid var(--ink);background:var(--lime);color:var(--lime-ink);font-size:1.15rem;font-weight:800;box-shadow:3px 3px 0 var(--ink);opacity:0;pointer-events:none;transition:opacity .25s}
 .totop.show{opacity:1;pointer-events:auto}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
 </head>
 <body>
-<a class="skip" href="#shMain">দোকানের তালিকায় যান</a>
-<div class="topstrip">🚚 ঢাকায় ডেলিভারি <b>৳60</b> • সারা দেশে <b>৳120</b> &nbsp;•&nbsp; <span id="topFreeDel">ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b></span> &nbsp;•&nbsp; প্রোমো কোড <b>ANBO10</b> = 10% ছাড়</div>
+<a class="skip" href="#shMain" data-i18n="skipLink">দোকানের তালিকায় যান</a>
+<div class="topstrip"><span data-i18n="topDelDhaka">🚚 ঢাকায় ডেলিভারি</span> <b>৳60</b> • <span data-i18n="topDelCountry">সারা দেশে</span> <b>৳120</b> &nbsp;•&nbsp; <span id="topFreeDel" data-i18n="topFreeDhaka">ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b></span> &nbsp;•&nbsp; <span data-i18n="topPromo">প্রোমো কোড <b>ANBO10</b> = 10% ছাড়</span></div>
 <div class="supanotice" id="supabaseNotice" style="display:none">⚠️ দোকানের তথ্য এখন শুধু এই ব্রাউজারে সংরক্ষিত হচ্ছে — অনলাইন অ্যাকাউন্ট চালু হলে এখানেই জানিয়ে দেওয়া হবে।</div>
 
 <header class="site">
@@ -155,10 +157,11 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
     <div class="nav">
       <a class="logo" href="/" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
       <form class="searchbar" id="shSearchForm" role="search">
-        <input id="shSearchInput" type="search" placeholder="পণ্য খুঁজুন…" aria-label="পণ্য খুঁজুন" autocomplete="off" />
-        <button type="submit">খুঁজুন</button>
+        <input id="shSearchInput" type="search" placeholder="পণ্য খুঁজুন…" data-i18n-ph="searchPh" aria-label="পণ্য খুঁজুন" autocomplete="off" />
+        <button type="submit" data-i18n="searchBtn">খুঁজুন</button>
       </form>
       <div class="navbtns">
+        <button type="button" class="iconbtn langbtn" id="shLangBtn" aria-label="ভাষা বদলান / Switch language">EN</button>
         <a class="iconbtn" id="shAccountBtn" href="/index.html?auth=signin" aria-label="লগইন / সাইন আপ">👤</a>
         <a class="iconbtn" href="/index.html?checkout=1" aria-label="কার্ট খুলুন">🛒<span class="cartcount" id="shCartCount">0</span></a>
       </div>
@@ -167,26 +170,26 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 </header>
 
 <main class="wrap" id="shMain">
-  <nav class="crumb" id="shCrumb" aria-label="ব্রেডক্রাম্ব"><a href="/">হোম</a> / <span>সব দোকান</span></nav>
+  <nav class="crumb" id="shCrumb" aria-label="ব্রেডক্রাম্ব"><a href="/" data-i18n="crumbHome">হোম</a> / <span data-i18n="crumbAllShops">সব দোকান</span></nav>
 
-  <div class="statebox" id="shLoading"><b>দোকান লোড হচ্ছে…</b><p>অনলাইন ক্যাটালগ থেকে আসল দোকানের তথ্য আনা হচ্ছে।</p></div>
+  <div class="statebox" id="shLoading"><b data-i18n="loadingT">দোকান লোড হচ্ছে…</b><p data-i18n="loadingS">অনলাইন ক্যাটালগ থেকে আসল দোকানের তথ্য আনা হচ্ছে।</p></div>
 
   <div class="statebox" id="shNotFound" style="display:none">
-    <b>এই দোকানটি পাওয়া যায়নি 😔</b>
-    <p id="shNotFoundMsg">লিংকটি ভুল হতে পারে, অথবা দোকানটি এখনো অনুমোদিত হয়নি / সরিয়ে নেওয়া হয়েছে।<br>অন্য দোকান দেখতে সব দোকানের তালিকায় যান।</p>
-    <a class="btn btn-lime" href="/shop">🏪 সব দোকান দেখুন</a>
+    <b data-i18n="notFoundT">এই দোকানটি পাওয়া যায়নি 😔</b>
+    <p id="shNotFoundMsg" data-i18n="notFoundS">লিংকটি ভুল হতে পারে, অথবা দোকানটি এখনো অনুমোদিত হয়নি / সরিয়ে নেওয়া হয়েছে।<br>অন্য দোকান দেখতে সব দোকানের তালিকায় যান।</p>
+    <a class="btn btn-lime" href="/shop" data-i18n="notFoundBtn">🏪 সব দোকান দেখুন</a>
   </div>
 
   <div id="shListWrap" style="display:none">
-    <div class="sec-head"><h1>🏪 সব দোকান</h1><p>AnboBD-র অনুমোদিত সব দোকান — দোকানে ঢুকে তাদের লাইভ পণ্য দেখুন।</p></div>
+    <div class="sec-head"><h1 data-i18n="listTitle">🏪 সব দোকান</h1><p data-i18n="listSub">AnboBD-র অনুমোদিত সব দোকান — দোকানে ঢুকে তাদের লাইভ পণ্য দেখুন।</p></div>
     <div class="shopgrid" id="shListGrid"></div>
   </div>
 
   <div id="shSingleWrap" style="display:none">
     <div class="shophero" id="shHero"></div>
-    <div class="sec-head"><h1 style="font-size:1.25rem">🛍️ এই দোকানের পণ্য</h1></div>
+    <div class="sec-head"><h1 style="font-size:1.25rem" data-i18n="singleTitle">🛍️ এই দোকানের পণ্য</h1></div>
     <div class="pgrid" id="shProdGrid"></div>
-    <div class="statebox" id="shProdEmpty" style="display:none"><b>এই দোকানে এখনো কোনো লাইভ পণ্য নেই</b><p>দোকানটি অনুমোদিত, কিন্তু এখনো কোনো পণ্য লাইভ হয়নি — শীঘ্রই আসছে।</p><a class="btn btn-lime" href="/shop">🏪 অন্য দোকান দেখুন</a></div>
+    <div class="statebox" id="shProdEmpty" style="display:none"><b data-i18n="emptyT">এই দোকানে এখনো কোনো লাইভ পণ্য নেই</b><p data-i18n="emptyS">দোকানটি অনুমোদিত, কিন্তু এখনো কোনো পণ্য লাইভ হয়নি — শীঘ্রই আসছে।</p><a class="btn btn-lime" href="/shop" data-i18n="emptyBtn">🏪 অন্য দোকান দেখুন</a></div>
   </div>
 </main>
 
@@ -194,23 +197,23 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
   <div class="wrap foot">
     <div>
       <a class="logo" href="/" style="font-size:1.5rem"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
-      <p>বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — সব ধরনের পণ্য, সেরা দামে, আপনার দরজায়।</p>
-      <p>📍 বনানী, ঢাকা 1213, বাংলাদেশ<br>📞 হটলাইন: <b style="display:inline;color:var(--ink)">09638-555555</b> (সকাল 9টা – রাত 11টা)<br>✉️ support@anbobd.com</p>
-      <div class="payrow"><span>bKash (ম্যানুয়াল)</span><span>Nagad (ম্যানুয়াল)</span><span>Rocket (ম্যানুয়াল)</span><span>COD</span></div>
+      <p data-i18n="footTag">বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — সব ধরনের পণ্য, সেরা দামে, আপনার দরজায়।</p>
+      <p data-i18n="footAddr">📍 বনানী, ঢাকা 1213, বাংলাদেশ<br>📞 হটলাইন: <b style="display:inline;color:var(--ink)">09638-555555</b> (সকাল 9টা – রাত 11টা)<br>✉️ support@anbobd.com</p>
+      <div class="payrow"><span data-i18n="payBkash">bKash (ম্যানুয়াল)</span><span data-i18n="payNagad">Nagad (ম্যানুয়াল)</span><span data-i18n="payRocket">Rocket (ম্যানুয়াল)</span><span>COD</span></div>
     </div>
-    <div><b>কেনাকাটা</b><a href="/#flash">ফ্ল্যাশ সেল</a><a href="/#products">সব পণ্য</a><a href="/#categories">ক্যাটাগরি</a><a href="/shop">🏪 সব দোকান</a><a href="/#faq">সাধারণ জিজ্ঞাসা</a><a href="/index.html#track">অর্ডার ট্র্যাক করুন</a></div>
-    <div><b>কাস্টমার কেয়ার</b><a href="/pages/help.html">সাহায্য কেন্দ্র (Help Center)</a><a href="/pages/return-refund.html">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html">ডেলিভারি তথ্য</a><a href="/pages/warranty.html">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html">প্রাইভেসি পলিসি</a><a href="/pages/contact.html">যোগাযোগ করুন</a></div>
-    <div><b>AnboBD</b><a href="/pages/about.html">আমাদের সম্পর্কে</a><a href="/seller/">বিক্রেতা হোন</a><a href="/pages/terms.html">শর্তাবলী</a><a href="/pages/career.html">ক্যারিয়ার</a></div>
+    <div><b data-i18n="footShop">কেনাকাটা</b><a href="/#flash" data-i18n="footFlash">ফ্ল্যাশ সেল</a><a href="/#products" data-i18n="footAll">সব পণ্য</a><a href="/#categories" data-i18n="footCats">ক্যাটাগরি</a><a href="/shop" data-i18n="footAllShops">🏪 সব দোকান</a><a href="/#faq" data-i18n="footFaq">সাধারণ জিজ্ঞাসা</a><a href="/index.html#track" data-i18n="footTrack">অর্ডার ট্র্যাক করুন</a></div>
+    <div><b data-i18n="footCare">কাস্টমার কেয়ার</b><a href="/pages/help.html" data-i18n="footHelp">সাহায্য কেন্দ্র (Help Center)</a><a href="/pages/return-refund.html" data-i18n="footReturn">রিটার্ন ও রিফান্ড পলিসি</a><a href="/pages/delivery.html" data-i18n="footDel">ডেলিভারি তথ্য</a><a href="/pages/warranty.html" data-i18n="footWarr">ওয়ারেন্টি পলিসি</a><a href="/pages/privacy.html" data-i18n="footPriv">প্রাইভেসি পলিসি</a><a href="/pages/contact.html" data-i18n="footContact">যোগাযোগ করুন</a></div>
+    <div><b>AnboBD</b><a href="/pages/about.html" data-i18n="footAbout">আমাদের সম্পর্কে</a><a href="/seller/" data-i18n="footSeller">বিক্রেতা হোন</a><a href="/pages/terms.html" data-i18n="footTerms">শর্তাবলী</a><a href="/pages/career.html" data-i18n="footCareer">ক্যারিয়ার</a></div>
   </div>
-  <div class="wrap" style="margin-top:26px;font-size:.85rem">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩 · <a href="/sitemap.xml" style="color:var(--teal);font-weight:700">সাইটম্যাপ</a></div>
+  <div class="wrap" style="margin-top:26px;font-size:.85rem"><span data-i18n="footCopy">© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩</span> · <a href="/sitemap.xml" style="color:var(--teal);font-weight:700" data-i18n="footSitemap">সাইটম্যাপ</a></div>
 </footer>
 
 <div class="bottomnav"><nav>
-  <a href="/"><span class="bi">🏠</span>হোম</a>
-  <a href="/#categories"><span class="bi">🧩</span>ক্যাটাগরি</a>
-  <a href="/#flash"><span class="bi">⚡</span>ফ্ল্যাশ সেল</a>
-  <a href="/index.html?wish=1"><span class="bi">❤️</span>উইশলিস্ট<span class="bdg" id="shWishCountM">0</span></a>
-  <a href="/index.html?checkout=1"><span class="bi">🛒</span>কার্ট<span class="bdg" id="shCartCountM">0</span></a>
+  <a href="/"><span class="bi">🏠</span><span data-i18n="navHome">হোম</span></a>
+  <a href="/#categories"><span class="bi">🧩</span><span data-i18n="navCats">ক্যাটাগরি</span></a>
+  <a href="/#flash"><span class="bi">⚡</span><span data-i18n="navFlash">ফ্ল্যাশ সেল</span></a>
+  <a href="/index.html?wish=1"><span class="bi">❤️</span><span data-i18n="navWish">উইশলিস্ট</span><span class="bdg" id="shWishCountM">0</span></a>
+  <a href="/index.html?checkout=1"><span class="bi">🛒</span><span data-i18n="navCart">কার্ট</span><span class="bdg" id="shCartCountM">0</span></a>
 </nav></div>
 <button class="totop" id="shToTop" aria-label="উপরে যান">↑</button>
 <div class="toast" id="shToast"></div>
@@ -246,6 +249,94 @@ function escHtml(x){ return String(x==null?"":x).replace(/&/g,"&amp;").replace(/
 function anboIsUuid(v){ return typeof v==="string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v); }
 var CAT_FALLBACK = {electronics:"/assets/headphones.jpg", fashion:"/assets/saree.jpg", shoesbags:"/assets/sneakers.webp", home:"/assets/airfryer.jpg", beauty:"/assets/cream.webp", grocery:"/assets/grocery.jpg", sports:"/assets/hero-3d.webp", flash:"/assets/speaker.jpg"};
 var CAT_LABELS = {electronics:"ইলেকট্রনিক্স", fashion:"ফ্যাশন", shoesbags:"জুতা ও ব্যাগ", home:"হোম ও কিচেন", beauty:"বিউটি", grocery:"গ্রোসারি", sports:"স্পোর্টস", flash:"ফ্ল্যাশ সেল"};
+/* Batch C (2026-11-25): P1-6 — shop page language switcher. Same
+   localStorage key as the storefront ("anbobd-lang"), default Bengali.
+   Shop/product names, prices and descriptions stay as entered; Admin-set
+   category labels (settings) stay as the Admin wrote them. */
+function shLang(){ try{ var l = localStorage.getItem("anbobd-lang"); return (l==="en"||l==="bn") ? l : "bn"; }catch(e){ return "bn"; } }
+var SH_LANG = shLang();
+var SH_I18N = {
+bn:{
+searchPh:"পণ্য খুঁজুন…", searchBtn:"খুঁজুন",
+topDelDhaka:"🚚 ঢাকায় ডেলিভারি", topDelCountry:"সারা দেশে",
+topFreeDhaka:"ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b>",
+topPromo:"প্রোমো কোড <b>ANBO10</b> = 10% ছাড়",
+skipLink:"দোকানের তালিকায় যান", crumbHome:"হোম", crumbAllShops:"সব দোকান",
+loadingT:"দোকান লোড হচ্ছে…", loadingS:"অনলাইন ক্যাটালগ থেকে আসল দোকানের তথ্য আনা হচ্ছে।",
+notFoundT:"এই দোকানটি পাওয়া যায়নি 😔", notFoundS:"লিংকটি ভুল হতে পারে, অথবা দোকানটি এখনো অনুমোদিত হয়নি / সরিয়ে নেওয়া হয়েছে।<br>অন্য দোকান দেখতে সব দোকানের তালিকায় যান।",
+notFoundBtn:"🏪 সব দোকান দেখুন", notFoundTitle:"দোকান পাওয়া যায়নি",
+notFoundNoConn:"অনলাইন সংযোগ নেই — দোকানের তথ্য লোড করা যায়নি।",
+notFoundListFail:"দোকানের তালিকা লোড করা যায়নি — আবার চেষ্টা করুন।",
+listTitle:"🏪 সব দোকান", listSub:"AnboBD-র অনুমোদিত সব দোকান — দোকানে ঢুকে তাদের লাইভ পণ্য দেখুন।",
+noShopsT:"এখনো কোনো দোকান অনুমোদিত হয়নি", noShopsS:"Admin অনুমোদন দিলেই দোকান এখানে দেখা যাবে।",
+shopCount:"{n}টি পণ্য", sold:"বিক্রি {n}",
+revCount:"{n}টি রিভিউ", noReview:"এখনো কোনো রিভিউ নেই",
+addToCart:"🛒 কার্টে যোগ", wishAdd:"উইশলিস্টে রাখুন", prodDetail:"বিস্তারিত দেখুন",
+singleTitle:"🛍️ এই দোকানের পণ্য", liveCount:"{n}টি লাইভ পণ্য",
+sellerSince:"বিক্রেতা হিসেবে আছেন {d} থেকে",
+emptyT:"এই দোকানে এখনো কোনো লাইভ পণ্য নেই", emptyS:"দোকানটি অনুমোদিত, কিন্তু এখনো কোনো পণ্য লাইভ হয়নি — শীঘ্রই আসছে।",
+emptyBtn:"🏪 অন্য দোকান দেখুন",
+footTag:"বাংলাদেশের 3D স্টাইল অনলাইন মার্কেটপ্লেস — সব ধরনের পণ্য, সেরা দামে, আপনার দরজায়।",
+footAddr:"📍 বনানী, ঢাকা 1213, বাংলাদেশ<br>📞 হটলাইন: <b style=\"display:inline;color:var(--ink)\">09638-555555</b> (সকাল 9টা – রাত 11টা)<br>✉️ support@anbobd.com",
+footShop:"কেনাকাটা", footFlash:"ফ্ল্যাশ সেল", footAll:"সব পণ্য", footCats:"ক্যাটাগরি", footAllShops:"🏪 সব দোকান", footFaq:"সাধারণ জিজ্ঞাসা", footTrack:"অর্ডার ট্র্যাক করুন",
+footCare:"কাস্টমার কেয়ার", footHelp:"সাহায্য কেন্দ্র (Help Center)", footReturn:"রিটার্ন ও রিফান্ড পলিসি", footDel:"ডেলিভারি তথ্য", footWarr:"ওয়ারেন্টি পলিসি", footPriv:"প্রাইভেসি পলিসি", footContact:"যোগাযোগ করুন",
+footAbout:"আমাদের সম্পর্কে", footSeller:"বিক্রেতা হোন", footTerms:"শর্তাবলী", footCareer:"ক্যারিয়ার",
+footCopy:"© 2026 AnboBD — ঢাকা, বাংলাদেশ। সকল মূল্য বাংলাদেশি টাকায় (BDT) এবং ভ্যাট অন্তর্ভুক্ত (প্রযোজ্য ক্ষেত্রে)। ভালোবাসা দিয়ে তৈরি 🇧🇩", footSitemap:"সাইটম্যাপ",
+navHome:"হোম", navCats:"ক্যাটাগরি", navFlash:"ফ্ল্যাশ সেল", navWish:"উইশলিস্ট", navCart:"কার্ট",
+payBkash:"bKash (ম্যানুয়াল)", payNagad:"Nagad (ম্যানুয়াল)", payRocket:"Rocket (ম্যানুয়াল)"
+},
+en:{
+searchPh:"Search products…", searchBtn:"Search",
+topDelDhaka:"🚚 Delivery in Dhaka", topDelCountry:"Across the country",
+topFreeDhaka:"৳2,000+ orders in Dhaka get <b>FREE delivery</b>",
+topPromo:"Promo code <b>ANBO10</b> = 10% off",
+skipLink:"Skip to shop list", crumbHome:"Home", crumbAllShops:"All shops",
+loadingT:"Loading shops…", loadingS:"Fetching the real shop info from the online catalogue.",
+notFoundT:"This shop couldn't be found 😔", notFoundS:"The link may be wrong, or the shop isn't approved yet / has been removed.<br>Go to the shop list to see other shops.",
+notFoundBtn:"🏪 See all shops", notFoundTitle:"Shop not found",
+notFoundNoConn:"No online connection — couldn't load the shop info.",
+notFoundListFail:"Couldn't load the shop list — please try again.",
+listTitle:"🏪 All shops", listSub:"All approved shops on AnboBD — open a shop to see its live products.",
+noShopsT:"No shop approved yet", noShopsS:"Shops will appear here once Admin approves them.",
+shopCount:"{n} products", sold:"Sold {n}",
+revCount:"{n} review{s}", noReview:"No reviews yet",
+addToCart:"🛒 Add to cart", wishAdd:"Save to wishlist", prodDetail:"View details",
+singleTitle:"🛍️ Products from this shop", liveCount:"{n} live products",
+sellerSince:"Seller since {d}",
+emptyT:"This shop has no live products yet", emptyS:"The shop is approved, but no product is live yet — coming soon.",
+emptyBtn:"🏪 See other shops",
+footTag:"Bangladesh's 3D-style online marketplace — every kind of product, at the best price, at your door.",
+footAddr:"📍 Banani, Dhaka 1213, Bangladesh<br>📞 Hotline: <b style=\"display:inline;color:var(--ink)\">09638-555555</b> (9 AM – 11 PM)<br>✉️ support@anbobd.com",
+footShop:"Shopping", footFlash:"Flash Sale", footAll:"All products", footCats:"Categories", footAllShops:"🏪 All shops", footFaq:"FAQ", footTrack:"Track your order",
+footCare:"Customer Care", footHelp:"Help Center", footReturn:"Return & Refund Policy", footDel:"Delivery info", footWarr:"Warranty Policy", footPriv:"Privacy Policy", footContact:"Contact us",
+footAbout:"About us", footSeller:"Become a seller", footTerms:"Terms", footCareer:"Careers",
+footCopy:"© 2026 AnboBD — Dhaka, Bangladesh. All prices in Bangladeshi Taka (BDT), VAT included where applicable. Made with love 🇧🇩", footSitemap:"Sitemap",
+navHome:"Home", navCats:"Categories", navFlash:"Flash Sale", navWish:"Wishlist", navCart:"Cart",
+payBkash:"bKash (manual)", payNagad:"Nagad (manual)", payRocket:"Rocket (manual)"
+}
+};
+function shT(k, vars){
+  var d = SH_I18N[SH_LANG] || SH_I18N.bn;
+  var s = (d && d[k] != null) ? d[k] : ((SH_I18N.bn[k] != null) ? SH_I18N.bn[k] : k);
+  if(vars) for(var key in vars) s = String(s).split("{"+key+"}").join(vars[key]);
+  return s;
+}
+var CAT_LABELS_EN = {electronics:"Electronics", fashion:"Fashion", shoesbags:"Shoes & Bags", home:"Home & Kitchen", beauty:"Beauty", grocery:"Grocery", sports:"Sports", flash:"Flash Sale"};
+function shCatLabel(id){ if(SH_LANG==="en" && CAT_LABELS_EN[id]) return CAT_LABELS_EN[id]; return CAT_LABELS[id] || id; }
+function shApplyLang(){
+  document.documentElement.lang = SH_LANG === "en" ? "en" : "bn";
+  var btn = document.getElementById("shLangBtn"); if(btn) btn.textContent = SH_LANG === "en" ? "বাং" : "EN";
+  document.querySelectorAll("[data-i18n]").forEach(function(el){ el.innerHTML = shT(el.getAttribute("data-i18n")); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(function(el){ el.setAttribute("placeholder", shT(el.getAttribute("data-i18n-ph"))); });
+  /* Re-render the visible view so dynamic strings follow the language. */
+  try{
+    if(typeof SH !== "undefined"){
+      if(document.getElementById("shSingleWrap").style.display === "block" && SH.shop) renderShopSingle();
+      else if(document.getElementById("shListWrap").style.display === "block") renderShopList();
+    }
+  }catch(e){}
+}
+
 function safeImg(u){ u = String(u==null?"":u); return /^(assets\/|https?:\/\/)/.test(u) ? escHtml(u) : "/assets/hero-3d.webp"; }
 function anboCatSlug(v){
   var s = String(v==null?"":v).toLowerCase().trim();
@@ -326,7 +417,7 @@ function shSb(){
    (settings table, anon select). Disabled category-r product shop page-eo
    dekhabe na. Default label Bangla, default enabled=true. */
 var CAT_KEY_SLUGS = {electronics:"electronics", fashion:"fashion", shoes_bags:"shoesbags", home_kitchen:"home", beauty:"beauty", grocery:"grocery", sports:"sports"};
-function catLabel(id){ if(SH.catLabels[id]) return SH.catLabels[id]; return CAT_LABELS[id] || id; }
+function catLabel(id){ if(SH.catLabels[id]) return SH.catLabels[id]; return shCatLabel(id); }
 function catEnabled(id){ if(id==="flash") return true; if(typeof SH.catEnabled[id]==="boolean") return SH.catEnabled[id]; return true; }
 async function shLoadCategorySettings(){
   try{
@@ -423,37 +514,37 @@ function showNotFound(msg){
   var nf = document.getElementById("shNotFound");
   nf.style.display = "block";
   if(msg) document.getElementById("shNotFoundMsg").textContent = msg;
-  document.title = "AnboBD — দোকান পাওয়া যায়নি";
+  document.title = "AnboBD — " + shT("notFoundTitle");
 }
 function renderShopList(){
   document.getElementById("shLoading").style.display = "none";
   document.getElementById("shNotFound").style.display = "none";
   document.getElementById("shSingleWrap").style.display = "none";
   document.getElementById("shListWrap").style.display = "block";
-  document.title = "AnboBD — সব দোকান";
-  document.getElementById("shCrumb").innerHTML = '<a href="/">হোম</a> / <span>সব দোকান</span>';
+  document.title = "AnboBD — " + shT("crumbAllShops");
+  document.getElementById("shCrumb").innerHTML = '<a href="/">' + shT("crumbHome") + '</a> / <span>' + shT("crumbAllShops") + '</span>';
   var grid = document.getElementById("shListGrid");
   if(!SH.shops.length){
-    grid.innerHTML = '<div class="statebox" style="grid-column:1/-1"><b>এখনো কোনো দোকান অনুমোদিত হয়নি</b><p>Admin অনুমোদন দিলেই দোকান এখানে দেখা যাবে।</p></div>';
+    grid.innerHTML = '<div class="statebox" style="grid-column:1/-1"><b>' + shT("noShopsT") + '</b><p>' + shT("noShopsS") + '</p></div>';
     return;
   }
   grid.innerHTML = SH.shops.map(function(s){
     var n = SH.counts[String(s.id)] || 0;
     var mono = escHtml((String(s.name||"A").trim().charAt(0)||"A").toUpperCase());
     var logo = s.logoUrl ? '<img src="'+safeImg(s.logoUrl)+'" alt="'+escHtml(s.name)+' — দোকানের লোগো" onerror="this.remove()">' : mono;
-    return '<a class="shopcard" href="/shop?id='+encodeURIComponent(s.id)+'"><span class="shlogo">'+logo+'</span><b>'+escHtml(s.name)+'</b><span class="shmeta">'+escHtml(catLabel(s.category))+' • 📍 '+escHtml(s.district)+'</span><span class="shcount">'+n+'টি পণ্য</span></a>';
+    return '<a class="shopcard" href="/shop?id='+encodeURIComponent(s.id)+'"><span class="shlogo">'+logo+'</span><b>'+escHtml(s.name)+'</b><span class="shmeta">'+escHtml(catLabel(s.category))+' • 📍 '+escHtml(s.district)+'</span><span class="shcount">'+shT("shopCount", {n:n})+'</span></a>';
   }).join("");
 }
 function shCardHtml(p){
   var on = !!readState().wishlist[String(p.id)];
   return '<article class="pcard">' +
-    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — বিস্তারিত দেখুন"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'">'+(shEffOldPrice(p)>shEffPrice(p)?'<span class="badge">−'+offPct(p)+'%</span>':'')+'<span class="soldtag">বিক্রি '+soldFmt(p.soldCount)+'</span></a>' +
-    '<button class="wishbtn'+(on?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="উইশলিস্টে রাখুন">'+(on?'❤️':'🤍')+'</button>' +
+    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — ' + shT("prodDetail") + '"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'">'+(shEffOldPrice(p)>shEffPrice(p)?'<span class="badge">−'+offPct(p)+'%</span>':'')+'<span class="soldtag">'+shT("sold", {n:soldFmt(p.soldCount)})+'</span></a>' +
+    '<button class="wishbtn'+(on?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="' + shT("wishAdd") + '">'+(on?'❤️':'🤍')+'</button>' +
     '<div class="pbody"><div class="pcat">'+escHtml(catLabel(p.categoryId))+'</div><h3 class="pname"><a href="/product.html?id='+encodeURIComponent(p.id)+'">'+escHtml(p.name)+'</a></h3>' +
     (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
     '<div class="price"><b>'+fmt(shEffPrice(p))+'</b>'+(shEffOldPrice(p)>shEffPrice(p)?'<s>'+fmt(shEffOldPrice(p))+'</s>':'')+'</div>' +
-    (p.reviewCount>0 ? '<div class="stars">'+stars(p.rating)+' <span>• '+p.reviewCount+'টি রিভিউ</span></div>' : '<div class="stars"><span>এখনো কোনো রিভিউ নেই</span></div>') +
-    '<div class="cardbtns"><button class="addbtn" data-add="'+escHtml(p.id)+'">🛒 কার্টে যোগ</button></div></div></article>';
+    (p.reviewCount>0 ? '<div class="stars">'+stars(p.rating)+' <span>• '+shT("revCount", {n:p.reviewCount, s:(p.reviewCount===1?"":"s")})+'</span></div>' : '<div class="stars"><span>' + shT("noReview") + '</span></div>') +
+    '<div class="cardbtns"><button class="addbtn" data-add="'+escHtml(p.id)+'">' + shT("addToCart") + '</button></div></div></article>';
 }
 function renderShopSingle(){
   var s = SH.shop;
@@ -462,17 +553,17 @@ function renderShopSingle(){
   document.getElementById("shListWrap").style.display = "none";
   document.getElementById("shSingleWrap").style.display = "block";
   document.title = "AnboBD — " + s.name;
-  document.getElementById("shCrumb").innerHTML = '<a href="/">হোম</a> / <a href="/shop">সব দোকান</a> / <span>'+escHtml(s.name)+'</span>';
+  document.getElementById("shCrumb").innerHTML = '<a href="/">' + shT("crumbHome") + '</a> / <a href="/shop">' + shT("crumbAllShops") + '</a> / <span>'+escHtml(s.name)+'</span>';
   var since = "";
-  try{ if(s.createdAt) since = new Date(s.createdAt).toLocaleDateString("bn-BD", {day:"numeric", month:"long", year:"numeric"}); }catch(e){}
+  try{ if(s.createdAt) since = new Date(s.createdAt).toLocaleDateString(SH_LANG==="en"?"en-US":"bn-BD", {day:"numeric", month:"long", year:"numeric"}); }catch(e){}
   var mono = escHtml((String(s.name||"A").trim().charAt(0)||"A").toUpperCase());
   var logo = s.logoUrl ? '<img src="'+safeImg(s.logoUrl)+'" alt="'+escHtml(s.name)+' — দোকানের লোগো" onerror="this.remove()">' : mono;
   document.getElementById("shHero").innerHTML =
     '<span class="shlogo big">'+logo+'</span>' +
     '<div style="flex:1;min-width:0"><div class="shname">🏪 '+escHtml(s.name)+'</div>' +
-    '<div class="shmeta">'+escHtml(catLabel(s.category))+' • 📍 '+escHtml(s.district)+(since ? ' • বিক্রেতা হিসেবে আছেন '+escHtml(since)+' থেকে' : '')+'</div>' +
+    '<div class="shmeta">'+escHtml(catLabel(s.category))+' • 📍 '+escHtml(s.district)+(since ? ' • ' + shT("sellerSince", {d:escHtml(since)}) : '')+'</div>' +
     (s.description ? '<p class="shdesc">'+escHtml(s.description)+'</p>' : '') +
-    '<div class="shmeta">🛍️ '+SH.products.length+'টি লাইভ পণ্য</div></div>';
+    '<div class="shmeta">🛍️ ' + shT("liveCount", {n:SH.products.length}) + '</div></div>';
   /* A2 (2026-11-25): search placeholder overwrite sorano — input-e shudhu
      static "পণ্য খুঁজুন…" thake (P1-5). */
   var grid = document.getElementById("shProdGrid");
@@ -490,7 +581,7 @@ async function shLoad(){
   var sb = shSb();
   if(!sb){
     document.getElementById("supabaseNotice").style.display = "block";
-    showNotFound("অনলাইন সংযোগ নেই — দোকানের তথ্য লোড করা যায়নি।");
+    showNotFound(shT("notFoundNoConn"));
     return;
   }
   await shLoadCategorySettings();
@@ -507,7 +598,7 @@ async function shLoad(){
       renderShopList();
     }catch(e){
       console.warn("Shop list load failed:", e);
-      showNotFound("দোকানের তালিকা লোড করা যায়নি — আবার চেষ্টা করুন।");
+      showNotFound(shT("notFoundListFail"));
     }
     return;
   }
@@ -573,6 +664,15 @@ syncWishCount();
   b.setAttribute("aria-label", signedIn ? "আমার অ্যাকাউন্ট" : "লগইন / সাইন আপ");
 })();
 if(!shConfigured()){ document.getElementById("supabaseNotice").style.display = "block"; }
+/* Batch C (2026-11-25): language toggle — homepage/product-er motoi, eki
+   localStorage key ("anbobd-lang"); shApplyLang() khola view-ti abar render
+   kore, tai dynamic string-o bodle jay. */
+document.getElementById("shLangBtn").addEventListener("click", function(){
+  SH_LANG = SH_LANG === "en" ? "bn" : "en";
+  try{ localStorage.setItem("anbobd-lang", SH_LANG); }catch(e){}
+  shApplyLang();
+});
+shApplyLang();
 shLoad();
 </script>
 </body>
