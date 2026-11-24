@@ -2395,7 +2395,7 @@ function openDrawer(id){
 }
 function openCart(){ ensureDrawers(); document.getElementById("cartMain").style.display="flex"; document.getElementById("checkoutForm").classList.remove("open"); document.getElementById("orderSuccess").classList.remove("show"); renderCart(); openDrawer("cartDrawer"); }
 function openWish(){ ensureDrawers(); renderWish(); openDrawer("wishDrawer"); }
-function openModalEl(id){ closeAll(true); document.getElementById("scrim").classList.add("open"); document.getElementById(id).classList.add("open"); }
+function openModalEl(id){ closeAll(true); document.getElementById("scrim").classList.add("open"); var _m=document.getElementById(id); _m.classList.add("open"); /* Scroll fix (2026-11-25): .modal-card keeps its scrollTop between opens, so the modal sometimes opened scrolled down with the brand band hidden — always start at the top. */ var _c=_m.querySelector(".modal-card"); if(_c) _c.scrollTop=0; var _b=_m.querySelector(".mbody"); if(_b) _b.scrollTop=0; }
 /* P1 follow-up (2026-11-23): open a modal ON TOP of the current one without closing it — the invoice opens from inside the Account modal and must not kill it. */
 function openModalStacked(id){ document.getElementById("scrim").classList.add("open"); document.getElementById(id).classList.add("open"); }
 function closeAll(keepScrim){
