@@ -176,6 +176,12 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 @media (max-width:860px){ .relgrid{grid-template-columns:repeat(2,1fr)} }
 .relcard{display:block;text-decoration:none;color:inherit;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface)}
 .relcard img{width:100%;aspect-ratio:1;object-fit:cover}
+/* Frequently Bought Together — quick-view modal-er .frow style (index.html). */
+.fbt .frow{display:flex;gap:10px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:9px 11px;margin-top:8px}
+.fbt .frow img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#fff}
+.fbt .frow b{font-size:.86rem;display:block;line-height:1.3}
+.fbt .frow span{color:var(--teal);font-weight:800;font-size:.85rem}
+.fbt .frow button{margin-left:auto;border:0;background:var(--lime);color:var(--lime-ink);font-weight:800;border-radius:10px;padding:8px 13px;white-space:nowrap;cursor:pointer}
 .relname{font-weight:700;font-size:.92rem;padding:10px 12px 0;line-height:1.4}
 .relprice{font-weight:800;padding:4px 12px 12px}
 </style>
@@ -307,6 +313,13 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
     <ul class="specs" id="pdSpecs"></ul>
     <p class="muted" style="margin:10px 0 0" id="pdSku"></p>
   </div>
+
+  <!-- Frequently Bought Together — quick-view modal-er motoi (bundle_with
+       theke); khali hole honest empty state. -->
+  <section class="box fbt" id="pdFbtBox" style="display:none;margin-top:22px">
+    <h3 style="margin:0 0 6px">🛍️ Frequently Bought Together</h3>
+    <div id="pdFbtList"><p style="color:var(--muted);margin:0">জোড়া পণ্য লোড হচ্ছে…</p></div>
+  </section>
 
   <!-- P3 (2026-11-23): Related products — eki category-r asol live product
        (nijeke bad diye, sorbochcho 8); khali hole honest empty state. -->
@@ -532,6 +545,7 @@ function mapProductRow(r){
     status:(String(r.status||"").toLowerCase()==="approved" ? "active" : String(r.status||"pending").toLowerCase()),
     warranty:r.warranty||"", img:(imgs.length?imgs[0]:""), images:imgs, desc:r.desc||r.description||"",
     specs:Array.isArray(r.specs)?r.specs:[],
+    bundleWith:Array.isArray(r.bundle_with)?r.bundle_with:[],
     packSize:(r.pack_size!=null && r.pack_size!==""?Number(r.pack_size):(r.packSize!=null?Number(r.packSize):null)), unit:r.unit||r.pack_unit||"", packaging:r.packaging||"",
     /* P2 (2026-11-23): variations + sale scheduling — READ side. Column na
        thakle null → ajker motoi acharon. */
@@ -547,6 +561,7 @@ function showNotLive(){
   document.getElementById("pdReviewsBox").style.display = "none";
   document.getElementById("pdQaBox").style.display = "none";
   document.getElementById("pdDescBox").style.display = "none";
+  document.getElementById("pdFbtBox").style.display = "none";
   document.getElementById("pdNotLive").style.display = "block";
   document.title = "AnboBD — পণ্যটি লাইভ নেই";
 }
@@ -708,6 +723,7 @@ function renderProduct(){
   syncCompareBtn(); /* P2 */
   loadQa(); /* P2 — Q&A section. */
   loadRelated(); /* P3 — Related products. */
+  loadBundle(); /* Frequently Bought Together — modal-er motoi. */
 }
 
 /* P3 (2026-11-23): Related products — eki category-r approved live product
@@ -729,6 +745,46 @@ async function loadRelated(){
       return '<a class="relcard" href="/product.html?id='+encodeURIComponent(p.id)+'"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'"><div class="relname">'+escHtml(p.name)+'</div><div class="relprice">'+fmt(p.price)+(p.oldPrice>p.price?' <s style="color:var(--muted);font-weight:400">'+fmt(p.oldPrice)+'</s>':'')+'</div></a>';
     }).join("") + '</div>';
   }catch(e){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">সম্পর্কিত পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন।</p>'; }
+}
+
+/* Frequently Bought Together — quick-view modal-er motoi: product-er
+   bundle_with id gulo approved live catalogue theke resolve kore; khali
+   hole honest empty state; not-live product-e dekhay na (renderProduct
+   shudhu live product-e chole). */
+async function loadBundle(){
+  var box = document.getElementById("pdFbtBox"); if(!box || !PD.product) return;
+  box.style.display = "block";
+  var listEl = document.getElementById("pdFbtList");
+  var ids = (PD.product.bundleWith||[]).map(function(x){ return String(x); }).filter(Boolean);
+  if(!ids.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই।</p>'; return; }
+  var sb = pdSb();
+  if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই।</p>'; return; }
+  try{
+    var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category").eq("status", "approved").limit(50);
+    if(r.error) throw r.error;
+    var items = (r.data||[]).map(function(row){ return mapProductRow(row); }).filter(function(p){ return p && p.status==="active" && ids.indexOf(String(p.id))>=0; });
+    if(!items.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই।</p>'; return; }
+    listEl.innerHTML = items.map(function(p){
+      return '<div class="frow"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'"><div><b>'+escHtml(p.name)+'</b><span>'+fmt(p.price)+'</span></div><button type="button" data-fbt-add="'+p.id+'" data-fbt-stock="'+p.stockQty+'">+ যোগ করুন</button></div>';
+    }).join("");
+    listEl.querySelectorAll("[data-fbt-add]").forEach(function(b){
+      b.addEventListener("click", function(){ addBundleToCart(b.getAttribute("data-fbt-add"), Number(b.getAttribute("data-fbt-stock")||0)); });
+    });
+  }catch(e){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">জোড়া পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন।</p>'; }
+}
+
+/* FBT partner — shared cart state-e stock cap soho jog (addToCart-er motoi). */
+function addBundleToCart(id, cap){
+  cap = cap||0;
+  if(cap<=0){ toast("😔 দুঃখিত, এই পণ্যের স্টক শেষ!"); return; }
+  var st = readState();
+  var key = String(id);
+  var cur = +st.cart[key]||0;
+  if(cur>=cap){ toast("😔 দুঃখিত, এই পণ্যের স্টক শেষ!"); return; }
+  st.cart[key] = Math.min(cur+1, cap);
+  writeState(st);
+  syncCartCount();
+  toast("✅ পণ্যটি কার্টে যোগ হয়েছে!");
 }
 
 /* ---------- slider ---------- */
