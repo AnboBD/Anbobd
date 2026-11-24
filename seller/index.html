@@ -57,6 +57,7 @@
       .field{margin-bottom:.9rem}
       .field label{display:block;font-size:.8rem;font-weight:700;margin-bottom:.35rem;color:var(--ink)}
       .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:.55rem .75rem;background:var(--surface);outline:none}
+      .field input[type=file]{display:block;width:100%}
       .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand)}
       .field .hint{font-size:.78rem;color:var(--muted);margin-top:.25rem}
       .img-grid{display:flex;flex-wrap:wrap;gap:.6rem;margin-top:.6rem}
@@ -400,31 +401,31 @@
         <div class="sub">Seller Center</div>
       </div>
       <div class="tabs" role="tablist">
-        <button id="tabLogin" class="on" type="button">Seller Login</button>
-        <button id="tabRegister" type="button">Open a Shop</button>
+        <button id="tabLogin" class="on" type="button">সেলার লগইন</button>
+        <button id="tabRegister" type="button">দোকান খুলুন</button>
       </div>
 
       <form id="loginForm" novalidate>
-        <h1>Welcome back, seller</h1>
-        <p class="lead">Sign in with the email and password you registered with. You will see only your own shop — your products, your sub-orders, your coupons and your wallet.</p>
+        <h1>আবার স্বাগতম, সেলার</h1>
+        <p class="lead">যে ইমেইল আর পাসওয়ার্ড দিয়ে রেজিস্ট্রেশন করেছেন, তা দিয়ে লগইন করুন। আপনি শুধু নিজের দোকানটাই দেখবেন — আপনার পণ্য, সাব-অর্ডার, কুপন আর ওয়ালেট।</p>
         <div class="field">
-          <label for="loginEmail">Email</label>
+          <label for="loginEmail">ইমেইল</label>
           <input id="loginEmail" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@yourshop.com" />
         </div>
         <div class="field">
-          <label for="loginPass">Password</label>
+          <label for="loginPass">পাসওয়ার্ড</label>
           <div class="pass-wrap">
-            <input id="loginPass" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Your password" />
-            <button class="pass-toggle" id="togglePass" type="button" aria-label="Show password">Show</button>
+            <input id="loginPass" type="password" autocomplete="current-password" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="আপনার পাসওয়ার্ড" />
+            <button class="pass-toggle" id="togglePass" type="button" aria-label="পাসওয়ার্ড দেখুন">দেখুন</button>
           </div>
         </div>
         <p class="err" id="loginErr"></p>
-        <button class="btn" id="loginBtn" type="submit" style="width:100%">Login to Seller Center</button>
+        <button class="btn" id="loginBtn" type="submit" style="width:100%">সেলার সেন্টারে লগইন করুন</button>
         <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;margin-top:12px"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
         <button class="btn ghost" id="googleLoginBtn" type="button" style="width:100%;margin-top:12px">🔵 Google দিয়ে লগইন</button>
         <p style="margin:10px 0 0"><button type="button" id="forgotPwBtn" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;text-decoration:underline;text-underline-offset:3px;font-family:inherit;padding:0">পাসওয়ার্ড ভুলে গেছেন?</button></p>
         <p id="forgotPwMsg" role="status" style="display:none;margin:10px 0 0;font-size:.9rem;line-height:1.6"></p>
-        <div class="auth-note"><b>New to AnboBD?</b> Tap <b>Open a Shop</b> above, create your seller account and register your shop. Your shop goes live after AnboBD Admin verifies your KYC and approves the application — there is no instant access.</div>
+        <div class="auth-note"><b>AnboBD-তে নতুন?</b> উপরে <b>দোকান খুলুন</b> চাপুন, সেলার অ্যাকাউন্ট তৈরি করে দোকান রেজিস্ট্রেশন করুন। Admin আপনার KYC যাচাই করে আবেদন অনুমোদন করলেই দোকান লাইভ হবে — সাথে সাথে খুলবে না।</div>
       </form>
 
       <form id="resetForm" class="hidden" novalidate>
@@ -438,51 +439,51 @@
       </form>
 
       <form id="registerForm" class="hidden" novalidate>
-        <h1>Open your shop on AnboBD</h1>
-        <p class="lead">Create your seller account, register your shop and submit your KYC. AnboBD Admin reviews every application — product listing unlocks only after approval.</p>
+        <h1>AnboBD-তে আপনার দোকান খুলুন</h1>
+        <p class="lead">সেলার অ্যাকাউন্ট তৈরি করুন, দোকান রেজিস্ট্রেশন করুন আর KYC জমা দিন। AnboBD Admin প্রতিটি আবেদন যাচাই করে — অনুমোদনের পরেই পণ্য তালিকা খুলবে।</p>
 
-        <div class="form-section">1 · Your account</div>
+        <div class="form-section">১ · আপনার অ্যাকাউন্ট</div>
         <div class="field">
-          <label for="regName">Your full name (আবশ্যক)</label>
-          <input id="regName" type="text" autocomplete="name" placeholder="Full name (as on NID)" />
+          <label for="regName">আপনার পুরো নাম (আবশ্যক)</label>
+          <input id="regName" type="text" autocomplete="name" placeholder="NID অনুযায়ী পুরো নাম" />
         </div>
         <div class="grid-2">
           <div class="field">
-            <label for="regEmail">Email (login) (আবশ্যক)</label>
+            <label for="regEmail">ইমেইল (লগইন) (আবশ্যক)</label>
             <input id="regEmail" type="email" autocomplete="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="you@yourshop.com" />
           </div>
           <div class="field">
-            <label for="regMobile">Mobile number (আবশ্যক)</label>
+            <label for="regMobile">মোবাইল নম্বর (আবশ্যক)</label>
             <input id="regMobile" type="tel" autocomplete="tel" placeholder="01XXXXXXXXX" />
           </div>
         </div>
         <div class="grid-2">
           <div class="field">
-            <label for="regPass">Password (আবশ্যক)</label>
-            <input id="regPass" type="password" autocomplete="new-password" placeholder="Minimum 6 characters" />
+            <label for="regPass">পাসওয়ার্ড (আবশ্যক)</label>
+            <input id="regPass" type="password" autocomplete="new-password" placeholder="কমপক্ষে ৬ অক্ষর" />
           </div>
           <div class="field">
-            <label for="regPass2">Confirm password (আবশ্যক)</label>
-            <input id="regPass2" type="password" autocomplete="new-password" placeholder="Repeat the password" />
+            <label for="regPass2">পাসওয়ার্ড আবার দিন (আবশ্যক)</label>
+            <input id="regPass2" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" />
           </div>
         </div>
 
-        <div class="form-section">2 · Your shop</div>
+        <div class="form-section">২ · আপনার দোকান</div>
         <div class="field">
-          <label for="regShop">Shop name (আবশ্যক)</label>
-          <input id="regShop" type="text" placeholder="e.g. Dhaka Fashion House" />
-          <div class="hint">This is the name customers will see on the AnboBD website.</div>
+          <label for="regShop">দোকানের নাম (আবশ্যক)</label>
+          <input id="regShop" type="text" placeholder="যেমন: ঢাকা ফ্যাশন হাউস" />
+          <div class="hint">ক্রেতারা AnboBD ওয়েবসাইটে এই নামটাই দেখবে।</div>
         </div>
         <div class="grid-2">
           <div class="field">
-            <label for="regCat">Main category (আবশ্যক)</label>
+            <label for="regCat">প্রধান ক্যাটাগরি (আবশ্যক)</label>
             <select id="regCat">
               <option>Fashion</option><option>Electronics</option><option>Home &amp; Living</option>
               <option>Beauty</option><option>Grocery</option><option>Sports</option>
             </select>
           </div>
           <div class="field">
-            <label for="regDistrict">District (আবশ্যক)</label>
+            <label for="regDistrict">জেলা (আবশ্যক)</label>
             <select id="regDistrict">
               <option>Dhaka</option><option>Gazipur</option><option>Narayanganj</option><option>Chattogram</option>
               <option>Cox's Bazar</option><option>Cumilla</option><option>Sylhet</option><option>Khulna</option>
@@ -492,81 +493,79 @@
           </div>
         </div>
         <div class="field hidden" id="regDistrictOtherWrap">
-          <label for="regDistrictOther">District likhun (আবশ্যক)</label>
-          <input id="regDistrictOther" type="text" placeholder="e.g. Panchagarh" />
+          <label for="regDistrictOther">জেলার নাম লিখুন (আবশ্যক)</label>
+          <input id="regDistrictOther" type="text" placeholder="যেমন: পঞ্চগড়" />
         </div>
         <div class="field">
-          <label for="regAddress">Pickup address (আবশ্যক)</label>
-          <textarea id="regAddress" rows="2" placeholder="House / road / area — courier will pick up parcels from here"></textarea>
+          <label for="regAddress">পিকআপ ঠিকানা (আবশ্যক)</label>
+          <textarea id="regAddress" rows="2" placeholder="বাসা / রাস্তা / এলাকা — কুরিয়ার এখান থেকেই পার্সেল নেবে"></textarea>
         </div>
 
-        <div class="form-section">3 · Payout method</div>
+        <div class="form-section">৩ · পেমেন্ট নেওয়ার মাধ্যম</div>
         <div class="grid-2">
           <div class="field">
-            <label for="regPayMethod">Method (আবশ্যক)</label>
+            <label for="regPayMethod">মাধ্যম (আবশ্যক)</label>
             <select id="regPayMethod"><option>bKash</option><option>Nagad</option><option>Bank Transfer</option></select>
           </div>
           <div class="field">
-            <label for="regPayName">Account holder name (আবশ্যক)</label>
-            <input id="regPayName" type="text" placeholder="Name on the account" />
+            <label for="regPayName">অ্যাকাউন্টধারীর নাম (আবশ্যক)</label>
+            <input id="regPayName" type="text" placeholder="অ্যাকাউন্টে যার নাম আছে" />
           </div>
         </div>
         <div class="field">
-          <label for="regPayAccount">Account number (আবশ্যক)</label>
-          <input id="regPayAccount" type="text" placeholder="bKash / Nagad number or bank account number" />
-          <div class="hint">Your earnings will be paid to this account after Admin releases each payout.</div>
+          <label for="regPayAccount">অ্যাকাউন্ট নম্বর (আবশ্যক)</label>
+          <input id="regPayAccount" type="text" placeholder="বিকাশ / নগদ নম্বর অথবা ব্যাংক অ্যাকাউন্ট নম্বর" />
+          <div class="hint">Admin প্রতিটি পেমেন্ট ছাড়ার পর আপনার আয় এই অ্যাকাউন্টেই পাঠানো হবে।</div>
         </div>
         <div id="regBankFields" class="hidden">
           <div class="grid-2">
             <div class="field">
-              <label for="regBankName">Bank name (আবশ্যক)</label>
-              <input id="regBankName" type="text" placeholder="e.g. Dutch-Bangla Bank" />
+              <label for="regBankName">ব্যাংকের নাম (আবশ্যক)</label>
+              <input id="regBankName" type="text" placeholder="যেমন: ডাচ-বাংলা ব্যাংক" />
             </div>
             <div class="field">
-              <label for="regBankBranch">Branch (আবশ্যক)</label>
-              <input id="regBankBranch" type="text" placeholder="e.g. Banani Branch" />
+              <label for="regBankBranch">শাখা (আবশ্যক)</label>
+              <input id="regBankBranch" type="text" placeholder="যেমন: বনানী শাখা" />
             </div>
           </div>
-          <div class="hint">Bank name ar branch apnar shop e save hobe, ar Admin review te dekhabe.</div>
+          <div class="hint">ব্যাংকের নাম আর শাখা আপনার দোকানে সংরক্ষিত হবে, Admin যাচাইয়ের সময় দেখতে পাবে।</div>
         </div>
 
-        <div class="form-section">4 · KYC verification</div>
+        <div class="form-section">৪ · KYC যাচাই</div>
         <div class="grid-2">
           <div class="field">
-            <label for="regNid">NID number (আবশ্যক)</label>
-            <input id="regNid" type="text" inputmode="numeric" placeholder="NID number (digits only)" />
+            <label for="regNid">NID নম্বর (আবশ্যক)</label>
+            <input id="regNid" type="text" inputmode="numeric" placeholder="NID নম্বর (শুধু সংখ্যা)" />
           </div>
           <div class="field">
-            <label for="regTrade">Trade license number (ঐচ্ছিক)</label>
-            <input id="regTrade" type="text" placeholder="Trade license number — thakle din" />
-            <div class="hint">Chhoto seller der jonno baddhotamulok na — trade licence na thakle khali rakhun.</div>
+            <label for="regTrade">ট্রেড লাইসেন্স নম্বর (ঐচ্ছিক)</label>
+            <input id="regTrade" type="text" placeholder="ট্রেড লাইসেন্স নম্বর — থাকলে দিন" />
+            <div class="hint">ছোট সেলারদের জন্য বাধ্যতামূলক নয় — ট্রেড লাইসেন্স না থাকলে খালি রাখুন।</div>
           </div>
         </div>
-        <div class="grid-2">
-          <div class="field">
-            <label for="regNidFile">NID er copy upload korun (আবশ্যক)</label>
-            <input id="regNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" />
-            <div class="hint">JPG, PNG ba PDF — sorbochcho 5MB. Sudhu number e hobe na, document er copy-i lagbe.</div>
-            <div class="doc-prev hidden" id="regNidPrev"></div>
-          </div>
-          <div class="field">
-            <label for="regTradeFile">ট্রেড লাইসেন্সের কপি (ঐচ্ছিক)</label>
-            <input id="regTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" />
-            <div class="hint">Thakle upload korun — chhoto seller der jonno baddhotamulok na. JPG, PNG ba PDF — sorbochcho 5MB.</div>
-            <div class="doc-prev hidden" id="regTradePrev"></div>
-          </div>
+        <div class="field">
+          <label for="regNidFile">NID-এর কপি আপলোড করুন (আবশ্যক)</label>
+          <input id="regNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="width:100%" />
+          <div class="hint">JPG, PNG বা PDF — সর্বোচ্চ ৫MB। শুধু নম্বর দিলে হবে না, ডকুমেন্টের কপিই লাগবে।</div>
+          <div class="doc-prev hidden" id="regNidPrev"></div>
         </div>
-        <p style="font-size:.85rem;color:var(--muted);margin:.2rem 0 .9rem">Admin will verify your NID before approving your shop — trade licence thakle setao verify kora hobe, na thakleo approve hobe. Submitting false information will get the application rejected.</p>
+        <div class="field">
+          <label for="regTradeFile">ট্রেড লাইসেন্সের কপি (ঐচ্ছিক)</label>
+          <input id="regTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="width:100%" />
+          <div class="hint">থাকলে আপলোড করুন — ছোট সেলারদের জন্য বাধ্যতামূলক নয়। JPG, PNG বা PDF — সর্বোচ্চ ৫MB।</div>
+          <div class="doc-prev hidden" id="regTradePrev"></div>
+        </div>
+        <p style="font-size:.85rem;color:var(--muted);margin:.2rem 0 .9rem">Admin আপনার দোকান অনুমোদনের আগে NID যাচাই করবে — ট্রেড লাইসেন্স থাকলে সেটাও যাচাই করা হবে, না থাকলেও অনুমোদন হবে। ভুল তথ্য দিলে আবেদন বাতিল হবে।</p>
 
         <label class="consent"><input type="checkbox" id="regTerms" /> <span>আমি AnboBD এর <a href="/pages/terms.html" target="_blank" rel="noopener">শর্তাবলী</a> পড়েছি ও মানতে রাজি (আবশ্যক)</span></label>
 
         <p class="err" id="regErr"></p>
-        <button class="btn" id="regSubmitBtn" type="submit" style="width:100%">Submit Application for Admin Approval</button>
+        <button class="btn" id="regSubmitBtn" type="submit" style="width:100%">Admin অনুমোদনের জন্য আবেদন জমা দিন</button>
         <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem;margin-top:12px"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
         <button class="btn ghost" id="googleRegBtn" type="button" style="width:100%;margin-top:12px">🔵 Google দিয়ে লগইন</button>
       </form>
       <div class="auth-foot">
-        <a href="/" target="_blank" rel="noopener">Storefront</a> · <a href="/pages/contact.html" target="_blank" rel="noopener">Help</a> · <a href="/pages/terms.html" target="_blank" rel="noopener">Terms</a>
+        <a href="/" target="_blank" rel="noopener">স্টোরফ্রন্ট</a> · <a href="/pages/contact.html" target="_blank" rel="noopener">সহায়তা</a> · <a href="/pages/terms.html" target="_blank" rel="noopener">শর্তাবলী</a>
       </div>
     </div>
   </section>
@@ -578,49 +577,49 @@
         <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></div>
         <div class="sub">Seller Center</div>
       </div>
-      <span class="status-pill" id="pendPill">Application Under Review</span>
-      <h1 id="pendShopName">Your shop</h1>
-      <div style="margin:.1rem 0 .5rem"><span class="badge-verified badge-pending" id="pendKycBadge">KYC Pending</span></div>
+      <span class="status-pill" id="pendPill">আবেদন যাচাই চলছে</span>
+      <h1 id="pendShopName">আপনার দোকান</h1>
+      <div style="margin:.1rem 0 .5rem"><span class="badge-verified badge-pending" id="pendKycBadge">KYC অপেক্ষমাণ</span></div>
       <p class="lead" id="pendLead">Your application has been received. The AnboBD Admin team will verify your NID copy and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.</p>
       <ul class="timeline" id="pendTimeline">
-        <li class="done"><span class="tdot">✓</span><div><div class="tt">Application submitted</div><div class="ts" id="pendSubmittedAt">Received</div></div></li>
-        <li class="now"><span class="tdot">2</span><div><div class="tt">KYC verification</div><div class="ts">Admin is checking your NID copy (trade licence thakle setao)</div></div></li>
-        <li><span class="tdot">3</span><div><div class="tt">Admin approval</div><div class="ts">An Admin approves or rejects the shop from the Admin panel</div></div></li>
-        <li><span class="tdot">4</span><div><div class="tt">Shop goes live</div><div class="ts">After approval, sign in again to add products and start selling</div></div></li>
+        <li class="done"><span class="tdot">✓</span><div><div class="tt">আবেদন জমা হয়েছে</div><div class="ts" id="pendSubmittedAt">পাওয়া গেছে</div></div></li>
+        <li class="now"><span class="tdot">2</span><div><div class="tt">KYC যাচাই</div><div class="ts">Admin আপনার NID কপি যাচাই করছে (ট্রেড লাইসেন্স থাকলে সেটাও)</div></div></li>
+        <li><span class="tdot">3</span><div><div class="tt">Admin অনুমোদন</div><div class="ts">Admin, Admin প্যানেল থেকে দোকান অনুমোদন বা বাতিল করবে</div></div></li>
+        <li><span class="tdot">4</span><div><div class="tt">দোকান লাইভ হবে</div><div class="ts">অনুমোদনের পর আবার লগইন করে পণ্য যোগ করুন আর বিক্রি শুরু করুন</div></div></li>
       </ul>
       <div id="pendKycCard" style="margin:1.2rem 0 .2rem;border:1px solid var(--line);border-radius:14px;padding:1rem 1.05rem;background:var(--surface)">
-        <h3 style="font-size:.98rem;margin:0 0 .2rem">KYC Documents</h3>
-        <p class="hint" style="margin:0 0 .8rem">Admin approval er age NID er copy lagbe. Ekhanei upload korun — upload holeo shop Pending-i thakbe, Admin approve korle live hobe.</p>
+        <h3 style="font-size:.98rem;margin:0 0 .2rem">KYC ডকুমেন্ট</h3>
+        <p class="hint" style="margin:0 0 .8rem">Admin অনুমোদনের আগে NID-এর কপি লাগবে। এখানেই আপলোড করুন — আপলোড হলেও দোকান Pending-ই থাকবে, Admin অনুমোদন করলে লাইভ হবে।</p>
         <div class="field" style="margin-bottom:.9rem">
-          <label for="pendNidFile">NID er copy (আবশ্যক)</label>
-          <div class="doc-prev" id="pendNidCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+          <label for="pendNidFile">NID-এর কপি (আবশ্যক)</label>
+          <div class="doc-prev" id="pendNidCurrent"><span class="doc-name" style="color:var(--muted)">আপলোড করা হয়নি</span></div>
           <input id="pendNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
-          <div class="hint">JPG, PNG ba PDF — sorbochcho 5MB. Sudhu number e hobe na, document er copy-i lagbe.</div>
+          <div class="hint">JPG, PNG বা PDF — সর্বোচ্চ ৫MB। শুধু নম্বর দিলে হবে না, ডকুমেন্টের কপিই লাগবে।</div>
           <div class="doc-status" id="pendNidStatus"></div>
         </div>
         <div class="field">
-          <label for="pendTradeFile">Trade licence er copy (ঐচ্ছিক)</label>
-          <div class="doc-prev" id="pendTradeCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+          <label for="pendTradeFile">ট্রেড লাইসেন্সের কপি (ঐচ্ছিক)</label>
+          <div class="doc-prev" id="pendTradeCurrent"><span class="doc-name" style="color:var(--muted)">আপলোড করা হয়নি</span></div>
           <input id="pendTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
-          <div class="hint">Thakle upload korun — chhoto seller der jonno baddhotamulok na. JPG, PNG ba PDF — sorbochcho 5MB.</div>
+          <div class="hint">থাকলে আপলোড করুন — ছোট সেলারদের জন্য বাধ্যতামূলক নয়। JPG, PNG বা PDF — সর্বোচ্চ ৫MB।</div>
           <div class="doc-status" id="pendTradeStatus"></div>
         </div>
       </div>
-      <h3 style="font-size:.98rem;margin:1.1rem 0 .3rem">Application details</h3>
+      <h3 style="font-size:.98rem;margin:1.1rem 0 .3rem">আবেদনের বিবরণ</h3>
       <div id="pendSummary"></div>
-      <h3 style="font-size:.98rem;margin:1.2rem 0 .2rem">Locked until approval</h3>
+      <h3 style="font-size:.98rem;margin:1.2rem 0 .2rem">অনুমোদন না হওয়া পর্যন্ত বন্ধ</h3>
       <ul class="lock-list">
-        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Adding products and setting prices</li>
-        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Receiving orders and shipping</li>
-        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Shop coupons and Mega Sale submissions</li>
-        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>Wallet, payouts and team members</li>
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>পণ্য যোগ করা আর দাম নির্ধারণ</li>
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>অর্ডার পাওয়া আর শিপিং</li>
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>দোকানের কুপন আর Mega Sale-এ অংশগ্রহণ</li>
+        <li><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>ওয়ালেট, পেমেন্ট আর টিম সদস্য</li>
       </ul>
       <div style="display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1.4rem">
-        <button class="btn" id="checkStatusBtn" type="button">Check Approval Status</button>
+        <button class="btn" id="checkStatusBtn" type="button">অনুমোদনের অবস্থা দেখুন</button>
         <a class="btn ghost" id="pendViewShopLink" href="#" target="_blank" rel="noopener">🏪 আমার দোকান দেখুন</a>
-        <button class="btn ghost" id="pendLogoutBtn" type="button">Logout</button>
+        <button class="btn ghost" id="pendLogoutBtn" type="button">লগআউট</button>
       </div>
-      <p style="font-size:.84rem;color:var(--muted);margin:1rem 0 0">Application reference: <b id="pendRef" style="color:var(--ink)">—</b> · Keep this reference for any support query about your application.</p>
+      <p style="font-size:.84rem;color:var(--muted);margin:1rem 0 0">আবেদনের রেফারেন্স: <b id="pendRef" style="color:var(--ink)">—</b> · আবেদন সম্পর্কে সাপোর্টে যোগাযোগের সময় এই রেফারেন্সটি রাখুন।</p>
     </div>
   </section>
 
@@ -634,7 +633,7 @@
       <div class="shop-chip">
         <div class="shop-avatar" id="shopAvatar">S</div>
         <div>
-          <div class="sname"><span id="shopNameLbl">My Shop</span><span class="badge-verified" id="kycBadge">KYC Pending</span></div>
+          <div class="sname"><span id="shopNameLbl">My Shop</span><span class="badge-verified" id="kycBadge">KYC অপেক্ষমাণ</span></div>
           <div class="smeta" id="shopMetaLbl"></div>
         </div>
       </div>
@@ -653,7 +652,7 @@
       </nav>
       <div class="side-foot">
         <a class="side-link" id="viewShopLink" href="#" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-8 9 8M5 9.5V21h14V9.5"/></svg>View my shop ↗</a>
-        <button id="logoutBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Logout</button>
+        <button id="logoutBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>লগআউট</button>
       </div>
     </aside>
 
@@ -993,21 +992,21 @@
         </div>
         <div id="kycRerequestBannerSettings"></div>
         <div class="card" style="margin-top:1rem">
-          <h3>KYC Documents</h3>
-          <div class="csub">Registration er somoy deya NID er copy (আবশ্যক) ar trade licence er copy (ঐচ্ছিক) — Admin notun kore chaile ekhan thekei bodle / re-upload kore dite parben</div>
+          <h3>KYC ডকুমেন্ট</h3>
+          <div class="csub">রেজিস্ট্রেশনের সময় দেওয়া NID-এর কপি (আবশ্যক) আর ট্রেড লাইসেন্সের কপি (ঐচ্ছিক) — Admin নতুন করে চাইলে এখান থেকেই বদলে / আবার আপলোড করে দিতে পারবেন</div>
           <div class="grid-2">
             <div class="field" style="margin-bottom:0">
-              <label for="kycNidFile">NID er copy (আবশ্যক)</label>
-              <div class="doc-prev" id="kycNidCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+              <label for="kycNidFile">NID-এর কপি (আবশ্যক)</label>
+              <div class="doc-prev" id="kycNidCurrent"><span class="doc-name" style="color:var(--muted)">আপলোড করা হয়নি</span></div>
               <input id="kycNidFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
-              <div class="hint">Notun file bachhle ager copy bodle jabe. JPG, PNG ba PDF — sorbochcho 5MB.</div>
+              <div class="hint">নতুন ফাইল বাছাই করলে আগের কপি বদলে যাবে। JPG, PNG বা PDF — সর্বোচ্চ ৫MB।</div>
               <div class="doc-status" id="kycNidStatus"></div>
             </div>
             <div class="field" style="margin-bottom:0">
-              <label for="kycTradeFile">Trade licence er copy (ঐচ্ছিক)</label>
-              <div class="doc-prev" id="kycTradeCurrent"><span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span></div>
+              <label for="kycTradeFile">ট্রেড লাইসেন্সের কপি (ঐচ্ছিক)</label>
+              <div class="doc-prev" id="kycTradeCurrent"><span class="doc-name" style="color:var(--muted)">আপলোড করা হয়নি</span></div>
               <input id="kycTradeFile" type="file" accept="image/jpeg,image/png,application/pdf,.jpg,.jpeg,.png,.pdf" style="margin-top:.55rem;width:100%" />
-              <div class="hint">Na dileo cholbe — chhoto seller der jonno baddhotamulok na. Notun file bachhle ager copy bodle jabe. JPG, PNG ba PDF — sorbochcho 5MB.</div>
+              <div class="hint">Na dileo cholbe — chhoto seller der jonno baddhotamulok na. নতুন ফাইল বাছাই করলে আগের কপি বদলে যাবে। JPG, PNG বা PDF — সর্বোচ্চ ৫MB।</div>
               <div class="doc-status" id="kycTradeStatus"></div>
             </div>
           </div>
@@ -1372,10 +1371,10 @@
      userId/trade_licence_<ts>_<name>. Vul hole ashol error throw kore. */
   var KYC_MAX_BYTES = 5 * 1024 * 1024;
   function kycFileError(f){
-    if (!f) return "File bachhai kora hoy ni.";
+    if (!f) return "ফাইল বাছাই করা হয়নি।";
     var okType = ["image/jpeg", "image/png", "application/pdf"].indexOf(f.type) > -1 || /\.(jpe?g|png|pdf)$/i.test(f.name || "");
-    if (!okType) return "Shudhu JPG, PNG ba PDF file din.";
-    if (f.size > KYC_MAX_BYTES) return "File 5MB er beshi boro — chhoto file din.";
+    if (!okType) return "শুধু JPG, PNG বা PDF ফাইল দিন।";
+    if (f.size > KYC_MAX_BYTES) return "ফাইল ৫MB-এর বেশি বড় — ছোট ফাইল দিন।";
     return "";
   }
   function kycIsImageFile(f){ return !!f && (f.type === "image/jpeg" || f.type === "image/png" || /\.(jpe?g|png)$/i.test(f.name || "")); }
@@ -1393,7 +1392,7 @@
   function renderDocPreview(el, file, objectUrl){
     if (!el || !file) return;
     el.classList.remove("hidden");
-    if (kycIsImageFile(file)) el.innerHTML = '<img src="' + objectUrl + '" alt="Document preview" /><div><div class="doc-name">' + esc(file.name) + '</div><div class="hint">Upload er jonno prostut</div></div>';
+    if (kycIsImageFile(file)) el.innerHTML = '<img src="' + objectUrl + '" alt="Document preview" /><div><div class="doc-name">' + esc(file.name) + '</div><div class="hint">আপলোডের জন্য প্রস্তুত</div></div>';
     else el.innerHTML = '<div class="doc-file-badge">PDF</div><div><div class="doc-name">' + esc(file.name) + '</div><div class="hint">' + Math.max(1, Math.round(file.size / 1024)) + ' KB</div></div>';
   }
   /* Fallback-only password hashing stand-in, used ONLY when Supabase is
@@ -1603,10 +1602,10 @@
       if (!staffRow && authUser.email) {
         try { var st2 = await supabase.from('staff').select('*').eq('email', authUser.email).limit(1); if (!st2.error && st2.data && st2.data.length) staffRow = st2.data[0]; } catch(e){}
       }
-      if (!staffRow){ staffLoginBlocked = "Ei staff account er kono record pawa jay ni — shop owner ke janan (Team theke staff ti abar add korte hobe)."; try { await supabase.auth.signOut(); } catch(e){} return null; }
-      if (staffRow.active === false){ staffLoginBlocked = "Ei staff account ti deactivate kora hoyeche — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
+      if (!staffRow){ staffLoginBlocked = "এই স্টাফ অ্যাকাউন্টের কোনো রেকর্ড পাওয়া যায়নি — দোকানের মালিককে জানান (টিম থেকে স্টাফটিকে আবার যোগ করতে হবে)।"; try { await supabase.auth.signOut(); } catch(e){} return null; }
+      if (staffRow.active === false){ staffLoginBlocked = "এই স্টাফ অ্যাকাউন্টটি নিষ্ক্রিয় করা হয়েছে — দোকানের মালিককে জানান।"; try { await supabase.auth.signOut(); } catch(e){} return null; }
       staffShopId = staffRow.shop_id || "";
-      if (!staffShopId){ staffLoginBlocked = "Ei staff account er sathe kono shop jukto nei — shop owner ke janan."; try { await supabase.auth.signOut(); } catch(e){} return null; }
+      if (!staffShopId){ staffLoginBlocked = "এই স্টাফ অ্যাকাউন্টের সাথে কোনো দোকান যুক্ত নেই — দোকানের মালিককে জানান।"; try { await supabase.auth.signOut(); } catch(e){} return null; }
       try { var s2 = await supabase.from('shops').select('*').eq('id', staffShopId).single(); if (!s2.error) shop = s2.data; } catch(e){}
     } else {
       try { var s1 = await supabase.from('shops').select('*').eq('owner_id', authUser.id).single(); if (!s1.error) shop = s1.data; } catch(e){}
@@ -1644,19 +1643,19 @@
     $("appView").classList.add("hidden");
     $("pendingView").classList.remove("hidden");
     var rejected = s.status === "suspended";
-    $("pendPill").textContent = rejected ? "Application Rejected / Suspended" : "Application Under Review";
+    $("pendPill").textContent = rejected ? "আবেদন বাতিল / সাসপেন্ড করা হয়েছে" : "আবেদন যাচাই চলছে";
     if ($("pendKycCard")) $("pendKycCard").classList.toggle("hidden", rejected);
     refreshPendKycDocs();
     $("pendLead").textContent = rejected
-      ? "Your application was rejected or your shop was suspended by AnboBD Admin. Product listing, coupons and orders stay locked. Contact AnboBD seller support if you think this is a mistake — a new application needs a fresh review."
-      : "Your application has been received. The AnboBD Admin team will verify your NID copy and approve your shop from the Admin panel. Until approval, product listing, coupons and orders stay locked — this is the same rule for every seller.";
+      ? "আপনার আবেদন বাতিল হয়েছে অথবা আপনার দোকান AnboBD Admin সাসপেন্ড করেছে। পণ্য তালিকা, কুপন আর অর্ডার বন্ধই থাকবে। ভুল মনে হলে AnboBD সেলার সাপোর্টে যোগাযোগ করুন — নতুন আবেদনের জন্য আবার যাচাই লাগবে।"
+      : "আপনার আবেদন পৌঁছেছে। AnboBD Admin দল আপনার NID কপি যাচাই করে Admin প্যানেল থেকে দোকান অনুমোদন করবে। অনুমোদন না হওয়া পর্যন্ত পণ্য তালিকা, কুপন আর অর্ডার বন্ধ থাকবে — এ নিয়ম সবার জন্যই এক।";
     $("pendShopName").textContent = s.shop;
     /* P1 follow-up (2026-11-23): KYC chip on the pending page too — same
        shops.kyc_status mapping as the dashboard badge (syncShopUI). */
     var pkb = $("pendKycBadge");
     if (pkb) {
       var pks = String(s.kycStatus || "pending").toLowerCase();
-      pkb.textContent = pks === "approved" ? "KYC Verified" : (pks === "rejected" ? "KYC Rejected" : "KYC Pending");
+      pkb.textContent = pks === "approved" ? "KYC যাচাই হয়েছে" : (pks === "rejected" ? "KYC বাতিল হয়েছে" : "KYC অপেক্ষমাণ");
       pkb.classList.toggle("badge-pending", pks !== "approved" && pks !== "rejected");
       pkb.classList.toggle("badge-rejected", pks === "rejected");
     }
@@ -1671,18 +1670,18 @@
     var fullRef = String(s.shopId || s.id);
     $("pendRef").textContent = "Application #" + fullRef.replace(/^SEL-/, "").slice(0, 8);
     $("pendRef").title = "Full application reference: " + fullRef;
-    $("pendSubmittedAt").textContent = "Received · " + fmtDate(s.appliedOn);
+    $("pendSubmittedAt").textContent = "পাওয়া গেছে · " + fmtDate(s.appliedOn);
     $("pendSummary").innerHTML =
-      '<div class="kv"><span>Owner</span><b>'+esc(s.owner)+'</b></div>'
-      + '<div class="kv"><span>Email</span><b>'+esc(s.email)+'</b></div>'
-      + '<div class="kv"><span>Mobile</span><b>'+esc(s.phone)+'</b></div>'
-      + '<div class="kv"><span>Shop</span><b>'+esc(s.shop)+' · '+esc(s.category)+'</b></div>'
-      + '<div class="kv"><span>District</span><b>'+esc(s.district)+'</b></div>'
-      + '<div class="kv"><span>Pickup address</span><b>'+esc(s.address)+'</b></div>'
-      + '<div class="kv"><span>Payout</span><b>'+esc(s.payMethod)+' · '+esc(maskAccount(s.payAccount))+(s.payMethod==="Bank Transfer" && s.bankName ? ' · '+esc(s.bankName)+(s.bankBranch ? ' ('+esc(s.bankBranch)+')' : '') : '')+'</b></div>'
+      '<div class="kv"><span>মালিক</span><b>'+esc(s.owner)+'</b></div>'
+      + '<div class="kv"><span>ইমেইল</span><b>'+esc(s.email)+'</b></div>'
+      + '<div class="kv"><span>মোবাইল</span><b>'+esc(s.phone)+'</b></div>'
+      + '<div class="kv"><span>দোকান</span><b>'+esc(s.shop)+' · '+esc(s.category)+'</b></div>'
+      + '<div class="kv"><span>জেলা</span><b>'+esc(s.district)+'</b></div>'
+      + '<div class="kv"><span>পিকআপ ঠিকানা</span><b>'+esc(s.address)+'</b></div>'
+      + '<div class="kv"><span>পেমেন্ট</span><b>'+esc(s.payMethod)+' · '+esc(maskAccount(s.payAccount))+(s.payMethod==="Bank Transfer" && s.bankName ? ' · '+esc(s.bankName)+(s.bankBranch ? ' ('+esc(s.bankBranch)+')' : '') : '')+'</b></div>'
       + '<div class="kv"><span>NID</span><b>'+esc(maskNid(s.nid))+'</b></div>'
-      + '<div class="kv"><span>Trade license</span><b>'+esc(s.tradeLicense || "— (ঐচ্ছিক)")+'</b></div>'
-      + '<div class="kv"><span>Status</span><b style="color:var(--amber)">' + (rejected ? "Application Rejected / Suspended" : "Pending — awaiting Admin approval") + '</b></div>';
+      + '<div class="kv"><span>ট্রেড লাইসেন্স</span><b>'+esc(s.tradeLicense || "— (ঐচ্ছিক)")+'</b></div>'
+      + '<div class="kv"><span>অবস্থা</span><b style="color:var(--amber)">' + (rejected ? "আবেদন বাতিল / সাসপেন্ড করা হয়েছে" : "অপেক্ষমাণ — Admin অনুমোদনের অপেক্ষায়") + '</b></div>';
     window.scrollTo(0,0);
   }
   function enterApp(){
@@ -1746,32 +1745,32 @@
   async function tryLogin(){
     var em = cleanText($("loginEmail").value).replace(/\s+/g, "").toLowerCase();
     var pw = $("loginPass").value;
-    if (!em || !pw) { $("loginErr").textContent = "Email ar password din."; return; }
+    if (!em || !pw) { $("loginErr").textContent = "ইমেইল আর পাসওয়ার্ড দিন।"; return; }
     if (supabaseConnected && supabase) {
       $("loginBtn").disabled = true;
       try {
         var res = await supabase.auth.signInWithPassword({ email: em, password: pw });
-        if (res.error) { $("loginErr").textContent = res.error.message || "Email ba password vul hoyeche."; return; }
+        if (res.error) { $("loginErr").textContent = res.error.message || "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে।"; return; }
         var user = res.data && res.data.user;
-        if (!user) { $("loginErr").textContent = "Login hoy ni — abar chesta korun."; return; }
+        if (!user) { $("loginErr").textContent = "লগইন হয়নি — আবার চেষ্টা করুন।"; return; }
         var seller = await loadCurrentSellerFromSupabase(user);
-        if (!seller) { $("loginErr").textContent = staffLoginBlocked ? staffLoginBlocked : (roleBlocked ? "Ei account ti Admin/owner account — Seller Center e login kora jay na. Seller account diye login korun." : "Ei account er kono shop pawa jay ni. Age Open a Shop theke shop registration korun."); return; }
-        if (seller.status === "suspended") { $("loginErr").textContent = "Ei shop ti Admin suspend koreche. Bistaritir jonno AnboBD seller support e jogajog korun."; return; }
+        if (!seller) { $("loginErr").textContent = staffLoginBlocked ? staffLoginBlocked : (roleBlocked ? "এই অ্যাকাউন্টটি Admin/মালিকের অ্যাকাউন্ট — Seller Center-এ লগইন করা যায় না। সেলার অ্যাকাউন্ট দিয়ে লগইন করুন।" : "এই অ্যাকাউন্টের কোনো দোকান পাওয়া যায়নি। আগে দোকান খুলুন থেকে দোকান রেজিস্ট্রেশন করুন।"); return; }
+        if (seller.status === "suspended") { $("loginErr").textContent = "এই দোকানটি Admin সাসপেন্ড করেছে। বিস্তারিত জানতে AnboBD সেলার সাপোর্টে যোগাযোগ করুন।"; return; }
         /* 2FA step-up (Decision 7): verified TOTP factor thakle code chara login hobe na. */
-        if (!await sellerMfaStepUp()){ try { await supabase.auth.signOut(); } catch(e){} $("loginErr").textContent = "2FA code na dile login hobe na."; return; }
+        if (!await sellerMfaStepUp()){ try { await supabase.auth.signOut(); } catch(e){} $("loginErr").textContent = "2FA কোড না দিলে লগইন হবে না।"; return; }
         session.sellerId = seller.id;
         $("loginErr").textContent = "";
         routeAfterAuth();
         toast(seller.status === "approved" ? ("Welcome back, " + seller.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
-      } catch(e) { $("loginErr").textContent = "Login e somossa hoyeche — abar chesta korun."; }
+      } catch(e) { $("loginErr").textContent = "লগইনে সমস্যা হয়েছে — আবার চেষ্টা করুন।"; }
       finally { $("loginBtn").disabled = false; }
       return;
     }
     pw = cleanText(pw).replace(/\s+/g, "");
     var s = sellerByEmail(em);
-    if (!s) { $("loginErr").textContent = "Ei email diye kono seller account nei. Notun hole upore “Open a Shop” theke age registration korun — registration chara login hobe na."; return; }
-    if (s.passHash !== hashPw(pw)) { $("loginErr").textContent = "Email ba password vul hoyeche. Thik kore abar chesta korun."; return; }
-    if (s.status === "suspended") { $("loginErr").textContent = "Ei shop ti Admin suspend koreche. Bistaritir jonno AnboBD seller support e jogajog korun."; return; }
+    if (!s) { $("loginErr").textContent = "এই ইমেইলে কোনো সেলার অ্যাকাউন্ট নেই। নতুন হলে উপরে “দোকান খুলুন” থেকে আগে রেজিস্ট্রেশন করুন — রেজিস্ট্রেশন ছাড়া লগইন হবে না।"; return; }
+    if (s.passHash !== hashPw(pw)) { $("loginErr").textContent = "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে। ঠিক করে আবার চেষ্টা করুন।"; return; }
+    if (s.status === "suspended") { $("loginErr").textContent = "এই দোকানটি Admin সাসপেন্ড করেছে। বিস্তারিত জানতে AnboBD সেলার সাপোর্টে যোগাযোগ করুন।"; return; }
     session.sellerId = s.id;
     $("loginErr").textContent = "";
     routeAfterAuth();
@@ -1890,7 +1889,7 @@
           toast("✓ <b>2FA enabled</b> — porer sign-in theke authenticator code lagbe");
         }catch(e){ if(ee) ee.textContent = "Code ta milche na — app er notun code diye abar chesta korun."; }
       });
-    }catch(e){ box.innerHTML = '<p class="hint">Enrol hoy ni — ' + esc(e.message || "abar chesta korun") + '</p>'; }
+    }catch(e){ box.innerHTML = '<p class="hint">Enrol hoy ni — ' + esc(e.message || "আবার চেষ্টা করুন") + '</p>'; }
   }
   async function sellerRemoveMfa(){
     if (!supabaseConnected || !supabase){ toast("⚠ Live connection nei."); return; }
@@ -1901,7 +1900,7 @@
       for (var i=0;i<facs.length;i++){ var u = await supabase.auth.mfa.unenroll({ factorId: facs[i].id }); if (u.error) throw u.error; }
       sellerRefreshMfaStatus();
       toast("✓ 2FA remove hoyeche");
-    }catch(e){ toast("⚠ 2FA remove hoy ni — " + esc(e.message || "abar chesta korun")); }
+    }catch(e){ toast("⚠ 2FA remove hoy ni — " + esc(e.message || "আবার চেষ্টা করুন")); }
   }
   /* Login-time 2FA step-up: resolves true when no factor exists, or when
      the user verifies a code from their authenticator app. */
@@ -1990,23 +1989,23 @@
         nid = cleanText($("regNid").value).replace(/[-\s]/g, ""),
         trade = cleanText($("regTrade").value);
     function fail(msg){ $("regErr").textContent = msg; }
-    if (!owner || !em || !ph || !shop) { fail("Account ar shop er sob tothyo puron korun."); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { fail("Sothik email address din."); return; }
-    if (!/^01\d{9}$/.test(ph)) { fail("Sothik 11 digit er mobile number din (01 diye shuru)."); return; }
-    if (pw.length < 6) { fail("Password kompokkhe 6 character hote hobe."); return; }
-    if (pw !== pw2) { fail("Password ar confirm password mile ni."); return; }
-    if (address.length < 8) { fail("Pickup address bistarito likhun — courier ekhan thekei parcel nibe."); return; }
-    if ($("regDistrict").value === "Other" && !district) { fail("District likhun — 'Other' beche nile nijer district er nam likhte hobe."); return; }
-    if (!payAccount || !payName) { fail("Payout method er account number ar account holder er nam din."); return; }
-    if (payMethod === "Bank Transfer" && (!bankName || !bankBranch)) { fail("Bank Transfer er jonno bank name ar branch din."); return; }
-    if ((payMethod === "bKash" || payMethod === "Nagad") && !/^01\d{9}$/.test(payAccount.replace(/[-\s]/g, ""))) { fail(payMethod + " account er jonno sothik 11 digit er number din."); return; }
-    if (payMethod === "Bank Transfer" && payAccount.replace(/\s/g, "").length < 8) { fail("Sothik bank account number din (kompokkhe 8 character)."); return; }
-    if (!/^\d{10,17}$/.test(nid)) { fail("Sothik NID number din (10–17 digit)."); return; }
-    if (trade && trade.length < 5) { fail("Trade license number thakle sothik number din (kompokkhe 5 character)."); return; }
-    if (!regNidDoc) { fail("NID er copy upload korte hobe"); return; }
+    if (!owner || !em || !ph || !shop) { fail("অ্যাকাউন্ট আর দোকানের সব তথ্য পূরণ করুন।"); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { fail("সঠিক ইমেইল ঠিকানা দিন।"); return; }
+    if (!/^01\d{9}$/.test(ph)) { fail("সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন (০১ দিয়ে শুরু)।"); return; }
+    if (pw.length < 6) { fail("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।"); return; }
+    if (pw !== pw2) { fail("পাসওয়ার্ড আর নিশ্চিতকরণ পাসওয়ার্ড মেলেনি।"); return; }
+    if (address.length < 8) { fail("পিকআপ ঠিকানা বিস্তারিত লিখুন — কুরিয়ার এখান থেকেই পার্সেল নেবে।"); return; }
+    if ($("regDistrict").value === "Other" && !district) { fail("জেলার নাম লিখুন — 'Other' বেছে নিলে নিজের জেলার নাম লিখতে হবে।"); return; }
+    if (!payAccount || !payName) { fail("পেমেন্ট মাধ্যমের অ্যাকাউন্ট নম্বর আর অ্যাকাউন্টধারীর নাম দিন।"); return; }
+    if (payMethod === "Bank Transfer" && (!bankName || !bankBranch)) { fail("Bank Transfer-এর জন্য ব্যাংকের নাম আর শাখা দিন।"); return; }
+    if ((payMethod === "bKash" || payMethod === "Nagad") && !/^01\d{9}$/.test(payAccount.replace(/[-\s]/g, ""))) { fail(payMethod + " অ্যাকাউন্টের জন্য সঠিক ১১ সংখ্যার নম্বর দিন।"); return; }
+    if (payMethod === "Bank Transfer" && payAccount.replace(/\s/g, "").length < 8) { fail("সঠিক ব্যাংক অ্যাকাউন্ট নম্বর দিন (কমপক্ষে ৮ অক্ষর)।"); return; }
+    if (!/^\d{10,17}$/.test(nid)) { fail("সঠিক NID নম্বর দিন (১০–১৭ সংখ্যা)।"); return; }
+    if (trade && trade.length < 5) { fail("ট্রেড লাইসেন্স নম্বর থাকলে সঠিক নম্বর দিন (কমপক্ষে ৫ অক্ষর)।"); return; }
+    if (!regNidDoc) { fail("NID-এর কপি আপলোড করতে হবে"); return; }
     /* P1 (2026-11-23): Terms & Conditions e raji na hole application jabe na. */
-    if (!$("regTerms") || !$("regTerms").checked) { fail("শর্তাবলীতে রাজি হতে হবে — checkbox ta tick korun."); return; }
-    if (!supabaseConnected && sellerByEmail(em)) { fail("Ei email diye agei ekta seller account ache. Login korun, ba onno email use korun."); return; }
+    if (!$("regTerms") || !$("regTerms").checked) { fail("শর্তাবলীতে রাজি হতে হবে — চেকবক্সটি টিক দিন।"); return; }
+    if (!supabaseConnected && sellerByEmail(em)) { fail("এই ইমেইল দিয়ে আগেই একটি সেলার অ্যাকাউন্ট আছে। লগইন করুন, বা অন্য ইমেইল ব্যবহার করুন।"); return; }
 
     if (supabaseConnected && supabase) {
       try {
@@ -2015,27 +2014,27 @@
         if (signUpRes.error) {
           if (/already registered/i.test(signUpRes.error.message || "")) {
             var signInRes = await supabase.auth.signInWithPassword({ email: em, password: pw });
-            if (signInRes.error || !signInRes.data || !signInRes.data.user) { fail("Ei email diye agei account ache — login korun, ba onno email diye chesta korun."); return; }
+            if (signInRes.error || !signInRes.data || !signInRes.data.user) { fail("এই ইমেইল দিয়ে আগেই অ্যাকাউন্ট আছে — লগইন করুন, বা অন্য ইমেইল দিয়ে চেষ্টা করুন।"); return; }
             newUser = signInRes.data.user;
-          } else { fail(signUpRes.error.message || "Sign up hoy ni — abar chesta korun."); return; }
+          } else { fail(signUpRes.error.message || "সাইন আপ হয়নি — আবার চেষ্টা করুন।"); return; }
         } else {
           newUser = signUpRes.data && signUpRes.data.user;
-          if (!newUser) { fail("Account toiri hoyeche kintu email confirmation lagte pare. Email check kore login korun."); return; }
+          if (!newUser) { fail("অ্যাকাউন্ট তৈরি হয়েছে কিন্তু ইমেইল নিশ্চিতকরণ লাগতে পারে। ইমেইল দেখে লগইন করুন।"); return; }
         }
         var regBtn = $("regSubmitBtn");
         var nidCopyPath = "", tradeCopyPath = "";
-        if (regBtn) { regBtn.disabled = true; regBtn.textContent = "Upload hochhe..."; }
+        if (regBtn) { regBtn.disabled = true; regBtn.textContent = "আপলোড হচ্ছে..."; }
         try {
           nidCopyPath = await uploadKycDocToStorage(newUser.id, "nid", regNidDoc);
           if (regTradeDoc) tradeCopyPath = await uploadKycDocToStorage(newUser.id, "trade_licence", regTradeDoc);
         } catch (upErr) {
-          if (regBtn) { regBtn.disabled = false; regBtn.textContent = "Submit Application for Admin Approval"; }
-          fail("Document upload hoy ni: " + (upErr && upErr.message ? upErr.message : "abar chesta korun"));
+          if (regBtn) { regBtn.disabled = false; regBtn.textContent = "Admin অনুমোদনের জন্য আবেদন জমা দিন"; }
+          fail("ডকুমেন্ট আপলোড হয়নি: " + (upErr && upErr.message ? upErr.message : "আবার চেষ্টা করুন"));
           return;
         }
-        if (regBtn) { regBtn.disabled = false; regBtn.textContent = "Submit Application for Admin Approval"; }
+        if (regBtn) { regBtn.disabled = false; regBtn.textContent = "Admin অনুমোদনের জন্য আবেদন জমা দিন"; }
         var profileRes = await supabase.from('profiles').upsert({ id: newUser.id, email: em, full_name: owner, role: "seller", phone: ph }, { onConflict: "id" });
-        if (profileRes.error) { fail("Profile save hoy ni: " + profileRes.error.message); return; }
+        if (profileRes.error) { fail("প্রোফাইল সংরক্ষণ হয়নি: " + profileRes.error.message); return; }
         var slug = shop.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + String(newUser.id).slice(0, 6);
         var shopPayload = { owner_id: newUser.id, shop_name: shop, slug: slug, category: cat, district: district, pickup_address: address, payout_method: payMethod, payout_account: payAccount, payout_name: payName, nid_number: nid, trade_licence: trade, nid_copy_url: nidCopyPath, trade_licence_copy_url: tradeCopyPath, owner_phone: ph, status: "pending" };
         /* P3 micro-fix: Bank Transfer hole bank name/branch o save hobe
@@ -2053,7 +2052,7 @@
             shopUpd = await supabase.from('shops').update(strippedUpd).eq('id', existingShop.data.id).select().single();
             if (!shopUpd.error) bankNotSaved = true;
           }
-          if (shopUpd.error) { fail("Shop save hoy ni: " + shopUpd.error.message); return; }
+          if (shopUpd.error) { fail("দোকান সংরক্ষণ হয়নি: " + shopUpd.error.message); return; }
           shopRow = shopUpd.data;
         } else {
           var shopRes = await supabase.from('shops').insert(shopPayload).select().single();
@@ -2063,7 +2062,7 @@
             shopRes = await supabase.from('shops').insert(strippedIns).select().single();
             if (!shopRes.error) bankNotSaved = true;
           }
-          if (shopRes.error) { fail("Shop save hoy ni: " + shopRes.error.message); return; }
+          if (shopRes.error) { fail("দোকান সংরক্ষণ হয়নি: " + shopRes.error.message); return; }
           shopRow = shopRes.data;
         }
         var sellerSb = sellerFromShopRow({ full_name: owner, email: em, phone: ph }, shopRow, newUser);
@@ -2074,9 +2073,9 @@
         session.sellerId = sellerSb.id;
         $("regErr").textContent = "";
         showPending();
-        if (bankNotSaved) toast("Application submit hoyeche — kintu bank er nam/branch save hoy ni (database e column pai ni), Admin ke janan");
-        else toast("Application submit hoyeche — shop Under Review ache, Admin approve korle live hobe");
-      } catch(err) { fail("Registration e somossa hoyeche — abar chesta korun."); }
+        if (bankNotSaved) toast("আবেদন জমা হয়েছে — কিন্তু ব্যাংকের নাম/শাখা সংরক্ষণ হয়নি (ডাটাবেসে কলাম পাওয়া যায়নি), Admin-কে জানান");
+        else toast("আবেদন জমা হয়েছে — দোকান যাচাই চলছে, Admin অনুমোদন করলে লাইভ হবে");
+      } catch(err) { fail("রেজিস্ট্রেশনে সমস্যা হয়েছে — আবার চেষ্টা করুন।"); }
       return;
     }
 
@@ -2101,7 +2100,7 @@
     session.sellerId = seller.id;
     $("regErr").textContent = "";
     showPending();
-    toast("Application submit hoyeche — ekhon Admin KYC verify kore approve korle shop live hobe");
+    toast("আবেদন জমা হয়েছে — Admin KYC যাচাই করে অনুমোদন করলে দোকান লাইভ হবে");
   });
 
   $("checkStatusBtn").addEventListener("click", async function(){
@@ -2109,9 +2108,9 @@
     if (supabaseConnected && supabase && s.shopId) {
       try { var chk = await supabase.from('shops').select('*').eq('id', s.shopId).single(); if (!chk.error && chk.data) { var fresh = sellerFromShopRow({ full_name: s.owner, email: s.email, phone: s.phone }, chk.data, { id: s.id, email: s.email }); fresh.products = s.products; fresh.orders = s.orders; fresh.coupons = s.coupons; fresh.campSubs = s.campSubs; fresh.returns = s.returns; fresh.payouts = s.payouts; fresh.staff = s.staff; fresh.staffActivity = s.staffActivity; fresh.reviews = s.reviews; var ix = DB.sellers.indexOf(s); if (ix > -1) DB.sellers[ix] = fresh; s = fresh; if (s.status === "approved") await loadSellerDataFromSupabase(s); } } catch(e){}
     }
-    if (s.status === "approved") { enterApp(); toast("Congratulation! Apnar shop approve hoyeche — Seller Center khule geche"); }
-    else if (s.status === "suspended") { toast("Apnar application ti Admin reject / suspend koreche — seller support e jogajog korun"); }
-    else toast("Ekhono under review ache — Admin approval ekhono aseni. Approve hole ei account diyei login kore shop chalate parben");
+    if (s.status === "approved") { enterApp(); toast("অভিনন্দন! আপনার দোকান অনুমোদিত হয়েছে — Seller Center খুলে গেছে"); }
+    else if (s.status === "suspended") { toast("আপনার আবেদনটি Admin বাতিল / সাসপেন্ড করেছে — সেলার সাপোর্টে যোগাযোগ করুন"); }
+    else toast("এখনো যাচাই চলছে — Admin অনুমোদন এখনো আসেনি। অনুমোদন হলে এই অ্যাকাউন্ট দিয়েই লগইন করে দোকান চালাতে পারবেন");
   });
   $("pendLogoutBtn").addEventListener("click", doLogout);
   $("logoutBtn").addEventListener("click", doLogout);
@@ -2123,7 +2122,7 @@
     var kb = $("kycBadge");
     if (kb) {
       var ks = String(s.kycStatus || "pending").toLowerCase();
-      kb.textContent = ks === "approved" ? "KYC Verified" : (ks === "rejected" ? "KYC Rejected" : "KYC Pending");
+      kb.textContent = ks === "approved" ? "KYC যাচাই হয়েছে" : (ks === "rejected" ? "KYC বাতিল হয়েছে" : "KYC অপেক্ষমাণ");
       kb.classList.toggle("badge-pending", ks !== "approved" && ks !== "rejected");
       kb.classList.toggle("badge-rejected", ks === "rejected");
     }
@@ -2918,7 +2917,7 @@
           var hasNewFiles = imgItems.some(function(it){ return it.kind === "file"; });
           if (hasNewFiles && supabaseConnected && supabase) {
             var saveBtn = $("mSave"), oldBtnTxt = saveBtn.textContent;
-            saveBtn.disabled = true; saveBtn.textContent = "Upload hochhe...";
+            saveBtn.disabled = true; saveBtn.textContent = "আপলোড হচ্ছে...";
             try {
               for (var ii = 0; ii < imgItems.length; ii++) {
                 var itm = imgItems[ii];
@@ -3217,8 +3216,8 @@
       + '<div style="margin:.8rem 0"><span class="status ' + statusClass(o.status) + '">' + o.status + '</span></div>'
       + '<h3 style="font-size:.95rem;margin:1rem 0 .3rem">Customer</h3>'
       + '<div class="kv"><span>Name</span><b>' + esc(o.customer) + '</b></div>'
-      + '<div class="kv"><span>Mobile</span><b>' + esc(o.phone) + '</b></div>'
-      + '<div class="kv"><span>District</span><b>' + esc(o.district) + '</b></div>'
+      + '<div class="kv"><span>মোবাইল</span><b>' + esc(o.phone) + '</b></div>'
+      + '<div class="kv"><span>জেলা</span><b>' + esc(o.district) + '</b></div>'
       + '<div class="kv"><span>Payment (ship er jonno)</span><b>' + esc(o.payVisibility || "Prepaid — Admin verified") + '</b></div><div class="kv"><span>Ship to</span><b>' + esc(o.shipAddress || o.district) + '</b></div>' + (o.courier ? '<div class="kv"><span>Courier</span><b>' + esc(o.courier) + '</b></div>' : '') + (o.trackingId ? '<div class="kv"><span>Tracking ID</span><b>' + esc(o.trackingId) + '</b></div>' : '')
       + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Items</h3>' + items
       + '<div class="kv"><span>Order total</span><b>' + fmt(orderTotal(o)) + '</b></div>'
@@ -3735,7 +3734,7 @@
           if (!(amt>=500) || amt>s.balance) { $("wErr").textContent = "Amount ৳500 theke " + fmt(s.balance) + " er moddhe hote hobe."; return; }
           var method = $("wMethod").value, acc = $("wAcc").value.trim();
           if (!acc) { $("wErr").textContent = "Payout account number din."; return; }
-          if ((method === "bKash" || method === "Nagad") && !/^01\d{9}$/.test(acc.replace(/[-\s]/g, ""))) { $("wErr").textContent = method + " account er jonno sothik 11 digit er number din."; return; }
+          if ((method === "bKash" || method === "Nagad") && !/^01\d{9}$/.test(acc.replace(/[-\s]/g, ""))) { $("wErr").textContent = method + " অ্যাকাউন্টের জন্য সঠিক ১১ সংখ্যার নম্বর দিন।"; return; }
           if (method === "Bank Transfer" && acc.length < 8) { $("wErr").textContent = "Sothik bank account number din."; return; }
           if (supabaseConnected && supabase) {
             try { var insP = await supabase.from('payouts').insert({ shop_id: s.shopId, amount: amt, method: method, status: "requested" }).select().single(); if (insP.error) { $("wErr").textContent = insP.error.message; return; } } catch(e){ $("wErr").textContent = "Payout request save hoy ni — abar chesta korun."; return; }
@@ -4072,7 +4071,7 @@
     var s = me(); if (!s) return;
     var el = $("emailErr"); if (el) el.textContent = "";
     var em = $("newEmail").value.trim().toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { if (el) el.textContent = "Sothik email address din."; return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) { if (el) el.textContent = "সঠিক ইমেইল ঠিকানা দিন।"; return; }
     if (em === s.email.toLowerCase()) { if (el) el.textContent = "Eta apnar bortoman email — onno email din."; return; }
     if (!supabaseConnected || !supabase) { if (el) el.textContent = "Database connect nei — email bodlano jabe na."; return; }
     try {
@@ -4099,7 +4098,7 @@
     s.desc = $("setDesc").value.trim();
     if (!s.shop) { toast("Shop er nam khali rakha jabe na."); return; }
     if (!s.owner) { toast("Owner er nam din."); return; }
-    if (!/^01\d{9}$/.test(s.phone.replace(/[-\s]/g, ""))) { toast("Sothik 11 digit er mobile number din (01 diye shuru)."); return; }
+    if (!/^01\d{9}$/.test(s.phone.replace(/[-\s]/g, ""))) { toast("সঠিক ১১ সংখ্যার মোবাইল নম্বর দিন (০১ দিয়ে শুরু)।"); return; }
     if (s.address.length < 8) { toast("Pickup address bistarito likhun."); return; }
     if (supabaseConnected && supabase && s.shopId) {
       try {
@@ -4125,7 +4124,7 @@
     s.payAccount = $("payAccount").value.trim();
     s.payName = $("payName").value.trim();
     if (!s.payName) { toast("Account holder er nam din."); return; }
-    if ((s.payMethod === "bKash" || s.payMethod === "Nagad") && !/^01\d{9}$/.test(s.payAccount.replace(/[-\s]/g, ""))) { toast(s.payMethod + " account er jonno sothik 11 digit er number din."); return; }
+    if ((s.payMethod === "bKash" || s.payMethod === "Nagad") && !/^01\d{9}$/.test(s.payAccount.replace(/[-\s]/g, ""))) { toast(s.payMethod + " অ্যাকাউন্টের জন্য সঠিক ১১ সংখ্যার নম্বর দিন।"); return; }
     if (s.payMethod === "Bank Transfer" && s.payAccount.length < 8) { toast("Sothik bank account number din."); return; }
     if (supabaseConnected && supabase && s.shopId) {
       try {
@@ -4173,7 +4172,7 @@
     if (supabaseConnected && supabase) {
       input.disabled = true;
       try { url = await uploadImageToBucket("shop-images", f); }
-      catch(e){ input.disabled = false; toast("Image upload hoy ni: " + (e && e.message ? e.message : "abar chesta korun")); return; }
+      catch(e){ input.disabled = false; toast("Image upload hoy ni: " + (e && e.message ? e.message : "আবার চেষ্টা করুন")); return; }
       var patch = {}; if (kind === "logo") patch.logo_url = url; else patch.banner_url = url;
       try {
         var upS = await supabase.from('shops').update(patch).eq('id', s.shopId);
@@ -4196,7 +4195,7 @@
      nid_copy_url / trade_licence_copy_url column update hoy. */
   async function fillKycCurrent(elId, path){
     var el = $(elId); if (!el) return;
-    if (!path) { el.innerHTML = '<span class="doc-name" style="color:var(--muted)">Upload kora hoy ni</span>'; return; }
+    if (!path) { el.innerHTML = '<span class="doc-name" style="color:var(--muted)">আপলোড করা হয়নি</span>'; return; }
     var name = kycDocName(path);
     var isImg = /\.(jpe?g|png)$/i.test(name);
     el.innerHTML = (isImg ? "" : '<div class="doc-file-badge">PDF</div>') + '<div class="doc-name">' + esc(name) + '</div>';
@@ -4237,7 +4236,7 @@
     if (err) { if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">' + esc(err) + '</span>'; return; }
     if (supabaseConnected && supabase && s.shopId) {
       input.disabled = true;
-      if (statusEl) statusEl.textContent = "Upload hochhe...";
+      if (statusEl) statusEl.textContent = "আপলোড হচ্ছে...";
       try {
         var path = await uploadKycDocToStorage(s.userId || s.id, kind === "nid" ? "nid" : "trade_licence", f);
         var patch = {}; if (kind === "nid") patch.nid_copy_url = path; else patch.trade_licence_copy_url = path;
@@ -4249,9 +4248,9 @@
         if (hadRerequest) { s.kycRerequest = null; renderKycRerequest(); }
         if (ids && ids.successMsg) { if (statusEl) statusEl.innerHTML = '<span style="color:var(--brand);font-weight:600">' + esc(ids.successMsg) + '</span>'; }
         else if (statusEl) statusEl.textContent = "";
-        toast(hadRerequest ? "Document update hoyeche — Admin er re-request clear hoyeche" : (kind === "nid" ? "NID copy update hoyeche" : "Trade licence copy update hoyeche"));
+        toast(hadRerequest ? "ডকুমেন্ট আপডেট হয়েছে — Admin-এর পুনরায় চাওয়াটি মুছে গেছে" : (kind === "nid" ? "NID কপি আপডেট হয়েছে" : "ট্রেড লাইসেন্স কপি আপডেট হয়েছে"));
       } catch(e) {
-        if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">Upload hoy ni: ' + esc(e && e.message ? e.message : "abar chesta korun") + '</span>';
+        if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">আপলোড হয়নি: ' + esc(e && e.message ? e.message : "আবার চেষ্টা করুন") + '</span>';
       }
       input.disabled = false;
       refreshKycDocs();
@@ -4261,12 +4260,12 @@
     if (kind === "nid") s.nidCopyUrl = f.name; else s.tradeCopyUrl = f.name;
     if (statusEl) statusEl.textContent = "";
     renderDocPreview($(currentId), f, URL.createObjectURL(f));
-    toast(kind === "nid" ? "NID copy select hoyeche" : "Trade licence copy select hoyeche");
+    toast(kind === "nid" ? "NID কপি বাছাই হয়েছে" : "ট্রেড লাইসেন্স কপি বাছাই হয়েছে");
   }
   $("kycNidFile").addEventListener("change", function(){ handleKycReplace("nid", this); });
   $("kycTradeFile").addEventListener("change", function(){ handleKycReplace("trade", this); });
-  if ($("pendNidFile")) $("pendNidFile").addEventListener("change", function(){ handleKycReplace("nid", this, { status: "pendNidStatus", current: "pendNidCurrent", successMsg: "NID copy upload hoyeche ✓ — Admin approval er opekkhay thakun" }); });
-  if ($("pendTradeFile")) $("pendTradeFile").addEventListener("change", function(){ handleKycReplace("trade", this, { status: "pendTradeStatus", current: "pendTradeCurrent", successMsg: "Trade licence copy upload hoyeche ✓" }); });
+  if ($("pendNidFile")) $("pendNidFile").addEventListener("change", function(){ handleKycReplace("nid", this, { status: "pendNidStatus", current: "pendNidCurrent", successMsg: "NID কপি আপলোড হয়েছে ✓ — Admin অনুমোদনের অপেক্ষায় থাকুন" }); });
+  if ($("pendTradeFile")) $("pendTradeFile").addEventListener("change", function(){ handleKycReplace("trade", this, { status: "pendTradeStatus", current: "pendTradeCurrent", successMsg: "ট্রেড লাইসেন্স কপি আপলোড হয়েছে ✓" }); });
 
   /* ================= MODAL PLUMBING ================= */
   function openModal(html, wire){
