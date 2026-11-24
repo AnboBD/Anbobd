@@ -368,8 +368,17 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 .specbox{background:var(--surface2);border-radius:14px;padding:12px 14px;font-size:.88rem;line-height:1.7;margin:12px 0}
 .mqty{display:flex;align-items:center;gap:10px;margin:14px 0}
 .mqty .qty{margin:0}
-.toast{position:fixed;left:50%;bottom:86px;pointer-events:none;transform:translate(-50%,90px);background:var(--ink);color:var(--bg);border-radius:999px;padding:13px 22px;font-weight:700;z-index:120;transition:transform .35s cubic-bezier(.2,.8,.25,1);box-shadow:0 16px 36px rgba(0,0,0,.3);max-width:92vw;text-align:center}
-.toast.show{transform:translate(-50%,0)}
+/* Batch D3 (2026-11-25): hidden toast kokhono-i puropuri off-screen chhilo
+   na -- base slide 90px, bottom 86px (86-90 = -4px), ar pill ~50px lomba,
+   tai "lukano" toast-er ~46px viewport-er niche dekha jeto; khali toast
+   (26px) fresh load-e 22px kalo sliver hisebe dekha jeto. Clear-e
+   cmpbar-on shorle slide 250px -> 90px-e fire eshe pill ta okhanei theme
+   jeto (3.5s timer agei fire gechhe, ar kono timer cholchhe na). Ekhon
+   hidden = opacity:0 + visibility:hidden (slide sheshe .35s delay-e lukay),
+   tai jekono height / jekono bottom-e-i toast puropuri adrishyo; base
+   slide-o 140px kora holo (86-140 = -54px) belt-and-braces hisebe. */
+.toast{position:fixed;left:50%;bottom:86px;pointer-events:none;transform:translate(-50%,140px);opacity:0;visibility:hidden;background:var(--ink);color:var(--bg);border-radius:999px;padding:13px 22px;font-weight:700;z-index:120;transition:transform .35s cubic-bezier(.2,.8,.25,1),opacity .35s,visibility 0s linear .35s;box-shadow:0 16px 36px rgba(0,0,0,.3);max-width:92vw;text-align:center}
+.toast.show{transform:translate(-50%,0);opacity:1;visibility:visible;transition:transform .35s cubic-bezier(.2,.8,.25,1),opacity .35s,visibility 0s}
 .toast b{color:var(--lime)}
 /* bottom nav + top */
 .bottomnav{display:none;position:fixed;left:0;right:0;bottom:0;z-index:70;background:color-mix(in srgb, var(--surface) 94%, transparent);backdrop-filter:blur(12px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom))}
