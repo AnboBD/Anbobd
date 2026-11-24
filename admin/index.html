@@ -910,7 +910,7 @@ function sbDateLabel(v){
    Any single table failing (e.g. RLS) leaves that store untouched. */
 async function sbLoadAll(){
   if (!sbReady()) return;
-  var customerProfiles = [];
+  customerProfiles = [];
   async function fetchTable(table){
     try{ var r = await sb.from(table).select("*"); if (r.error){ sbWarn(table, r.error); return null; } return r.data || []; }
     catch(e){ sbWarn(table, e); return null; }
@@ -1444,6 +1444,7 @@ orders.forEach(function(o){
 });
 
 var customers = [];
+var customerProfiles = []; /* mapped profile rows from sbLoadAll (customers + sellers; staff excluded) */
 
 /* Seller -> product ownership: who fulfils what. Orders are routed by this map after admin confirms. */
 var PRODUCT_SELLER = {};
@@ -2366,11 +2367,13 @@ function renderDashboard(){
     + '</div>';
   /* PLATFORM totals only — never one seller's sales as platform total. GMV = all non-cancelled master orders; Commission = sum of sub-order commissions; counts are marketplace-wide. */
   var subOrderCount = orders.filter(function(o){return o.status!=="cancelled";}).reduce(function(a,o){ return a+getSubOrders(o).length; },0);
+  var registeredCustomerCount = customerProfiles.filter(function(cp){ return cp._profileRole === "customer" || !cp._profileRole; }).length;
+  var guestBuyerCount = customers.filter(function(c){ return !c.profileId; }).length;
   html += '<div class="kpis">'
     + kpi("Platform GMV · All recorded orders", fmt(platformGMV()), '<span class="sub">Sob seller + own stock mile · Cancelled order bad diye hisab</span>')
     + kpi("Total orders · Platform", plural(orders.length,"master order","master orders")+" · "+plural(subOrderCount,"sub-order","sub-orders"), '<span class="sub">'+plural(pendingCount(),"master order","master orders")+' pending confirm · Order aslei ekhane jog hobe</span>')
     + kpi("Platform commission earned", fmt(platformCommissionEarned()), '<span class="sub">Sub-order commission er jog · Finance e ledger ache</span>')
-    + kpi("Sellers · Customers", plural(sellers.filter(function(s){return s.status==="approved";}).length,"seller","sellers")+" · "+plural(customers.length,"customer","customers"), '<span class="sub">'+plural(pendingSellerCount(),"seller","sellers")+' pending · Payout due (derived) '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</span>')
+    + kpi("Sellers · Customers", plural(sellers.filter(function(s){return s.status==="approved";}).length,"seller","sellers")+" · "+plural(registeredCustomerCount,"registered customer","registered customers"), '<span class="sub">'+plural(pendingSellerCount(),"seller","sellers")+' pending · '+plural(guestBuyerCount,"guest buyer","guest buyers")+' · Payout due (derived) '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</span>')
     + "</div>";
 
   var awaitingSeller = orders.filter(function(o){return effectiveMasterStatus(o)==="confirmed";}).length;
@@ -3150,8 +3153,11 @@ function renderCustomers(){
   var top10Cust = customers.slice().sort(function(a,b){ return b.spent-a.spent; }).slice(0,10);
   var top10Spent = top10Cust.reduce(function(a,c){ return a+c.spent; }, 0);
   var list = customers.filter(function(c){ return !custQuery || (c.name+" "+c.phone+" "+c.district).toLowerCase().indexOf(custQuery.toLowerCase())!==-1; });
+  var registeredCustomerCount = customerProfiles.filter(function(cp){ return cp._profileRole === "customer" || !cp._profileRole; }).length;
+  var guestBuyerCount = customers.filter(function(c){ return !c.profileId; }).length;
   el.innerHTML = '<div class="kpis">'
-    + kpi("Total customers", customers.length, '<span class="sub">Storefront theke asha registered customer</span>')
+    + kpi("Registered customers", registeredCustomerCount, '<span class="sub">Storefront theke asha registered customer</span>')
+    + kpi("Guest buyers", guestBuyerCount, '<span class="sub">Order koreche, account khole ni</span>')
     + kpi("Orders on record", orders.length, '<span class="sub">Ei panel e recorded master order</span>')
     + kpi("Repeat buyers", customers.length ? Math.round(customers.filter(function(c){return c.orders>1;}).length/customers.length*100)+"%" : "0%", '<span class="sub">Ekbar er beshi order koreche</span>')
     + kpi("Top-10 lifetime spend", fmt(top10Spent), '<span class="sub">Top 10 customer er mot lifetime spend</span>')
