@@ -288,8 +288,8 @@ payBkash:"bKash (ম্যানুয়াল)", payNagad:"Nagad (ম্যা
 en:{
 searchPh:"Search products…", searchBtn:"Search",
 topDelDhaka:"🚚 Delivery in Dhaka", topDelCountry:"Across the country",
-topFreeDhaka:"৳2,000+ orders in Dhaka get <b>FREE delivery</b>",
-topPromo:"Promo code <b>ANBO10</b> = 10% off",
+topFreeDhaka:"৳2,000+ orders in Dhaka get FREE delivery",
+topPromo:"Promo code ANBO10 = 10% off",
 skipLink:"Skip to shop list", crumbHome:"Home", crumbAllShops:"All shops",
 loadingT:"Loading shops…", loadingS:"Fetching the real shop info from the online catalogue.",
 notFoundT:"This shop couldn't be found 😔", notFoundS:"The link may be wrong, or the shop isn't approved yet / has been removed.<br>Go to the shop list to see other shops.",
@@ -417,7 +417,7 @@ function shSb(){
    (settings table, anon select). Disabled category-r product shop page-eo
    dekhabe na. Default label Bangla, default enabled=true. */
 var CAT_KEY_SLUGS = {electronics:"electronics", fashion:"fashion", shoes_bags:"shoesbags", home_kitchen:"home", beauty:"beauty", grocery:"grocery", sports:"sports"};
-function catLabel(id){ if(SH.catLabels[id]) return SH.catLabels[id]; return shCatLabel(id); }
+function catLabel(id){ if(SH_LANG==="en" && CAT_LABELS_EN[id]) return CAT_LABELS_EN[id]; if(SH.catLabels[id]) return SH.catLabels[id]; return shCatLabel(id); }
 function catEnabled(id){ if(id==="flash") return true; if(typeof SH.catEnabled[id]==="boolean") return SH.catEnabled[id]; return true; }
 async function shLoadCategorySettings(){
   try{
