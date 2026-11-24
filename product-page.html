@@ -735,16 +735,16 @@ async function loadRelated(){
   box.style.display = "block";
   var listEl = document.getElementById("pdRelatedList");
   var sb = pdSb();
-  if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই ক্যাটাগরিতে এখন আর কোনো পণ্য নেই।</p>'; return; }
+  if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই ক্যাটাগরিতে এখন আর কোনো পণ্য নেই। [dbg NO-SB]</p>'; return; }
   try{
     var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category").eq("status", "approved").limit(50);
     if(r.error) throw r.error;
     var items = (r.data||[]).map(function(row){ return mapProductRow(row); }).filter(function(p){ return p && p.status==="active" && String(p.id)!==String(PD.id) && p.categoryId===PD.product.categoryId; }).slice(0, 8);
-    if(!items.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই ক্যাটাগরিতে এখন আর কোনো পণ্য নেই — শীঘ্রই আসছে।</p>'; return; }
+    if(!items.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই ক্যাটাগরিতে এখন আর কোনো পণ্য নেই — শীঘ্রই আসছে। [dbg rows='+(r.data||[]).length+' mapped='+(r.data||[]).map(mapProductRow).filter(Boolean).length+' myCat='+PD.product.categoryId+' cats='+(r.data||[]).map(function(x){return x.category;}).join(',')+']</p>'; return; }
     listEl.innerHTML = '<div class="relgrid">' + items.map(function(p){
       return '<a class="relcard" href="/product.html?id='+encodeURIComponent(p.id)+'"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'"><div class="relname">'+escHtml(p.name)+'</div><div class="relprice">'+fmt(p.price)+(p.oldPrice>p.price?' <s style="color:var(--muted);font-weight:400">'+fmt(p.oldPrice)+'</s>':'')+'</div></a>';
     }).join("") + '</div>';
-  }catch(e){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">সম্পর্কিত পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন।</p>'; }
+  }catch(e){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">সম্পর্কিত পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন। [dbg err='+(e&&e.message)+']</p>'; }
 }
 
 /* Frequently Bought Together — quick-view modal-er motoi: product-er
@@ -756,21 +756,21 @@ async function loadBundle(){
   box.style.display = "block";
   var listEl = document.getElementById("pdFbtList");
   var ids = (PD.product.bundleWith||[]).map(function(x){ return String(x); }).filter(Boolean);
-  if(!ids.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই।</p>'; return; }
+  if(!ids.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই। [dbg ids=0 bw='+JSON.stringify(PD.product.bundleWith)+']</p>'; return; }
   var sb = pdSb();
-  if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই।</p>'; return; }
+  if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই। [dbg NO-SB]</p>'; return; }
   try{
     var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category").eq("status", "approved").limit(50);
     if(r.error) throw r.error;
     var items = (r.data||[]).map(function(row){ return mapProductRow(row); }).filter(function(p){ return p && p.status==="active" && ids.indexOf(String(p.id))>=0; });
-    if(!items.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই।</p>'; return; }
+    if(!items.length){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">এই পণ্যের সাথে জোড়া পণ্য নেই। [dbg ids='+ids.length+' rows='+(r.data||[]).length+' mapped='+(r.data||[]).map(mapProductRow).filter(Boolean).length+']</p>'; return; }
     listEl.innerHTML = items.map(function(p){
       return '<div class="frow"><img loading="lazy" src="'+safeImg(p.img)+'" alt="'+escHtml(p.name)+'"><div><b>'+escHtml(p.name)+'</b><span>'+fmt(p.price)+'</span></div><button type="button" data-fbt-add="'+p.id+'" data-fbt-stock="'+p.stockQty+'">+ যোগ করুন</button></div>';
     }).join("");
     listEl.querySelectorAll("[data-fbt-add]").forEach(function(b){
       b.addEventListener("click", function(){ addBundleToCart(b.getAttribute("data-fbt-add"), Number(b.getAttribute("data-fbt-stock")||0)); });
     });
-  }catch(e){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">জোড়া পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন।</p>'; }
+  }catch(e){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">জোড়া পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন। [dbg err='+(e&&e.message)+']</p>'; }
 }
 
 /* FBT partner — shared cart state-e stock cap soho jog (addToCart-er motoi). */
