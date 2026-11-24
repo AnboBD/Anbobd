@@ -2972,6 +2972,47 @@ function anboPayLabel(o){
 }
 
 /* ---------- Tracking ---------- */
+/* Courier + tracking ID (display-only): sub_orders row-er courier /
+   tracking_id column theke. Tracking na thakle khali string — kichui
+   dekhabe na. Ekadhik sub-order thakle prottektir line alada, eki
+   courier+tracking dubar dekhano hobe na. */
+function anboCourierTrackingHtml(order){
+  var subs = (order && Array.isArray(order.subOrders)) ? order.subOrders : [];
+  var seen = {}, lines = [];
+  subs.forEach(function(s){
+    if(!s) return;
+    var c = String(s.courier || "").trim();
+    var t = String(s.tracking_id || s.trackingId || "").trim();
+    if(!c && !t) return;
+    var key = c + "|" + t;
+    if(seen[key]) return; seen[key] = true;
+    var parts = [];
+    if(c) parts.push("Courier: <b>" + escHtml(c) + "</b>");
+    if(t) parts.push("Tracking: <b>" + escHtml(t) + "</b>");
+    lines.push("🚚 " + parts.join(" · "));
+  });
+  if(!lines.length) return "";
+  return '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">' + lines.join("<br>") + "</div>";
+}
+/* Guest/ager session-er order-e subOrders thake na (anboOrderFromRow sudhu
+   orders row map kore) — tai renderTracking-er por best-effort sub_orders
+   theke courier/tracking_id ene box-e bosano hoy. Return flow-er motoi
+   direct select; RLS/read fail hole chupchap kichu dekhabe na, kokhono
+   fake tracking na. Kono write hoy na — sudhu display. */
+function anboLoadTrackingSubs(order){
+  if(!order || Array.isArray(order.subOrders)) return;
+  if(!(window.ANBOBD_DB && ANBOBD_DB.configured && ANBOBD_DB.configured())) return;
+  var sb = ANBOBD_DB.sb(); if(!sb) return;
+  var supId = order.supabaseId || (anboIsUuid(order.id) ? order.id : null);
+  if(!supId) return;
+  sb.from("sub_orders").select("courier,tracking_id").eq("order_id", supId).then(function(r){
+    if(r.error || !r.data) return;
+    order.subOrders = r.data;
+    var box = document.getElementById("trackCourierBox");
+    var res = document.getElementById("trackResult");
+    if(box && res && res.innerHTML.indexOf(order.id) !== -1) box.innerHTML = anboCourierTrackingHtml(order);
+  }).catch(function(e){ console.warn("tracking: sub_orders courier lookup failed", e); });
+}
 function renderTracking(order){
   var flow = ANBOBD_STORE.orderFlow, idx = flow.indexOf(order.status);
   var labels = { AwaitingAdmin:"অর্ডার গৃহীত — Admin যাচাইয়ে আছে", AdminConfirmed:"Admin কনফার্ম করেছে — Seller-এর কাছে পাঠানো হয়েছে", Packed:"Seller প্যাক করেছে", Shipped:"Seller পাঠিয়ে দিয়েছে — কুরিয়ারের পথে", Delivered:"Delivered — ডেলিভারি সম্পন্ন" };
@@ -2989,6 +3030,10 @@ function renderTracking(order){
   } else if(order.payment && order.payment.method==="ক্যাশ অন ডেলিভারি"){
     html += '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">💵 ক্যাশ অন ডেলিভারি — পণ্য হাতে পেয়ে কুরিয়ারকে <b>'+fmt(order.amounts.total)+'</b> পরিশোধ করুন।</div>';
   }
+  /* Courier + tracking ID — subOrders age thekei thakle ekhoni dekhabe;
+     na thakle khali box thakbe, anboLoadTrackingSubs (niche) ene bhorbe.
+     Tracking na thakle box khali-i thakbe — kichu dekhabe na. */
+  html += '<div id="trackCourierBox">' + anboCourierTrackingHtml(order) + '</div>';
   /* P3 fix (2026-11-23): Track modal-e cancel — guest order My Orders-e
      kokhono ase na, tai Track-i ekmatro poth. Sudhu AwaitingAdmin holei
      button (Admin confirm korle ar cancel cholbe na). anboCancelOrder
@@ -3025,6 +3070,7 @@ function renderTracking(order){
   if(rb){ rb.addEventListener("click", function(){ anboStartReturn(order); }); }
   var db2 = document.getElementById("dispStartBtn");
   if(db2){ db2.addEventListener("click", function(){ anboStartDispute(order); }); }
+  anboLoadTrackingSubs(order);
 }
 
 /* P1-13 — Return আবেদন: order number + phone diye track kora order (guest COD
