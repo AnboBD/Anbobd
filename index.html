@@ -828,10 +828,10 @@ section{ padding-top:56px }
       <a class="logo" href="/" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></a>
       <div class="searchwrap">
       <form class="searchbar" id="searchForm" role="search">
-        <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন…" data-i18n-ph="searchPh" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
+        <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন…" data-i18n-ph="searchPh" data-i18n-aria="searchAria" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
         <button type="submit" data-i18n="searchBtn">খুঁজুন</button>
       </form>
-      <div class="suggest" id="searchSuggest" role="listbox" aria-label="সার্চ সাজেশন"></div>
+      <div class="suggest" id="searchSuggest" role="listbox" data-i18n-aria="searchSuggestAria" aria-label="সার্চ সাজেশন"></div>
       </div>
       <div class="navbtns">
         <button class="rolebtn" id="accountBtn">👤 লগইন / সাইন আপ</button>
@@ -877,8 +877,8 @@ section{ padding-top:56px }
       </div>
       <div class="hero-stats">
         <div><b id="prodCountStat">…</b><span data-i18n="heroStatProducts">পণ্যের কালেকশন</span></div>
-        <div><b>64 জেলা</b><span data-i18n="heroStatDistricts">ডেলিভারি কভারেজ</span></div>
-        <div><b>7 দিনের</b><span data-i18n="heroStatReturn">সহজ রিটার্ন</span></div>
+        <div><b data-i18n="heroStatDistrictsNum">64 জেলা</b><span data-i18n="heroStatDistricts">ডেলিভারি কভারেজ</span></div>
+        <div><b data-i18n="heroStatReturnNum">7 দিনের</b><span data-i18n="heroStatReturn">সহজ রিটার্ন</span></div>
       </div>
       <div class="hero-pay"><span data-i18n="payCod">ক্যাশ অন ডেলিভারি</span><span data-i18n="heroPayBkash">bKash (ম্যানুয়াল)</span><span data-i18n="heroPayNagad">Nagad (ম্যানুয়াল)</span><span data-i18n="heroPayRocket">Rocket (ম্যানুয়াল)</span></div>
     </div>
@@ -912,9 +912,9 @@ section{ padding-top:56px }
   <!-- PROMO BANNERS -->
   <section style="padding-top:26px" id="promoBannersSec">
     <div class="banners">
-      <button class="banner b1" data-banner="electronics"><img class="bimg" src="/assets/headphones.jpg" alt="হেডফোন — গ্যাজেট ফেস্ট" loading="lazy"><span class="btxt"><b>গ্যাজেট ফেস্ট</b><span>হেডফোন, স্মার্টওয়াচ, স্পিকার আর অনেক কিছু</span><span class="bcta">এখনই কিনুন →</span></span></button>
-      <button class="banner b2" data-banner="fashion"><img class="bimg" src="/assets/saree.jpg" alt="শাড়ি — ঈদ-রেডি ফ্যাশন" loading="lazy"><span class="btxt"><b>ঈদ-রেডি ফ্যাশন কালেকশন</b><span>শাড়ি, জ্যাকেট, টি-শার্ট</span><span class="bcta">কালেকশন দেখুন →</span></span></button>
-      <button class="banner b3" data-banner="grocery"><img class="bimg" src="/assets/grocery.jpg" alt="খাঁটি ফুলের মধু — ঘরের বাজার" loading="lazy"><span class="btxt"><b>ঘরের বাজার, ঘরে বসেই</b><span>খাঁটি ফুলের মধু</span><span class="bcta">বাজার করুন →</span></span></button>
+      <button class="banner b1" data-banner="electronics"><img class="bimg" src="/assets/headphones.jpg" alt="হেডফোন — গ্যাজেট ফেস্ট" data-i18n-alt="ban1Alt" loading="lazy"><span class="btxt"><b data-i18n="ban1T">গ্যাজেট ফেস্ট</b><span data-i18n="ban1S">হেডফোন, স্মার্টওয়াচ, স্পিকার আর অনেক কিছু</span><span class="bcta" data-i18n="ban1C">এখনই কিনুন →</span></span></button>
+      <button class="banner b2" data-banner="fashion"><img class="bimg" src="/assets/saree.jpg" alt="শাড়ি — ঈদ-রেডি ফ্যাশন" data-i18n-alt="ban2Alt" loading="lazy"><span class="btxt"><b data-i18n="ban2T">ঈদ-রেডি ফ্যাশন কালেকশন</b><span data-i18n="ban2S">শাড়ি, জ্যাকেট, টি-শার্ট</span><span class="bcta" data-i18n="ban2C">কালেকশন দেখুন →</span></span></button>
+      <button class="banner b3" data-banner="grocery"><img class="bimg" src="/assets/grocery.jpg" alt="খাঁটি ফুলের মধু — ঘরের বাজার" data-i18n-alt="ban3Alt" loading="lazy"><span class="btxt"><b data-i18n="ban3T">ঘরের বাজার, ঘরে বসেই</b><span data-i18n="ban3S">খাঁটি ফুলের মধু</span><span class="bcta" data-i18n="ban3C">বাজার করুন →</span></span></button>
     </div>
   </section>
 
@@ -948,7 +948,7 @@ section{ padding-top:56px }
     <div class="flash">
       <div class="flash-head">
         <h2><span class="bolt">⚡ FLASH SALE</span></h2>
-        <div class="timer" aria-label="ফ্ল্যাশ সেল শেষ হতে বাকি সময়">
+        <div class="timer" data-i18n-aria="flashTimerLbl" aria-label="ফ্ল্যাশ সেল শেষ হতে বাকি সময়">
           <div><b id="tH">00</b><span data-i18n="timerH">ঘণ্টা</span></div>
           <div><b id="tM">00</b><span data-i18n="timerM">মিনিট</span></div>
           <div><b id="tS">00</b><span data-i18n="timerS">সেকেন্ড</span></div>
@@ -978,14 +978,14 @@ section{ padding-top:56px }
     </div>
     <div class="toolbar">
       <span class="count" id="resultCount"></span>
-      <div class="pricechips" id="priceChips" role="group" aria-label="দাম অনুযায়ী ফিল্টার">
+      <div class="pricechips" id="priceChips" role="group" data-i18n-aria="priceFilterAria" aria-label="দাম অনুযায়ী ফিল্টার">
         <button data-price="all" class="on" data-i18n="priceAll">সব দাম</button>
         <button data-price="u1000" data-i18n="priceU1000">৳1,000 এর নিচে</button>
-        <button data-price="m">৳1,000–3,000</button>
+        <button data-price="m" data-i18n="priceM">৳1,000–3,000</button>
         <button data-price="h" data-i18n="priceH">৳3,000+</button>
       </div>
       <label class="sortsel"><span data-i18n="sortLbl">সাজান:</span>
-        <select id="sortSel" aria-label="পণ্য সাজান">
+        <select id="sortSel" data-i18n-aria="sortAria" aria-label="পণ্য সাজান">
           <option value="popular" data-i18n="sortPopular">সবচেয়ে জনপ্রিয়</option>
           <option value="rating" data-i18n="sortRating">রেটিং (বেশি → কম)</option>
           <option value="discount" data-i18n="sortDiscount">ছাড় (বেশি → কম)</option>
@@ -997,16 +997,16 @@ section{ padding-top:56px }
     </div>
     <div class="filters2">
       <label class="fsel"><span data-i18n="ratingLbl">রেটিং:</span>
-        <select id="ratingSel" aria-label="রেটিং ফিল্টার">
+        <select id="ratingSel" data-i18n-aria="ratingFilterAria" aria-label="রেটিং ফিল্টার">
           <option value="0" data-i18n="ratingAny">যেকোনো রেটিং</option>
-          <option value="4.8">4.8 ★ ও বেশি</option>
-          <option value="4.7">4.7 ★ ও বেশি</option>
-          <option value="4.6">4.6 ★ ও বেশি</option>
-          <option value="4.5">4.5 ★ ও বেশি</option>
+          <option value="4.8" data-i18n="ratingOpt48">4.8 ★ ও বেশি</option>
+          <option value="4.7" data-i18n="ratingOpt47">4.7 ★ ও বেশি</option>
+          <option value="4.6" data-i18n="ratingOpt46">4.6 ★ ও বেশি</option>
+          <option value="4.5" data-i18n="ratingOpt45">4.5 ★ ও বেশি</option>
         </select>
       </label>
       <label class="fsel"><span data-i18n="onlyLbl">শুধু:</span>
-        <select id="extraSel" aria-label="অতিরিক্ত ফিল্টার">
+        <select id="extraSel" data-i18n-aria="extraFilterAria" aria-label="অতিরিক্ত ফিল্টার">
           <option value="all" data-i18n="extraAll">সব পণ্য</option>
           <option value="freedel" data-i18n="extraFree">ফ্রি ডেলিভারি যোগ্য (৳2,000+ পণ্য)</option>
           <option value="instock" data-i18n="extraStock">স্টকে আছে</option>
@@ -1111,7 +1111,7 @@ section{ padding-top:56px }
       <div><h2 data-i18n="newsTitle">অফারের খবর সবার আগে পান 🎁</h2><p data-i18n="newsSub">নতুন পণ্য, এক্সক্লুসিভ কুপন আর ফ্ল্যাশ সেলের আপডেট সরাসরি আপনার ইমেইলে। স্প্যাম নয় — শুধু কাজের অফার, মাসে সর্বোচ্চ 4টি মেইল।</p></div>
       <div>
         <form class="newsform" id="newsForm" novalidate>
-          <input type="email" id="newsEmail" placeholder="আপনার ইমেইল ঠিকানা" data-i18n-ph="newsPh" aria-label="ইমেইল ঠিকানা" />
+          <input type="email" id="newsEmail" placeholder="আপনার ইমেইল ঠিকানা" data-i18n-ph="newsPh" data-i18n-aria="newsPh" aria-label="ইমেইল ঠিকানা" />
           <button type="submit" data-i18n="newsBtn">সাবস্ক্রাইব করুন</button>
         </form>
         <div class="news-ok" id="newsOk" data-i18n="newsOk">✅ ধন্যবাদ! আপনার ইমেইলটি <b>এই ডিভাইসে সংরক্ষিত</b> হয়েছে — অনলাইন নিউজলেটার চালু হলেই সবার আগে অফারের খবর পাবেন।</div>
@@ -1273,7 +1273,7 @@ section{ padding-top:56px }
 </template>
 
 <!-- QUICK VIEW MODAL -->
-<div class="modal" id="modal" role="dialog" aria-modal="true" aria-label="পণ্যের বিস্তারিত">
+<div class="modal" id="modal" role="dialog" aria-modal="true" data-i18n-aria="modalDetails" aria-label="পণ্যের বিস্তারিত">
   <div class="modal-card">
     <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
     <div class="mside">
@@ -1293,7 +1293,7 @@ section{ padding-top:56px }
       <div class="delbox" id="mDelBox" data-i18n="modalDelBox">🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে ৳60 — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে ৳120 — 48–72 ঘণ্টায় ডেলিভারি • ঢাকায় ৳2,000+ অর্ডারে ডেলিভারি <b>ফ্রি</b> • ক্যাশ অন ডেলিভারি (COD) সুবিধা আছে<br>↩️ <b>রিটার্ন পলিসি:</b> 7 দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন</div>
       <div class="sellercard" id="mSeller"></div>
       <div class="mqty"><span style="font-weight:700" data-i18n="modalQtyLbl">পরিমাণ:</span><span class="qty"><button id="mDec" aria-label="কমান">−</button><b id="mQty">1</b><button id="mInc" aria-label="বাড়ান">+</button></span>
-      <button class="wishbtn" id="mWish" style="position:static" aria-label="উইশলিস্টে যোগ করুন">🤍</button>
+      <button class="wishbtn" id="mWish" style="position:static" data-i18n-aria="wishAdd" aria-label="উইশলিস্টে যোগ করুন">🤍</button>
       <button type="button" class="sharebtn" id="mShare" data-i18n="modalShare" aria-label="পণ্যের লিংক কপি করে শেয়ার করুন">🔗 শেয়ার</button></div>
       <div class="cardbtns">
         <button class="addbtn" id="mAdd" data-i18n="modalAdd">🛒 কার্টে যোগ করুন</button>
@@ -1316,7 +1316,7 @@ section{ padding-top:56px }
 </div>
 
 <!-- P2 (2026-11-23): product comparison — max 3, shudhu asol data. -->
-<div class="modal" id="compareModal" role="dialog" aria-modal="true" aria-label="পণ্য তুলনা">
+<div class="modal" id="compareModal" role="dialog" aria-modal="true" data-i18n-aria="cmpTitle" aria-label="পণ্য তুলনা">
   <div class="modal-card single">
     <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
@@ -1662,6 +1662,17 @@ function anboLang(){ try{ var l = localStorage.getItem("anbobd-lang"); return (l
 var ANBO_LANG = anboLang();
 var I18N = {
 bn:{
+heroStatDistrictsNum:"64 জেলা", heroStatReturnNum:"7 দিনের",
+ban1Alt:"হেডফোন — গ্যাজেট ফেস্ট", ban1T:"গ্যাজেট ফেস্ট", ban1S:"হেডফোন, স্মার্টওয়াচ, স্পিকার আর অনেক কিছু", ban1C:"এখনই কিনুন →",
+ban2Alt:"শাড়ি — ঈদ-রেডি ফ্যাশন", ban2T:"ঈদ-রেডি ফ্যাশন কালেকশন", ban2S:"শাড়ি, জ্যাকেট, টি-শার্ট", ban2C:"কালেকশন দেখুন →",
+ban3Alt:"খাঁটি ফুলের মধু — ঘরের বাজার", ban3T:"ঘরের বাজার, ঘরে বসেই", ban3S:"খাঁটি ফুলের মধু", ban3C:"বাজার করুন →",
+flashTimerLbl:"ফ্ল্যাশ সেল শেষ হতে বাকি সময়",
+priceFilterAria:"দাম অনুযায়ী ফিল্টার", sortAria:"পণ্য সাজান", ratingFilterAria:"রেটিং ফিল্টার", extraFilterAria:"অতিরিক্ত ফিল্টার",
+searchAria:"পণ্য খুঁজুন", searchSuggestAria:"সার্চ সাজেশন",
+ratingOpt48:"4.8 ★ ও বেশি", ratingOpt47:"4.7 ★ ও বেশি", ratingOpt46:"4.6 ★ ও বেশি", ratingOpt45:"4.5 ★ ও বেশি",
+priceM:"৳1,000–3,000",
+cardDetails:"বিস্তারিত দেখুন", wishAdd:"উইশলিস্টে রাখুন", cmpCard:"তুলনা", cmpCardAdd:"তুলনায় যোগ করুন",
+modalDetails:"পণ্যের বিস্তারিত",
 searchPh:"পণ্য খুঁজুন…", searchBtn:"খুঁজুন", loginSignup:"👤 লগইন / সাইন আপ", catAll:"সব পণ্য",
 heroPill:"বাংলাদেশের নতুন 3D শপিং অভিজ্ঞতা",
 heroTitle:"সবকিছু কিনুন,<br><span class=\"hl\">ঘুরিয়ে দেখে</span> —<br>একদম <span class=\"hl2\">3D স্টাইলে!</span>",
@@ -1970,12 +1981,23 @@ modalPayLine:"ক্যাশ অন ডেলিভারি • bKash / Nagad 
 modalDelBox:"🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে ৳60 — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে ৳120 — 48–72 ঘণ্টায় ডেলিভারি • ঢাকায় ৳2,000+ অর্ডারে ডেলিভারি <b>ফ্রি</b> • ক্যাশ অন ডেলিভারি (COD) সুবিধা আছে<br>↩️ <b>রিটার্ন পলিসি:</b> 7 দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন"
 },
 en:{
+heroStatDistrictsNum:"64 districts", heroStatReturnNum:"7 days",
+ban1Alt:"Headphones — Gadget Fest", ban1T:"Gadget Fest", ban1S:"Headphones, smartwatches, speakers and more", ban1C:"Shop now →",
+ban2Alt:"Saree — Eid-ready fashion", ban2T:"Eid-ready fashion collection", ban2S:"Sarees, jackets, T-shirts", ban2C:"View collection →",
+ban3Alt:"Pure flower honey — home groceries", ban3T:"Home groceries, from home", ban3S:"Pure flower honey", ban3C:"Shop groceries →",
+flashTimerLbl:"Time left in flash sale",
+priceFilterAria:"Filter by price", sortAria:"Sort products", ratingFilterAria:"Filter by rating", extraFilterAria:"More filters",
+searchAria:"Search products", searchSuggestAria:"Search suggestions",
+ratingOpt48:"4.8 ★ & above", ratingOpt47:"4.7 ★ & above", ratingOpt46:"4.6 ★ & above", ratingOpt45:"4.5 ★ & above",
+priceM:"৳1,000–3,000",
+cardDetails:"View details", wishAdd:"Add to wishlist", cmpCard:"Compare", cmpCardAdd:"Add to comparison",
+modalDetails:"Product details",
 searchPh:"Search products…", searchBtn:"Search", loginSignup:"👤 Login / Sign Up", catAll:"All products",
 heroPill:"Bangladesh's new 3D shopping experience",
 heroTitle:"Shop everything,<br><span class=\"hl\">spin &amp; see</span> —<br>in <span class=\"hl2\">3D style!</span>",
 heroLead:"Real products, real prices — all in one place. Hover a product card and it tilts in 3D, as if you're holding it. Home delivery across the country, plus Cash on Delivery.",
 heroCtaShop:"🛍️ Start shopping", heroCtaFlash:"⚡ Today's Flash Sale",
-heroStatProducts:"Product collection", heroStatDistricts:"Delivery coverage", heroStatReturn:"Easy returns", payCod:"Cash on Delivery",
+heroStatProducts:"products", heroStatDistricts:"Delivery coverage", heroStatReturn:"Easy returns", payCod:"Cash on Delivery",
 svc1t:"Fast delivery", svc1s:"24 hours in Dhaka, 48–72 hours outside", svc2t:"Cash on Delivery", svc2s:"Pay when the product reaches you",
 svc3t:"7-day returns", svc3s:"Replace / refund if there's a problem", svc4t:"100% original", svc4s:"Verified sellers, money-back guarantee",
 catTitle:"Categories — arranged in 3D cubes", catSub:"Click any category to filter the products below",
@@ -2038,8 +2060,8 @@ cmpMax:"You can compare up to 3 products", cmpAdded:"Added to comparison", cmpRe
 wishShared:"🔗 Wishlist link copied — share it anywhere!", wishEmptyShare:"Your wishlist is empty — nothing to share yet",
 cmpRowPrice:"Price", cmpRowOld:"Old price", cmpRowStock:"Stock", cmpRowCat:"Category", cmpRowShop:"Shop", cmpRowRating:"Rating", cmpRowPack:"Pack", cmpRowRemove:"Remove", cmpRowAdd:"🛒 Add to cart", cmpNoRating:"No reviews yet",
 topDelDhaka:"Delivery in Dhaka", topDelCountry:"Across the country",
-topFreeDhaka:"{th}+ orders in Dhaka get <b>FREE delivery</b>", topFreeNat:"{th}+ orders get <b>FREE delivery nationwide</b>",
-topPromo:"Promo code <b>ANBO10</b> = 10% off",
+topFreeDhaka:"{th}+ orders in Dhaka get FREE delivery", topFreeNat:"{th}+ orders get FREE delivery nationwide",
+topPromo:"Promo code ANBO10 = 10% off",
 heroChip:"🚚 Delivery in <b style=\"display:inline\">24–72 hours</b>",
 catCount:"{n} products",
 faqQ1:"How much is delivery, and how soon will I get it?", faqQ2:"How do I pay?", faqQ3:"How do I return or replace a faulty product?", faqQ4:"How can I see where my order is?", faqQ5:"Do products come with a warranty?", faqQ6:"How can I sell on AnboBD?",
@@ -2292,6 +2314,8 @@ function applyLang(){
      load-er por applyLang cholle signed-in header-o guest hoye jeto. */
   document.querySelectorAll("[data-i18n]").forEach(function(el){ if(el.id === "accountBtn") return; el.innerHTML = t(el.getAttribute("data-i18n")); });
   document.querySelectorAll("[data-i18n-ph]").forEach(function(el){ el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))); });
+  document.querySelectorAll("[data-i18n-aria]").forEach(function(el){ el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria"))); });
+  document.querySelectorAll("[data-i18n-alt]").forEach(function(el){ el.setAttribute("alt", t(el.getAttribute("data-i18n-alt"))); });
   /* Hero title/lead — Admin override thakle setai thakbe; na thakle dict. */
   var st = window.__anboPlatformSettings;
   var hasAdminHero = st && ((typeof st.heroTitle === "string" && st.heroTitle.trim()) || (typeof st.heroLead === "string" && st.heroLead.trim()));
@@ -2430,9 +2454,9 @@ function cardHTML(p, flash){
      jay — alada product page. data-view modal ar khole na; #product-<id>
      hash link ekhono modal khole (openProductFromHash, backward compat). */
   var h = '<article class="pcard">' +
-    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — বিস্তারিত দেখুন"><img loading="lazy" decoding="async" src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+' — '+escHtml(p.bn)+'">'+(offPct(p)>0?'<span class="badge">−'+offPct(p)+'%</span>':'')+'<span class="soldtag">'+t("cardSold", {n:soldFmt(p.soldCount)})+'</span></a>' +
-    '<button class="wishbtn'+(wishlist[p.id]?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="উইশলিস্টে রাখুন">'+(wishlist[p.id]?'❤️':'🤍')+'</button>' +
-    '<button class="cmpbtn'+(isComparing(p.id)?' on':'')+'" data-compare="'+escHtml(p.id)+'" aria-label="তুলনায় যোগ করুন">তুলনা</button>' +
+    '<a class="pimg" href="/product.html?id='+encodeURIComponent(p.id)+'" aria-label="'+escHtml(p.name)+' — '+t("cardDetails")+'"><img loading="lazy" decoding="async" src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+' — '+escHtml(p.bn)+'">'+(offPct(p)>0?'<span class="badge">−'+offPct(p)+'%</span>':'')+'<span class="soldtag">'+t("cardSold", {n:soldFmt(p.soldCount)})+'</span></a>' +
+    '<button class="wishbtn'+(wishlist[p.id]?' on':'')+'" data-wish="'+escHtml(p.id)+'" aria-label="'+(wishlist[p.id]?t("wishRemove"):t("wishAdd"))+'">'+(wishlist[p.id]?'❤️':'🤍')+'</button>' +
+    '<button class="cmpbtn'+(isComparing(p.id)?' on':'')+'" data-compare="'+escHtml(p.id)+'" aria-label="'+t("cmpCardAdd")+'">'+t("cmpCard")+'</button>' +
     '<div class="pbody"><div class="pcat">'+escHtml(catLabel(p.categoryId))+' • '+shopNameHtml(p)+'</div><h3 class="pname"><a href="/product.html?id='+encodeURIComponent(p.id)+'">'+escHtml(p.name)+'</a></h3>' +
     (packLabel(p)?'<div class="pmeta"><span>📦 '+escHtml(packLabel(p))+'</span></div>':'') +
     '<div>'+(p.isNew?' <span style="display:inline-flex;align-items:center;gap:4px;background:#fff3c4;color:#7a5b00;font-size:.7rem;font-weight:800;border-radius:99px;padding:2px 8px">NEW</span>':'')+'</div>' +
@@ -2950,7 +2974,7 @@ function openTrackModalEmpty(){
 }
 
 /* ---------- Quick view ---------- */
-function syncModalWish(){ var w = !!wishlist[modalId]; var b=document.getElementById("mWish"); b.textContent = w?"❤️":"🤍"; b.classList.toggle("on", w); }
+function syncModalWish(){ var w = !!wishlist[modalId]; var b=document.getElementById("mWish"); b.textContent = w?"❤️":"🤍"; b.classList.toggle("on", w); b.setAttribute("aria-label", w?t("wishRemove"):t("wishAdd")); }
 /* ---------- Product image slider ---------- */
 function sliderImgs(p){
   var list = [];
