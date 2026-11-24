@@ -31,7 +31,7 @@ export default async function handler(req) {
   /* Static page first — this is the fallback for every error path. */
   let html;
   try {
-    const res = await fetch(new URL("/product.html", url));
+    const res = await fetch(new URL("/product-page.html", url));
     if (!res.ok) return new Response("Product page unavailable", { status: 503 });
     html = await res.text();
   } catch (e) {
