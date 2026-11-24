@@ -1428,7 +1428,7 @@ var ANBOBD_STORE = {
   orders:[],      /* checkout-এ তৈরি হয়: { id, items[], customer{}, payment{}, amounts{}, status:'Pending', statusHistory[], placedAt, estimatedDelivery, zone } */
   customers:[],   /* অর্ডার থেকে তৈরি: { name, phone, address, district, totalOrders, totalSpent } */
   orderFlow:["AwaitingAdmin","AdminConfirmed","Packed","Shipped","Delivered"],
-  popularSearches:["হেডফোন","স্মার্ট ওয়াচ","শাড়ি","এয়ার ফ্রায়ার","সিরাম","সরিষার তেল","স্নিকার্স","ব্লেন্ডার"]
+  popularSearches:[] /* Audit fix (2026-11-24): hardcoded তালিকা (হেডফোন/শাড়ি/এয়ার ফ্রায়ার/সরিষার তেল — যেসব পণ্য লাইভ ক্যাটালগে নেই) সরানো হলো। Chips এখন শুধু syncSearchCopy() লাইভ ক্যাটালগ (approved পণ্যের নাম + live category) থেকে ভরায়; ক্যাটালগ লোড হওয়ার আগে chips খালি থাকে। */
 };
 window.ANBOBD_STORE = ANBOBD_STORE;
 
@@ -3223,7 +3223,7 @@ function showSuggest(){
     /* P2 (2026-11-23): samprotik search (localStorage, max 8) + janapriya search. Kono fake suggestion na. */
     var hist = anboSearchHistory();
     var histHtml = hist.length ? '<div class="shead">'+t("histTitle")+'<button type="button" class="histclear" data-hist-clear>মুছুন</button></div>' + hist.map(function(s){ return '<button type="button" data-hist="'+escHtml(s)+'"><span style="font-size:1.05rem">🕘</span><span class="sn">'+escHtml(s)+'</span></button>'; }).join("") : "";
-    html = histHtml + '<div class="shead">'+t("popTitle")+'</div>' + ANBOBD_STORE.popularSearches.map(function(s){ return '<button type="button" data-sugq="'+s+'"><span style="font-size:1.05rem">🔍</span><span class="sn">'+s+'</span></button>'; }).join("");
+    html = histHtml + (ANBOBD_STORE.popularSearches.length ? '<div class="shead">'+t("popTitle")+'</div>' + ANBOBD_STORE.popularSearches.map(function(s){ return '<button type="button" data-sugq="'+escHtml(s)+'"><span style="font-size:1.05rem">🔍</span><span class="sn">'+escHtml(s)+'</span></button>'; }).join("") : "");
   } else {
     /* P2: seller-name search — haystack-e dokan-er naam-o ache; query
        dokan-er naam-e mile gele dokan-er row-o dekhabe (/shop?id=).
