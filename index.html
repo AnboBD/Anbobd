@@ -810,17 +810,29 @@ section{ padding-top:56px }
    dhেকে felto; ar toast bar-er upore uthbe jate Compare button na dhake. */
 body.cmpbar-on{padding-bottom:150px}
 body.cmpbar-on .toast{bottom:150px}
+/* Batch D2 (2026-11-25): .toast hides by translateY(90px), calibrated for
+   bottom:86px (86-90 = -4px, off-screen). At bottom:150px the "hidden" toast
+   parked at 150-90 = 60px -- exactly on the compare bar (78-136px) -- so it
+   looked stuck covering the Compare button for minutes after the 2.8s timer
+   fired. The :not(.show) qualifier keeps .toast.show (translate 0) winning
+   while shown; hidden it now slides 250px (bottom edge -100px, fully out
+   even for a 3-line toast). */
+body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 .compare-table{width:100%;border-collapse:collapse;font-size:.92rem}
 .compare-table th,.compare-table td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
 .compare-table th{background:var(--surface2);width:110px}
-.slotgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+/* Batch D2 (2026-11-25): single column -- 2-col gave each label only ~145px
+   of text room in the 430px drawer, so "Morning 9 AM-12 PM" (~150px) wrapped
+   to 2 lines. One column gives ~340px: every slot is one line in EN and BN.
+   .coform scrolls, so the 2 extra rows cost nothing. */
+.slotgrid{display:grid;grid-template-columns:1fr;gap:8px}
 .slotgrid label{display:flex;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:600;cursor:pointer;background:var(--surface);margin:0}
 .slotgrid label:has(input:checked){border-color:var(--teal);background:#eef7f0}
 .slotgrid input{accent-color:#0e7c6f}
 /* Batch D (2026-11-25): slot-er time range ar "— Manual payment" suffix kokhono
    majhkhane vangbe na — time/suffix ek tukro hisebe porer line-e jabe. EN dict-er
    slot string-e nbsp + non-breaking hyphen diyeo time jora rakha hoyeche. */
-.slotgrid label span{overflow-wrap:normal;word-break:normal}
+.slotgrid label span{overflow-wrap:normal;word-break:normal;white-space:nowrap}
 .payopts label span span{white-space:nowrap}
 .varbtn{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:.88rem;color:var(--ink)}
 .varbtn.on{border-color:var(--teal);background:#eef7f0;color:#0a5c50}
@@ -2848,7 +2860,7 @@ function renderWish(){
   }).join("");
 }
 var toastTimer;
-function toast(msg){ var t=document.getElementById("toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("show");},2800); }
+function toast(msg){ var t=document.getElementById("toast"); t.innerHTML=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(function(){t.classList.remove("show");},3500); }
 /* P2: variantLabel thakle cart key "id||label" — purono cart-e shudhu id thake (base variant). */
 function addToCart(id, qty, variantLabel){
   var p = P(id); qty = qty||1;
