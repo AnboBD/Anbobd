@@ -2254,6 +2254,13 @@
        jonno prostut (Ready to Ship). Title e hisab ta khule bola ache,
        jate pill er mane niye vul na hoy. */
     var readyToShipCount = orders.filter(function(o){ return o.status==="Ready to Ship"; }).length;
+    /* Dashboard er "Ready to Ship" tile + todo-o ei readyToShipCount tai
+       bebohar kore (uporer `ready` noy): `ready` Packed/Admin Confirmed-o
+       gunto, tai order Ready to Ship theke Packed holeo tile er number
+       komto na — reload er por-o tile "stale" mone hoto, jodio data
+       prottek load e Supabase theke notun korei ashe (loadSellerData-
+       FromSupabase). Ekhon tile, todo ar My Orders pill — tin tai ek
+       hisab: ekhon sotti sotti "Ready to Ship" status e thaka order. */
     setPill("pendingPill", awaiting + readyToShipCount, "");
     var ordersNavBtn = document.querySelector('#sideNav button[data-view="orders"]');
     if (ordersNavBtn) ordersNavBtn.title = "Kaj baki: " + (awaiting + readyToShipCount) + " ta order — " + awaiting + " ta Admin confirmation er opekkhay, " + readyToShipCount + " ta ship er jonno prostut (pack korte hobe)";
@@ -2290,7 +2297,7 @@
     var stats = [
       { lbl:"Total sales (amar shop)", val:fmt(totalSales), delta:'<span style="color:var(--muted)">Mot order: </span><b>' + liveOrders.length + '</b><span style="color:var(--muted)"> · items sold: </span><b>' + totalSold.toLocaleString("en-IN") + '</b>', bg:"var(--brand-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>' },
       { lbl:"Total sub-orders", val: liveOrders.length, delta:'<span style="color:var(--muted)">Sudhu amar shop-er sub-order — onno seller-er order ekhane nei</span>', bg:"var(--blue-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><path d="M6 3h12l1 5H5L6 3z"/><path d="M5 8h14v13H5z"/></svg>' },
-      { lbl:"Ready to Ship (Admin confirmed)", val: ready, delta:'<span style="color:var(--amber);font-weight:800">Pack kore dispatch korun</span> <span style="color:var(--muted)">· ' + awaiting + ' ta Admin confirmation er opekkhay</span>', bg:"var(--amber-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
+      { lbl:"Ready to Ship (Admin confirmed)", val: readyToShipCount, delta:'<span style="color:var(--amber);font-weight:800">Pack kore dispatch korun</span> <span style="color:var(--muted)">· ' + awaiting + ' ta Admin confirmation er opekkhay</span>', bg:"var(--amber-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>' },
       { lbl:"Wallet balance", val: fmt(s.balance), delta:'<span style="color:var(--muted)">Pending clearance: </span><b>' + fmt(s.pendingClearance) + '</b>', bg:"var(--violet-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--violet)" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg>' },
       { lbl:"Total products", val: products.length, delta:'<span style="color:var(--muted)">Live: </span><b>' + liveProd + '</b><span style="color:var(--muted)"> · Pending Approval: </span><b>' + pendProd + '</b>', bg:"var(--brand-soft)", ic:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand)" stroke-width="2"><path d="M21 8l-9-5-9 5v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/></svg>' }
     ];
@@ -2300,7 +2307,7 @@
 
     var lowCount = products.filter(function(p){ return p.stock < lowStockThreshold(); }).length;
     var todos = [
-      { v: ready, l:"ta order Ready to Ship — Admin confirm koreche, ekhon ship korun", view:"orders" },
+      { v: readyToShipCount, l:"ta order Ready to Ship — Admin confirm koreche, ekhon ship korun", view:"orders" },
       { v: awaiting, l:"ta order Awaiting Admin — Admin confirm korlei apnar kache asbe", view:"orders" },
       { v: campPending, l:"ta Mega Sale submission Admin approval er opekkhay", view:"campaigns" },
       { v: liveCoupons, l:"ta shop coupon website e Live ache", view:"coupons" },
@@ -3107,7 +3114,7 @@
           var saved = await sbUpdateSubOrder(o, { tracking_id: v, courier: courier });
           if (saved === false) { o.status = prevStatus; o.trackingId = prevTracking; o.courier = prevCourier; closeModal(); closeDrawer(); renderAll(); return; }
           closeModal(); closeDrawer(); renderAll();
-          toast(id + " shipped — " + courier + " · Tracking: " + v); logStaffActivity("Order shipped", (o.localId || o.id) + " — " + courier + " — Tracking: " + v); await sbPropagateMasterStatus(o, "Shipped");
+          toast((o.localId || o.id) + " shipped — " + courier + " · Tracking: " + v); logStaffActivity("Order shipped", (o.localId || o.id) + " — " + courier + " — Tracking: " + v); await sbPropagateMasterStatus(o, "Shipped");
         });
       });
       return;
@@ -3121,10 +3128,13 @@
     /* P3: save fail hole ager status e ferot — sbUpdateSubOrder nijei
        toast dekhay; ekhane success toast/log/propagate cholbe na. */
     if (saved === false) { o.status = prevStatus; renderAll(); closeDrawer(); return; }
-    if (o.status === "Packed") toast(id + " packed — ekhon tracking ID diye ship korun");
-    else if (o.status === "Shipped") toast(id + " shipped — parcel delivery partner er kache hand over hoyeche");
-    else if (o.status === "Delivered") { toast(id + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
-    else toast(id + " ekhon " + o.status);
+    /* Success toast e kokhono raw UUID (id argument) noy — order er
+       #ANBO number (o.localId) dekhabe, jemon orders list eo dekhay. */
+    var dispId = o.localId || o.id;
+    if (o.status === "Packed") toast(dispId + " packed — ekhon tracking ID diye ship korun");
+    else if (o.status === "Shipped") toast(dispId + " shipped — parcel delivery partner er kache hand over hoyeche");
+    else if (o.status === "Delivered") { toast(dispId + " delivered — earning " + fmt(orderEarning(o)) + " 7 diner return window e ache, tarpor wallet e settle hobe"); }
+    else toast(dispId + " ekhon " + o.status);
     logStaffActivity("Order " + o.status, o.localId || o.id);
     await sbPropagateMasterStatus(o, o.status);
     renderAll();
