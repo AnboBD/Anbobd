@@ -155,7 +155,7 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
     <div class="nav">
       <a class="logo" href="/" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></a>
       <form class="searchbar" id="shSearchForm" role="search">
-        <input id="shSearchInput" type="search" placeholder="খুঁজুন — হেডফোন, শাড়ি, এয়ার ফ্রায়ার, সরিষার তেল…" aria-label="পণ্য খুঁজুন" autocomplete="off" />
+        <input id="shSearchInput" type="search" placeholder="পণ্য খুঁজুন…" aria-label="পণ্য খুঁজুন" autocomplete="off" />
         <button type="submit">খুঁজুন</button>
       </form>
       <div class="navbtns">
@@ -478,6 +478,9 @@ function renderShopSingle(){
   if(!SH.products.length){ grid.innerHTML = ""; empty.style.display = "block"; return; }
   empty.style.display = "none";
   grid.innerHTML = SH.products.map(shCardHtml).join("");
+  /* Search placeholder — dokan-er live product-er naam theke (khali thakle neutral). */
+  var si = document.getElementById("shSearchInput");
+  if(si && SH.products.length){ si.placeholder = "খুঁজুন — " + SH.products.slice(0,3).map(function(p){ return p.name; }).join(", ") + "…"; }
 }
 
 /* ---------- load ---------- */
