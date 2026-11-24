@@ -56,35 +56,35 @@
       "source": "/seller/"
     },
     {
-      "destination": "/pages/return-refund.html",
+      "destination": "/pages/return-refund",
       "source": "/return-refund"
     },
     {
-      "destination": "/pages/delivery.html",
+      "destination": "/pages/delivery",
       "source": "/delivery"
     },
     {
-      "destination": "/pages/warranty.html",
+      "destination": "/pages/warranty",
       "source": "/warranty"
     },
     {
-      "destination": "/pages/privacy.html",
+      "destination": "/pages/privacy",
       "source": "/privacy"
     },
     {
-      "destination": "/pages/contact.html",
+      "destination": "/pages/contact",
       "source": "/contact"
     },
     {
-      "destination": "/pages/about.html",
+      "destination": "/pages/about",
       "source": "/about"
     },
     {
-      "destination": "/pages/terms.html",
+      "destination": "/pages/terms",
       "source": "/terms"
     },
     {
-      "destination": "/pages/career.html",
+      "destination": "/pages/career",
       "source": "/career"
     },
     {
