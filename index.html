@@ -796,7 +796,7 @@ section{ padding-top:56px }
 .services .sic{ font-size:1rem; color:#fff }
 
 /* ============ P2 (2026-11-23): compare / language / slots / variants / search history ============ */
-.langbtn{font-weight:800;font-size:.85rem;padding:0 12px;min-width:46px}
+.langbtn{font-weight:800;font-size:.85rem;padding:0 14px;min-width:48px;width:auto;white-space:nowrap}
 .cmpbtn{position:absolute;left:12px;top:12px;z-index:2;border:0;border-radius:999px;padding:6px 10px;font-size:.78rem;font-weight:800;background:rgba(255,255,255,.94);color:#0e7c6f;box-shadow:0 2px 8px rgba(0,0,0,.18);cursor:pointer}
 .cmpbtn.on{background:#0e7c6f;color:#fff}
 .compare-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:78px;z-index:95;display:none;align-items:center;gap:10px;background:#07332f;color:#fff;border-radius:999px;padding:10px 12px 10px 18px;box-shadow:0 10px 30px rgba(0,0,0,.35);font-weight:700;max-width:calc(100vw - 24px)}
@@ -804,6 +804,11 @@ section{ padding-top:56px }
 .compare-bar button{border:0;border-radius:999px;padding:9px 16px;font-weight:800;cursor:pointer;white-space:nowrap}
 .compare-bar .cgo{background:#a8e10c;color:#243b00}
 .compare-bar .cclear{background:transparent;color:#cfe8d6}
+/* Batch D (2026-11-25): compare bar visible thakle page-er niche clearance
+   dite hobe — na hole bar shesher card-row-er Add to cart / Buy now button
+   dhেকে felto; ar toast bar-er upore uthbe jate Compare button na dhake. */
+body.cmpbar-on{padding-bottom:150px}
+body.cmpbar-on .toast{bottom:150px}
 .compare-table{width:100%;border-collapse:collapse;font-size:.92rem}
 .compare-table th,.compare-table td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left;vertical-align:top}
 .compare-table th{background:var(--surface2);width:110px}
@@ -811,6 +816,11 @@ section{ padding-top:56px }
 .slotgrid label{display:flex;gap:8px;align-items:center;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font-weight:600;cursor:pointer;background:var(--surface);margin:0}
 .slotgrid label:has(input:checked){border-color:var(--teal);background:#eef7f0}
 .slotgrid input{accent-color:#0e7c6f}
+/* Batch D (2026-11-25): slot-er time range ar "— Manual payment" suffix kokhono
+   majhkhane vangbe na — time/suffix ek tukro hisebe porer line-e jabe. EN dict-er
+   slot string-e nbsp + non-breaking hyphen diyeo time jora rakha hoyeche. */
+.slotgrid label span{overflow-wrap:normal;word-break:normal}
+.payopts label span span{white-space:nowrap}
 .varbtn{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;font-size:.88rem;color:var(--ink)}
 .varbtn.on{border-color:var(--teal);background:#eef7f0;color:#0a5c50}
 .varbtn:disabled{opacity:.45;cursor:not-allowed}
@@ -2038,7 +2048,7 @@ cartTitle:"🛒 Your cart", zoneDhaka:"Inside Dhaka (৳60)", zoneOutside:"Outsi
 promoPh:"Promo / voucher code", promoApply:"Apply", subtotal:"Subtotal", promoDisc:"Promo discount", shipFee:"Delivery charge", grandTotal:"Grand total", goCheckout:"Go to checkout →",
 coTitle:"Enter delivery details", coGuestT:"Guest checkout", coGuestS:"No account or login needed. The <b>full bill is shown up front</b> below — no hidden charges.",
 coName:"Your name *", coNamePh:"e.g. Md. Rafiqul Islam", coPhone:"Mobile number *", coAddr:"Full address *", coAddrPh:"House/holding, road, area, thana", coDist:"District *",
-coSlot:"Delivery time (slot) *", slotAny:"Any time", slotMorning:"Morning 9 AM–12 PM", slotAfternoon:"Afternoon 12–3 PM", slotEvening:"Evening 3–6 PM", slotNight:"Night 6–9 PM",
+coSlot:"Delivery time (slot) *", slotAny:"Any time", slotMorning:"Morning 9 AM‑12 PM", slotAfternoon:"Afternoon 12‑3 PM", slotEvening:"Evening 3‑6 PM", slotNight:"Night 6‑9 PM",
 coPay:"Payment method *", coSavePay:"💾 Remember this number — use it next time with this method", coForgetPay:"🗑️ Forget saved number",
 coNote:"Special instructions (optional)", coNotePh:"e.g. afternoon delivery would be better", coGrand:"Grand total (with delivery)", placeOrder:"✅ Confirm order",
 coFlowNote:"AnboBD Admin will first verify and confirm your order, then send it to the seller — the seller packs it and ships it.",
@@ -2833,7 +2843,7 @@ function renderWish(){
   box.innerHTML = ids.map(function(k){
     var p = P(k);
     if(!p) return ""; /* catalog-e na thaka item skip — renderWish renderCart theke daka hoy, ekhane throw holeo AUTH IIFE morto. */
-    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div><button class="rm" data-wishrm="'+p.id+'">'+t("wishRemove")+'</button></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+p.id+'">🛒 কার্টে</button></div>';
+    return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div><button class="rm" data-wishrm="'+p.id+'">'+t("wishRemove")+'</button></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+p.id+'">🛒 কার্টে যোগ করুন</button></div>';
   }).join("");
 }
 var toastTimer;
@@ -2874,7 +2884,13 @@ function toggleCompare(id){
 function renderCompareBar(){
   var bar = document.getElementById("compareBar"); if(!bar) return;
   var ids = anboCompareIds();
-  bar.classList.toggle("show", ids.length > 0);
+  /* Batch D (2026-11-25): compare modal khola thakle floating bar lukano thakbe —
+     na hole bar modal-er sathe overlap korto; bar visible thakle body-te
+     .cmpbar-on class dey (niche padding + toast upore) jate grid/toast na dhake. */
+  var _cm = document.getElementById("compareModal");
+  var _show = ids.length > 0 && !(_cm && _cm.classList.contains("open"));
+  bar.classList.toggle("show", _show);
+  document.body.classList.toggle("cmpbar-on", _show);
   var txt = document.getElementById("compareBarTxt"); if(txt) txt.textContent = t("cmpBar", {n:ids.length});
 }
 function openCompare(){
@@ -2901,6 +2917,7 @@ function openCompare(){
     }
   }
   openModalEl("compareModal");
+  renderCompareBar();
 }
 /* P2: shared wishlist — #wishlist=<id1>,<id2> link theke read-only view. */
 function openSharedWishlist(ids){
@@ -2909,7 +2926,7 @@ function openSharedWishlist(ids){
   if(!live.length){ body.innerHTML = '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("wishSharedEmpty")+'</p>'; }
   else {
     body.innerHTML = live.map(function(p){
-      return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>🛒 কার্টে</button></div>';
+      return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+'</div><div class="pr">'+fmt(effPrice(p))+(effOldPrice(p)>effPrice(p)?' <s style="color:var(--muted)">'+fmt(effOldPrice(p))+'</s>':'')+'</div><div>'+stockLine(p)+'</div></div><button class="addbtn" style="flex:none;padding:9px 13px" data-add="'+escHtml(p.id)+'" '+(p.stockQty<=0?'disabled style="opacity:.5"':'')+'>🛒 কার্টে যোগ করুন</button></div>';
     }).join("");
   }
   openModalEl("sharedWishModal");
@@ -2961,6 +2978,9 @@ function closeAll(keepScrim){
   hideSuggest();
   /* P1-15 — product modal bondho hole #product- hash soriye dao. */
   try{ if(String(location.hash || "").indexOf("#product-") === 0) history.replaceState(null, "", location.pathname + location.search); }catch(e){}
+  /* Batch D (2026-11-25): sob close path (X, scrim, Escape, data-close) ekhane
+     ashe — compare modal bondho hole bar abar dekhabe (jodi item thake). */
+  renderCompareBar();
 }
 /* Track Order modal sobsomoy khali khulbe — ager session/account-er kono
    order pre-populate kora jabe na (age lastOrder render hoto, tai bhul
