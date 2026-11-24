@@ -84,7 +84,19 @@
       .brand-logo{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:1.55rem;letter-spacing:-0.02em;line-height:1;white-space:nowrap}
       .brand-logo .an{color:#0e7c6f}
       .brand-logo .bo{color:#ff6b4a}
-      .brand-logo .bd{background:#a8e10c;color:#243b00;border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg);display:inline-block}
+      .brand-logo .bd{background:#a8e10c;color:#243b00;border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg);display:inline-block;position:relative}
+      /* Logo animation (2026-11-25): BD box only — B slides in from the left, D a bit later
+         from the right, both land with a tiny 3px bounce overshoot, then a lime ripple ring
+         expands after they settle; the 3.4s cycle loops forever. Overflow stays visible so
+         the letters can slide in from outside the box. */
+      .brand-logo .bd .lb,.brand-logo .bd .ld{display:inline-block}
+      .brand-logo .bd .lb{animation:anboBin 3.4s ease-in-out infinite}
+      @keyframes anboBin{0%{transform:translateX(-18px);opacity:0}13%{transform:translateX(3px);opacity:1}18%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(-18px);opacity:0}}
+      .brand-logo .bd .ld{animation:anboDin 3.4s ease-in-out infinite}
+      @keyframes anboDin{0%,10%{transform:translateX(18px);opacity:0}23%{transform:translateX(-3px);opacity:1}28%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(18px);opacity:0}}
+      .brand-logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:2px solid #a8e10c;animation:anboRipple 3.4s ease-out infinite;pointer-events:none}
+      @keyframes anboRipple{0%,32%{transform:scale(1);opacity:0}44%{opacity:.9}78%,100%{transform:scale(1.55);opacity:0}}
+      @media (prefers-reduced-motion:reduce){.brand-logo .bd .lb,.brand-logo .bd .ld,.brand-logo .bd::after{animation:none}}
       @media (prefers-color-scheme: dark){.brand-logo .an{color:#fff}}
       aside .brand-logo{font-size:1.3rem}
       .logo-row .sub{font-size:.78rem;color:var(--muted);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
@@ -363,14 +375,14 @@
       .supabase-banner{background:#fdf0e1;border-bottom:2px solid var(--amber);color:#7c3f06;padding:.75rem 1rem;font-size:.9rem;font-weight:600;text-align:center}
       @media (prefers-color-scheme: dark){.supabase-banner{background:#33240f;color:#f0c98a}}
     </style>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
   </head>
   <body>
   <!-- Session-restore boot screen (2026-11-21): shown while getSession() resolves so a
        signed-in seller never sees the sign-in form flash on reload. Hidden by hideBoot(). -->
   <div id="bootView" role="status" aria-live="polite">
     <div class="boot-inner">
-      <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></div>
+      <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></div>
       <div class="sub">Seller Center</div>
       <div class="boot-spin" aria-hidden="true"></div>
       <p>সেশন যাচাই করা হচ্ছে…</p>
@@ -384,7 +396,7 @@
   <section id="loginView" class="hidden">
     <div class="login-card">
       <div class="logo-row">
-        <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></div>
+        <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></div>
         <div class="sub">Seller Center</div>
       </div>
       <div class="tabs" role="tablist">
@@ -563,7 +575,7 @@
   <section id="pendingView" class="hidden">
     <div class="pending-card">
       <div class="logo-row">
-        <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></div>
+        <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></div>
         <div class="sub">Seller Center</div>
       </div>
       <span class="status-pill" id="pendPill">Application Under Review</span>
@@ -616,7 +628,7 @@
   <div id="appView" class="hidden">
     <aside id="sidebar">
       <div class="logo-row">
-        <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd">BD</span></div>
+        <div class="brand-logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></div>
         <div class="sub">Seller Center</div>
       </div>
       <div class="shop-chip">
@@ -1685,6 +1697,13 @@
     initSellerMfa(); sellerRefreshMfaStatus();
     refreshKycDocs();
     try { renderAll(); } catch (err) { /* render e somossa holeo panel khola thakbe */ }
+    /* Staff gating (2026-11-24): logout → onno user hisebe sign-in korle
+       ager view (currentView) ar section-visibility theke jeto — sidebar
+       lock sudhu nav button-e kaj korto, tai staff Team & Staff page-ta
+       khola peto. enterApp sob somoy showView diye route kore, tai locked
+       view e staff kokhono dhukte parbe na (showView toast diye Dashboard-e
+       pathay). */
+    showView(currentView);
     window.scrollTo(0,0);
   }
   function routeAfterAuth(){
@@ -2169,7 +2188,11 @@
     return (PERMS[s.staffRole] || []).indexOf(p) > -1;
   }
   function staffCanEditProducts(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Product add / edit") > -1; }
-  function staffCanStock(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Stock update") > -1 || (PERMS[s.staffRole] || []).indexOf("Product add / edit") > -1; }
+  /* Staff gating (2026-11-24): "Stock update" alada permission — matrix
+     onujayi Shop Manager er "Product add / edit" thakleo "Stock update"
+     nei, tai + Stock button sudhu "Stock update" thakle dekhabe. Age
+     "Product add / edit" fallback thakay Shop Manager-o + Stock peto. */
+  function staffCanStock(){ var s = me(); return !s || !s.isStaff || (PERMS[s.staffRole] || []).indexOf("Stock update") > -1; }
   /* P3 (2026-11-23): staff order advance — "Order manage" permission
      thakle staff-o order egiye dite pare (sub_orders + orders update er
      jonno staff RLS policy lagbe — na thakle DB update 0 row hoy ar
@@ -2621,6 +2644,10 @@
     bar.classList.toggle("hidden", n === 0);
     $("bulkCount").textContent = n + " selected";
     $("bulkValue").style.display = ($("bulkAction").value === "activate" || $("bulkAction").value === "pause") ? "none" : "";
+    /* Staff gating (2026-11-24): "Stock set" option sudhu "Stock update"
+       permission thakle dekhabe — Shop Manager er dropdown-e asbe na. */
+    var stockOpt = $("bulkAction").querySelector('option[value="stock"]');
+    if (stockOpt) { stockOpt.hidden = !staffCanStock(); if (stockOpt.hidden && $("bulkAction").value === "stock") $("bulkAction").value = "price_pct"; }
   }
   function selectedProducts(){ return ownProducts().filter(function(p){ return bulkSelected[p.id]; }); }
   $("prodSelectAll").addEventListener("change", function(){
@@ -2634,8 +2661,12 @@
     var s = me(); if (!s) return;
     var sel = selectedProducts();
     if (!sel.length) { toast("Kono product select kora hoy ni."); return; }
-    if (!staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; }
     var action = $("bulkAction").value, raw = $("bulkValue").value.trim();
+    /* Staff gating (2026-11-24): bulk "Stock set" sudhu "Stock update"
+       permission-e, baki bulk action (price/activate/pause) "Product add /
+       edit"-e. Age sob action-e ektai check chilo — Shop Manager bulk-e
+       stock bodlate parto, Warehouse bulk-e stock bodlate parto na. */
+    if (action === "stock" ? !staffCanStock() : !staffCanEditProducts()) { toast("Ei kaj ta apnar role er jonno noy."); return; }
     var summary = "";
     if (action === "price_pct") { var pct = parseFloat(raw); if (isNaN(pct)) { toast("Sothik % din — e.g. 10 (barate) ba -10 (komate)."); return; } summary = sel.length + " ta product er price " + (pct >= 0 ? "+" : "") + pct + "% bodle jabe."; }
     else if (action === "price_fixed") { var fx = parseFloat(raw); if (isNaN(fx)) { toast("Sothik amount din — e.g. 50 (barate) ba -50 (komate)."); return; } summary = sel.length + " ta product er price " + (fx >= 0 ? "+" : "") + "৳" + fx + " bodle jabe."; }
