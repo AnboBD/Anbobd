@@ -512,6 +512,42 @@ section[id]{scroll-margin-top:150px}
 .authtabs{display:flex;gap:8px;margin-bottom:16px}
 .authtabs button{flex:1;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:9px 10px;font-weight:800;font-family:inherit}
 .authtabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+/* ---------- Auth modal (login / signup) — premium redesign (2026-11-25) ----------
+   All rules scoped under #authModal: nothing outside this modal changes. */
+/* 1. Brand band — gradient header card with the animated logo */
+#authModal .auth-brand{background:linear-gradient(135deg,#0e7c6f,#07332f);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 8px 22px rgba(7,51,47,.25)}
+#authModal .auth-brand .logo{font-size:1.6rem}
+#authModal .auth-brand .logo .an{color:#fff}
+#authModal .auth-brand .logo .bo{color:var(--coral)}
+#authModal .auth-brand .auth-acct{display:block;color:rgba(255,255,255,.65);font-size:.8rem;font-weight:700;margin-top:8px;letter-spacing:.03em}
+#authModal .auth-brand p{color:rgba(255,255,255,.8);margin:8px 0 0;line-height:1.6;font-size:.92rem}
+/* 2. Tabs — segmented control */
+#authModal .authtabs{background:var(--surface2);border-radius:999px;padding:4px;gap:4px}
+#authModal .authtabs button{border:0;background:transparent;color:var(--muted);padding:10px}
+#authModal .authtabs button.on{background:#a8e10c;color:#243b00;border-color:transparent;box-shadow:0 2px 8px rgba(36,59,0,.2)}
+/* 3. Inputs — same treatment as the profile drawer */
+#authModal .fld label{font-size:.82rem;font-weight:700;color:var(--ink)}
+#authModal .fld input,#authModal .fld select,#authModal .fld textarea{border-radius:12px;padding:12px 14px}
+#authModal .fld input:focus,#authModal .fld select:focus,#authModal .fld textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,124,111,.15)}
+#authModal .passwrap input{padding-right:74px}
+/* 4. Primary submit buttons — lime, scoped to this modal only (global coral .checkout untouched) */
+#authModal .checkout{background:#a8e10c;color:#243b00;border-radius:12px;padding:13px;box-shadow:0 3px 0 #6f9a06;transition:transform .15s ease,box-shadow .15s ease}
+#authModal .checkout:hover{transform:translateY(-1px)}
+#authModal .checkout:active{transform:translateY(2px);box-shadow:0 1px 0 #6f9a06}
+/* 5. Google + OTP-send buttons — clean white bordered */
+#authModal #auGoogleBtn,#authModal #auGoogleBtnUp,#authModal #auOtpSendBtn{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px;font-weight:800;width:100%}
+#authModal #auGoogleBtn:hover,#authModal #auGoogleBtnUp:hover,#authModal #auOtpSendBtn:hover{border-color:var(--teal)}
+/* "অথবা" divider row */
+#authModal .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem}
+#authModal .auth-or span{flex:1;height:1px;background:var(--line)}
+/* 6. Phone OTP — soft tinted card */
+#authModal .auth-otp{background:var(--surface2);border-radius:14px;padding:14px;display:grid;gap:10px}
+/* 7. Signup info box — soft lime tint */
+#authModal .auth-note{background:#eef7c8;border-radius:12px;padding:12px;font-size:.82rem;color:var(--ink);line-height:1.55;margin:0}
+/* 8. Links stay teal + underlined */
+#authModal #auForgotBtn{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
+#authModal #auGoUp{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
+@media (max-width:520px){#authModal .mbody{padding:18px}}
 .acct-head{display:flex;gap:13px;align-items:center;margin-bottom:14px}
 .acct-head .av{width:50px;height:50px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.25rem;flex:none}
 .rolebadge{display:inline-block;font-size:.72rem;font-weight:800;border-radius:99px;padding:2px 9px;background:#e2f4ee;color:#0a5c50}
@@ -1323,8 +1359,7 @@ section{ padding-top:56px }
     <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
       <div id="auForms">
-        <h3 style="font-size:1.4rem;margin:0 0 4px">👤 AnboBD অ্যাকাউন্ট</h3>
-        <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।</p>
+        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><span class="auth-acct">অ্যাকাউন্ট</span><p>আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।</p></div>
         <div class="notice" id="auSupabaseNotice" style="display:none;margin-bottom:14px">⚠️ অ্যাকাউন্ট এখন শুধু এই ব্রাউজারে সংরক্ষিত থাকছে।</div>
         <div class="authtabs" role="tablist" aria-label="সাইন ইন / সাইন আপ">
           <button type="button" id="auTabIn" class="on">সাইন ইন</button>
@@ -1340,9 +1375,9 @@ section{ padding-top:56px }
           <p style="font-size:.86rem;margin:0"><button type="button" id="auForgotBtn" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0;text-decoration:underline;text-underline-offset:3px">পাসওয়ার্ড ভুলে গেছেন?</button></p>
           <p class="notice" id="auForgotMsg" role="status" style="display:none;margin:0"></p>
           <p style="font-size:.86rem;color:var(--muted);margin:0">অ্যাকাউন্ট নেই? <button type="button" id="auGoUp" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0">সাইন আপ করুন</button> — নাম, ইমেইল, মোবাইল আর পাসওয়ার্ড দিলেই হবে।</p>
-          <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div class="auth-or"><span></span>অথবা<span></span></div>
           <button type="button" class="btn-sec" id="auGoogleBtn" style="width:100%">🔵 Google দিয়ে লগইন</button>
-          <div style="display:grid;gap:10px;border-top:1px solid var(--line);padding-top:12px">
+          <div class="auth-otp">
             <div class="fld"><label for="auPhone">মোবাইল নম্বর দিয়ে লগইন</label><input id="auPhone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /></div>
             <button type="button" class="btn-sec" id="auOtpSendBtn">📩 OTP পাঠান</button>
             <div class="fld" id="auOtpWrap" style="display:none"><label for="auOtp">OTP কোড (6 ডিজিট)</label><input id="auOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" /></div>
@@ -1364,13 +1399,13 @@ section{ padding-top:56px }
           <div class="fld"><label for="auPass2">পাসওয়ার্ড আবার দিন *</label><input id="auPass2" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
           <div class="login-err" id="auUpErr"></div>
           <button class="checkout" type="submit" style="margin-top:2px">অ্যাকাউন্ট তৈরি করুন →</button>
-          <div style="display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem"><span style="flex:1;height:1px;background:var(--line)"></span>অথবা<span style="flex:1;height:1px;background:var(--line)"></span></div>
+          <div class="auth-or"><span></span>অথবা<span></span></div>
           <button type="button" class="btn-sec" id="auGoogleBtnUp" style="width:100%">🔵 Google দিয়ে সাইন আপ</button>
-          <p style="font-size:.82rem;color:var(--muted);margin:0;line-height:1.55">সাইন আপ করলেই সাইন ইন হয়ে যাবেন। নতুন অ্যাকাউন্ট একদম খালি থাকে — কোনো অর্ডার, কার্ট বা উইশলিস্ট আগে থেকে থাকে না।</p>
+          <p class="auth-note">সাইন আপ করলেই সাইন ইন হয়ে যাবেন। নতুন অ্যাকাউন্ট একদম খালি থাকে — কোনো অর্ডার, কার্ট বা উইশলিস্ট আগে থেকে থাকে না।</p>
         </form>
       </div>
       <div id="auReset" style="display:none">
-        <h3 style="font-size:1.4rem;margin:0 0 4px">🔑 নতুন পাসওয়ার্ড দিন</h3>
+        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><p>নতুন পাসওয়ার্ড দিন</p></div>
         <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">ইমেইলে পাওয়া রিসেট লিংক থেকে এসেছেন — এখানে নতুন পাসওয়ার্ড দিন।</p>
         <form id="auResetForm" novalidate style="display:grid;gap:12px">
           <div class="fld"><label for="auNewPass">নতুন পাসওয়ার্ড * (কমপক্ষে 6 অক্ষর)</label>
