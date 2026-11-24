@@ -780,6 +780,47 @@ function sbDbOrderStatus(s){
 /* Display label for a sub-order's normalized status. Only "ready" needs a
    friendlier label — every other token already reads as its own word. */
 function subOrderStatusLabel(s){ return s === "ready" ? "Ready to Ship" : s; }
+/* Effective master status (DISPLAY-ONLY, 2026-11-24): the seller only ever
+   updates sub_orders.status — the master orders row keeps saying
+   AdminConfirmed, so every Admin surface that read o.status showed a
+   seller-packed order as "Confirmed · Sent to seller" (Dashboard Packed: 0,
+   "Seller packed" filter 0, drawer timeline unticked). Derive the master's
+   DISPLAY status from its real sub-orders instead: a Cancelled master stays
+   Cancelled; otherwise the most advanced sub-order state wins
+   (AwaitingAdmin → pending, AdminConfirmed → confirmed, ReadyToShip →
+   ready, Packed → packed, Shipped → shipped, Delivered → delivered),
+   never dropping behind the master row itself. No sub-orders → the master
+   status as before. o.status is NOT touched — it still drives every
+   action and database write; this helper is read-only. */
+var MASTER_STATUS_RANK = { pending:0, confirmed:1, ready:2, packed:3, shipped:4, delivered:5 };
+function effectiveMasterStatus(o){
+  if (!o) return "pending";
+  if (o.status === "cancelled") return "cancelled";
+  var best = (MASTER_STATUS_RANK[o.status] != null ? MASTER_STATUS_RANK[o.status] : 0);
+  var bestTok = o.status || "pending";
+  if (o._realSubs && o._realSubs.length){
+    o._realSubs.forEach(function(rs){
+      var r = MASTER_STATUS_RANK[rs.status];
+      if (r != null && r > best){ best = r; bestTok = rs.status; }
+    });
+  }
+  return bestTok;
+}
+/* Counting bucket for the donut / filter chips / "packed & ready" totals:
+   ReadyToShip means the seller HAS packed and the parcel is ready, so it
+   counts with Packed there — labels keep the precise Ready to Ship wording. */
+function effectiveStatusBucket(o){ var e = effectiveMasterStatus(o); return e === "ready" ? "packed" : e; }
+/* "Seller status" line for the order drawer, derived from the effective
+   status (same wording the loader used, plus the Ready to Ship state). */
+function sellerStatusTextFor(st){
+  if (st === "pending") return "Not sent — waiting for admin confirmation";
+  if (st === "confirmed") return "Sent to seller — waiting for seller to pack";
+  if (st === "ready") return "Seller packed — Ready to Ship, rider pickup er jonno ready";
+  if (st === "packed") return "Seller packed — ready for rider pickup";
+  if (st === "shipped") return "Seller handed to rider — in transit";
+  if (st === "delivered") return "Seller shipped · Delivered";
+  return "Cancelled before dispatch";
+}
 function sbParseItems(raw){
   var out = [];
   if (!raw) return out;
@@ -2297,7 +2338,7 @@ function renderDashboard(){
   var revDelta = yday.rev ? ((today.rev-yday.rev)/yday.rev*100).toFixed(1) : "0.0";
   var ordDelta = yday.ord ? ((today.ord-yday.ord)/yday.ord*100).toFixed(1) : "0.0";
   var counts = {pending:0, confirmed:0, packed:0, shipped:0, delivered:0, cancelled:0};
-  orders.forEach(function(o){ if(counts[o.status]!==undefined) counts[o.status]++; });
+  orders.forEach(function(o){ var b = effectiveStatusBucket(o); if(counts[b]!==undefined) counts[b]++; });
   var payTotals = {}, payCount = {};
   orders.forEach(function(o){ if(o.status!=="cancelled"){ payTotals[o.pay]=(payTotals[o.pay]||0)+orderTotal(o); payCount[o.pay]=(payCount[o.pay]||0)+1; } });
   var payMax = 0; Object.keys(payTotals).forEach(function(k){ if(payTotals[k]>payMax) payMax=payTotals[k]; });
@@ -2320,8 +2361,8 @@ function renderDashboard(){
     + kpi("Sellers · Customers", plural(sellers.filter(function(s){return s.status==="approved";}).length,"seller","sellers")+" · "+plural(customers.length,"customer","customers"), '<span class="sub">'+plural(pendingSellerCount(),"seller","sellers")+' pending · Payout due (derived) '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</span>')
     + "</div>";
 
-  var awaitingSeller = orders.filter(function(o){return o.status==="confirmed";}).length;
-  var packedReady = orders.filter(function(o){return o.status==="packed";}).length;
+  var awaitingSeller = orders.filter(function(o){return effectiveMasterStatus(o)==="confirmed";}).length;
+  var packedReady = orders.filter(function(o){return effectiveStatusBucket(o)==="packed";}).length;
   html += '<div class="card" style="margin-bottom:16px"><h3>Order fulfilment — Admin → Seller → Customer</h3><p class="hint">New rule: no order goes to a seller until Admin confirms it here. Sellers only pack &amp; ship what you send them.</p>'
     + '<div class="flow-track"><div class="flow-step'+(pendingCount()?' active':'')+'"><b>1 · New order</b><span>'+pendingCount()+' pending — customer placed, seller cannot see it yet</span></div><div class="flow-arrow">→</div><div class="flow-step"><b>2 · Admin confirms</b><span>You check stock, payment &amp; address, then confirm</span></div><div class="flow-arrow">→</div><div class="flow-step'+(awaitingSeller?' active':'')+'"><b>3 · Sent to seller</b><span>'+awaitingSeller+' waiting for seller to pack · '+sellerShopsForOrder(orders[0]||{}).map(esc).join(", ")+' &amp; others</span></div><div class="flow-arrow">→</div><div class="flow-step"><b>4 · Seller packs &amp; ships</b><span>'+packedReady+' packed &amp; ready for rider pickup</span></div><div class="flow-arrow">→</div><div class="flow-step"><b>5 · Delivered</b><span>Rider delivers, COD collected if needed</span></div></div>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap"><button class="btn sm" type="button" data-goto="orders">Review '+pendingCount()+' pending orders →</button>'
@@ -2342,7 +2383,7 @@ function renderDashboard(){
     + '</div>'
     + '<div class="card"><h3>Recent orders</h3><p class="hint">Tap an order to see full details</p><div class="table-card" style="border:none"><table><thead><tr><th>Order</th><th>Customer</th><th>Total</th><th>Payment</th><th>Status</th></tr></thead><tbody>'
     + recent.map(function(o){
-        return '<tr class="clickable" data-order="'+esc(o.id)+'"><td data-label="Order"><b>'+esc(o.localId || o.id)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.date)+'</span></td><td data-label="Customer">'+esc(o.customer)+'<br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.district)+'</span></td><td data-label="Total"><b class="num">'+fmt(orderTotal(o))+'</b></td><td data-label="Payment">'+esc(o.pay)+'</td><td data-label="Status">'+statusBadge(o.status)+'</td></tr>';
+        return '<tr class="clickable" data-order="'+esc(o.id)+'"><td data-label="Order"><b>'+esc(o.localId || o.id)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.date)+'</span></td><td data-label="Customer">'+esc(o.customer)+'<br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.district)+'</span></td><td data-label="Total"><b class="num">'+fmt(orderTotal(o))+'</b></td><td data-label="Payment">'+esc(o.pay)+'</td><td data-label="Status">'+statusBadge(effectiveMasterStatus(o))+'</td></tr>';
       }).join("")
     + '</tbody></table></div><button class="btn ghost sm" type="button" data-goto="orders" style="margin-top:12px">View all orders →</button></div></div>';
 
@@ -2418,7 +2459,7 @@ function restock(pid, qty){
 /* ==================== ORDERS ==================== */
 var orderFilter = "all", orderQuery = "", orderPay = "all";
 var STATUS_FLOW = ["pending","confirmed","packed","shipped","delivered"];
-var STATUS_LABEL = {pending:"Pending — Admin review", confirmed:"Confirmed · Sent to seller", packed:"Seller packed", shipped:"Shipped", delivered:"Delivered", cancelled:"Cancelled"};
+var STATUS_LABEL = {pending:"Pending — Admin review", confirmed:"Confirmed · Sent to seller", ready:"Ready to Ship · Packed & ready", packed:"Seller packed", shipped:"Shipped", delivered:"Delivered", cancelled:"Cancelled"};
 /* P2 (2026-11-21): bulk order actions — select kore ekbare Confirm/Cancel.
    Prottek order age eligibility check kore (manual payment confirm na hole
    confirm hobe na, packed/shipped/delivered cancel hobe na); sheshe summary. */
@@ -2441,12 +2482,12 @@ function bulkOrderAction(status){
 function renderOrders(){
   var el = $("#view-orders");
   var chips = ["all","pending","confirmed","packed","shipped","delivered","cancelled"].map(function(s){
-    var n = s==="all" ? orders.length : orders.filter(function(o){ return o.status===s; }).length;
+    var n = s==="all" ? orders.length : orders.filter(function(o){ return effectiveStatusBucket(o)===s; }).length;
     var lbl = s==="all"?"All":s==="confirmed"?"Sent to seller":s==="packed"?"Seller packed":s.charAt(0).toUpperCase()+s.slice(1);
     return '<button type="button" class="chip'+(orderFilter===s?" on":"")+'" data-ofilter="'+s+'">'+lbl+' · '+n+'</button>';
   }).join("");
   var list = orders.filter(function(o){
-    if (orderFilter!=="all" && o.status!==orderFilter) return false;
+    if (orderFilter!=="all" && effectiveStatusBucket(o)!==orderFilter) return false;
     if (orderPay!=="all" && o.pay!==orderPay) return false;
     if (orderQuery){ var q=orderQuery.toLowerCase(); var hay = ((o.localId||"")+" "+o.id+" "+o.customer+" "+o.phone+" "+o.district).toLowerCase(); if (hay.indexOf(q)===-1) return false; }
     return true;
@@ -2462,13 +2503,14 @@ function renderOrders(){
         var itemTxt = o.items.length ? o.items.map(function(it, ii){ var d = storedItemDisplay(o, ii, it); var nm = d.name || d.sku || "Item"; return esc(nm)+" ×"+it[1] + (d.lineTotal != null ? " ("+fmt(d.lineTotal)+")" : ""); }).join(", ") : '<span class="note">No items recorded</span>';
         var shops = sellerShopsForOrder(o);
         var displayId = o.localId || o.id;
+        var eff = effectiveMasterStatus(o);
         return '<tr><td><input type="checkbox" data-bulk-order="'+esc(o.id)+'" aria-label="Select order" /></td><td data-label="Order"><b>'+esc(displayId)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.date)+'</span></td>'
           + '<td data-label="Customer"><b>'+esc(o.customer)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.district)+' · '+esc(o.phone)+'</span></td>'
           + '<td data-label="Items" style="max-width:240px"><span style="font-size:13px">'+itemTxt+'</span></td>'
           + '<td data-label="Seller / Sub-orders"><b style="font-size:13px">'+esc(shops.join(", "))+'</b><br /><span style="font-size:12px">↳ '+getSubOrders(o).length+' sub-order: '+getSubOrders(o).map(function(so){ return so.id+" ("+esc(so.shop)+" "+fmt(so.subtotal)+")"; }).join(" · ")+'</span><br /><span style="font-size:12px;color:'+(orderSentToSeller(o)?"var(--ok)":"var(--warn-ink)")+'">'+(orderSentToSeller(o)?"✓ Each sub-order sent to its seller":"⏳ Not sent — admin confirm korlei prottek sub-order alada jabe")+'</span></td>'
           + '<td data-label="Total"><b class="num">'+fmt(orderTotal(o))+'</b>'+(orderDiscount(o)?'<br /><span style="color:var(--ok);font-size:12px">−'+fmt(orderDiscount(o))+" "+o.coupon+"</span>":"")+'</td>'
           + '<td data-label="Payment"><b>'+esc(o.pay)+'</b><span class="pay-txn">Txn ID: <b>'+(orderTxnId(o) ? esc(orderTxnId(o)) : "—")+'</b></span>'+paymentBadge(o)+(isManualPay(o) && orderPaymentStatus(o)==="pending" && o.status!=="cancelled" ? '<br /><button class="btn sm" type="button" data-pay-ok="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm payment</button> <button class="btn danger sm" type="button" data-pay-no="'+esc(o.id)+'" style="margin-top:6px">Reject</button>' : "")+'</td>'
-          + '<td data-label="Status"><select class="status-sel" data-status-for="'+esc(o.id)+'" aria-label="Change status of '+esc(displayId)+'">'+["pending","confirmed","cancelled"].map(function(s){ return '<option value="'+s+'"'+(o.status===s?" selected":"")+'>'+(STATUS_LABEL[s]||s)+"</option>"; }).join("")+(["pending","confirmed","cancelled"].indexOf(o.status)===-1 ? '<option value="'+o.status+'" selected disabled>'+(STATUS_LABEL[o.status]||o.status)+' — seller/rider sets this</option>' : "")+'</select>'+(o.status==="pending"?'<br /><button class="btn sm" type="button" data-confirm-send="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm Master &amp; Send Sub-Orders</button>':"")+'<br /><span class="note">Packed/Shipped/Delivered seller/rider Seller Center theke update kore</span></td>'
+          + '<td data-label="Status"><select class="status-sel" data-status-for="'+esc(o.id)+'" aria-label="Change status of '+esc(displayId)+'">'+["pending","confirmed","cancelled"].map(function(s){ return '<option value="'+s+'"'+(eff===s?" selected":"")+'>'+(STATUS_LABEL[s]||s)+"</option>"; }).join("")+(["pending","confirmed","cancelled"].indexOf(eff)===-1 ? '<option value="'+eff+'" selected disabled>'+(STATUS_LABEL[eff]||eff)+' — seller/rider sets this</option>' : "")+'</select>'+(o.status==="pending"?'<br /><button class="btn sm" type="button" data-confirm-send="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm Master &amp; Send Sub-Orders</button>':"")+'<br /><span class="note">Packed/Shipped/Delivered seller/rider Seller Center theke update kore</span></td>'
           + '<td data-label="" class="plain"><button class="btn ghost sm" type="button" data-view-order="'+esc(o.id)+'">Details</button></td></tr>';
       }).join("") : '<tr><td colspan="9"><div class="empty"><b>No orders match</b>Try a different status or search term.</div></td></tr>')
     + '</tbody></table></div>'
@@ -2720,7 +2762,12 @@ function assignedStaffName(id){
 function openOrder(id){
   closeAllOverlays();
   var o = orders.filter(function(x){ return x.id===id; })[0]; if(!o) return;
-  var idx = STATUS_FLOW.indexOf(o.status);
+  /* Display status comes from the sub-orders (effectiveMasterStatus) — the
+     master row alone still says AdminConfirmed after the seller packed. */
+  var effStatus = effectiveMasterStatus(o);
+  var idx = STATUS_FLOW.indexOf(effStatus==="ready" ? "packed" : effStatus);
+  var sellerStatusDisplay = sellerStatusTextFor(effStatus);
+  if (effStatus!=="pending" && effStatus!=="cancelled" && !orderSentToSeller(o)) sellerStatusDisplay = "⚠ Sub-order ekhono seller er kache jay ni — 'Seller ke pathao' chap dao";
   /* P3 (2026-11-23): the "confirmed" tick means a REAL sub-order row was
      actually sent — a confirmed master whose row is still AwaitingAdmin
      (or missing) must NOT tick it. rawStatus is checked first (loader rows
@@ -2731,7 +2778,7 @@ function openOrder(id){
     return st === "adminconfirmed" || st === "confirmed" || st === "packed" || st === "shipped" || st === "delivered" || st === "readytoship" || st === "ready";
   }));
   var steps = [["pending","Order placed — Admin er kache esheche"],["confirmed","Admin confirmed · Seller ke pathano hoyeche"],["packed","Seller packed — rider er jonno ready"],["shipped","Shipped — rider niye geche"],["delivered","Delivered"]];
-  var timeline = o.status==="cancelled"
+  var timeline = effStatus==="cancelled"
     ? '<li class="done"><span class="dot">✕</span>Order cancelled</li>'
     : steps.map(function(st, i){
       var done = i<=idx, label = st[1];
@@ -2743,7 +2790,7 @@ function openOrder(id){
   var waitingNote = (o.status==="confirmed" || o.status==="packed" || o.status==="shipped") ? '<span class="note" style="align-self:center">Seller packs &amp; ships — status Seller Center theke update hobe</span>' : "";
   var displayId = o.localId || o.id;
   $("#orderDrawer").innerHTML = '<button class="icon-btn x" type="button" id="drawerClose" aria-label="Close details">✕</button>'
-    + '<h3>Order '+esc(displayId)+'</h3><p class="sub">'+esc(o.date)+' · '+statusBadge(o.status)+'</p>'
+    + '<h3>Order '+esc(displayId)+'</h3><p class="sub">'+esc(o.date)+' · '+statusBadge(effStatus)+'</p>'
     + '<div class="kv"><span>Customer</span><b>'+esc(o.customer)+'</b></div>'
     + '<div class="kv"><span>Phone</span><b class="num">'+esc(o.phone)+'</b></div>'
     + '<div class="kv"><span>District</span><b>'+esc(o.district || "—")+'</b></div>'
@@ -2757,7 +2804,7 @@ function openOrder(id){
     + (isManualPay(o) && orderPaymentStatus(o)==="pending" ? '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Manual ' + o.pay + ' payment — jachai chara seller er kache jabe na</b><p class="note" style="margin:0 0 10px">Customer er deya Txn ID <b>' + (orderTxnId(o) ? esc(orderTxnId(o)) : "—") + '</b> tomar ' + o.pay + ' statement er sathe miliye dekho. Mile gele Confirm, na mille Reject — Reject hole order hold thakbe.</p><span style="display:inline-flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="drawerPayOk">✓ Confirm payment</button><button class="btn danger sm" type="button" id="drawerPayNo">✕ Reject payment</button></span></div>' : "")
     + (isManualPay(o) && orderPaymentStatus(o)==="rejected" ? '<div class="dispatch-box" style="border-color:var(--danger)"><b>Payment rejected</b><p class="note" style="margin:4px 0 0">Ei order seller er kache pathano hobe na. Customer ke bolo sothik Txn ID diye abar payment korte.</p></div>' : "")
     + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+subOrderStatusLabel(so.status)+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span></span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+so.commissionRate+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
-    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Seller dispatch (master)</b><div class="kv" style="border:none;padding:4px 0"><span>Fulfilling seller</span><b>'+esc(sellerShopsForOrder(o).join(", "))+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Sent to seller?</span><b>'+(orderSentToSeller(o)?"✓ Yes — Seller Center e ache":"✕ Na — Admin confirm korlei jabe")+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Seller status</span><b>'+esc(o.sellerStatus||"—")+'</b></div>' + ((o.status==="confirmed"||o.status==="packed"||o.status==="shipped"||o.status==="delivered") && !orderSentToSeller(o) && uuidSellerGroups(o).length ? '<p class="note" style="margin:8px 0;color:var(--danger)">⚠ ' + ((!o._realSubs || !o._realSubs.length) ? 'DB te sub-order row nei — seller ekhono ei order dekhte pay ni.' : 'Sub-order row ache kintu ekhono confirm hoy ni — seller ekhono ei order dekhte pay ni.') + '</p><button class="btn sm" type="button" id="drawerSendSubs">Seller ke pathao</button>' : "") + '<p class="note" style="margin:6px 0 0">Seller customer er full address/phone dekhbe na pack korar age porjonto label print er jonno ja lage tai pabe — eta seller er kaj, delivery AnboBD rider diyei hobe.</p></div>'
+    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Seller dispatch (master)</b><div class="kv" style="border:none;padding:4px 0"><span>Fulfilling seller</span><b>'+esc(sellerShopsForOrder(o).join(", "))+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Sent to seller?</span><b>'+(orderSentToSeller(o)?"✓ Yes — Seller Center e ache":"✕ Na — Admin confirm korlei jabe")+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Seller status</span><b>'+esc(sellerStatusDisplay)+'</b></div>' + ((effStatus==="confirmed"||effStatus==="ready"||effStatus==="packed"||effStatus==="shipped"||effStatus==="delivered") && !orderSentToSeller(o) && uuidSellerGroups(o).length ? '<p class="note" style="margin:8px 0;color:var(--danger)">⚠ ' + ((!o._realSubs || !o._realSubs.length) ? 'DB te sub-order row nei — seller ekhono ei order dekhte pay ni.' : 'Sub-order row ache kintu ekhono confirm hoy ni — seller ekhono ei order dekhte pay ni.') + '</p><button class="btn sm" type="button" id="drawerSendSubs">Seller ke pathao</button>' : "") + '<p class="note" style="margin:6px 0 0">Seller customer er full address/phone dekhbe na pack korar age porjonto label print er jonno ja lage tai pabe — eta seller er kaj, delivery AnboBD rider diyei hobe.</p></div>'
     + '<h4 style="margin:20px 0 6px">Items</h4>'
     + ((!o.items || !o.items.length) ? '<p class="note">No items recorded for this order.</p>' : "")
     + o.items.map(function(it, ii){ var d = storedItemDisplay(o, ii, it); var imgSrc = d.product ? safeImg(d.product.img) : "/assets/grocery.jpg"; var priceNote = (d.unitPrice != null ? fmt(d.unitPrice)+" × "+it[1]+" · " : "") + (d.sku ? esc(d.sku) : ""); return '<div class="alert-item"><img src="'+esc(imgSrc)+'" alt="" /><div><div class="nm">'+esc(d.name || d.sku || "Item")+'</div><div class="meta">'+priceNote+'</div></div><b class="num" style="margin-left:auto">'+fmt(d.lineTotal != null ? d.lineTotal : 0)+'</b></div>'; }).join("")
@@ -3131,7 +3178,7 @@ function openCustomer(name){
     + '<div style="margin:10px 0"><button class="btn sm" type="button" id="custMsgSend">📩 Message pathan</button></div>'
     + '<div style="margin:12px 0"><button class="btn danger sm" type="button" id="custBlockBtn">'+(c.blocked?"Unblock customer":"Block customer")+'</button></div>'
     + '<h4 style="margin:20px 0 4px">Recent orders</h4>'
-    + (their.length ? their.map(function(o){ return '<div class="kv"><span>'+esc(o.localId || o.id)+' · '+esc(o.date)+'</span><b class="num">'+fmt(orderTotal(o))+" · "+o.status+'</b></div>'; }).join("") : '<p class="note">No orders in the recent list for this customer.</p>');
+    + (their.length ? their.map(function(o){ return '<div class="kv"><span>'+esc(o.localId || o.id)+' · '+esc(o.date)+'</span><b class="num">'+fmt(orderTotal(o))+" · "+effectiveMasterStatus(o)+'</b></div>'; }).join("") : '<p class="note">No orders in the recent list for this customer.</p>');
   $("#customerModalWrap").classList.add("show");
   loadCustomerMessages(c, document.getElementById("custMsgList"));
   var msb=document.getElementById("custMsgSend"); if(msb) msb.addEventListener("click", async function(){ var tx=document.getElementById("custMsgText"); var t=tx ? tx.value.trim() : ""; if(!t){ toast("⚠ Age message likhun."); return; } msb.disabled=true; var ok=await sendAdminCustomerMessage(c, t); msb.disabled=false; if(ok){ tx.value=""; toast("✓ Message pathano hoyeche — customer Account e dekhte pabe"); loadCustomerMessages(c, document.getElementById("custMsgList")); } });
@@ -3864,7 +3911,7 @@ function renderSellers(){
       + pendingList.map(function(s){ return '<div class="alert-item"><span class="shop-logo '+(s.color||"")+'">'+esc(s.shop.split(" ").map(function(w){return w[0];}).slice(0,2).join(""))+'</span><div><div class="nm">'+esc(s.shop)+'</div><div class="meta">'+esc(s.owner)+' · KYC '+(esc(s.kycStatus)||"pending")+' · Applied '+esc(s.applied||"")+'</div></div><span style="margin-left:auto;display:inline-flex;gap:6px;flex-wrap:wrap"><button class="btn sm" type="button" data-seller-approve="'+s.id+'">✓ Approve</button><button class="btn danger sm" type="button" data-seller-reject="'+s.id+'">Reject</button><button class="btn ghost sm" type="button" data-seller-view="'+s.id+'">Details</button></span></div>'; }).join("")
       + '</div>' : "")
     + '<div class="grid-3">'
-    + '<div class="card"><h3>📦 Order dispatch to sellers</h3><p class="hint">Admin confirm korar porei order seller er kache jay</p><div class="kv"><span>Pending — seller dekhte pabe na</span><b class="num">'+orders.filter(function(o){return o.status==="pending";}).length+'</b></div><div class="kv"><span>Sent to seller — pack baki</span><b class="num">'+orders.filter(function(o){return o.status==="confirmed";}).length+'</b></div><div class="kv"><span>Seller packed — pickup baki</span><b class="num">'+orders.filter(function(o){return o.status==="packed";}).length+'</b></div><button class="btn ghost sm" type="button" data-goto-orders style="margin-top:10px">Orders e giye confirm koro →</button></div>'
+    + '<div class="card"><h3>📦 Order dispatch to sellers</h3><p class="hint">Admin confirm korar porei order seller er kache jay</p><div class="kv"><span>Pending — seller dekhte pabe na</span><b class="num">'+orders.filter(function(o){return effectiveMasterStatus(o)==="pending";}).length+'</b></div><div class="kv"><span>Sent to seller — pack baki</span><b class="num">'+orders.filter(function(o){return effectiveMasterStatus(o)==="confirmed";}).length+'</b></div><div class="kv"><span>Seller packed — pickup baki</span><b class="num">'+orders.filter(function(o){return effectiveStatusBucket(o)==="packed";}).length+'</b></div><button class="btn ghost sm" type="button" data-goto-orders style="margin-top:10px">Orders e giye confirm koro →</button></div>'
     + '<div class="card"><h3>🎟 Seller shop coupons</h3><p class="hint">Seller coupon website e shop &amp; product page e show hoy</p><div class="kv"><span>Live on website</span><b class="num">'+liveSellerCouponCount()+'</b></div><div class="kv"><span>Pending check</span><b class="num">'+pendingSellerCouponCount()+'</b></div><div class="kv"><span>Total redemptions</span><b class="num">'+sellerCoupons.reduce(function(a,c){return a+c.used;},0)+'</b></div><button class="btn ghost sm" type="button" data-goto-coupons2 style="margin-top:10px">Seller coupons manage →</button></div>'
     + '<div class="card"><h3>⚡ Mega Sale requests</h3><p class="hint">Admin approval chara mega price live hobe na</p><div class="kv"><span>Pending approval</span><b class="num">'+pendingMegaCount()+'</b></div><div class="kv"><span>Live campaigns</span><b class="num">'+megaRequests.filter(function(m){return m.status==="approved";}).length+'</b></div><div class="kv"><span>Rejected</span><b class="num">'+megaRequests.filter(function(m){return m.status==="rejected";}).length+'</b></div><button class="btn sm" type="button" data-goto-campaigns style="margin-top:10px;background:var(--coral-deep)">Mega requests review →</button></div>'
     + '</div>'
@@ -4092,7 +4139,7 @@ function openSellerDetail(id){
     + '<div class="kv"><span>Ledger check — delivered orders theke hisab</span><b class="num">Sales '+fmt(ledgerSales)+' · Commission '+fmt(ledgerComm)+' · Net '+fmt(ledgerSales-ledgerComm)+'</b></div>'
     + '<div class="kv"><span>KYC checklist</span><b>KYC status (database): '+esc(s.kycStatus || "pending")+' · Bank (masked): '+esc(maskPayoutMethod(s.payoutMethod))+' · Status: '+(s.status==="pending"?"Verification pending — approve er age NID copy check koro":"Verified ✓")+'<br /><span class="note">Seller er upload kora NID Copy (abosshok) ar Trade Licence Copy (oichchhik — thakle) upore KYC documents ongshe dekha jabe.</span></b></div>'
     + (ownProducts.length ? ownProducts.map(function(p){ return '<div class="alert-item"><img src="'+esc(safeImg(p.img))+'" alt="" style="width:42px;height:42px;border-radius:8px;object-fit:cover" /><div><div class="nm" style="font-size:13.5px">'+esc(p.name)+'</div><div class="meta">'+esc(p.sku)+' · Stock '+p.stock+'</div></div><b class="num" style="margin-left:auto">'+fmt(p.price)+'</b></div>'; }).join("") + '<p class="note">Ei '+ownProducts.length+' ta product-i storefront catalog e '+esc(s.shop)+' er name ache — seller onujayi filter kora, onno seller er product ekhane ashe na.</p>' : '<p class="note">Ei seller er storefront catalog e ekhono kono product map kora nai.</p>')
-    + (s.status!=="pending" ? '<h4 style="margin:18px 0 4px">Ei seller er-i order ('+ownOrders.length+') — seller onujayi filter kora</h4>' + (ownOrders.length ? ownOrders.map(function(o){ return '<div class="kv"><span>'+esc(o.localId || o.id)+' · '+esc(o.customer)+' · '+esc(o.district)+'<br /><span class="note">Sub-order '+ (subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).id:(o.localId || o.id)) +' · Commission '+fmt(subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).commission:0)+' · Seller pabe '+fmt(subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).earning:0)+'</span></span><b class="num">'+fmt(orderTotal(o))+' · '+o.status+(o.sentToSeller?" · sent ✓":" · not sent")+'</b></div>'; }).join("") : '<p class="note">Ei seller er kono order ekhono nai.</p>') : "")
+    + (s.status!=="pending" ? '<h4 style="margin:18px 0 4px">Ei seller er-i order ('+ownOrders.length+') — seller onujayi filter kora</h4>' + (ownOrders.length ? ownOrders.map(function(o){ return '<div class="kv"><span>'+esc(o.localId || o.id)+' · '+esc(o.customer)+' · '+esc(o.district)+'<br /><span class="note">Sub-order '+ (subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).id:(o.localId || o.id)) +' · Commission '+fmt(subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).commission:0)+' · Seller pabe '+fmt(subOrderForShop(o,s.shop)?subOrderForShop(o,s.shop).earning:0)+'</span></span><b class="num">'+fmt(orderTotal(o))+' · '+effectiveMasterStatus(o)+(o.sentToSeller?" · sent ✓":" · not sent")+'</b></div>'; }).join("") : '<p class="note">Ei seller er kono order ekhono nai.</p>') : "")
     + '<h4 style="margin:18px 0 4px">Shop coupons of this seller</h4>' + (sellerCoupons.filter(function(c){return c.shop===s.shop;}).length ? sellerCoupons.filter(function(c){return c.shop===s.shop;}).map(function(c){ return '<div class="kv"><span><b>'+esc(c.code)+'</b> · '+esc(c.desc)+'</span><b>'+c.status+(c.status==="live"?" · website e live":"")+' · '+c.used+' uses</b></div>'; }).join("") : '<p class="note">Ei seller ekhono kono shop coupon banayni.</p>')
     + '<h4 style="margin:18px 0 4px">Mega Sale submissions</h4>' + (megaRequests.filter(function(m){return m.shop===s.shop;}).length ? megaRequests.filter(function(m){return m.shop===s.shop;}).map(function(m){ return '<div class="kv"><span>'+esc(m.product)+' · '+fmt(m.price)+' → <b>'+fmt(m.megaPrice)+'</b></span><b>'+m.status+'</b></div>'; }).join("") : '<p class="note">Kono mega submission nai.</p>')
     + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:16px"><label style="font-weight:700;font-size:13px">Commission %</label><input type="number" min="0" max="30" value="'+s.commissionRate+'" id="sdCommRate" style="width:80px;padding:8px;border:1.5px solid var(--line);border-radius:9px" /><button class="btn ghost sm" type="button" id="sdCommSave">Save rate</button><span class="note">VAT '+settings.vatRate+'% price er moddhei · Payout '+settings.payoutDay+', delivery er '+settings.payoutHoldDays+' din por</span></div>'
@@ -4698,11 +4745,14 @@ function availableCouriers(){
 }
 var courierAssign = {}; /* orderId -> {courier, tracking} — P1 (2026-11-23): the courier persists in sub_orders.courier; courierAssign only holds changes made this session before the sub-order row is read. */
 function deriveCourierJobs(){
-  /* Shipments come from real orders (packed/shipped/delivered). */
-  var jobs = orders.filter(function(o){ return o.status==="packed" || o.status==="shipped" || o.status==="delivered"; }).map(function(o){
+  /* Shipments come from real orders (packed/shipped/delivered) — judged by
+     the EFFECTIVE status, since the seller's pack only lands on sub_orders
+     and the master row stays AdminConfirmed. */
+  var jobs = orders.filter(function(o){ var b = effectiveStatusBucket(o); return b==="packed" || b==="shipped" || b==="delivered"; }).map(function(o){
     var a = courierAssign[o.id] || {};
+    var eff = effectiveMasterStatus(o);
     var rs = (o._realSubs && o._realSubs[0]) || null;
-    return { order:o.id, subId: rs ? rs.subId : null, customer:o.customer, district:o.district, cod: o.pay==="COD" ? orderTotal(o) : 0, courier: a.courier || (rs && rs.courier) || "Unassigned", rider: o.status==="delivered" ? "Delivered" : "—", tracking: a.tracking || (rs && rs.trackingId) || "—", status: o.status==="delivered" ? "Delivered" : o.status==="shipped" ? "In transit" : "Waiting pickup" };
+    return { order:o.id, subId: rs ? rs.subId : null, customer:o.customer, district:o.district, cod: o.pay==="COD" ? orderTotal(o) : 0, courier: a.courier || (rs && rs.courier) || "Unassigned", rider: eff==="delivered" ? "Delivered" : "—", tracking: a.tracking || (rs && rs.trackingId) || "—", status: eff==="delivered" ? "Delivered" : eff==="shipped" ? "In transit" : "Waiting pickup" };
   });
   return jobs;
 }
