@@ -86,6 +86,10 @@
     {
       "destination": "/pages/career.html",
       "source": "/career"
+    },
+    {
+      "destination": "/api/og",
+      "source": "/product"
     }
   ]
 }
