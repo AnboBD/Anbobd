@@ -515,7 +515,7 @@
               <input id="regBankBranch" type="text" placeholder="e.g. Banani Branch" />
             </div>
           </div>
-          <div class="hint">Bank name ar branch shops table e ekhono alada column nei — application er sathe form e thakbe ar pending page e dekhabe; Admin column add korle pore save kora jabe.</div>
+          <div class="hint">Bank name ar branch apnar shop e save hobe, ar Admin review te dekhabe.</div>
         </div>
 
         <div class="form-section">4 · KYC verification</div>
@@ -1249,6 +1249,7 @@
   function lowStockThreshold(){ var s = me(); var t = s && s.lowStockThreshold != null ? Number(s.lowStockThreshold) : 5; return (isFinite(t) && t > 0) ? Math.floor(t) : 5; }
   function notifPref(type){ var s = me(); if (!s) return true; if (!s.notifPrefs || s.notifPrefs[type] == null) return true; return s.notifPrefs[type] !== false; }
   function toDatetimeLocal(iso){ if (!iso) return ""; var d = new Date(iso); if (isNaN(d.getTime())) return ""; return new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
+  function localTodayStr(){ var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); } /* local date parts: toISOString() is UTC, so it was one day early in UTC+6 */
   /* P2 (2026-11-23): staff er kaj er log — sudhu staff account er kaj
      log hoy (owner er kaj Admin activity log e alada vabe thake). Table
      na thakle chupchap skip — kono fake entry banano hoy na. */
@@ -3306,7 +3307,7 @@
       + '<div class="field"><label>Per-customer limit (ঐচ্ছিক) — ek customer koybar use korte parbe</label><input id="cPerCust" aria-label="Per-customer limit" type="number" min="1" placeholder="Khali mane limit nei" />' + (DB_HAS.couponPerCustomer === false ? '<div class="hint">Per-customer limit ekhono database e chalu hoy ni (coupons.per_customer_limit column nei) — save korle limit thakbe na.</div>' : '') + '</div>'
       + '<div class="field"><label>Max discount cap (৳) — ek order e sorbochcho chhar</label><input id="cCap" aria-label="Max discount cap" type="number" min="0" value="500" /><div class="hint">Percent coupon eo ei cap er beshi chhar hobe na.</div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Scope</label><select id="cScope" aria-label="Scope"><option>Shop-wide (sob product)</option><option>Electronics only</option><option>Fashion only</option><option>Beauty only</option><option>Home &amp; Living only</option><option>Grocery only</option><option>Sports only</option></select></div>'
-      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="date" min="' + new Date().toISOString().slice(0,10) + '" /></div></div>' /* P2-35: date picker, past dates blocked by min=today; future-date validation below still applies. */
+      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="date" min="' + localTodayStr() + '" /></div></div>' /* P2-35: date picker, past dates blocked by min=today; future-date validation below still applies. */
       + '<p class="err" id="cErr"></p>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cCancel" type="button">Cancel</button><button class="btn" id="cSave" type="button">Create &amp; Publish on Website</button></div>',
       function(){
@@ -3343,7 +3344,8 @@
   function openCouponEditModal(c){
     var s = me(); if (!s || !c) return;
     var scopeOpts = COUPON_SCOPES.map(function(sc){ return '<option ' + (c.scope === sc ? "selected" : "") + '>' + esc(sc) + '</option>'; }).join("");
-    var expVal = (c.expiry && !isNaN(Date.parse(c.expiry))) ? new Date(Date.parse(c.expiry)).toISOString().slice(0,10) : "";
+    var expD = (c.expiry && !isNaN(Date.parse(c.expiry))) ? new Date(Date.parse(c.expiry)) : null;
+    var expVal = expD ? expD.getFullYear() + "-" + ("0" + (expD.getMonth() + 1)).slice(-2) + "-" + ("0" + expD.getDate()).slice(-2) : ""; /* local date parts: toISOString() is UTC, so it showed one day early in UTC+6 */
     openModal(
       '<h2>Edit Coupon — ' + esc(c.code) + '</h2><div class="msub">Coupon code bodlano jabe na — baki sob bodlano jabe. Save korle notun niyom website e live hobe.</div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Discount type</label><select id="cType" aria-label="Discount type"><option ' + (c.type === "Percent" ? "selected" : "") + '>Percent</option><option ' + (c.type === "Flat" ? "selected" : "") + '>Flat</option></select></div>'
@@ -3353,7 +3355,7 @@
       + '<div class="field"><label>Per-customer limit (ঐচ্ছিক) — ek customer koybar use korte parbe</label><input id="cPerCust" aria-label="Per-customer limit" type="number" min="1" value="' + (c.perCustomerLimit != null ? c.perCustomerLimit : "") + '" placeholder="Khali mane limit nei" />' + (DB_HAS.couponPerCustomer === false ? '<div class="hint">Per-customer limit ekhono database e chalu hoy ni (coupons.per_customer_limit column nei) — save korle limit thakbe na.</div>' : '') + '</div>'
       + '<div class="field"><label>Max discount cap (৳) — ek order e sorbochcho chhar</label><input id="cCap" aria-label="Max discount cap" type="number" min="0" value="' + c.cap + '" /></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Scope</label><select id="cScope" aria-label="Scope">' + scopeOpts + '</select></div>'
-      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="date" value="' + expVal + '" min="' + new Date().toISOString().slice(0,10) + '" /></div></div>'
+      + '<div class="field"><label>Expiry date</label><input id="cExp" aria-label="Expiry date" type="date" value="' + expVal + '" min="' + localTodayStr() + '" /></div></div>'
       + '<p class="err" id="cErr"></p>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="cCancel" type="button">Cancel</button><button class="btn" id="cSave" type="button">Save Changes</button></div>',
       function(){
