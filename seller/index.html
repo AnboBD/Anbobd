@@ -294,6 +294,7 @@
       .st-returnrequested{background:var(--amber-soft);color:#b25f10}
       .st-returnaccepted{background:var(--brand-soft);color:var(--brand-dark)}
       .st-returnrejected{background:var(--red-soft);color:var(--red)}
+      .st-returnrefunded{background:var(--blue-soft);color:var(--blue)}
       @media (prefers-color-scheme: dark){.st-adminconfirmed{background:#082f49;color:#7dd3fc}}
       .st-approved,.st-live{background:var(--brand-soft);color:var(--brand-dark)}
       .st-pendingapproval{background:var(--amber-soft);color:#b25f10}
@@ -1228,6 +1229,20 @@
   function ownCoupons(){ var s = me(); return s ? s.coupons : []; }
   function ownSubs(){ var s = me(); return s ? s.campSubs : []; }
   function ownReturns(){ var s = me(); return s ? s.returns : []; }
+  /* Ekta order/sub-order er refunded return thakle seta ferot dey —
+     earnings ledger e line ta "Refunded" dekhate lage. Return er
+     orderId master order id, sub-order id ba local (#ANBO) id —
+     jekono ekta mille dhora hoy. */
+  function refundedReturnFor(o){
+    if (!o) return null;
+    var list = ownReturns();
+    for (var i = 0; i < list.length; i++){
+      var r = list[i];
+      if (r.status !== "Return Refunded" || !r.orderId) continue;
+      if (String(r.orderId) === String(o.id) || String(r.orderId) === String(o.subId) || (o.localId && String(r.orderId) === String(o.localId))) return r;
+    }
+    return null;
+  }
   function ownReviews(){ var s = me(); return s ? (s.reviews || []) : []; }
   function ownStaff(){ var s = me(); return s ? s.staff : []; }
   function ownStaffActivity(){ var s = me(); return s ? (s.staffActivity || []) : []; }
@@ -1273,7 +1288,10 @@
       else { pend += earn; o.settled = false; }
     });
     var refunds = 0;
-    (s.returns || []).forEach(function(r){ if (r.status === "Return Accepted") refunds += Number(r.amount || 0); });
+    /* Accepted ar Refunded — dutoi wallet theke kata: Admin refund
+       kore dile (DB status "refunded") sei takao pending clearance /
+       balance theke bad jay, Admin Finance er hisaber sathe mile. */
+    (s.returns || []).forEach(function(r){ if (r.status === "Return Accepted" || r.status === "Return Refunded") refunds += Number(r.amount || 0); });
     var fromPend = Math.min(pend, refunds);
     pend -= fromPend; bal = Math.max(0, bal - (refunds - fromPend));
     (s.payouts || []).forEach(function(p){ bal -= Number(p.amount || 0); });
@@ -1466,7 +1484,8 @@
      id, shop_id, order_id, refund_amount, reason, status, created_at) —
      tai status sorasori r.status theke map kora hoy. */
   function mapReturnRow(r){
-    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), createdAt: r.created_at || "", reason: r.reason || "", rejectReason: r.reject_reason || "", refundMethod: r.refund_method || "", refundChannel: r.refund_channel || "", amount: Number(r.amount || r.refund_amount || 0), status: ((String(r.status || "pending").toLowerCase() === "accepted" || String(r.status || "").toLowerCase() === "approved") ? "Return Accepted" : (String(r.status || "").toLowerCase() === "rejected" ? "Return Rejected" : "Return Requested")) };
+    var rst = String(r.status || "pending").toLowerCase();
+    return { id: String(r.id), shop_id: r.shop_id, orderId: String(r.order_id || r.sub_order_id || ""), pid: r.product_id || r.pid, qty: Number(r.qty || 1), customer: r.customer_name || r.customer || "", date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), createdAt: r.created_at || "", reason: r.reason || "", rejectReason: r.reject_reason || "", refundMethod: r.refund_method || "", refundChannel: r.refund_channel || "", amount: Number(r.amount || r.refund_amount || 0), status: (rst === "accepted" || rst === "approved") ? "Return Accepted" : (rst === "rejected" ? "Return Rejected" : (rst === "refunded" ? "Return Refunded" : "Return Requested")) };
   }
   async function loadSellerDataFromSupabase(sellerObj){
     if (!supabaseConnected || !supabase || !sellerObj || !sellerObj.shopId) return;
@@ -3518,7 +3537,7 @@
     var s = me(); if (!s) return;
     var list = ownReturns();
     var pending = list.filter(function(r){ return r.status==="Return Requested"; }).length;
-    var acceptedAmt = list.filter(function(r){ return r.status==="Return Accepted"; }).reduce(function(sum,r){ return sum + r.amount; }, 0);
+    var acceptedAmt = list.filter(function(r){ return r.status==="Return Accepted" || r.status==="Return Refunded"; }).reduce(function(sum,r){ return sum + r.amount; }, 0);
     var stats = [
       { lbl:"Pending return request", val: pending },
       { lbl:"Mot return (amar shop)", val: list.length },
@@ -3532,7 +3551,7 @@
         + '<div style="flex:1;min-width:200px"><div style="font-weight:800">' + esc(r.id) + ' · Order ' + esc(r.orderId) + ' — ' + (pr ? esc(pr.name) : "Product") + ' × ' + r.qty + '</div>'
         + '<div style="font-size:.85rem;color:var(--muted)">Customer: ' + esc(r.customer) + ' · ' + esc(r.date) + '</div>'
         + '<div style="font-size:.88rem;margin-top:.3rem"><b>Karon:</b> ' + esc(r.reason) + '</div>'
-        + '<div style="font-size:.88rem"><b>Refund amount:</b> <span style="color:var(--red);font-weight:800">' + fmt(r.amount) + '</span> <span style="color:var(--muted)">(accept korle apnar wallet theke kata hobe, Admin notify hobe)</span></div>'
+        + '<div style="font-size:.88rem"><b>Refund amount:</b> <span style="color:var(--red);font-weight:800">' + fmt(r.amount) + '</span> <span style="color:var(--muted)">(' + (r.status==="Return Refunded" ? 'Admin refund kore diyeche — wallet theke adjust hoye geche' : (r.status==="Return Accepted" ? 'wallet theke adjust hoyeche, Admin notified' : 'accept korle apnar wallet theke kata hobe, Admin notify hobe')) + ')</span></div>'
         + (r.status==="Return Rejected" && r.rejectReason ? '<div style="font-size:.88rem"><b>Reject er karon:</b> ' + esc(r.rejectReason) + '</div>' : '') + '</div>'
         + '<span class="status ' + statusClass(r.status) + '">' + r.status + '</span></div>'
         + '<div class="row-actions" style="margin-top:.7rem"><button class="mini-btn" data-ret-view="' + r.id + '" type="button">Details</button>' + (r.status==="Return Requested" ? '<button class="mini-btn" data-ret-accept="' + r.id + '" type="button">Accept — Wallet theke Refund</button><button class="mini-btn red" data-ret-reject="' + r.id + '" type="button">Reject — Admin Review te Pathan</button>' : '') + '</div>'
@@ -3595,11 +3614,13 @@
     var r = ownReturns().filter(function(x){ return String(x.id)===String(id); })[0]; if (!r) return;
     var pr = prodById(r.pid);
     var tl = '<li class="done"><span class="tdot">✓</span><div><div class="tt">Return request eseche</div><div class="ts">' + esc(r.date) + ' · ' + esc(r.customer) + ' · Order ' + esc(r.orderId) + '</div></div></li>'
-      + (r.status === "Return Accepted"
+      + (r.status === "Return Refunded"
+        ? '<li class="done"><span class="tdot">✓</span><div><div class="tt">Return Refunded — refund hoye geche</div><div class="ts">Refund method: ' + esc(r.refundMethod || "—") + (r.refundChannel ? ' · ' + esc(r.refundChannel) : '') + ' · Amount: ' + fmt(r.amount) + ' · Wallet theke adjust hoyeche</div></div></li>'
+        : (r.status === "Return Accepted"
         ? '<li class="done"><span class="tdot">✓</span><div><div class="tt">Return Accepted — refund pending</div><div class="ts">Refund method: ' + esc(r.refundMethod || "—") + (r.refundChannel ? ' · ' + esc(r.refundChannel) : '') + ' · Amount: ' + fmt(r.amount) + '</div></div></li>'
         : (r.status === "Return Rejected"
           ? '<li class="done"><span class="tdot">!</span><div><div class="tt">Return Rejected</div><div class="ts">Karon: ' + esc(r.rejectReason || "—") + ' — Admin review te geche</div></div></li>'
-          : '<li><span class="tdot"></span><div><div class="tt">Siddhanto baki</div><div class="ts">Accept korle ' + fmt(r.amount) + ' wallet theke adjust hobe; reject korle karon soho Admin review te jabe</div></div></li>'));
+          : '<li><span class="tdot"></span><div><div class="tt">Siddhanto baki</div><div class="ts">Accept korle ' + fmt(r.amount) + ' wallet theke adjust hobe; reject korle karon soho Admin review te jabe</div></div></li>')));
     $("drawerRoot").innerHTML = '<div class="drawer-wrap" id="drawerWrap"><div class="drawer">'
       + '<button class="icon-btn modal-x" id="drawerX" type="button" aria-label="Close">✕</button>'
       + '<h2 style="margin:.2rem 0 .2rem;font-size:1.3rem">Return — ' + esc(r.id) + '</h2>'
@@ -3656,7 +3677,9 @@
     var delivered = ownOrders().filter(function(o){ return o.status==="Delivered"; });
     $("earningsBody").innerHTML = delivered.length ? delivered.map(function(o){
       var settleTxt, settleCls;
-      if (o.settled) { settleTxt = "Settled — Available balance e jog hoyeche"; settleCls = "st-paid"; }
+      var rfd = refundedReturnFor(o);
+      if (rfd) { settleTxt = "Refunded — " + fmt(rfd.amount) + " refund hoye geche, ei earning clearance e gona hoy ni"; settleCls = "st-returnrefunded"; }
+      else if (o.settled) { settleTxt = "Settled — Available balance e jog hoyeche"; settleCls = "st-paid"; }
       else if (o.deliveredAt && !isNaN(Date.parse(o.deliveredAt))) { settleTxt = "Return window e ache — settle hobe " + fmtDate(new Date(Date.parse(o.deliveredAt) + RETURN_WINDOW_MS).toISOString()); settleCls = "st-processing"; }
       else { settleTxt = "Return window e ache"; settleCls = "st-processing"; }
       return '<tr><td><b>' + esc(o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td style="max-width:220px">' + esc(orderItemsText(o)) + '</td><td>' + fmt(orderTotal(o)) + '</td><td style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</td><td style="color:var(--brand);font-weight:800">' + fmt(orderEarning(o)) + '</td><td><span class="status ' + settleCls + '">' + settleTxt + '</span></td></tr>';
