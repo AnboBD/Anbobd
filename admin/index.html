@@ -644,7 +644,7 @@ footer.foot{padding:0 28px 30px;color:var(--muted);font-size:12.5px;max-width:12
        and promo_code were added by the 2026-11-20 migration — the panel
        reads and writes them directly)
      sub_orders: id, order_id, shop_id, seller_id, subtotal, status,
-       commission_rate, tracking_id, created_at
+       commission_rate, tracking_id, courier, created_at
        (NO items, delivered_at, total, earning — commission snapshot
        IS possible: commission_rate lives on the sub-order)
      coupons: id, shop_id, code, discount_type, discount_value, min_order,
@@ -780,6 +780,18 @@ function sbDbOrderStatus(s){
 /* Display label for a sub-order's normalized status. Only "ready" needs a
    friendlier label — every other token already reads as its own word. */
 function subOrderStatusLabel(s){ return s === "ready" ? "Ready to Ship" : s; }
+/* Courier + tracking display (2026-11-24, display-only): the seller saves
+   courier + tracking_id on the sub_orders row when shipping, but Admin never
+   surfaced them. Returns plain text like "Courier: Steadfast · Tracking:
+   TEST-TRACK-001" — whichever parts exist — or "" when the seller has not
+   shipped yet, so callers render nothing in that case. */
+function subCourierTrackingText(so){
+  if (!so) return "";
+  var parts = [];
+  if (so.courier) parts.push("Courier: " + so.courier);
+  if (so.trackingId) parts.push("Tracking: " + so.trackingId);
+  return parts.join(" · ");
+}
 /* Effective master status (DISPLAY-ONLY, 2026-11-24): the seller only ever
    updates sub_orders.status — the master orders row keeps saying
    AdminConfirmed, so every Admin surface that read o.status showed a
@@ -1248,7 +1260,7 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
   }
   function toRealSubs(rows){
     return rows.map(function(sr){
-      return { subId: sr.id || "", shopId: sr.shop_id, shop: shopNameForId(sr.shop_id), subtotal: sr.subtotal != null ? sr.subtotal : 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 0), rawStatus: sr.status || "", status: sbNormOrderStatus(sr.status || targetStatus), trackingId: sr.tracking_id || "" };
+      return { subId: sr.id || "", shopId: sr.shop_id, shop: shopNameForId(sr.shop_id), subtotal: sr.subtotal != null ? sr.subtotal : 0, commissionRate: (sr.commission_rate != null ? sr.commission_rate : 0), rawStatus: sr.status || "", status: sbNormOrderStatus(sr.status || targetStatus), trackingId: sr.tracking_id || "", courier: sr.courier || "" };
     });
   }
   /* Commission fix (2026-11-21): sub_orders rows used to be written WITHOUT
@@ -1356,7 +1368,7 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
       if (sv && sv.ownerId) row.seller_id = sv.ownerId;
       return row;
     });
-    sb.from("sub_orders").insert(rows).select("id,order_id,shop_id,seller_id,subtotal,status,commission_rate,commission_amount,seller_earning").then(function(r){
+    sb.from("sub_orders").insert(rows).select("id,order_id,shop_id,seller_id,subtotal,status,commission_rate,commission_amount,seller_earning,tracking_id,courier").then(function(r){
       if (r && r.error){
         sbSaveFailed("sub_orders", r.error);
         toast("⚠ <b>" + esc(o.localId || o.id) + "</b> — sub-order seller er kache pathano jay ni (database insert blocked). Seller ekhono ei order dekhte pay ni — Order Details theke abar 'Seller ke pathao' chap dao. — DB: " + esc((r.error && (r.error.message || r.error.code)) || String(r.error)), 6500);
@@ -1373,7 +1385,7 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
     });
   }
   if (o._realSubs && o._realSubs.length){ updateExisting(); return; }
-  sb.from("sub_orders").select("id,order_id,shop_id,seller_id,subtotal,status,commission_rate,commission_amount,seller_earning").eq("order_id", orderId).then(function(r){
+  sb.from("sub_orders").select("id,order_id,shop_id,seller_id,subtotal,status,commission_rate,commission_amount,seller_earning,tracking_id,courier").eq("order_id", orderId).then(function(r){
     if (r && r.error){ sbSaveFailed("sub_orders", r.error); return; }
     var real = (r && r.data) || [];
     if (real.length){ o._realSubs = toRealSubs(real); updateExisting(); }
@@ -2032,7 +2044,7 @@ function getSubOrders(o){ /* Commission snapshot: the first calculation for an o
          used instead. Either way a real row never shows ৳0 commission. */
       var comm = (rs.commissionAmount != null && rs.commissionAmount > 0) ? Math.round(rs.commissionAmount) : Math.round(rs.subtotal * effRate / 100);
       var earn = (rs.sellerEarning != null && rs.sellerEarning > 0) ? Math.round(rs.sellerEarning) : rs.subtotal - comm;
-      return { id: (o.localId || o.id)+"-"+letters[idx], subId: rs.subId, shop: rs.shop, shopId: rs.shopId, items: subItems, subtotal: rs.subtotal, sellerId: rs.shopId || "ANBO-OWN", commissionRate: effRate, discount: 0, commission: comm, earning: earn, status: rs.status, sentToSeller: rs.status !== "pending" && rs.status !== "cancelled", trackingId: rs.trackingId || "" };
+      return { id: (o.localId || o.id)+"-"+letters[idx], subId: rs.subId, shop: rs.shop, shopId: rs.shopId, items: subItems, subtotal: rs.subtotal, sellerId: rs.shopId || "ANBO-OWN", commissionRate: effRate, discount: 0, commission: comm, earning: earn, status: rs.status, sentToSeller: rs.status !== "pending" && rs.status !== "cancelled", trackingId: rs.trackingId || "", courier: rs.courier || "" };
     });
     return o._subs;
   }
@@ -2507,7 +2519,7 @@ function renderOrders(){
         return '<tr><td><input type="checkbox" data-bulk-order="'+esc(o.id)+'" aria-label="Select order" /></td><td data-label="Order"><b>'+esc(displayId)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.date)+'</span></td>'
           + '<td data-label="Customer"><b>'+esc(o.customer)+'</b><br /><span style="color:var(--muted);font-size:12.5px">'+esc(o.district)+' · '+esc(o.phone)+'</span></td>'
           + '<td data-label="Items" style="max-width:240px"><span style="font-size:13px">'+itemTxt+'</span></td>'
-          + '<td data-label="Seller / Sub-orders"><b style="font-size:13px">'+esc(shops.join(", "))+'</b><br /><span style="font-size:12px">↳ '+getSubOrders(o).length+' sub-order: '+getSubOrders(o).map(function(so){ return so.id+" ("+esc(so.shop)+" "+fmt(so.subtotal)+")"; }).join(" · ")+'</span><br /><span style="font-size:12px;color:'+(orderSentToSeller(o)?"var(--ok)":"var(--warn-ink)")+'">'+(orderSentToSeller(o)?"✓ Each sub-order sent to its seller":"⏳ Not sent — admin confirm korlei prottek sub-order alada jabe")+'</span></td>'
+          + '<td data-label="Seller / Sub-orders"><b style="font-size:13px">'+esc(shops.join(", "))+'</b><br /><span style="font-size:12px">↳ '+getSubOrders(o).length+' sub-order: '+getSubOrders(o).map(function(so){ return so.id+" ("+esc(so.shop)+" "+fmt(so.subtotal)+")"; }).join(" · ")+'</span>'+(function(){ var tl = getSubOrders(o).map(function(so){ var ct = subCourierTrackingText(so); return ct ? esc(so.id)+": "+esc(ct) : ""; }).filter(function(x){ return !!x; }); return tl.length ? '<br /><span style="font-size:12px">'+tl.join("<br />")+'</span>' : ""; })()+'<br /><span style="font-size:12px;color:'+(orderSentToSeller(o)?"var(--ok)":"var(--warn-ink)")+'">'+(orderSentToSeller(o)?"✓ Each sub-order sent to its seller":"⏳ Not sent — admin confirm korlei prottek sub-order alada jabe")+'</span></td>'
           + '<td data-label="Total"><b class="num">'+fmt(orderTotal(o))+'</b>'+(orderDiscount(o)?'<br /><span style="color:var(--ok);font-size:12px">−'+fmt(orderDiscount(o))+" "+o.coupon+"</span>":"")+'</td>'
           + '<td data-label="Payment"><b>'+esc(o.pay)+'</b><span class="pay-txn">Txn ID: <b>'+(orderTxnId(o) ? esc(orderTxnId(o)) : "—")+'</b></span>'+paymentBadge(o)+(isManualPay(o) && orderPaymentStatus(o)==="pending" && o.status!=="cancelled" ? '<br /><button class="btn sm" type="button" data-pay-ok="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm payment</button> <button class="btn danger sm" type="button" data-pay-no="'+esc(o.id)+'" style="margin-top:6px">Reject</button>' : "")+'</td>'
           + '<td data-label="Status"><select class="status-sel" data-status-for="'+esc(o.id)+'" aria-label="Change status of '+esc(displayId)+'">'+["pending","confirmed","cancelled"].map(function(s){ return '<option value="'+s+'"'+(eff===s?" selected":"")+'>'+(STATUS_LABEL[s]||s)+"</option>"; }).join("")+(["pending","confirmed","cancelled"].indexOf(eff)===-1 ? '<option value="'+eff+'" selected disabled>'+(STATUS_LABEL[eff]||eff)+' — seller/rider sets this</option>' : "")+'</select>'+(o.status==="pending"?'<br /><button class="btn sm" type="button" data-confirm-send="'+esc(o.id)+'" style="margin-top:6px">✓ Confirm Master &amp; Send Sub-Orders</button>':"")+'<br /><span class="note">Packed/Shipped/Delivered seller/rider Seller Center theke update kore</span></td>'
@@ -2803,7 +2815,7 @@ function openOrder(id){
     + '<div class="kv"><span>Payment status</span><b>'+paymentBadge(o)+'</b></div>'
     + (isManualPay(o) && orderPaymentStatus(o)==="pending" ? '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Manual ' + o.pay + ' payment — jachai chara seller er kache jabe na</b><p class="note" style="margin:0 0 10px">Customer er deya Txn ID <b>' + (orderTxnId(o) ? esc(orderTxnId(o)) : "—") + '</b> tomar ' + o.pay + ' statement er sathe miliye dekho. Mile gele Confirm, na mille Reject — Reject hole order hold thakbe.</p><span style="display:inline-flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="drawerPayOk">✓ Confirm payment</button><button class="btn danger sm" type="button" id="drawerPayNo">✕ Reject payment</button></span></div>' : "")
     + (isManualPay(o) && orderPaymentStatus(o)==="rejected" ? '<div class="dispatch-box" style="border-color:var(--danger)"><b>Payment rejected</b><p class="note" style="margin:4px 0 0">Ei order seller er kache pathano hobe na. Customer ke bolo sothik Txn ID diye abar payment korte.</p></div>' : "")
-    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+subOrderStatusLabel(so.status)+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span></span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+so.commissionRate+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
+    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ var ct = subCourierTrackingText(so); return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+subOrderStatusLabel(so.status)+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span>'+(ct ? '<br /><span class="note">'+esc(ct)+'</span>' : "")+'</span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+so.commissionRate+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
     + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Seller dispatch (master)</b><div class="kv" style="border:none;padding:4px 0"><span>Fulfilling seller</span><b>'+esc(sellerShopsForOrder(o).join(", "))+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Sent to seller?</span><b>'+(orderSentToSeller(o)?"✓ Yes — Seller Center e ache":"✕ Na — Admin confirm korlei jabe")+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Seller status</span><b>'+esc(sellerStatusDisplay)+'</b></div>' + ((effStatus==="confirmed"||effStatus==="ready"||effStatus==="packed"||effStatus==="shipped"||effStatus==="delivered") && !orderSentToSeller(o) && uuidSellerGroups(o).length ? '<p class="note" style="margin:8px 0;color:var(--danger)">⚠ ' + ((!o._realSubs || !o._realSubs.length) ? 'DB te sub-order row nei — seller ekhono ei order dekhte pay ni.' : 'Sub-order row ache kintu ekhono confirm hoy ni — seller ekhono ei order dekhte pay ni.') + '</p><button class="btn sm" type="button" id="drawerSendSubs">Seller ke pathao</button>' : "") + '<p class="note" style="margin:6px 0 0">Seller customer er full address/phone dekhbe na pack korar age porjonto label print er jonno ja lage tai pabe — eta seller er kaj, delivery AnboBD rider diyei hobe.</p></div>'
     + '<h4 style="margin:20px 0 6px">Items</h4>'
     + ((!o.items || !o.items.length) ? '<p class="note">No items recorded for this order.</p>' : "")
