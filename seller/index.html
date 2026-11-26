@@ -1412,8 +1412,10 @@
     var expStr = r.expiry || (r.expires_at ? fmtDate(r.expires_at) : "");
     var rawSt = String(r.status || "live").toLowerCase();
     var expMs = expStr ? Date.parse(expStr) : NaN;
-    /* Meyad sesh coupon kokhono Live hobe na — past expiry hole Expired. */
-    var cStatus = rawSt === "paused" ? "Paused" : (rawSt === "pending" ? "Pending Approval" : ((!isNaN(expMs) && expMs <= Date.now()) ? "Expired" : "Live"));
+    /* Meyad sesh coupon kokhono Live hobe na — past expiry hole Expired.
+       P0-3 (2026-11-26): Admin-rejected coupon "Live" dekhate parbe na —
+       rejected sobcheye age check hoy, expiry er ageo. */
+    var cStatus = rawSt === "rejected" ? "Rejected" : (rawSt === "paused" ? "Paused" : (rawSt === "pending" ? "Pending Approval" : ((!isNaN(expMs) && expMs <= Date.now()) ? "Expired" : "Live")));
     return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, code: r.code || "", type: (String(r.type || r.discount_type || "Percent").toLowerCase().indexOf("flat") > -1 ? "Flat" : "Percent"), value: Number(r.value != null ? r.value : (r.discount_value || 0)), min: Number(r.min_order != null ? r.min_order : (r.min || 0)), cap: Number(r.max_cap != null ? r.max_cap : (r.max_discount != null ? r.max_discount : (r.cap || 0))), scope: r.scope || "Shop-wide (sob product)", expiry: expStr, limit: Number(r.usage_limit || r.limit || 200), used: Number(r.used_count || r.used || 0), status: cStatus, perCustomerLimit: (r.per_customer_limit != null ? Number(r.per_customer_limit) : null) };
   }
   /* sub_orders er asol status column (DB values: AwaitingAdmin,
@@ -3272,7 +3274,7 @@
         + '<div class="row-actions" style="margin-top:.8rem">'
         + '<button class="mini-btn" data-coupon-copy="' + c.id + '" type="button">Copy Code</button>'
         + '<button class="mini-btn" data-coupon-edit="' + c.id + '" type="button">Edit</button>'
-        + '<button class="mini-btn" data-coupon-toggle="' + c.id + '" type="button">' + (c.status==="Live" ? "Pause (website theke soran)" : "Make Live") + '</button>'
+        + /* P0-2: Make Live shudhu age Admin-approved Paused coupon er jonno — Pending/Rejected/Expired coupon e kono toggle button thakbe na. */ (c.status==="Live" || c.status==="Paused" ? '<button class="mini-btn" data-coupon-toggle="' + c.id + '" type="button">' + (c.status==="Live" ? "Pause (website theke soran)" : "Make Live") + '</button>' : '')
         + '<button class="mini-btn red" data-coupon-del="' + c.id + '" type="button">Delete</button>'
         + '</div></div>';
     }).join("") : '<div class="empty" style="grid-column:1/-1"><div class="et">No coupons yet</div><div>Notun coupon banan — live korlei website e apnar shop page e show hobe.</div></div>';
@@ -3297,6 +3299,10 @@
     $("couponGrid").querySelectorAll("[data-coupon-toggle]").forEach(function(b){
       b.addEventListener("click", async function(){
         var c = ownCoupons().filter(function(x){ return String(x.id)===String(b.getAttribute("data-coupon-toggle")); })[0]; if (!c) return;
+        /* P0-2 (2026-11-26): toggle shudhu Live <-> Paused. Pending ba
+           Admin-rejected coupon ei poth e kokhono Live hote parbe na —
+           Live korte hole age Admin approval dorkar. */
+        if (c.status !== "Live" && c.status !== "Paused") { toast("Ei coupon ta ekhon Live kora jabe na — Admin approval dorkar."); return; }
         if (c.status !== "Live") {
           var cExpMs = c.expiry ? Date.parse(c.expiry) : NaN;
           if (isNaN(cExpMs) || cExpMs <= Date.now()) { toast("Coupon er expiry date sesh ba bojha jay ni — future expiry date chara Live kora jabe na."); return; }
@@ -3307,8 +3313,10 @@
         c.status = c.status==="Live" ? "Paused" : "Live";
         if (supabaseConnected && supabase) {
           try {
-            var upC = await supabase.from('coupons').update({ status: c.status === "Live" ? "live" : "paused" }).eq('id', c.id).eq('shop_id', me().shopId);
-            if (upC && upC.error) { c.status = prevCStatus; toast("Coupon status save hoy ni — " + (upC.error.message || "database error") + ". Abar chesta korun."); renderAll(); return; }
+            /* P0-2: .select("id") diye verify koro — RLS 0-row block e
+               error ashe na, tai data.length na dekhle UI vul Live dekhabe. */
+            var upC = await supabase.from('coupons').update({ status: c.status === "Live" ? "live" : "paused" }).eq('id', c.id).eq('shop_id', me().shopId).select("id");
+            if (upC && (upC.error || !upC.data || !upC.data.length)) { c.status = prevCStatus; toast("Coupon status save hoy ni — " + (upC && upC.error && upC.error.message ? upC.error.message : "database e update hoy ni") + ". Abar chesta korun."); renderAll(); return; }
           } catch(e){ c.status = prevCStatus; toast("Coupon status save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."); renderAll(); return; }
         }
         toast(c.code + (c.status==="Live" ? " ekhon website e LIVE" : " pause hoyeche — website theke sore geche"));
