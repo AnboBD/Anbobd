@@ -995,7 +995,7 @@ async function sbLoadAll(){
       var nm = rw.shop_name || "Shop";
       if (rw.id){ shopNameById[rw.id] = nm; }
       var op = ownerProfileById[rw.owner_id] || {};
-      var s = { id: rw.id, supabaseId: rw.id, shop: nm, owner: op.full_name || op.name || "—", phone: op.phone || "—", email: op.email || "", district: rw.district || "—", cat: rw.category || "—", joined: sbDateLabel(rw.created_at), status: rw.status || "pending", rejectReason: rw.reject_reason || "", products: 0, sold: 0, sales: 0, commissionRate: effectiveCommissionRate({commissionRate: rw.commission_rate}, anboCatNorm(rw.category)), payoutMethod: (rw.payout_method || "—") + (rw.payout_account ? " · " + rw.payout_account : ""), payoutAccount: rw.payout_account || "", rating: 0, license: rw.trade_licence || rw.trade_license || "—", nidNumber: rw.nid_number || "", nidCopyUrl: rw.nid_copy_url || "", tradeCopyUrl: rw.trade_licence_copy_url || rw.trade_license_copy_url || "", ownerId: rw.owner_id || "", nidDoc: kycDocPath(rw, ["nid_copy_url", "nid_doc", "nid_doc_path", "nid_document", "nid_document_path", "nid_copy", "nid_copy_path", "nid_file", "nid_file_path", "nid_image", "nid_image_path"]), tradeDoc: kycDocPath(rw, ["trade_licence_copy_url", "trade_license_copy_url", "trade_doc", "trade_doc_path", "trade_document", "trade_document_path", "trade_licence_doc", "trade_licence_path", "trade_license_doc", "trade_license_path", "licence_doc", "licence_copy", "trade_copy", "trade_file", "trade_file_path"]), kycStatus: rw.kyc_status || "", kycRerequest: rw.kyc_rerequest || "", color: "" };
+      var s = { id: rw.id, supabaseId: rw.id, shop: nm, owner: op.full_name || op.name || "—", phone: op.phone || "—", email: op.email || "", district: rw.district || "—", cat: rw.category || "—", joined: sbDateLabel(rw.created_at), status: rw.status || "pending", rejectReason: rw.reject_reason || "", products: 0, sold: 0, sales: 0, commissionRate: effectiveCommissionRate({commissionRate: rw.commission_rate}, anboCatNorm(rw.category)), commissionRateRaw: rw.commission_rate, payoutMethod: (rw.payout_method || "—") + (rw.payout_account ? " · " + rw.payout_account : ""), payoutAccount: rw.payout_account || "", rating: 0, license: rw.trade_licence || rw.trade_license || "—", nidNumber: rw.nid_number || "", nidCopyUrl: rw.nid_copy_url || "", tradeCopyUrl: rw.trade_licence_copy_url || rw.trade_license_copy_url || "", ownerId: rw.owner_id || "", nidDoc: kycDocPath(rw, ["nid_copy_url", "nid_doc", "nid_doc_path", "nid_document", "nid_document_path", "nid_copy", "nid_copy_path", "nid_file", "nid_file_path", "nid_image", "nid_image_path"]), tradeDoc: kycDocPath(rw, ["trade_licence_copy_url", "trade_license_copy_url", "trade_doc", "trade_doc_path", "trade_document", "trade_document_path", "trade_licence_doc", "trade_licence_path", "trade_license_doc", "trade_license_path", "licence_doc", "licence_copy", "trade_copy", "trade_file", "trade_file_path"]), kycStatus: rw.kyc_status || "", kycRerequest: rw.kyc_rerequest || "", color: "" };
       shopById[rw.id] = s;
       return s;
     });
@@ -1317,10 +1317,13 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
   /* Commission fix (2026-11-21): sub_orders rows used to be written WITHOUT
      commission_rate / commission_amount / seller_earning, so the DB kept the
      0.00 defaults and Seller Center showed earning ৳0. Compute the real
-     numbers here — rate = the shop's effective rate (stored seller rate if
-     > 0, else the category rate, else the global default, via
-     effectiveCommissionRate), amount = round(subtotal × rate / 100),
-     earning = subtotal − amount — and write them on BOTH insert and update,
+     numbers here — rate = the shop's RAW override if > 0, else the FIRST
+     ITEM's category rate, else the global default (via effectiveRateForShop,
+     mirroring the place_order RPC). The in-memory seller rate is already
+     resolved to the SHOP's category and must NOT be fed back in — it used to
+     shadow the item category (Grocery 8% overwrote Shoes & Bags 11%).
+     Amount = round(subtotal × rate / 100), earning = subtotal − amount — and
+     write them on BOTH insert and update,
      so rows created earlier with 0.00 are repaired on confirm/resend. */
   function commissionFor(shopId, shopName, subtotal){
     var sv = null;
@@ -1333,7 +1336,7 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
       if (s === shopName){ var p = null; try{ p = prod(it[0]); }catch(e){} if (p) catKey = anboCatNorm(p.cat); }
     });
     if (!catKey && sv && sv.cat) catKey = anboCatNorm(sv.cat);
-    var rate = effectiveCommissionRate(sv, catKey);
+    var rate = effectiveRateForShop(sv, catKey);
     var amount = Math.round(subtotal * rate / 100);
     return { rate: rate, amount: amount, earning: subtotal - amount };
   }
@@ -1386,20 +1389,40 @@ function ensureSubOrders(o, targetStatus, loud){ /* loud=true only from the draw
       rs._pendingCommission = c;
       var q = sb.from("sub_orders").update({ status: targetStatus, commission_rate: c.rate, commission_amount: c.amount, seller_earning: c.earning });
       q = rs.subId ? q.eq("id", rs.subId) : q.eq("order_id", orderId).eq("shop_id", rs.shopId);
-      return q.select("id").then(function(r){
+      /* Commission root-cause fix (2026-11-26): select the commission columns
+         back so the success handler can refresh the local object from the
+         VERIFIED stored row instead of trusting in-session values. A
+         successful job returns the updated row (has id); a failed job
+         returns an error object (no id). */
+      return q.select("id,commission_rate,commission_amount,seller_earning").then(function(r){
         if (r && r.error) return r.error;
         if (!r || !r.data || !r.data.length) return noRowErr();
-        return null;
+        return r.data[0];
       }).catch(function(e){ return e; });
     });
-    Promise.all(jobs).then(function(errs){
+    Promise.all(jobs).then(function(results){
       var firstErr = null;
-      errs.forEach(function(e){ if (e && !firstErr) firstErr = e; });
+      results.forEach(function(x){ if (x && !x.id && !firstErr) firstErr = x; });
       if (firstErr){ sbSaveFailed("sub_orders", firstErr); return; }
-      subs.forEach(function(rs){
+      subs.forEach(function(rs, i){
         rs.status = sbNormOrderStatus(targetStatus);
         rs.rawStatus = targetStatus;
-        if (rs._pendingCommission) rs.commissionRate = rs._pendingCommission.rate;
+        /* Commission root-cause fix (2026-11-26): refresh the WHOLE commission
+           snapshot from the verified returned row — the old code set only the
+           rate, so the drawer showed the new rate next to the stale amount
+           and earning until a reload. _pendingCommission (the values just
+           written) is the fallback if the row comes back without the columns. */
+        var row = results[i];
+        if (row && row.id){
+          if (row.commission_rate != null) rs.commissionRate = row.commission_rate;
+          if (row.commission_amount != null) rs.commissionAmount = +row.commission_amount;
+          if (row.seller_earning != null) rs.sellerEarning = +row.seller_earning;
+        }
+        if (rs._pendingCommission){
+          if (rs.commissionRate == null) rs.commissionRate = rs._pendingCommission.rate;
+          if (rs.commissionAmount == null) rs.commissionAmount = rs._pendingCommission.amount;
+          if (rs.sellerEarning == null) rs.sellerEarning = rs._pendingCommission.earning;
+        }
         delete rs._pendingCommission;
       });
       afterWrite();
@@ -1533,6 +1556,16 @@ var COMMISSION_HISTORY = [];
    every boot, so localStorage settings never applied. It is now called after
    the settings definitions (see below). */
 function effectiveCommissionRate(sellerObj, catKey){ if(!sellerObj) return settings?settings.defaultCommission:10; /* Re-audit fix (2026-11-21): a stored rate of 0 is the old DB default, never a deliberate 0% override — treat it as unset so the category/global rate applies. */ if(sellerObj.commissionRate!=null && sellerObj.commissionRate>0) return sellerObj.commissionRate; if(catKey && CATEGORY_COMMISSION[catKey]!=null) return CATEGORY_COMMISSION[catKey]; return settings?settings.defaultCommission:10; }
+/* Commission root-cause fix (2026-11-26): the in-memory seller object's
+   commissionRate is already RESOLVED (shop override if set, else the SHOP's
+   category rate — e.g. Hunny House resolves to Grocery 8%). Feeding that
+   back into effectiveCommissionRate let the shop's category shadow the ITEM's
+   category, so Admin confirm rewrote the RPC's 11% / ৳132 Shoes & Bags row
+   to 8% / ৳96. Resolve from the RAW shops.commission_rate instead
+   (commissionRateRaw; null/0 = no override), so the item's category rate
+   applies — exactly the place_order RPC's precedence: shop override (> 0) >
+   first-item category rate > global default. */
+function effectiveRateForShop(sv, catKey){ var raw = (sv && sv.commissionRateRaw != null) ? sv.commissionRateRaw : null; return effectiveCommissionRate({ commissionRate: raw }, catKey); }
 /* Payout requests — seller ASKS, admin DECIDES (Approve / Hold / Mark Paid). Admin never invents a seller payout and never edits a seller's earnings; wallet balance is derived below. */
 var payoutRequests = [];
 var payoutPaidAdjustments = {}; /* sellerId -> amount already marked Paid in this session from derived balance */
@@ -2174,7 +2207,7 @@ function getSubOrders(o){ /* Commission snapshot: the first calculation for an o
       /* Re-audit fix (2026-11-21): a stored commission_rate of 0 is the old DB default, never a deliberate 0% override — use the effective rate (seller > category > global). A stored rate above 0 stays the snapshot, so settled history never changes. */
       var _catKey = null;
       if (subItems.length){ var _p0 = null; try{ _p0 = prod(subItems[0][0]); }catch(e){} if (_p0) _catKey = anboCatNorm(_p0.cat); }
-      var effRate = (rs.commissionRate != null && rs.commissionRate > 0) ? rs.commissionRate : effectiveCommissionRate(sellerOfShop(rs.shop), _catKey);
+      var effRate = (rs.commissionRate != null && rs.commissionRate > 0) ? rs.commissionRate : effectiveRateForShop(sellerOfShop(rs.shop), _catKey);
       /* P3 (2026-11-23): prefer the STORED commission snapshot — the
          sub_orders row already holds the settled commission_amount /
          seller_earning. A stored 0 is the old DB default, never a
@@ -2186,10 +2219,11 @@ function getSubOrders(o){ /* Commission snapshot: the first calculation for an o
     });
     return o._subs;
   }
-  var byShop={}; var order=[]; (o.items||[]).forEach(function(it, idx2){ var shop=shopForStoredItem(o, idx2, it) || PRODUCT_SELLER[it[0]]||"AnboBD (own stock)"; if(!byShop[shop]){ byShop[shop]={shop:shop, items:[], subtotal:0}; order.push(shop); } var d=storedItemDisplay(o, idx2, it); byShop[shop].items.push(it); if(d.lineTotal != null) byShop[shop].subtotal+=d.lineTotal; else { var p=prod(it[0]); if(p) byShop[shop].subtotal+=p.price*it[1]; } }); var letters=["A","B","C","D","E"]; o._subs = order.map(function(shop, idx){ var so=byShop[shop]; var sellerObj=sellerOfShop(shop); var _ck=null; if(so.items.length){ var _pc=null; try{ _pc=prod(so.items[0][0]); }catch(e){} if(_pc) _ck=anboCatNorm(_pc.cat); } var rate=(shop==="AnboBD (own stock)")?0:effectiveCommissionRate(sellerObj, _ck); /* seller coupon discount is allocated only if the order coupon belongs to this shop */ var chk=couponCheck(o.coupon,o); var disc=(chk.ok && chk.kind==="seller" && chk.coupon && chk.coupon.shop===shop)?chk.discount:0; /* platform coupon is platform cost — it does NOT reduce a single seller's earning; it is shown at master level */ so.id=(o.localId||o.id)+"-"+letters[idx]; so.sellerId=sellerObj?sellerObj.id:"ANBO-OWN"; so.commissionRate=rate; so.discount=disc; so.commission=Math.round((so.subtotal-disc)*rate/100); so.earning=so.subtotal-disc-so.commission; so.status=o.status; so.sentToSeller=!!o.sentToSeller; return so; }); return o._subs; }
+  var byShop={}; var order=[]; (o.items||[]).forEach(function(it, idx2){ var shop=shopForStoredItem(o, idx2, it) || PRODUCT_SELLER[it[0]]||"AnboBD (own stock)"; if(!byShop[shop]){ byShop[shop]={shop:shop, items:[], subtotal:0}; order.push(shop); } var d=storedItemDisplay(o, idx2, it); byShop[shop].items.push(it); if(d.lineTotal != null) byShop[shop].subtotal+=d.lineTotal; else { var p=prod(it[0]); if(p) byShop[shop].subtotal+=p.price*it[1]; } }); var letters=["A","B","C","D","E"]; o._subs = order.map(function(shop, idx){ var so=byShop[shop]; var sellerObj=sellerOfShop(shop); var _ck=null; if(so.items.length){ var _pc=null; try{ _pc=prod(so.items[0][0]); }catch(e){} if(_pc) _ck=anboCatNorm(_pc.cat); } var rate=(shop==="AnboBD (own stock)")?0:effectiveRateForShop(sellerObj, _ck); /* seller coupon discount is allocated only if the order coupon belongs to this shop */ var chk=couponCheck(o.coupon,o); var disc=(chk.ok && chk.kind==="seller" && chk.coupon && chk.coupon.shop===shop)?chk.discount:0; /* platform coupon is platform cost — it does NOT reduce a single seller's earning; it is shown at master level */ so.id=(o.localId||o.id)+"-"+letters[idx]; so.sellerId=sellerObj?sellerObj.id:"ANBO-OWN"; so.commissionRate=rate; so.discount=disc; so.commission=Math.round((so.subtotal-disc)*rate/100); so.earning=so.subtotal-disc-so.commission; so.status=o.status; so.sentToSeller=!!o.sentToSeller; return so; }); return o._subs; }
 function subOrderForShop(o, shop){ var subs=getSubOrders(o); for(var i=0;i<subs.length;i++) if(subs[i].shop===shop) return subs[i]; return null; }
 function orderCommission(o){ /* Sum of sub-order commissions — correct even for 3-shop carts. Own-stock sub-order pays 0 commission. */ return getSubOrders(o).reduce(function(a,so){ return a+so.commission; },0); }
 function orderSellerEarning(o){ /* For single-seller orders this is that seller's earning; for multi-seller use getSubOrders() per shop. Kept for drawer/ledger compatibility: returns total seller earnings across sub-orders (excluding platform coupon, which AnboBD bears). */ var chk=couponCheck(o.coupon,o); var platDisc=(chk.ok&&chk.kind==="platform")?chk.discount:0; return orderSubtotal(o) - ((chk.ok&&chk.kind==="seller")?chk.discount:0) - orderCommission(o) - 0 + platDisc*0; }
+function subCommPct(so){ /* Commission label fix (2026-11-26): the % next to a sub-order commission must be the rate of the AMOUNT shown, not the shop's rate — a Shoes & Bags item (11%) sold by a Grocery shop (8%) showed "Comm 132 (8%)". Derive it from the amount over its base (subtotal − seller-coupon discount); fall back to the stored rate when the base is 0. */ var base=(so.subtotal||0)-(so.discount||0); if(base>0 && so.commission!=null) return Math.round(so.commission/base*100); return so.commissionRate; }
 /* --- DERIVED WALLET / PAYOUT DUE — never hardcoded. Due = Σ(delivered sub-orders for this seller: subtotal − seller-coupon discount − commission) − refunds for that seller (Refunded/Approved) − amounts already Marked Paid this session. Settlement rule: only DELIVERED sub-orders count, and only after delivery + return window (hold days). Pending/shipped do NOT count. --- */
 /* A delivered order becomes payable only after the payout hold window
    (settings.payoutHoldDays after delivery, so returns can settle first).
@@ -3078,7 +3112,7 @@ function openOrder(id){
     + '<div class="kv"><span>Payment status</span><b>'+paymentBadge(o)+'</b></div>'
     + (canDo("payment_verify") && isManualPay(o) && orderPaymentStatus(o)==="pending" ? '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Manual ' + o.pay + ' payment — jachai chara seller er kache jabe na</b><p class="note" style="margin:0 0 10px">Customer er deya Txn ID <b>' + (orderTxnId(o) ? esc(orderTxnId(o)) : "—") + '</b> tomar ' + o.pay + ' statement er sathe miliye dekho. Mile gele Confirm, na mille Reject — Reject hole order hold thakbe.</p><span style="display:inline-flex;gap:8px;flex-wrap:wrap"><button class="btn sm" type="button" id="drawerPayOk">✓ Confirm payment</button><button class="btn danger sm" type="button" id="drawerPayNo">✕ Reject payment</button></span></div>' : "")
     + (isManualPay(o) && orderPaymentStatus(o)==="rejected" ? '<div class="dispatch-box" style="border-color:var(--danger)"><b>Payment rejected</b><p class="note" style="margin:4px 0 0">Ei order seller er kache pathano hobe na. Customer ke bolo sothik Txn ID diye abar payment korte.</p></div>' : "")
-    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ var ct = subCourierTrackingText(so); return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+subOrderStatusLabel(so.status)+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span>'+(ct ? '<br /><span class="note">'+esc(ct)+'</span>' : "")+'</span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+so.commissionRate+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
+    + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Sub-orders — prottek shop er alada hisab, status ar delivery</b>'+getSubOrders(o).map(function(so){ var ct = subCourierTrackingText(so); return '<div class="kv" style="border:none;padding:5px 0"><span><b>'+esc(so.id)+'</b> · '+esc(so.shop)+'<br /><span class="note">Items: '+so.items.map(function(it){ var gi = o.items.indexOf(it); var dd = storedItemDisplay(o, gi >= 0 ? gi : 0, it); return esc(dd.name || dd.sku || "Item")+" ×"+it[1]; }).join(", ")+' · Status: '+subOrderStatusLabel(so.status)+' · '+(so.sentToSeller?"Sent ✓":"Not sent — confirm lagbe")+'</span>'+(ct ? '<br /><span class="note">'+esc(ct)+'</span>' : "")+'</span><b class="num" style="text-align:right">'+fmt(so.subtotal)+'<br /><span class="note">Comm '+fmt(so.commission)+' ('+subCommPct(so)+'%) · Seller pabe '+fmt(so.earning)+'</span></b></div>'; }).join("")+'<p class="note" style="margin:6px 0 0">Customer ekta master order '+esc(displayId)+' dekhe; prottek seller sudhu nijer sub-order dekhe. Ek sub-order cancel hole baki sub-order cholte thake — Admin exception ekhane handle kore.</p></div>'
     + '<div class="dispatch-box"><b style="display:block;margin-bottom:4px">Seller dispatch (master)</b><div class="kv" style="border:none;padding:4px 0"><span>Fulfilling seller</span><b>'+esc(sellerShopsForOrder(o).join(", "))+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Sent to seller?</span><b>'+(orderSentToSeller(o)?"✓ Yes — Seller Center e ache":"✕ Na — Admin confirm korlei jabe")+'</b></div><div class="kv" style="border:none;padding:4px 0"><span>Seller status</span><b>'+esc(sellerStatusDisplay)+'</b></div>' + (canDo("order_confirm") && (effStatus==="confirmed"||effStatus==="ready"||effStatus==="packed"||effStatus==="shipped"||effStatus==="delivered") && !orderSentToSeller(o) && uuidSellerGroups(o).length ? '<p class="note" style="margin:8px 0;color:var(--danger)">⚠ ' + ((!o._realSubs || !o._realSubs.length) ? 'DB te sub-order row nei — seller ekhono ei order dekhte pay ni.' : 'Sub-order row ache kintu ekhono confirm hoy ni — seller ekhono ei order dekhte pay ni.') + '</p><button class="btn sm" type="button" id="drawerSendSubs">Seller ke pathao</button>' : "") + '<p class="note" style="margin:6px 0 0">Seller customer er full address/phone dekhbe na pack korar age porjonto label print er jonno ja lage tai pabe — eta seller er kaj, delivery AnboBD rider diyei hobe.</p></div>'
     + '<h4 style="margin:20px 0 6px">Items</h4>'
     + ((!o.items || !o.items.length) ? '<p class="note">No items recorded for this order.</p>' : "")
@@ -3916,7 +3950,7 @@ function renderReports(){
     + '</div>'
     + '<div class="card" style="margin-bottom:16px"><div><h3>Seller-wise report &amp; profit · ' + rangeLabel + '</h3><p class="hint" style="margin:0">Prottek seller er sales, commission, payout due ar AnboBD er profit — range er non-cancelled order er sub-order theke hisab, Finance ledger er sathei mile</p></div>'
     + '<div class="table-card" style="margin-top:14px"><table><thead><tr><th>Seller</th><th>Orders</th><th>Sales (' + rangeLabel + ')</th><th>Commission</th><th>Seller net</th><th>Payout due</th><th>Margin</th></tr></thead><tbody>'
-    + repSellerList.map(function(s){ /* Residual fix (2026-11-21): sales/commission age s.sales theke ashto — s.sales sudhu REAL sub_orders row theke hisab hoy (checkout sub-order insert na hole ৳0), ar Finance ledger getSubOrders() theke (real row na thakle order item theke compute kore). Dui jaygay dui total chilo. Ekhon table-ta ledger-er source-i bebohar kore: prottek non-cancelled order er sub-order (getSubOrders) theke sales + commission. P2 (2026-11-23): ekhon range-filtered orders (repOrders) ar seller filter (repSellerList) use kore. */ var repSales=0, repComm=0, repOrdN=0; repOrders.forEach(function(o){ var so=subOrderForShop(o, s.shop); if(so){ repOrdN += 1; repSales += (so.subtotal - (so.discount || 0)); repComm += so.commission; } }); return '<tr><td data-label="Seller"><b>'+esc(s.shop)+'</b></td><td data-label="Orders"><b class="num">'+repOrdN+'</b></td><td data-label="Sales"><b class="num">'+fmt(repSales)+'</b></td><td data-label="Commission"><span class="num">'+fmt(repComm)+' ('+s.commissionRate+'%)</span></td><td data-label="Net"><span class="num">'+fmt(repSales-repComm)+'</span></td><td data-label="Due"><b class="num">'+fmt(derivedPayoutDue(s))+'</b></td><td data-label="Margin"><span class="num">'+s.commissionRate+'% · VAT '+settings.vatRate+'% incl.</span></td></tr>'; }).join("")
+    + repSellerList.map(function(s){ /* Residual fix (2026-11-21): sales/commission age s.sales theke ashto — s.sales sudhu REAL sub_orders row theke hisab hoy (checkout sub-order insert na hole ৳0), ar Finance ledger getSubOrders() theke (real row na thakle order item theke compute kore). Dui jaygay dui total chilo. Ekhon table-ta ledger-er source-i bebohar kore: prottek non-cancelled order er sub-order (getSubOrders) theke sales + commission. P2 (2026-11-23): ekhon range-filtered orders (repOrders) ar seller filter (repSellerList) use kore. */ var repSales=0, repComm=0, repOrdN=0; repOrders.forEach(function(o){ var so=subOrderForShop(o, s.shop); if(so){ repOrdN += 1; repSales += (so.subtotal - (so.discount || 0)); repComm += so.commission; } }); return '<tr><td data-label="Seller"><b>'+esc(s.shop)+'</b></td><td data-label="Orders"><b class="num">'+repOrdN+'</b></td><td data-label="Sales"><b class="num">'+fmt(repSales)+'</b></td><td data-label="Commission"><span class="num">'+fmt(repComm)+' ('+(repSales>0?Math.round(repComm/repSales*100):s.commissionRate)+'%)</span></td><td data-label="Net"><span class="num">'+fmt(repSales-repComm)+'</span></td><td data-label="Due"><b class="num">'+fmt(derivedPayoutDue(s))+'</b></td><td data-label="Margin"><span class="num">'+s.commissionRate+'% · VAT '+settings.vatRate+'% incl.</span></td></tr>'; }).join("")
     + '</tbody></table></div><p class="note" style="margin:10px 0 0">' + rangeLabel + ' · range er non-cancelled order er sub-order theke hisab — Finance page er commission ledger er sathei mile. Payout due sudhu Delivered order theke (settlement niyom, all-time). Seller-wise statement Finance page theke download kora jay.</p>' + repSellerSummary + '</div>'
     + '<div class="card"><h3>Download reports</h3><p class="hint">CSV files you can open in Excel or Google Sheets</p><div class="dl-row">'
     + '<button class="btn" type="button" id="dlOrders">⬇ Orders CSV</button>'
@@ -4835,7 +4869,7 @@ function openSellerDetail(id){
     + '<div class="kv"><span>Rating</span><b>'+(s.rating ? "★ "+s.rating : "New seller")+'</b></div>'
     + '<h4 style="margin:20px 0 6px">Sales &amp; money</h4>'
     + '<div class="kv"><span>Total sales</span><b class="num">'+fmt(rt.sales)+' ('+s.sold.toLocaleString("en-IN")+' items)</b></div>'
-    + '<div class="kv"><span>Commission ('+s.commissionRate+'% to AnboBD)</span><b class="num">−'+fmt(rt.commission)+'</b></div>'
+    + '<div class="kv"><span>Commission ('+(rt.sales>0?Math.round(rt.commission/rt.sales*100):s.commissionRate)+'% to AnboBD)</span><b class="num">−'+fmt(rt.commission)+'</b></div>'
     + '<div class="kv"><span>Seller earnings</span><b class="num">'+fmt(rt.earning)+'</b></div>'
     + '<div class="kv"><span>Payout due now</span><b class="num" style="font-size:16px">'+fmt(derivedPayoutDue(s))+'</b></div>'
     + '<div class="kv"><span>Payout method</span><b>'+esc(maskPayoutMethod(s.payoutMethod))+'</b></div>'
@@ -4861,7 +4895,7 @@ function openSellerDetail(id){
   var rn = $("#revealNid"); if(rn) rn.addEventListener("click", function(){ var m = $("#nidMasked"); if(m) m.textContent = s.nidNumber; logActivity("Revealed NID number for seller " + s.shop + " in seller detail"); rn.remove(); });
   var rl = $("#revealLicence"); if(rl) rl.addEventListener("click", function(){ var m = $("#licenceMasked"); if(m) m.textContent = s.license; logActivity("Revealed trade licence number for seller " + s.shop + " in seller detail"); rl.remove(); });
   loadKycDocs(s);
-  var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", async function(){ /* P1-23 (2026-11-26): seller commission rate — seller governance write (seller_decide, Super Admin / Manager). */ if (!canDo("seller_decide")) return denyAction("seller_decide"); var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } var r = await sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); /* P1-8 residual (2026-11-26): verified write — 0-row guard; on .error sbUpdate already showed the reason via sbSaveFailed. */ if(!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Commission save hoy ni — database e jay ni"); return; } /* P3 (2026-11-23): log BOTH rates — the edited seller rate and the effective rate the UI will show. A seller rate of 0 means "unset": the category rate applies, so the log must never claim the edited number when displays show the category rate. s.commissionRate is set to the effective rate (as the loader does) so the re-render matches post-reload. */ var eff=effectiveCommissionRate({commissionRate:v}, anboCatNorm(s.cat)); s.commissionRate=eff; logActivity("Changed commission of "+s.shop+" — seller rate "+v+"%, effective rate "+eff+"% ("+(v>0?"seller override":"category rate "+catLabel(s.cat)+" applies")+"); displays show the effective rate"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+eff+"% (effective)"); renderAll(); openSellerDetail(s.id); });
+  var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", async function(){ /* P1-23 (2026-11-26): seller commission rate — seller governance write (seller_decide, Super Admin / Manager). */ if (!canDo("seller_decide")) return denyAction("seller_decide"); var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } var r = await sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); /* P1-8 residual (2026-11-26): verified write — 0-row guard; on .error sbUpdate already showed the reason via sbSaveFailed. */ if(!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Commission save hoy ni — database e jay ni"); return; } /* P3 (2026-11-23): log BOTH rates — the edited seller rate and the effective rate the UI will show. A seller rate of 0 means "unset": the category rate applies, so the log must never claim the edited number when displays show the category rate. s.commissionRate is set to the effective rate (as the loader does) so the re-render matches post-reload. */ var eff=effectiveCommissionRate({commissionRate:v}, anboCatNorm(s.cat)); s.commissionRate=eff; s.commissionRateRaw=v; /* Root-cause fix (2026-11-26): keep the RAW override in sync — commissionFor/getSubOrders resolve from it now, so an edited override must update here too. */ logActivity("Changed commission of "+s.shop+" — seller rate "+v+"%, effective rate "+eff+"% ("+(v>0?"seller override":"category rate "+catLabel(s.cat)+" applies")+"); displays show the effective rate"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+eff+"% (effective)"); renderAll(); openSellerDetail(s.id); });
 }
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller]"), function(b){ b.addEventListener("click", function(){ $("#sellerModalWrap").classList.remove("show"); }); });
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller-detail]"), function(b){ b.addEventListener("click", function(){ $("#sellerDetailWrap").classList.remove("show"); }); });
@@ -4938,7 +4972,7 @@ $("#sellerForm").addEventListener("submit", async function(e){
     var r = await tmp.from("shops").insert(ins).select("*").single();
     if (r.error) throw r.error;
     var rw = r.data;
-    sellers.unshift({ id: rw.id, supabaseId: rw.id, shop: rw.shop_name, owner: owner, phone: phone, email: email, district: district, cat: category, joined: sbDateLabel(rw.created_at), status: "pending", products: 0, sold: 0, sales: 0, commissionRate: effectiveCommissionRate({ commissionRate: commission }, anboCatNorm(category)), payoutMethod: "bKash · " + phone, payoutAccount: phone, rating: 0, license: licence || "—", nidNumber: "", nidCopyUrl: "", tradeCopyUrl: "", ownerId: sellerId, kycStatus: "pending", applied: nowLabel() + ", just now", color: "amber" });
+    sellers.unshift({ id: rw.id, supabaseId: rw.id, shop: rw.shop_name, owner: owner, phone: phone, email: email, district: district, cat: category, joined: sbDateLabel(rw.created_at), status: "pending", products: 0, sold: 0, sales: 0, commissionRate: effectiveCommissionRate({ commissionRate: commission }, anboCatNorm(category)), commissionRateRaw: rw.commission_rate, payoutMethod: "bKash · " + phone, payoutAccount: phone, rating: 0, license: licence || "—", nidNumber: "", nidCopyUrl: "", tradeCopyUrl: "", ownerId: sellerId, kycStatus: "pending", applied: nowLabel() + ", just now", color: "amber" });
     logActivity("Registered seller (pending approval): " + shop + " (" + rw.id + ")");
     $("#sellerModalWrap").classList.remove("show");
     e.target.reset(); $("#selCommission").value = "10";
@@ -5419,7 +5453,7 @@ function renderFinance(){
     catch(e){ r = { error: e }; }
     if (!r || r.error || !r.data || r.data.length !== 1){ if (r && r.error) sbSaveFailed("payouts", r.error); else toast("⚠ Paid save hoy ni — " + esc(pr.id) + " ekhono Approved, abar chesta korun."); return; }
     var sx=sellerOfShop(pr.shop); if(sx) payoutPaidAdjustments[sx.id]=(payoutPaidAdjustments[sx.id]||0)+pr.amount; pr.status="Paid"; sellerPayoutHistory.unshift({seller:pr.shop, amount:pr.amount, method:payoutMethodKind(pr.method), date:nowLabel(), status:"Paid"}); logActivity("Paid "+pr.id+" "+fmt(pr.amount)); toast("<span class='lime'>✓ Paid</span> — "+esc(pr.id)); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-fin-stmt]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){return String(x.id)===String(b.getAttribute("data-fin-stmt"));})[0]; if(!s) return; var rows=[["Order","Customer","Status","Subtotal","Discount","Commission ("+s.commissionRate+"%)","Seller earning"]]; orders.filter(function(o){ return sellerShopsForOrder(o).indexOf(s.shop)!==-1; }).forEach(function(o){ var so2=subOrderForShop(o,s.shop); if(so2) rows.push([so2.id+" (master "+o.id+")",o.customer,o.status,so2.subtotal,so2.discount,so2.commission,so2.earning]); }); rows.push(["TOTAL","","", "", "", sellerCommission(s), sellerNet(s)]); downloadCSV("statement-"+s.id+".csv", rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(","); }).join("\n")); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-fin-stmt]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){return String(x.id)===String(b.getAttribute("data-fin-stmt"));})[0]; if(!s) return; var rows=[["Order","Customer","Status","Subtotal","Discount","Commission","Seller earning"]]; orders.filter(function(o){ return sellerShopsForOrder(o).indexOf(s.shop)!==-1; }).forEach(function(o){ var so2=subOrderForShop(o,s.shop); if(so2) rows.push([so2.id+" (master "+o.id+")",o.customer,o.status,so2.subtotal,so2.discount,so2.commission,so2.earning]); }); rows.push(["TOTAL","","", "", "", sellerCommission(s), sellerNet(s)]); downloadCSV("statement-"+s.id+".csv", rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(","); }).join("\n")); }); });
   var vx=$("#vatExport"); if(vx) vx.addEventListener("click", function(){ var rows=[["Month","Delivered orders","Delivered total (BDT)","VAT (BDT)"]]; vatReportRows().forEach(function(r){ rows.push([r.month, r.count, r.total, Math.round(r.vat * 100) / 100]); }); downloadCSV("anbobd-vat-" + todayStamp() + ".csv", csvRows(rows)); });
 }
 
