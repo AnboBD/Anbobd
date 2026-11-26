@@ -1384,8 +1384,20 @@
   }
   /* Supabase Storage e chhobi upload — path nijer user id diye shuru hoy,
      tarpor public URL ferot ase. Vul hole ashol error throw kore. */
+/* SEC-P2-4: client-side type + size gate before the upload starts (the bucket
+   policy is the server-side backstop). */
+var ANBO_IMG_MAX_BYTES = 5 * 1024 * 1024;
+function anboImageFileError(f){
+  if(!f) return "ফাইল বাছাই করা হয়নি।";
+  var okType = ["image/jpeg","image/png","image/webp","image/gif"].indexOf(f.type) > -1 || /\.(jpe?g|png|webp|gif)$/i.test(f.name || "");
+  if(!okType) return "শুধু ছবি ফাইল দিন (jpg/png/webp/gif) — 5 MB এর মধ্যে।";
+  if(f.size > ANBO_IMG_MAX_BYTES) return "ছবি 5 MB এর বেশি বড় — ছোট ছবি দিন।";
+  return "";
+}
   async function uploadImageToBucket(bucket, file){
     var s = me(); if (!s) throw new Error("Login nei — age login korun.");
+    var _imgErr = anboImageFileError(file);
+    if(_imgErr) throw new Error(_imgErr);
     var safeName = String(file.name || "image").replace(/[^a-zA-Z0-9.\-_]/g, "_");
     var path = String(s.userId || s.id) + "/" + Date.now() + "_" + safeName;
     var up = await supabase.storage.from(bucket).upload(path, file, { upsert: false });
@@ -1768,6 +1780,10 @@
        shop/product/order/coupon data survives in the DOM or in memory. The
        next sign-in reloads everything from Supabase. */
     if (supabaseConnected && supabase) { try { await supabase.auth.signOut(); } catch(e){} }
+    /* SEC-P2-3: explicit sweep — signOut removes the Supabase session, but a
+       failed signOut (offline) must not leave the token behind. The Seller
+       Center keeps no other localStorage data. */
+    try{ var i, k; for(i = localStorage.length - 1; i >= 0; i--){ k = localStorage.key(i); if(k && k.indexOf("sb-") === 0) localStorage.removeItem(k); } }catch(e){}
     session.sellerId = null;
     DB.sellers.length = 0;
     ["statGrid","todoGrid","recentOrdersBody","productsBody","ordersBody","reviewSummary","reviewsList","couponGrid","campGrid","returnList","payoutHistoryBody","earningsBody","staffGrid","permMatrixBody"].forEach(function(id){ var el = document.getElementById(id); if(el) el.innerHTML = ""; });
@@ -1794,7 +1810,28 @@
     $("tabLogin").classList.toggle("on", login); $("tabRegister").classList.toggle("on", !login);
     $("loginForm").classList.toggle("hidden", !login); $("registerForm").classList.toggle("hidden", login);
   }
-  async function tryLogin(){
+/* SEC-P2-2 (2026-11-26): client-side rate limiting — 60s lockout after 5 failed
+   attempts in 10 minutes, plus 60s resend cooldowns. localStorage-backed so a
+   reload does not reset it. Only counts + timestamps are stored — never a
+   password. This is friction only; the server still decides every auth outcome. */
+var ANBO_RATE_MAX = 5, ANBO_RATE_WINDOW_MS = 10*60*1000, ANBO_RATE_LOCK_MS = 60*1000;
+function anboRateState(key){ try{ var st = JSON.parse(localStorage.getItem("anbobd-ratelimit-"+key)||"null"); return (st && typeof st==="object") ? st : {n:0, first:0, until:0}; }catch(e){ return {n:0, first:0, until:0}; } }
+function anboRateSave(key, st){ try{ localStorage.setItem("anbobd-ratelimit-"+key, JSON.stringify(st)); }catch(e){} }
+function anboRateLocked(key){ var st = anboRateState(key); if(st.until && Date.now() < st.until) return Math.ceil((st.until - Date.now())/1000); if(st.until){ st.until = 0; st.n = 0; st.first = 0; anboRateSave(key, st); } return 0; }
+function anboRateHit(key){ var st = anboRateState(key); var now = Date.now(); if(st.until && now < st.until) return; if(!st.first || now - st.first > ANBO_RATE_WINDOW_MS){ st.n = 0; st.first = now; } st.n++; if(st.n >= ANBO_RATE_MAX){ st.until = now + ANBO_RATE_LOCK_MS; } anboRateSave(key, st); }
+function anboRateReset(key){ try{ localStorage.removeItem("anbobd-ratelimit-"+key); }catch(e){} }
+function anboCooldownLeft(key, secs){ var t = 0; try{ t = +localStorage.getItem("anbobd-cooldown-"+key) || 0; }catch(e){} var left = Math.ceil((t + secs*1000 - Date.now())/1000); return left > 0 ? left : 0; }
+function anboCooldownSet(key){ try{ localStorage.setItem("anbobd-cooldown-"+key, String(Date.now())); }catch(e){} }
+/* SEC-P2-2: tryLoginInner returns true (success), false (failed attempt) or
+   undefined (empty fields — not an attempt, not counted). */
+async function tryLogin(){
+  var lk = anboRateLocked("seller-login");
+  if(lk){ $("loginErr").textContent = "অনেকবার ভুল চেষ্টা হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"; return; }
+  var ok = await tryLoginInner();
+  if(ok === true) anboRateReset("seller-login");
+  else if(ok === false) anboRateHit("seller-login");
+}
+async function tryLoginInner(){
     var em = cleanText($("loginEmail").value).replace(/\s+/g, "").toLowerCase();
     var pw = $("loginPass").value;
     if (!em || !pw) { $("loginErr").textContent = "ইমেইল আর পাসওয়ার্ড দিন।"; return; }
@@ -1802,31 +1839,33 @@
       $("loginBtn").disabled = true;
       try {
         var res = await supabase.auth.signInWithPassword({ email: em, password: pw });
-        if (res.error) { $("loginErr").textContent = res.error.message || "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে।"; return; }
+        if (res.error) { $("loginErr").textContent = res.error.message || "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে।"; return false; }
         var user = res.data && res.data.user;
-        if (!user) { $("loginErr").textContent = "লগইন হয়নি — আবার চেষ্টা করুন।"; return; }
+        if (!user) { $("loginErr").textContent = "লগইন হয়নি — আবার চেষ্টা করুন।"; return false; }
         var seller = await loadCurrentSellerFromSupabase(user);
-        if (!seller) { $("loginErr").textContent = staffLoginBlocked ? staffLoginBlocked : (roleBlocked ? "এই অ্যাকাউন্টটি Admin/মালিকের অ্যাকাউন্ট — Seller Center-এ লগইন করা যায় না। সেলার অ্যাকাউন্ট দিয়ে লগইন করুন।" : "এই অ্যাকাউন্টের কোনো দোকান পাওয়া যায়নি। আগে দোকান খুলুন থেকে দোকান রেজিস্ট্রেশন করুন।"); return; }
-        if (seller.status === "suspended") { $("loginErr").textContent = "এই দোকানটি Admin সাসপেন্ড করেছে। বিস্তারিত জানতে AnboBD সেলার সাপোর্টে যোগাযোগ করুন।"; return; }
+        if (!seller) { $("loginErr").textContent = staffLoginBlocked ? staffLoginBlocked : (roleBlocked ? "এই অ্যাকাউন্টটি Admin/মালিকের অ্যাকাউন্ট — Seller Center-এ লগইন করা যায় না। সেলার অ্যাকাউন্ট দিয়ে লগইন করুন।" : "এই অ্যাকাউন্টের কোনো দোকান পাওয়া যায়নি। আগে দোকান খুলুন থেকে দোকান রেজিস্ট্রেশন করুন।"); return false; }
+        if (seller.status === "suspended") { $("loginErr").textContent = "এই দোকানটি Admin সাসপেন্ড করেছে। বিস্তারিত জানতে AnboBD সেলার সাপোর্টে যোগাযোগ করুন।"; return false; }
         /* 2FA step-up (Decision 7): verified TOTP factor thakle code chara login hobe na. */
-        if (!await sellerMfaStepUp()){ try { await supabase.auth.signOut(); } catch(e){} $("loginErr").textContent = "2FA কোড না দিলে লগইন হবে না।"; return; }
+        if (!await sellerMfaStepUp()){ try { await supabase.auth.signOut(); } catch(e){} $("loginErr").textContent = "2FA কোড না দিলে লগইন হবে না।"; return false; }
         session.sellerId = seller.id;
         $("loginErr").textContent = "";
         routeAfterAuth();
         toast(seller.status === "approved" ? ("Welcome back, " + seller.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
+        return true;
       } catch(e) { $("loginErr").textContent = "লগইনে সমস্যা হয়েছে — আবার চেষ্টা করুন।"; }
       finally { $("loginBtn").disabled = false; }
-      return;
+      return false;
     }
     pw = cleanText(pw).replace(/\s+/g, "");
     var s = sellerByEmail(em);
-    if (!s) { $("loginErr").textContent = "এই ইমেইলে কোনো সেলার অ্যাকাউন্ট নেই। নতুন হলে উপরে “দোকান খুলুন” থেকে আগে রেজিস্ট্রেশন করুন — রেজিস্ট্রেশন ছাড়া লগইন হবে না।"; return; }
-    if (s.passHash !== hashPw(pw)) { $("loginErr").textContent = "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে। ঠিক করে আবার চেষ্টা করুন।"; return; }
-    if (s.status === "suspended") { $("loginErr").textContent = "এই দোকানটি Admin সাসপেন্ড করেছে। বিস্তারিত জানতে AnboBD সেলার সাপোর্টে যোগাযোগ করুন।"; return; }
+    if (!s) { $("loginErr").textContent = "এই ইমেইলে কোনো সেলার অ্যাকাউন্ট নেই। নতুন হলে উপরে “দোকান খুলুন” থেকে আগে রেজিস্ট্রেশন করুন — রেজিস্ট্রেশন ছাড়া লগইন হবে না।"; return false; }
+    if (s.passHash !== hashPw(pw)) { $("loginErr").textContent = "ইমেইল বা পাসওয়ার্ড ভুল হয়েছে। ঠিক করে আবার চেষ্টা করুন।"; return false; }
+    if (s.status === "suspended") { $("loginErr").textContent = "এই দোকানটি Admin সাসপেন্ড করেছে। বিস্তারিত জানতে AnboBD সেলার সাপোর্টে যোগাযোগ করুন।"; return false; }
     session.sellerId = s.id;
     $("loginErr").textContent = "";
     routeAfterAuth();
     toast(s.status === "approved" ? ("Welcome back, " + s.shop) : "Login hoyeche — apnar application ekhono Admin approval er opekkhay ache");
+    return true;
   }
   $("loginForm").addEventListener("submit", function(e){ e.preventDefault(); tryLogin(); });
   /* Social login (2026-11-24): Google OAuth — Supabase Auth. Provider dashboard-e
@@ -1853,11 +1892,14 @@
     $("loginErr").textContent = "";
     if(!em){ show("উপরে আপনার অ্যাকাউন্টের ইমেইলটি লিখুন, তারপর এই লিংকে চাপ দিন।"); return; }
     if(!supabaseConnected || !supabase){ show("পাসওয়ার্ড রিসেটের জন্য লাইভ সংযোগ দরকার — লাইভ Seller Center সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    /* SEC-P2-2: reset link resend cooldown — 60 seconds between sends. */
+    var cd = anboCooldownLeft("seller-forgot", 60);
+    if(cd){ show("আবার "+cd+" সেকেন্ড পরে রিসেট লিংক পাঠাতে পারবেন।"); return; }
     this.disabled = true;
     try{
       var r = await supabase.auth.resetPasswordForEmail(em);
       if(r.error){ show("⚠️ রিসেট ইমেইল পাঠানো যায়নি — ইমেইলটি ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।"); }
-      else show("✅ রিসেট লিংক পাঠানো হয়েছে " + em + "-এ — ইমেইল খুলে লিংকে চাপ দিন, নতুন পাসওয়ার্ড দিন, তারপর সেই পাসওয়ার্ড দিয়ে সাইন ইন করুন।");
+      else { anboCooldownSet("seller-forgot"); show("✅ রিসেট লিংক পাঠানো হয়েছে " + em + "-এ — ইমেইল খুলে লিংকে চাপ দিন, নতুন পাসওয়ার্ড দিন, তারপর সেই পাসওয়ার্ড দিয়ে সাইন ইন করুন।"); }
     }catch(e){ show("⚠️ রিসেট ইমেইল পাঠানো যায়নি — আবার চেষ্টা করুন।"); }
     this.disabled = false;
   });
