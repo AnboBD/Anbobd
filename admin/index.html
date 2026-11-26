@@ -3407,7 +3407,7 @@ function openProductEdit(pid){
     var pePackSizeVal = document.getElementById("pePackSize").value.trim();
     var pePackUnitVal = document.getElementById("peUnit").value;
     var pePackVal = document.getElementById("pePack").value;
-    if (pePackSizeVal !== "" && !(+pePackSizeVal > 0)){ errEl.textContent = "পরিমাণ সঠিক সংখ্যায় দিন (e.g. 500)।"; return; }
+    if (pePackSizeVal !== "" && !(+pePackSizeVal > 0)){ errEl.textContent = "পরিমাণ সঠিক সংখ্যায় দিন (e.g. 500)।"; return; }
     if (!name || !(price > 0) || isNaN(stock) || stock < 0){ errEl.textContent = "Name, sothik price ar stock din."; return; }
     if (imgItems.length < 1){ errEl.textContent = "Komপক্ষে ১টি chhobi rakhte hobe — sob chhobi sorale product save hobe na."; return; }
     /* P1-23 (2026-11-26) + Job 2(a) (2026-11-26): the product-edit gate
@@ -3498,31 +3498,34 @@ function loyaltyPointsFor(c){
   var earned = Math.floor(del / 100) * (settings.loyaltyPer100 || 1);
   return Math.max(0, earned - spentPts);
 }
-/* Decision 7 — Admin → customer message (in-app). support_tickets has NO
-   customer_id/type column (verified live 2026-11-21: only id, subject,
-   message, status, created_at), so the customer's phone goes in the subject
-   as the key: "ADMIN-MSG | <phone> | <name>". The customer reads it in
-   Account → Messages on the storefront. A dedicated customer_messages
-   table (customer_id + RLS) is the proper fix — see change log. */
+/* P2-31 (2026-11-26) — Admin → customer message (in-app) now uses the
+   dedicated customer_messages table (phone is the key — guests have no
+   profile; SQL in the change log). The old "ADMIN-MSG | <phone> | <name>"
+   subject hack on support_tickets is retired: new messages no longer
+   create a support ticket, and the customer reads them in Account →
+   Messages via the get_customer_messages RPC. */
+function anboNormPhone(v){ var d = String(v == null ? "" : v).replace(/\D/g, ""); if(d.length === 13 && d.slice(0,3) === "880") return "0" + d.slice(3); if(d.length === 12 && d.slice(0,2) === "88") return "0" + d.slice(2); return d; }
 async function sendAdminCustomerMessage(c, text){
   if (!sbReady()){ toast("⚠ Live connection nei — message save hobe na."); return false; }
+  var ph = anboNormPhone(c.phone || "");
+  if (!ph){ toast("⚠ Ei customer er phone number nei — message pathano jabe na."); return false; }
   try{
-    var r = await sb.from("support_tickets").insert({ subject: "ADMIN-MSG | " + (c.phone || "") + " | " + c.name, message: text, status: "open" }).select();
+    var r = await sb.from("customer_messages").insert({ phone: ph, customer_name: c.name || "", sender: "admin", body: text }).select("id");
     if (r.error) throw r.error;
     /* P1-8 residual (2026-11-26): verified insert — 0 rows means the
        row was not created; the catch below shows the honest toast. */
     if (!r.data || r.data.length !== 1) throw new Error("Message insert verify hoy ni — 0 row");
-    logActivity("Sent message to customer " + c.name + " (" + (c.phone || "") + ")");
+    logActivity("Sent message to customer " + c.name + " (" + ph + ")");
     return true;
-  }catch(e){ sbWarn("support_tickets", e); toast("⚠ Message save hoy ni — " + esc(e.message || "database error") + " (support_tickets policy check korun).", 8000); return false; }
+  }catch(e){ sbWarn("customer_messages", e); toast("⚠ Message save hoy ni — " + esc(e.message || "database error") + " (customer_messages policy check korun).", 8000); return false; }
 }
 async function loadCustomerMessages(c, box){
   if (!box) return;
   if (!sbReady()){ box.innerHTML = '<p class="note">Live connection nei — ager message dekhano jachhe na.</p>'; return; }
   try{
-    var r = await sb.from("support_tickets").select("subject,message,created_at").ilike("subject", "%" + (c.phone || "") + "%").order("created_at", { ascending: false }).limit(10);
+    var r = await sb.from("customer_messages").select("sender,body,created_at").eq("phone", anboNormPhone(c.phone || "")).order("created_at", { ascending: false }).limit(10);
     if (r.error || !r.data || !r.data.length){ box.innerHTML = '<p class="note">Ei customer ke ekhono kono message pathano hoy ni.</p>'; return; }
-    box.innerHTML = r.data.map(function(m){ return '<div class="kv"><span>' + esc(sbDateLabel(m.created_at)) + ' · Admin</span><b style="text-align:right;max-width:70%;font-weight:500">' + esc(m.message || "") + '</b></div>'; }).join("");
+    box.innerHTML = r.data.map(function(m){ var who = m.sender === "customer" ? c.name : "Admin"; return '<div class="kv"><span>' + esc(sbDateLabel(m.created_at)) + ' · ' + esc(who) + '</span><b style="text-align:right;max-width:70%;font-weight:500">' + esc(m.body || "") + '</b></div>'; }).join("");
   }catch(e){ box.innerHTML = '<p class="note">Message load hoy ni.</p>'; }
 }
 var custQuery = "";
@@ -4068,7 +4071,7 @@ function renderSettings(){
     + switchRow("bannerFreeDel", "Free Delivery banner", "Free delivery promo strip")
     + switchRow("bannerNewSeller", "New Seller spotlight", "Notun approved seller der homepage spotlight")
     + '<h3 style="margin-top:28px">Homepage hero text</h3><p class="hint">Storefront er boro headline ar tar nicher lekha. Khali rakhle ager lekha (3D স্টাইলে!) dekhabe. Save korle storefront e sathe sathe bodle jay (ei browser e; onno device e settings sync lagbe).</p>'
-    + '<form id="heroForm"><div class="form-grid"><div class="field full"><label for="sfHeroTitle">Hero headline</label><input id="sfHeroTitle" value="'+esc(settings.heroTitle)+'" placeholder="সবকিছু কিনুন, ঘুরিয়ে দেখে — একদম 3D স্টাইলে!" /></div><div class="field full"><label for="sfHeroLead">Hero sub-text</label><input id="sfHeroLead" value="'+esc(settings.heroLead)+'" placeholder="মোবাইল, ফ্যাশন, গ্যাজেট…" /></div></div><button class="btn" type="submit">Save hero text</button></form>'
+    + '<form id="heroForm"><div class="form-grid"><div class="field full"><label for="sfHeroTitle">Hero headline</label><input id="sfHeroTitle" value="'+esc(settings.heroTitle)+'" placeholder="সবকিছু কিনুন, ঘুরিয়ে দেখে — একদম 3D স্টাইলে!" /></div><div class="field full"><label for="sfHeroLead">Hero sub-text</label><input id="sfHeroLead" value="'+esc(settings.heroLead)+'" placeholder="মোবাইল, ফ্যাশন, গ্যাজেট…" /></div></div><button class="btn" type="submit">Save hero text</button></form>'
     + '<h3 style="margin-top:28px">Homepage management</h3><p class="hint">Storefront homepage er announcement, banner, section order ar featured products. Save korle settings table e jabe — storefront sekhan theke pore dekhabe.</p>'
     + '<form id="homepageForm"><div class="form-grid"><div class="field full"><label for="hpAnnText">Announcement bar text</label><input id="hpAnnText" value="'+esc(settings.homepageAnnouncementText||"")+'" placeholder="jemon: Eid offer — sob product e 10% char!" /></div><div class="field full"><label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="hpAnnEnabled"'+(settings.homepageAnnouncementEnabled?" checked":"")+' /> Announcement bar dekhao (storefront homepage er upore)</label></div><div class="field full"><label for="hpBannerImg">Homepage banner image (URL)</label><input id="hpBannerImg" value="'+esc(settings.homepageBannerImage||"")+'" placeholder="https://…/banner.jpg — khali rakhle default banner thakbe" /></div><div class="field full"><label for="hpBannerLink">Banner link (URL)</label><input id="hpBannerLink" value="'+esc(settings.homepageBannerLink||"")+'" placeholder="https://… — banner e click korle koi jabe" /></div></div>'
     + '<h4 style="margin:16px 0 4px">Section order</h4><p class="note" style="margin:0 0 6px">Upore theke niche — storefront homepage e ei order ei section gulo dekhabe.</p><div id="hpOrderList">'+hpOrderListHtml()+'</div>'
@@ -4790,7 +4793,7 @@ function bindSellerActions(root){
    doc-path column is present; otherwise the seller's bucket folder
    (owner_id, then shop id) is listed and the NID / trade licence file
    matched by name. No NID uploaded -> "Upload kora hoy ni"; no trade
-   licence -> "দেওয়া হয়নি (ঐচ্ছিক)" — a missing trade licence never
+   licence -> "দেওয়া হয়নি (ঐচ্ছিক)" — a missing trade licence never
    blocks approval.
    These links are rendered ONLY inside the seller detail KYC section —
    never in the seller list or any other page. */
@@ -4802,7 +4805,7 @@ function kycDocPath(row, keys){
 function kycDocInitial(s, kind){
   var p = kind === "nid" ? s.nidDoc : s.tradeDoc;
   if (p || sbReady()) return '<span class="note">Document load hochhe…</span>';
-  return '<span class="note">' + (kind === "trade" ? "দেওয়া হয়নি (ঐচ্ছিক)" : "Upload kora hoy ni") + '</span>';
+  return '<span class="note">' + (kind === "trade" ? "দেওয়া হয়নি (ঐচ্ছিক)" : "Upload kora hoy ni") + '</span>';
 }
 async function findKycDocInBucket(s, kind){
   var folders = [];
@@ -4853,7 +4856,7 @@ async function renderKycDocSlot(s, kind, path, signed){
   var slotId = kind === "nid" ? "kycDocNid" : "kycDocTrade";
   function slot(){ var el = document.getElementById(slotId); return (el && el.getAttribute("data-shop") === String(s.id)) ? el : null; }
   var el = slot(); if (!el) return;
-  if (!path){ el.innerHTML = '<span class="note">' + (kind === "trade" ? "দেওয়া হয়নি (ঐচ্ছিক)" : "Upload kora hoy ni") + '</span>'; return; }
+  if (!path){ el.innerHTML = '<span class="note">' + (kind === "trade" ? "দেওয়া হয়নি (ঐচ্ছিক)" : "Upload kora hoy ni") + '</span>'; return; }
   var clean = String(path).replace(/^kyc-docs\//, "");
   var sig = signed || await signKycPath(path);
   var url = sig.url || "";
@@ -4936,6 +4939,52 @@ Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller]"), f
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller-detail]"), function(b){ b.addEventListener("click", function(){ $("#sellerDetailWrap").classList.remove("show"); }); });
 $("#sellerModalWrap").addEventListener("click", function(e){ if(e.target===this) this.classList.remove("show"); });
 $("#sellerDetailWrap").addEventListener("click", function(e){ if(e.target===this) this.classList.remove("show"); });
+/* P2-21 (2026-11-26): Bangla -> Latin transliteration for shop slugs.
+   Ager code [a-z0-9] chara sob strip korto, tai Bangla-only naam
+   (jemon "হানি হাউজ") theke orthohin slug ("shop") hoto. Ekhon
+   Bangla akkhor transliterate kore readable slug banano hoy
+   ("হানি হাউজ" -> "hani-house"); khali hole "shop-<id6>" fallback. */
+var BN_LOANWORDS = { "হাউজ":"house", "ফ্যাশন":"fashion", "স্টোর":"store", "শপ":"shop", "মার্ট":"mart", "বাজার":"bazar", "অনলাইন":"online", "ইলেকট্রনিক্স":"electronics", "মোবাইল":"mobile", "ফুড":"food", "কসমেটিকস":"cosmetics", "গার্মেন্টস":"garments" };
+var BN_CHARS = { "অ":"o","আ":"a","ই":"i","ঈ":"i","উ":"u","ঊ":"u","ঋ":"ri","এ":"e","ঐ":"oi","ও":"o","ঔ":"ou", "ক":"k","খ":"kh","গ":"g","ঘ":"gh","ঙ":"ng","চ":"ch","ছ":"chh","জ":"j","ঝ":"jh","ঞ":"n", "ট":"t","ঠ":"th","ড":"d","ঢ":"dh","ণ":"n","ত":"t","থ":"th","দ":"d","ধ":"dh","ন":"n", "প":"p","ফ":"ph","ব":"b","ভ":"bh","ম":"m","য":"y","র":"r","ল":"l","শ":"sh","ষ":"sh","স":"s","হ":"h", "ড়":"r","ঢ়":"rh","য়":"y","ৎ":"t","ং":"ng","ঃ":"h","ঁ":"n", "া":"a","ি":"i","ী":"i","ু":"u","ূ":"u","ৃ":"ri","ে":"e","ৈ":"oi","ো":"o","ৌ":"ou","্":"", "০":"0","১":"1","২":"2","৩":"3","৪":"4","৫":"5","৬":"6","৭":"7","৮":"8","৯":"9" };
+var BN_CONS = "কখগঘঙচছজঝঞটঠডঢণতথদধনপফবভমযরলশষসহড়ঢ়য়ৎ";
+function bnTranslitWord(w){
+  w = String(w || "").replace(/\u09A1\u09BC/g, "\u09DC").replace(/\u09A2\u09BC/g, "\u09DD").replace(/\u09AF\u09BC/g, "\u09DF").replace(/\u09C7\u09BE/g, "\u09CB").replace(/\u09C7\u09C2/g, "\u09CC");
+  var out = "";
+  for (var j = 0; j < w.length; j++){
+    var c = w[j];
+    if (BN_CHARS[c] !== undefined){
+      out += BN_CHARS[c];
+      /* Inherent vowel: majher bhanjan (porer akkhor arekta bhanjan
+         hole) "a" pay — "মধু" -> "madhu", "ঘর" -> "ghar". Shesher
+         bhanjan ba kar/hasanta-r age kono inherent vowel nei. */
+      if (BN_CONS.indexOf(c) >= 0 && c !== "\u09DF"){ /* \u09DF (য়) is a glide — no inherent vowel after it: "ময়লা" -> "mayla" */
+        var nx = w[j + 1];
+        if (nx && BN_CONS.indexOf(nx) >= 0) out += "a";
+      }
+    } else if (/[a-zA-Z0-9]/.test(c)) out += c.toLowerCase();
+  }
+  return out;
+}
+function bnSlugify(name){
+  var words = String(name || "").split(/[\s\-_]+/).filter(function(w){ return !!w; });
+  var parts = [];
+  for (var i = 0; i < words.length; i++){
+    var w = words[i];
+    if (BN_LOANWORDS[w]) { parts.push(BN_LOANWORDS[w]); continue; }
+    var t = bnTranslitWord(w);
+    if (t) parts.push(t);
+  }
+  return parts.join("-");
+}
+/* Base slug + short unique suffix (seller id-r prothom 6 char) — Admin
+   age kono suffix dito na, tai duita Bangla shop er slug-i "shop"
+   hoye jeto; ekhon Seller Center er motoi unique thakbe. */
+function shopSlugFromName(name, uniq){
+  var base = bnSlugify(name);
+  if (!base) base = "shop";
+  var suf = String(uniq || "").replace(/[^a-z0-9]/gi, "").slice(0, 6);
+  return suf ? base + "-" + suf : base;
+}
 $("#sellerForm").addEventListener("submit", async function(e){
   e.preventDefault();
   var shop = $("#selShop").value.trim(); if(!shop){ toast("⚠ Shop name dao"); return; }
@@ -5002,7 +5051,7 @@ $("#sellerForm").addEventListener("submit", async function(e){
     var pr = await tmp.from("profiles").upsert({ id: sellerId, email: email, full_name: owner, phone: phone, role: "seller" }, { onConflict: "id" }).select("id");
     if (pr.error) throw pr.error;
     if (!pr.data || !pr.data.length) throw new Error("Profile row toiri hoy ni — database theke row fire asheni");
-    var slug = shop.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "shop";
+    var slug = shopSlugFromName(shop, sellerId); /* P2-21: Bangla naam transliterate hoy (jemon "হানি হাউজ" -> "hani-house-<id6>"); age suffix chilo na, tai duita Bangla shop er slug-i "shop" hoto */
     var ins = { shop_name: shop, slug: slug, owner_id: sellerId, owner_phone: phone, category: category, district: district, pickup_address: "", payout_method: "bKash", payout_account: phone, payout_name: owner, nid_number: "", trade_licence: licence || null, commission_rate: commission, status: "pending", kyc_status: "pending" };
     var r = await tmp.from("shops").insert(ins).select("*").single();
     if (r.error) throw r.error;
@@ -5711,7 +5760,7 @@ function renderSupport(){
       + (reviewQueue.length ? reviewQueue.map(function(r,i){ return '<div class="alert-item"><div><div class="nm">'+"★".repeat(r.rating||0)+' · '+esc(r.product)+'</div><div class="meta">'+esc(r.customer)+' — “'+esc(r.text)+'”<br />'+r.date+'</div></div><span style="margin-left:auto;text-align:right"><span class="badge b-delivered">Live</span>'+(canDo("review_remove") ? '<br /><button class="btn danger sm" type="button" data-rev-no="'+i+'" style="margin-top:6px">Remove</button>' : "")+'</span></div>'; }).join("") : '<p class="note" style="margin:0">No reviews yet — customer Delivered order theke review dile ekhane asbe.</p>')
       + '</div>';
   } else {
-    html += '<div class="card"><h3>🎫 Support tickets</h3><p class="hint">Customer storefront (Account → সাপোর্টে লিখুন) theke pathano ticket — ekhane thekei resolve koro. Admin → customer message o ekhanei thake (ADMIN-MSG).</p>'
+    html += '<div class="card"><h3>🎫 Support tickets</h3><p class="hint">Customer storefront (Account → সাপোর্টে লিখুন) theke pathano ticket — ekhane thekei resolve koro. Admin → customer message ekhon customer modal-er Messages-e thake (customer_messages table) — ekhane sudhu asol support ticket.</p>'
       + (supportTickets.length ? supportTickets.map(function(t,i){ return '<div class="alert-item"><div><div class="nm">'+esc(t.id)+' · '+esc(t.subject)+'</div><div class="meta">'+esc(t.customer)+' · '+t.date+(t.message ? '<br />'+esc(String(t.message).slice(0,120)) : '')+'</div></div><span style="margin-left:auto;text-align:right"><span class="badge '+(t.status==="Open"?"b-low":"b-delivered")+'">'+t.status+'</span>'+(t.status!=="Resolved"?'<br /><button class="btn ghost sm" type="button" data-tkt="'+i+'" style="margin-top:6px">Mark resolved</button>':"")+'</span></div>'; }).join("") : '<p class="note" style="margin:0">No tickets yet — customer storefront theke likhle ekhane asbe.</p>')
       + '</div>';
   }
@@ -5815,12 +5864,12 @@ var SITE_PAGES = [
   { slug: "help", name: "Help Center", bn: "সাহায্য কেন্দ্র" },
   { slug: "return-refund", name: "Return & Refund Policy", bn: "রিটার্ন ও রিফান্ড পলিসি" },
   { slug: "delivery", name: "Delivery Information", bn: "ডেলিভারি তথ্য" },
-  { slug: "warranty", name: "Warranty Policy", bn: "ওয়ারেন্টি পলিসি" },
+  { slug: "warranty", name: "Warranty Policy", bn: "ওয়ারেন্টি পলিসি" },
   { slug: "privacy", name: "Privacy Policy", bn: "প্রাইভেসি পলিসি" },
   { slug: "contact", name: "Contact Us", bn: "যোগাযোগ করুন" },
   { slug: "about", name: "About Us", bn: "আমাদের সম্পর্কে" },
   { slug: "terms", name: "Terms & Conditions", bn: "শর্তাবলী" },
-  { slug: "career", name: "Career", bn: "ক্যারিয়ার" }
+  { slug: "career", name: "Career", bn: "ক্যারিয়ার" }
 ];
 var sitePagesCache = {};       /* slug -> {slug, title, content, updated_at} */
 var sitePagesLoaded = false;
@@ -5829,10 +5878,10 @@ var sitePagesLoadError = "";
 var editingPageSlug = null;
 function sitePageDef(slug){ for (var i = 0; i < SITE_PAGES.length; i++) if (SITE_PAGES[i].slug === slug) return SITE_PAGES[i]; return null; }
 function wpUpdatedLabel(row){
-  if (!row || !row.updated_at) return "এখনো এডিট হয়নি";
+  if (!row || !row.updated_at) return "এখনো এডিট হয়নি";
   try{
     var d = new Date(row.updated_at);
-    if (isNaN(d.getTime())) return "এখনো এডিট হয়নি";
+    if (isNaN(d.getTime())) return "এখনো এডিট হয়নি";
     return "Last updated: " + d.toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"}) + ", " + d.toLocaleTimeString("en-GB", {hour:"numeric", minute:"2-digit"});
   }catch(e){ return "Last updated: " + row.updated_at; }
 }
@@ -5862,7 +5911,7 @@ function renderWebsitePages(){
 }
 function renderPageList(el){
   var edited = SITE_PAGES.filter(function(p){ return !!sitePagesCache[p.slug]; }).length;
-  var html = '<div class="card" style="margin-bottom:16px"><h3>Website Pages · ওয়েবসাইট পেজ</h3>'
+  var html = '<div class="card" style="margin-bottom:16px"><h3>Website Pages · ওয়েবসাইট পেজ</h3>'
     + '<p class="hint" style="margin-bottom:0">Storefront er tothyo page gulor lekha ekhan theke bodlano jay — notun deploy lagbe na. Ekta page e click kore title ar content edit kore Save korlei lekha <b>site_pages</b> table e save hoye live site e dekhabe. Je page ekhono edit hoy ni, seta tar ashol lekha-i dekhachhe.</p></div>';
   if (!sitePagesLoaded){
     html += '<div class="card"><p class="note" style="margin:0">Page gulor tothyo load hochhe…</p></div>';
@@ -5901,7 +5950,7 @@ function renderPageEditor(el){
     + '<p class="note" style="margin:6px 0 0">Heading er jonno &lt;h2&gt;, paragraph er jonno &lt;p&gt;, list er jonno &lt;ul&gt;&lt;li&gt; babohar kora jabe. Save korle-i live site e ei lekha dekhabe.</p></div>'
     + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:16px">'+(canDo("pages_edit") ? '<button class="btn" type="submit" id="wpSaveBtn">Save page</button>' : "")+'<button class="btn ghost" type="button" id="wpCancel">Cancel</button></div>'
     + '</form>'
-    + (row ? '' : '<div class="wp-note" id="wpBuiltInNote">এখনো Admin থেকে এডিট করা হয়নি — নিচে পেজের আসল (built-in) লেখা dekhano hocche। Ekhane bodle Save korlei live site e notun lekha dekhabe।</div>')
+    + (row ? '' : '<div class="wp-note" id="wpBuiltInNote">এখনো Admin থেকে এডিট করা হয়নি — নিচে পেজের আসল (built-in) লেখা dekhano hocche। Ekhane bodle Save korlei live site e notun lekha dekhabe।</div>')
     + '</div>';
   el.innerHTML = html;
   /* Re-audit fix (2026-11-21): when no Admin edit exists the fields were blank even though the public page shows its built-in content. Prefill the editor with the live built-in content so the editor never looks empty. */
@@ -5935,18 +5984,18 @@ function saveWebsitePage(slug){
   var content = contentEl ? contentEl.value : "";
   if (!title){ toast("⚠ Title khali rakha jabe na — ekta title likho"); if (titleEl) titleEl.focus(); return; }
   if (!content.trim()){ toast("⚠ Content khali — kichu lekha add koro"); if (contentEl) contentEl.focus(); return; }
-  if (!sbReady()){ toast("❌ সেভ হয়নি — Database connection nai. Live Admin site theke save koro; ei preview copy te save hobe na.", 6500); return; }
+  if (!sbReady()){ toast("❌ সেভ হয়নি — Database connection nai. Live Admin site theke save koro; ei preview copy te save hobe na.", 6500); return; }
   if (btn){ btn.disabled = true; btn.textContent = "Saving…"; }
   var payload = { slug: slug, title: title, content: content, updated_at: new Date().toISOString() };
   sb.from("site_pages").upsert(payload, { onConflict: "slug" }).select("slug").then(function(r){
     if (r && r.error){
-      toast("❌ সেভ হয়নি — " + esc(r.error.message || "Unknown error"), 6500);
+      toast("❌ সেভ হয়নি — " + esc(r.error.message || "Unknown error"), 6500);
       if (btn){ btn.disabled = false; btn.textContent = "Save page"; }
       return;
     }
     /* P1-8 residual (2026-11-26): verified write — 0-row guard. */
     if (!r || !r.data || r.data.length !== 1){
-      toast("❌ সেভ হয়নি — database e row save hoy ni (permission check korun)", 6500);
+      toast("❌ সেভ হয়নি — database e row save hoy ni (permission check korun)", 6500);
       if (btn){ btn.disabled = false; btn.textContent = "Save page"; }
       return;
     }
@@ -5954,10 +6003,10 @@ function saveWebsitePage(slug){
     sitePagesLoaded = true;
     try{ logActivity("Edited website page: " + slug); }catch(e){}
     editingPageSlug = null;
-    toast("✅ পেজ আপডেট হয়েছে — লাইভ সাইটে দেখা যাবে", 4200);
+    toast("✅ পেজ আপডেট হয়েছে — লাইভ সাইটে দেখা যাবে", 4200);
     renderWebsitePages();
   }).catch(function(e){
-    toast("❌ সেভ হয়নি — " + esc((e && e.message) || String(e)), 6500);
+    toast("❌ সেভ হয়নি — " + esc((e && e.message) || String(e)), 6500);
     if (btn){ btn.disabled = false; btn.textContent = "Save page"; }
   });
 }
