@@ -1892,6 +1892,8 @@ loyaltyInfo:"⭐ Loyalty: আপনার <b>{n} point</b> আছে — {pts} p
 loyaltyUse:"⭐ Loyalty point ব্যবহার করুন — <b>{pts} point = ৳{v} ছাড়</b> (balance: {n} point)",
 loyaltyNoCoupon:" — কুপনের সাথে একসাথে চলবে না",
 placeOrderSending:"⏳ অর্ডারটি পাঠানো হচ্ছে…",
+placeOrderWait:"⏳ {s} সেকেন্ড পর আবার চেষ্টা করুন",
+coGuestWait:"⏳ একটু অপেক্ষা করুন — এইমাত্র একটি অর্ডার দেওয়া হয়েছে, ৩০ সেকেন্ড পর আবার অর্ডার করতে পারবেন।",
 orderSyncOk:"✅ <b>অর্ডারটি অনলাইনে সেভ হয়েছে</b> — Admin-এর প্যানেলে পৌঁছে গেছে। Admin কনফার্ম করলেই Seller-এর কাছে যাবে।",
 orderSyncFailA:"⚠️ <b>অর্ডারটি এখনো অনলাইনে সেভ হয়নি</b> — এটি এই ডিভাইসে সংরক্ষিত আছে এবং পেজ আবার খুললেই স্বয়ংক্রিয়ভাবে আবার পাঠানো হবে। অর্ডার নম্বরটি রেখে দিন: ",
 orderSyncFailB:"। বেশি দেরি হলে এই নম্বরসহ হটলাইনে (09638-555555) জানান।",
@@ -2211,6 +2213,8 @@ loyaltyInfo:"⭐ Loyalty: you have <b>{n} points</b> — at {pts} points you get
 loyaltyUse:"⭐ Use loyalty points — <b>{pts} points = ৳{v} off</b> (balance: {n} points)",
 loyaltyNoCoupon:" — can't be used together with a coupon",
 placeOrderSending:"⏳ Placing your order…",
+placeOrderWait:"⏳ Try again in {s}s",
+coGuestWait:"⏳ Please wait a moment — you just placed an order; you can order again in 30 seconds.",
 orderSyncOk:"✅ <b>Your order has been saved online</b> — it has reached the Admin panel. Once Admin confirms, it goes to the seller.",
 orderSyncFailA:"⚠️ <b>Your order hasn't been saved online yet</b> — it's stored on this device and will be sent automatically when you reopen the page. Please keep your order number: ",
 orderSyncFailB:". If it takes too long, call the hotline (09638-555555) with this number.",
@@ -3200,8 +3204,12 @@ async function anboSaveAddressesToDb(addrs){
   var u = window.__anboCurrentUser; if(!u) return { ok:false };
   var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
   if(!sb || !anboIsUuid(u.id)) return { ok:false };
-  var r = await sb.from("profiles").update({ address: addrs }).eq("id", u.id);
+  /* P1-8 (2026-11-26): verified write — RLS-blocked UPDATE 200 + 0 row
+     dey, error dey na; .select("id") + length check na thakle fake success
+     hoto. Khali data manei row flip hoy ni. */
+  var r = await sb.from("profiles").update({ address: addrs }).eq("id", u.id).select("id");
   if(r.error) return { ok:false, error: r.error.message || String(r.error) };
+  if(!r.data || !r.data.length) return { ok:false, error: "no row updated" };
   return { ok:true };
 }
 function anboAddrDistricts(){ return ["ঢাকা","চট্টগ্রাম","খুলনা","রাজশাহী","বরিশাল","সিলেট","রংপুর","ময়মনসিংহ","কুমিল্লা","নারায়ণগঞ্জ","গাজীপুর","অন্যান্য"]; }
@@ -3572,6 +3580,22 @@ async function anboIsCustomerBlocked(uid){
 }
 async function checkoutSubmit(e){
   e.preventDefault();
+  /* SEC-P1-7 (2026-11-26, client half only): guest checkout cooldown —
+     successful guest order-er por 30s-e notun guest checkout refuse kora
+     hoy (fresh idempotency key diye rapid repeat order thamate). Eta SHUDHU
+     client-side; server rate limit alada kore place_order RPC-e hochche.
+     Signed-in checkout, same-order retry (retryPendingOrders) ar
+     pending-orders retry flow — konotai ei gate-e pore na. */
+  if(!window.__anboCurrentUser && window.__anboGuestCheckoutAt && (Date.now() - window.__anboGuestCheckoutAt) < 30000){ toast(t("coGuestWait")); return; }
+  /* SEC-P1-7 (client half): double-submit guard — prothom await
+     (blocked-customer check) er agei button disable + busy flag, jate
+     double-click / double-submit duto alada order na banay. Flag shudhu
+     ei submit-er lifecycle-e thake; prottek exit-e clear hoy. */
+  if(window.__anboCheckoutBusy) return;
+  var __coBtn0 = document.getElementById("placeOrderBtn");
+  window.__anboCheckoutBusy = true;
+  if(__coBtn0) __coBtn0.disabled = true;
+  function __coUnlock(){ window.__anboCheckoutBusy = false; if(__coBtn0) __coBtn0.disabled = false; }
   var name = document.getElementById("coName").value.trim();
   var phone = document.getElementById("coPhone").value.trim();
   var addr = document.getElementById("coAddr").value.trim();
@@ -3581,17 +3605,17 @@ async function checkoutSubmit(e){
   ok = fldBad("fPhone", !/^01[3-9]\d{8}$/.test(phone)) && ok;
   ok = fldBad("fAddr", addr.length<8) && ok;
   ok = fldBad("fDist", !dist) && ok;
-  if(!ok){ toast("⚠️ লাল দাগ দেওয়া ঘরগুলো ঠিক করে দিন"); return; }
+  if(!ok){ __coUnlock(); toast("⚠️ লাল দাগ দেওয়া ঘরগুলো ঠিক করে দিন"); return; }
   /* Blocked customer — order toiri howar agei thamano hoy: local push,
      payment step, DB insert — konotai hobe na. */
   if(window.__anboCurrentUser && window.__anboCurrentUser.id){
     if(await anboIsCustomerBlocked(window.__anboCurrentUser.id)){
       toast("🚫 Apnar account ti block kora hoyeche — ekhon order kora jabe na. Sahajjer jonno support e jogajog korun.");
-      return;
+      __coUnlock(); return;
     }
   }
   var payEl = document.querySelector('input[name="pay"]:checked');
-  if(!payEl || payEl.disabled || (payEl.closest && payEl.closest("label") && payEl.closest("label").style.display === "none")){ toast("⚠️ এই মুহূর্তে কোনো পেমেন্ট মাধ্যম চালু নেই — পরে আবার চেষ্টা করুন"); return; }
+  if(!payEl || payEl.disabled || (payEl.closest && payEl.closest("label") && payEl.closest("label").style.display === "none")){ __coUnlock(); toast("⚠️ এই মুহূর্তে কোনো পেমেন্ট মাধ্যম চালু নেই — পরে আবার চেষ্টা করুন"); return; }
   var pay = payEl.value;
   var isManual = (pay==="bKash" || pay==="Nagad" || pay==="Rocket");
   var paySender = "", trxId = "";
@@ -3601,12 +3625,12 @@ async function checkoutSubmit(e){
     trxId = txEl ? txEl.value.trim().toUpperCase() : "";
     ok = fldBad("fPaySender", !/^01[3-9]\d{8}$/.test(paySender)) && ok;
     ok = fldBad("fTrx", trxId.length<6) && ok;
-    if(!ok){ toast("📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে"); return; }
+    if(!ok){ __coUnlock(); toast("📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে"); return; }
   }
   if (loyaltyRedeem){
     if (promoCode) promoCode = null;
     var _lb = loyaltyBalance(), _cfg = loyaltyCfg();
-    if (_lb.balance < _cfg.points){ toast("⭐ Loyalty point kom — "+_cfg.points+" point na thakle redeem hobe na"); return; }
+    if (_lb.balance < _cfg.points){ __coUnlock(); toast("⭐ Loyalty point kom — "+_cfg.points+" point na thakle redeem hobe na"); return; }
   }
   var note = document.getElementById("coNote").value.trim();
   var tt = totals();
@@ -3662,14 +3686,39 @@ async function checkoutSubmit(e){
     if(saved && saved.rpcError){
       var _ix = ANBOBD_STORE.orders.indexOf(order); if(_ix > -1) ANBOBD_STORE.orders.splice(_ix, 1);
       if(window.__anboPersistState) window.__anboPersistState();
-      if(btn){ btn.disabled = false; btn.textContent = t("placeOrder"); }
+      window.__anboCheckoutBusy = false;
+      /* SEC-P1-7 (2026-11-26): rate_limited — ashol enforcement holo
+         orders-e BEFORE INSERT trigger (server-side); ekhane SHUDHU UX:
+         Place Order button 60s disabled + countdown label, jate user
+         bar bar submit na kore. Eta bypass kora jay — server-i thik
+         korbe. Onno business error-e button sathe sathe abar chalu hoy. */
+      if(saved.rpcCode === "rate_limited" && btn){
+        if(window.__anboRateLimitTimer) clearInterval(window.__anboRateLimitTimer);
+        var _rlLeft = 60;
+        btn.disabled = true;
+        btn.textContent = t("placeOrderWait", { s: _rlLeft });
+        window.__anboRateLimitTimer = setInterval(function(){
+          _rlLeft--;
+          if(_rlLeft <= 0){
+            clearInterval(window.__anboRateLimitTimer); window.__anboRateLimitTimer = null;
+            btn.disabled = false; btn.textContent = t("placeOrder");
+          } else {
+            btn.textContent = t("placeOrderWait", { s: _rlLeft });
+          }
+        }, 1000);
+      } else if(btn){ btn.disabled = false; btn.textContent = t("placeOrder"); }
       toast(saved.rpcError);
       return;
     }
     order.onlineSaved = !!saved;
+    /* SEC-P1-7: guest cooldown timestamp — shudhu online-saved guest order-e
+       (order.userId null mane guest; offline/local save-e timestamp bosbe na,
+       jate retry atkano na hoy). */
+    if(saved && !order.userId) window.__anboGuestCheckoutAt = Date.now();
     /* P2: saved payment number — manual payment + "মনে রাখুন" checkbox thakle nijer sender number save (per method, per account). */
     if(isManual && document.getElementById("coSavePay") && document.getElementById("coSavePay").checked) anboSavePayNumber(pay, paySender);
     if(window.__anboPersistState) window.__anboPersistState();
+    window.__anboCheckoutBusy = false;
     if(btn){ btn.disabled = false; btn.textContent = t("placeOrder"); }
     var syncEl = document.getElementById("orderSyncStatus");
     if(syncEl){
@@ -3902,8 +3951,10 @@ async function anboStartReturn(order){
     var payload = { order_id: supId, refund_amount: Number(order.amounts.total) || 0, reason: reason, status: "requested" };
     if(shopId) payload.shop_id = shopId;
     try{
-      var r = await sb.from("returns").insert(payload);
+      var r = await sb.from("returns").insert(payload).select("id");
       if(r.error){ console.warn("return insert rejected:", r.error); errEl.textContent = t("retFail", {m:(r.error.message || t("auErrTryAgain"))}); return; }
+      /* P1-8: insert verify — .select("id") na thakle 0-row return-o "success" dekhabe. */
+      if(!r.data || !r.data.length){ console.warn("return insert rejected: no row returned"); errEl.textContent = t("retFail", {m:t("auErrTryAgain")}); return; }
       wrap.innerHTML = '<p style="color:var(--teal);font-weight:800">'+t("retOk") + escHtml(order.id) + '</p>';
       if(btn) btn.style.display = "none";
     }catch(err){ console.warn("return insert failed:", err); errEl.textContent = t("retFailTry"); }
@@ -3956,8 +4007,10 @@ async function anboStartDispute(order){
     if(shopId) payload.shop_id = shopId;
     if(u && anboIsUuid(u.id)) payload.customer_id = u.id;
     try{
-      var r = await sb.from("disputes").insert(payload);
+      var r = await sb.from("disputes").insert(payload).select("id");
       if(r.error) throw r.error;
+      /* P1-8: insert verify — 0-row return manei row toiri hoy ni. */
+      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
       window.__anboDisputesFiled[order.id] = true; if(order.supabaseId) window.__anboDisputesFiled[order.supabaseId] = true;
       wrap.innerHTML = '<p style="color:var(--teal);font-weight:800">'+t("dispOk") + escHtml(order.id) + '</p>';
       if(btn) btn.style.display = "none";
@@ -4450,7 +4503,7 @@ function anboRpcErrCode(err){
   var m = String((err && err.message) || "").match(/^\s*([a-z_]+)\s*:/);
   if(!m) return null;
   var c = m[1];
-  if(["bad_request","bad_customer","bad_product","out_of_stock","bad_coupon","coupon_expired","coupon_limit","bad_loyalty","bad_payment","dup_trx","bad_order"].indexOf(c) === -1) return null;
+  if(["bad_request","bad_customer","bad_product","out_of_stock","bad_coupon","coupon_expired","coupon_limit","bad_loyalty","bad_payment","dup_trx","bad_order","rate_limited"].indexOf(c) === -1) return null;
   return c;
 }
 function anboRpcErrMessage(code, detail){
@@ -4471,6 +4524,7 @@ function anboRpcErrMessage(code, detail){
     case "bad_payment": return "📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে";
     case "dup_trx": return "⚠️ এই Transaction ID দিয়ে আগেই একটি অর্ডার করা হয়েছে — নতুন পেমেন্টের Transaction ID দিন";
     case "bad_order": return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
+    case "rate_limited": return (typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en") ? "⏰ Too many orders from this number in the last hour — please try again later." : "⏰ এক ঘণ্টায় এই নম্বর থেকে অনেকগুলো অর্ডার দেওয়া হয়েছে — একটু পরে আবার চেষ্টা করুন।";
     default: return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
   }
 }
@@ -4551,7 +4605,7 @@ var ANBOBD_DB = {
     var sb = this.sb();
     if(sb){
       try{
-        var r = await sb.from("settings").select("key,value");
+        var r = await sb.from("public_settings").select("key,value");
         if(!r.error && r.data){ r.data.forEach(function(row){ var v=row.value; try{ v=JSON.parse(row.value); }catch(e){} dbKeys[row.key]=true; if(row.key==="platform_bkash_number" && typeof v==="string" && v) out.bkash=v; if(row.key==="platform_nagad_number" && typeof v==="string" && v) out.nagad=v; if(row.key==="platform_rocket_number" && typeof v==="string" && v) out.rocket=v; if(row.key==="hero_title" && typeof v==="string") out.heroTitle=v; if(row.key==="hero_sub" && typeof v==="string") out.heroLead=v; if(row.key==="loyalty_per_100" && !isNaN(+v)) out.loyaltyPer100=+v; if(row.key==="loyalty_redeem_points" && !isNaN(+v)) out.loyaltyRedeemPoints=+v; if(row.key==="loyalty_redeem_value" && !isNaN(+v)) out.loyaltyRedeemValue=+v; if(row.key==="delivery_dhaka_fee" && !isNaN(+v)) out.dhakaFee=+v; if(row.key==="delivery_outside_fee" && !isNaN(+v)) out.outsideFee=+v; if(row.key==="free_delivery_threshold" && !isNaN(+v)) out.freeThreshold=+v; if(row.key==="free_delivery_mode" && (v==="dhaka"||v==="nationwide")) out.freeMode=v; if(row.key==="payment_cod_enabled") out.payCod=toBool(v,true); if(row.key==="payment_bkash_enabled") out.payBkash=toBool(v,true); if(row.key==="payment_nagad_enabled") out.payNagad=toBool(v,true); if(row.key==="payment_rocket_enabled") out.payRocket=toBool(v,true); if(row.key==="payment_card_enabled") out.payCard=toBool(v,false); if(row.key==="flash_sale_enabled") out.flashSale=toBool(v,true); if(row.key==="returns_enabled") out.returnsOn=toBool(v,true); if(row.key==="banner_mega_enabled") out.bannerMega=toBool(v,true); if(row.key==="banner_free_delivery_enabled") out.bannerFreeDel=toBool(v,true); if(row.key==="banner_new_seller_enabled") out.bannerNewSeller=toBool(v,false); if(row.key==="return_window_days" && !isNaN(+v)) out.returnWindow=+v; if(row.key==="mega_stacking_allowed") out.megaStacking=toBool(v,false);
         /* P1: category settings — 14 key (7 label + 7 enabled), Admin-er sathe
            contract. Label khali string hole default thake; enabled na thakle true. */
@@ -5009,11 +5063,13 @@ ANBOBD_DB.saveProduct = async function(p, isNew){
   try{
     var r;
     if(!isNew && (p.supabaseId || anboIsUuid(p.id))){
-      r = await sb.from('products').update(payload).eq('id', p.supabaseId || p.id).select();
+      r = await sb.from('products').update(payload).eq('id', p.supabaseId || p.id).select("id");
     } else {
-      r = await sb.from('products').insert(payload).select();
+      r = await sb.from('products').insert(payload).select("id");
     }
     if(r.error) throw r.error;
+    /* P1-8: RLS-blocked UPDATE 200 + 0 row dey — khali data manei save hoy ni. */
+    if(!r.data || !r.data.length) throw new Error("no row returned");
     if(r.data && r.data[0]) p.supabaseId = r.data[0].id;
   }catch(e){ anboDbErr("পণ্যটি অনলাইনে সেভ হয়নি", e); }
 };
@@ -5022,21 +5078,24 @@ ANBOBD_DB.saveShopCoupon = async function(c, mode){
   try{
     var r;
     if(mode==="delete"){
-      r = await sb.from('coupons').delete().eq('code', c.code).eq('shop_id', c.sellerId);
+      r = await sb.from('coupons').delete().eq('code', c.code).eq('shop_id', c.sellerId).select("id");
     } else if(mode==="update"){
-      r = await sb.from('coupons').update({ status: c.active ? "live" : "paused" }).eq('code', c.code).eq('shop_id', c.sellerId);
+      r = await sb.from('coupons').update({ status: c.active ? "live" : "paused" }).eq('code', c.code).eq('shop_id', c.sellerId).select("id");
     } else {
-      r = await sb.from('coupons').insert({ shop_id: c.sellerId, code: c.code, type: c.type, discount_type: String(c.type).toLowerCase(), value: c.value, discount_value: c.value, min_order: c.minSpend, max_discount: c.maxDiscount, expiry: c.expires || null, status: c.active ? "live" : "paused" }).select();
+      r = await sb.from('coupons').insert({ shop_id: c.sellerId, code: c.code, type: c.type, discount_type: String(c.type).toLowerCase(), value: c.value, discount_value: c.value, min_order: c.minSpend, max_discount: c.maxDiscount, expiry: c.expires || null, status: c.active ? "live" : "paused" }).select("id");
       if(!r.error && r.data && r.data[0]) c.supabaseId = r.data[0].id;
     }
     if(r.error) throw r.error;
+    /* P1-8: RLS-blocked UPDATE/DELETE 200 + 0 row dey — khali data manei save/delete hoy ni. */
+    if(!r.data || !r.data.length) throw new Error("no row returned");
   }catch(e){ anboDbErr("কুপনটি অনলাইনে সেভ হয়নি", e); }
 };
 ANBOBD_DB.saveMegaRequest = async function(req){
   var sb = this.sb(); if(!sb || !req) return;
   try{
-    var r = await sb.from('mega_submissions').insert({ shop_id: req.sellerId, product_id: req.productId, campaign: "Mega Sale", campaign_price: req.megaPrice, status: "pending" }).select();
+    var r = await sb.from('mega_submissions').insert({ shop_id: req.sellerId, product_id: req.productId, campaign: "Mega Sale", campaign_price: req.megaPrice, status: "pending" }).select("id");
     if(r.error) throw r.error;
+    if(!r.data || !r.data.length) throw new Error("no row returned");
     if(r.data && r.data[0]){ req.supabaseId = r.data[0].id; req.id = r.data[0].id; }
   }catch(e){ anboDbErr("Mega Sale আবেদনটি অনলাইনে পাঠানো যায়নি", e); }
 };
@@ -5045,22 +5104,25 @@ ANBOBD_DB.updateMegaRequest = async function(req, status){
   var rid = req.supabaseId || req.id;
   if(!anboIsUuid(rid) && typeof rid!=="number") return;
   try{
-    var r = await sb.from('mega_submissions').update({ status: String(status).toLowerCase() }).eq('id', rid);
+    var r = await sb.from('mega_submissions').update({ status: String(status).toLowerCase() }).eq('id', rid).select("id");
     if(r.error) throw r.error;
+    if(!r.data || !r.data.length) throw new Error("no row returned");
   }catch(e){ anboDbErr("Mega Sale সিদ্ধান্তটি অনলাইনে সেভ হয়নি", e); }
 };
 ANBOBD_DB.savePayout = async function(shop, amount){
   var sb = this.sb(); if(!sb || !shop || !(amount>0)) return;
   try{
-    var r = await sb.from('payouts').insert({ shop_id: shop.id, amount: amount, method: shop.payoutMethod || "bKash", account: shop.payoutNo || "", status: "pending" });
+    var r = await sb.from('payouts').insert({ shop_id: shop.id, amount: amount, method: shop.payoutMethod || "bKash", account: shop.payoutNo || "", status: "pending" }).select("id");
     if(r.error) throw r.error;
+    if(!r.data || !r.data.length) throw new Error("no row returned");
   }catch(e){ anboDbErr("Payout রিকোয়েস্টটি অনলাইনে পাঠানো যায়নি", e); }
 };
 ANBOBD_DB.updateShopRow = async function(shopId, patch){
   var sb = this.sb(); if(!sb || !shopId || !patch) return;
   try{
-    var r = await sb.from('shops').update(patch).eq('id', shopId);
+    var r = await sb.from('shops').update(patch).eq('id', shopId).select("id");
     if(r.error) throw r.error;
+    if(!r.data || !r.data.length) throw new Error("no row returned");
   }catch(e){ anboDbErr("দোকানের তথ্য অনলাইনে সেভ হয়নি", e); }
 };
 ANBOBD_DB.saveShopSettings = function(shop){
@@ -5205,8 +5267,9 @@ async function anboEnsureProfile(authUser){
     var r = await sb.from("profiles").select("id").eq("id", authUser.id).single();
     if(r && r.data) return r.data;
     var meta = authUser.user_metadata || {};
-    var ins = await sb.from("profiles").insert({ id:authUser.id, email:authUser.email || null, full_name:meta.full_name || "", phone:meta.phone || authUser.phone || "", role:String(meta.role || "customer").toLowerCase() });
+    var ins = await sb.from("profiles").insert({ id:authUser.id, email:authUser.email || null, full_name:meta.full_name || "", phone:meta.phone || authUser.phone || "", role:String(meta.role || "customer").toLowerCase() }).select("id");
     if(ins.error){ console.warn("profiles ensure:", ins.error.message); return null; }
+    if(!ins.data || !ins.data.length){ console.warn("profiles ensure: no row returned"); return null; }
     return { id:authUser.id };
   }catch(e){ console.warn("profiles ensure failed:", e); return null; }
 }
@@ -5258,8 +5321,9 @@ var ANBOBD_AUTH = {
     /* Re-audit B5 (2026-11-21): Confirm-email ON hole signUp user dey kintu session dey na — tokhon local session banano jabe na; user ke email check korte bolte hobe. Confirm email OFF thakle (ajker moto) session thake, tai ei branch chole na — normal signup bodlay na. */
     if(res.data && res.data.user && !res.data.session) return { ok:false, needsConfirm:true, error:t("auErrConfirmDone") };
     try{
-      var pr = await sb.from('profiles').insert({ id:au.id, email:email, full_name:d.name.trim(), phone:d.mobile.trim(), role:d.role });
+      var pr = await sb.from('profiles').insert({ id:au.id, email:email, full_name:d.name.trim(), phone:d.mobile.trim(), role:d.role }).select("id");
       if(pr.error) console.warn("profiles insert:", pr.error.message);
+      else if(!pr.data || !pr.data.length) console.warn("profiles insert: no row returned");
     }catch(e){ console.warn("profiles insert failed:", e); }
     var user = { id:au.id, name:d.name.trim(), email:email, mobile:d.mobile.trim(), role:d.role, sellerId:null, createdAt:new Date().toISOString() };
     if(d.role==="seller"){
@@ -5614,8 +5678,10 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         subject: "ACCOUNT-DELETE | " + (u.email||"") + " | " + (u.name||""),
         message: "Customer " + (u.name||"") + " (" + (u.email||"") + (u.mobile ? ", " + u.mobile : "") + ") account delete korar onurodh korechen. Admin jachai kore account-ti (Auth + profiles) delete korben. Onurodh pathano hoyeche storefront Account theke.",
         status: "open"
-      });
+      }).select("id");
       if(r.error) throw r.error;
+      /* P1-8: insert verify — 0-row return manei ticket toiri hoy ni; sign-out hobe na. */
+      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
       toast("✅ অ্যাকাউন্ট মুছে ফেলার অনুরোধ Admin-এর কাছে পাঠানো হয়েছে — Admin যাচাই করে মুছে দেবেন। আপনাকে সাইন আউট করা হচ্ছে।");
       setTimeout(function(){ doLogout(); }, 1200);
     }catch(e){ toast("⚠️ অনুরোধ পাঠানো যায়নি — " + escHtml((e && e.message) || "database error") + "।"); }
@@ -5672,8 +5738,10 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var ph = String((u && u.mobile) || "").replace(/\D/g, "");
     var topic = topicEl ? topicEl.value : "অন্যান্য";
     try{
-      var r = await sb.from("support_tickets").insert({ subject: "SUPPORT | " + ph + " | " + ((u && u.name) || "") + " | " + topic, message: msg, status: "open" });
+      var r = await sb.from("support_tickets").insert({ subject: "SUPPORT | " + ph + " | " + ((u && u.name) || "") + " | " + topic, message: msg, status: "open" }).select("id");
       if(r.error) throw r.error;
+      /* P1-8: insert verify — 0-row return manei ticket toiri hoy ni. */
+      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
       if(txtEl) txtEl.value = "";
       if(msgEl){ msgEl.style.display=""; msgEl.textContent = "✅ টিকিট পাঠানো হয়েছে — Admin dekhe janabe।"; }
     }catch(e){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = "⚠ টিকিট পাঠানো যায়নি — " + ((e && e.message) || "database error") + "।"; } }
@@ -5682,7 +5750,10 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
      customer, sudhu Delivered order er item e. reviews table e lekhe
      (product_id, rating, comment, customer_name). */
   function reviewBtnsFor(o, u){
-    if(!o || o.status !== "Delivered" || !o.items) return "";
+    /* SEC-P1-9 (2026-11-26): review button shudhu SIGNED-IN buyer-er
+       Delivered order-ei dekhabe — guest / onno karor order-e kokhono na.
+       Server-side enforcement alada kore DB trigger-e hochche; eta UI gate. */
+    if(!o || !u || !u.id || o.status !== "Delivered" || !o.items) return "";
     var out = "";
     o.items.forEach(function(it){
       var p = PRODUCTS.filter(function(x){ return x.name === it.name; })[0];
@@ -5713,8 +5784,11 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     if(!sb){ if(m){ m.style.display=""; m.textContent = "⚠ অনলাইন সংযোগ নেই — pore abar cheshta koro।"; } return; }
     var rating = parseInt((document.getElementById("auRevRating")||{}).value || "5", 10) || 5;
     try{
-      var r = await sb.from("reviews").insert({ product_id: __auReviewPid, rating: rating, comment: txt, customer_name: (u && u.name) || "Customer" });
+      var r = await sb.from("reviews").insert({ product_id: __auReviewPid, rating: rating, comment: txt, customer_name: (u && u.name) || "Customer" }).select("id");
       if(r.error) throw r.error;
+      /* P1-8 / SEC-P1-9: insert verify — 0-row return manei review joma hoy ni.
+         Local list-e push + success message shudhu verify-er POREI hobe. */
+      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
       var key = String(__auReviewPid);
       ANBOBD_STORE.productReviews[key] = ANBOBD_STORE.productReviews[key] || [];
       ANBOBD_STORE.productReviews[key].push({ n: (u && u.name) || "Customer", d: new Date().toISOString().slice(0,10), w: "", t: txt, rating: rating });
@@ -5725,7 +5799,18 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
          card-eo asol gar dekhabe — reload-er opekkha na. */
       if(typeof anboSyncProductRatings === "function") anboSyncProductRatings();
       if(window.__anboRender) window.__anboRender();
-    }catch(e){ if(m){ m.style.display=""; m.textContent = "⚠ রিভিউ জমা হয়নি — " + ((e && e.message) || "database error") + "।"; } }
+    }catch(e){
+      /* SEC-P1-9 (2026-11-26): server-side review gate (DB trigger
+         anbo_review_gate) — not_allowed = Delivered order chara review
+         noy; unique violation = ei product-e agei review deya hoyeche. */
+      var _em = String((e && e.message) || "");
+      if(m){
+        m.style.display = "";
+        if(_em.indexOf("not_allowed") !== -1) m.textContent = "শুধু ডেলিভারি পাওয়া গ্রাহকরাই রিভিউ দিতে পারেন।";
+        else if(_em.indexOf("reviews_one_per_customer_product") !== -1) m.textContent = "আপনি এই পণ্যে আগেই রিভিউ দিয়েছেন।";
+        else m.textContent = "⚠ রিভিউ জমা হয়নি — " + (_em || "database error") + "।";
+      }
+    }
   }
   /* Re-audit B6 (2026-11-21): signed-in profile edit (profiles: full_name + phone — the only profile columns that exist) + password change (Supabase updateUser). Address save nei: profiles.address column DB-te nei (REST probe 42703) — SQL na howa porjonto address save fake kora hobe na. */
   async function saveProfileEdit(u){
@@ -5738,8 +5823,11 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
     if(!sb){ if(u){ u.name = nm; u.mobile = ph; } window.__anboCurrentUser = u; show("✅ প্রোফাইল সেভ হয়েছে।"); renderAccount(); return; }
     try{
-      var r = await sb.from("profiles").update({ full_name:nm, phone:ph }).eq("id", u.id);
+      var r = await sb.from("profiles").update({ full_name:nm, phone:ph }).eq("id", u.id).select("id");
       if(r.error) throw r.error;
+      /* P1-8: RLS-blocked UPDATE 200 + 0 row dey — khali data manei save hoy ni;
+         local name/phone + success message shudhu verify-er POREI hobe. */
+      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
       try{ await sb.auth.updateUser({ data:{ full_name:nm, phone:ph } }); }catch(e2){ console.warn("auth metadata update:", e2); }
       if(u){ u.name = nm; u.mobile = ph; } window.__anboCurrentUser = u;
       show("✅ প্রোফাইল সেভ হয়েছে।"); renderAccount();
