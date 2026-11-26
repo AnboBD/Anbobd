@@ -5678,10 +5678,13 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         subject: "ACCOUNT-DELETE | " + (u.email||"") + " | " + (u.name||""),
         message: "Customer " + (u.name||"") + " (" + (u.email||"") + (u.mobile ? ", " + u.mobile : "") + ") account delete korar onurodh korechen. Admin jachai kore account-ti (Auth + profiles) delete korben. Onurodh pathano hoyeche storefront Account theke.",
         status: "open"
-      }).select("id");
+      });
       if(r.error) throw r.error;
-      /* P1-8: insert verify — 0-row return manei ticket toiri hoy ni; sign-out hobe na. */
-      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
+      /* REGRESSION FIX (2026-11-26): error-only check — INSERT failures raise
+         a real error (42501), unlike UPDATE/DELETE 0-rows, so no select()
+         read-back is needed. Read-back would false-fail here: this subject
+         carries email, not phone, so the phone-matched customer-select policy
+         cannot read the row back. */
       toast("✅ অ্যাকাউন্ট মুছে ফেলার অনুরোধ Admin-এর কাছে পাঠানো হয়েছে — Admin যাচাই করে মুছে দেবেন। আপনাকে সাইন আউট করা হচ্ছে।");
       setTimeout(function(){ doLogout(); }, 1200);
     }catch(e){ toast("⚠️ অনুরোধ পাঠানো যায়নি — " + escHtml((e && e.message) || "database error") + "।"); }
@@ -5738,10 +5741,13 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var ph = String((u && u.mobile) || "").replace(/\D/g, "");
     var topic = topicEl ? topicEl.value : "অন্যান্য";
     try{
-      var r = await sb.from("support_tickets").insert({ subject: "SUPPORT | " + ph + " | " + ((u && u.name) || "") + " | " + topic, message: msg, status: "open" }).select("id");
+      var r = await sb.from("support_tickets").insert({ subject: "SUPPORT | " + ph + " | " + ((u && u.name) || "") + " | " + topic, message: msg, status: "open" });
       if(r.error) throw r.error;
-      /* P1-8: insert verify — 0-row return manei ticket toiri hoy ni. */
-      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
+      /* REGRESSION FIX (2026-11-26): error-only check — INSERT failures raise
+         a real error (42501), unlike UPDATE/DELETE 0-rows, so no select()
+         read-back is needed. Read-back would false-fail for guests: anon has
+         no SELECT policy on support_tickets (SEC-P1-1 fix dropped select-any),
+         so a successful insert returns zero rows. */
       if(txtEl) txtEl.value = "";
       if(msgEl){ msgEl.style.display=""; msgEl.textContent = "✅ টিকিট পাঠানো হয়েছে — Admin dekhe janabe।"; }
     }catch(e){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = "⚠ টিকিট পাঠানো যায়নি — " + ((e && e.message) || "database error") + "।"; } }
