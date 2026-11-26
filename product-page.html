@@ -923,7 +923,7 @@ async function loadRelated(){
   var sb = pdSb();
   if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">' + pdT("relNone") + '</p>'; return; }
   try{
-    var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category").eq("status", "approved").limit(50);
+    var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category,status").eq("status", "approved").limit(50);
     if(r.error) throw r.error;
     var allLive = (r.data||[]).map(function(row){ return mapProductRow(row); }).filter(function(p){ return p && p.status==="active"; });
     var items = allLive.filter(function(p){ return String(p.id)!==String(PD.id) && p.categoryId===PD.product.categoryId; }).slice(0, 8);
@@ -948,7 +948,7 @@ async function loadBundle(){
   var sb = pdSb();
   if(!sb){ listEl.innerHTML = '<p style="color:var(--muted);margin:0">'+ pdT("fbtNone") + '</p>'; return; }
   try{
-    var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category").eq("status", "approved").limit(200);
+    var r = await sb.from("products").select("id,name,price,old_price,image_url,images,stock,category,status").eq("status", "approved").limit(200);
     if(r.error) throw r.error;
     var byId = {};
     (r.data||[]).forEach(function(row){ var m = mapProductRow(row); if(m && m.status==="active") byId[String(m.id)] = m; });
