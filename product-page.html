@@ -775,9 +775,12 @@ async function loadProduct(){
     var p = mapProductRow(pr.data);
     if(!p || p.status!=="active"){ showNotLive(); return; }
     PD.product = p;
-    /* Shop (seller card) — anon SELECT approved shops; na pele fallback. */
+    /* Shop (seller card) — P0-1 (2026-11-26): public_shops view theke;
+       raw shops table-এ PII (owner_phone / NID / payout / bank /
+       commission / owner_id) thake. View approved-only, tobuo status
+       filter belt-and-braces — na pele fallback. */
     try{
-      var sh = await sb.from("shops").select("*").eq("id", p.sellerId).maybeSingle();
+      var sh = await sb.from("public_shops").select("id,shop_name,slug,status,logo_url,banner_url,category,district,description,delivery_fee,free_delivery_threshold,owner_id,created_at").eq("id", p.sellerId).eq("status", "approved").maybeSingle();
       if(!sh.error && sh.data){
         var r = sh.data;
         PD.shop = { id:r.id, name:r.shop_name||r.name||"দোকান", logoUrl:r.logo_url||"", area:r.district||"বাংলাদেশ", rating:Number(r.rating||0), status:r.status||"approved" };
