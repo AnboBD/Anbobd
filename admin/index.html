@@ -718,11 +718,16 @@ function sbUpdate(table, col, val, patch){
 }
 function sbInsert(table, row){
   if (!sbReady()) return Promise.resolve(null);
-  return sb.from(table).insert(row).then(function(r){ sbWarn(table, r && r.error); return r; }).catch(function(e){ sbWarn(table, e); return null; });
+  /* Mirror sbUpdate: a failed write must NEVER be console-only — surface
+     it with the visible sbSaveFailed toast AND return the result, so the
+     caller can check r.error before claiming success (P0-4, 2026-11-26).
+     Return shape is unchanged (the supabase {data, error} result, or
+     null on catch / offline) so every existing caller keeps working. */
+  return sb.from(table).insert(row).then(function(r){ if (r && r.error) sbSaveFailed(table, r.error); return r; }).catch(function(e){ sbSaveFailed(table, e); return null; });
 }
 function sbDelete(table, col, val){
   if (!sbReady()) return Promise.resolve(null);
-  return sb.from(table).delete().eq(col, val).then(function(r){ sbWarn(table, r && r.error); return r; }).catch(function(e){ sbWarn(table, e); return null; });
+  return sb.from(table).delete().eq(col, val).then(function(r){ if (r && r.error) sbSaveFailed(table, r.error); return r; }).catch(function(e){ sbSaveFailed(table, e); return null; });
 }
 function sbLog(what){
   if (!sbReady()) return;
@@ -3289,10 +3294,22 @@ function renderCoupons(){
     var desc = type==="percent" ? val+"% off"+(min?" on orders "+fmt(min)+"+":"") : type==="flat" ? fmt(val)+" off"+(min?" on orders "+fmt(min)+"+":"") : "Free delivery"+(min?" on orders "+fmt(min)+"+":"");
     var d = new Date($("#cfExpiry").value || couponDefaultExpiry());
     var exp = d.toLocaleDateString("en-GB", {day:"numeric", month:"short", year:"numeric"});
-    coupons.unshift({code:code, desc:desc, type:type, value:val, min:min, maxCap:parseInt(($("#cfCap")||{}).value,10)||0, limit:parseInt(($("#cfLimit")||{}).value,10)||0, perCustomer:1, used:0, expiry:exp, expiryISO:$("#cfExpiry").value, active:true, scope:"all"});
-    sbInsert("coupons", { code: code, discount_type: type, discount_value: val, min_order: min, max_cap: parseInt(($("#cfCap")||{}).value,10)||0, usage_limit: parseInt(($("#cfLimit")||{}).value,10)||0, expires_at: $("#cfExpiry").value || null, status: "live" });
-    logActivity("Created platform coupon "+code);
-    toast('<span class="lime">✓ Coupon created</span> — '+code+" is live"); renderAll();
+    var nc = {code:code, desc:desc, type:type, value:val, min:min, maxCap:parseInt(($("#cfCap")||{}).value,10)||0, limit:parseInt(($("#cfLimit")||{}).value,10)||0, perCustomer:1, used:0, expiry:exp, expiryISO:$("#cfExpiry").value, active:true, scope:"all"};
+    /* P0-4 (2026-11-26): the insert MUST confirm before the coupon is
+       shown as live. A failed insert (e.g. a discount_type the DB check
+       rejects, like "freedel" before the check was widened) used to be
+       swallowed and still toasted "is live" while the coupon never
+       existed. sbInsert now surfaces the failure via sbSaveFailed, so
+       here we only add the coupon locally on confirmed success. Offline
+       (!sbReady) there is no insert to confirm, so the local-only
+       coupon is kept as before. */
+    var online = sbReady();
+    sbInsert("coupons", { code: code, discount_type: type, discount_value: val, min_order: min, max_cap: parseInt(($("#cfCap")||{}).value,10)||0, usage_limit: parseInt(($("#cfLimit")||{}).value,10)||0, expires_at: $("#cfExpiry").value || null, status: "live" }).then(function(r){
+      if (online && (!r || r.error)){ return; }
+      coupons.unshift(nc);
+      logActivity("Created platform coupon "+code);
+      toast('<span class="lime">✓ Coupon created</span> — '+code+" is live"); renderAll();
+    });
   });
   Array.prototype.forEach.call(el.querySelectorAll("[data-coupon-toggle]"), function(b){
     b.addEventListener("click", function(){ var c=coupons[parseInt(b.getAttribute("data-coupon-toggle"),10)]; c.active=!c.active; sbUpdate("coupons", "code", c.code, { status: c.active ? "live" : "paused" }); logActivity((c.active ? "Activated" : "Paused") + " platform coupon " + c.code); toast("Coupon <b>"+esc(c.code)+"</b> is now "+(c.active?"active":"paused")); renderAll(); });
@@ -4343,8 +4360,10 @@ function enterApp(member){
    this file. No register form exists in the DOM. Accounts are created only by
    a signed-in owner from the Staff page (see sbCreateStaffAccount). */
 /* Shared finish for every Supabase Auth sign-in: resolve the caller's admin
-   profile (falling back to the auth user's metadata), load the tables and
-   enter the dashboard. Returns the member, or null after calling fail(). */
+   profile from its profiles row (name/email may fall back to the auth
+   user's metadata, the role never does — a row-less account is denied),
+   load the tables and enter the dashboard. Returns the member, or null
+   after calling fail(). */
 async function sbEnterWithUser(user, fail){
   var member = await sbFetchMember(user);
   if (!member.role){
@@ -4356,12 +4375,6 @@ async function sbEnterWithUser(user, fail){
     if (fail) fail("This account is " + member.status + " — the owner needs to activate it before you can sign in.");
     await sb.auth.signOut().catch(function(){});
     return null;
-  }
-  if (member._bootstrap){
-    /* Close the bootstrap door: record this owner as an admin profile so a
-       row-less account can never become admin again afterwards. Best
-       effort — a failure here only warns; the sign-in still proceeds. */
-    try{ await sb.from("profiles").upsert({ id: user.id, email: member.email, full_name: member.name, phone: member.phone === "—" ? null : member.phone, role: "admin" }); }catch(e){ sbWarn("profiles", e); }
   }
   if (!staff.some(function(s){ return String(s.id) === String(member.id); })) staff.push(member);
   await sbLoadAll();
@@ -4583,22 +4596,18 @@ async function sbFetchMember(user){
     if (!profRole && prof.role === "staff") profRole = await sbGranularRoleForStaff(user.id);
     return { id: user.id, supabaseId: user.id, name: prof.full_name || prof.name || meta.name || user.email, email: prof.email || user.email, phone: prof.phone || "—", role: profRole, status: prof.status || "active", last: "Now · signed in", joined: sbDateLabel(prof.created_at) };
   }
-  /* No profile row: the owner account was created in the Supabase dashboard
-     and has no profiles row (verified: profiles is empty). Bootstrap rule —
-     such an account is Super Admin ONLY while no admin profile exists at
-     all; once any admin profile exists, a row-less account is rejected.
-     (Storefront sign-up always creates a profile row, so a customer or
-     seller can never slip through this path.) */
-  var role = sbAdminRole(meta.role);
-  var bootstrap = false;
-  if (!role){
-    try{
-      var chk = await sb.from("profiles").select("id").in("role", ["admin","manager","order_manager","support","warehouse","staff"]).limit(1);
-      var hasAdmin = !chk.error && chk.data && chk.data.length > 0;
-      if (!hasAdmin){ role = "Super Admin"; bootstrap = true; }
-    }catch(e){ role = null; }
-  }
-  return { id: user.id, supabaseId: user.id, name: meta.name || meta.full_name || user.email, email: user.email, phone: meta.phone || "—", role: role, status: "active", last: "Now · signed in", joined: monthLabel(), _bootstrap: bootstrap };
+  /* No profile row: DENY entry — the bootstrap rule is DELETED (P0-5,
+     2026-11-26). The owner account (admin@anbobd.com) and every staff
+     account already have a profiles row with a granular admin role, so a
+     row-less account is never a legitimate admin. The old rule made ANY
+     row-less authenticated user Super Admin whenever the profiles read
+     errored or returned no visible row (fail-open), then permanently
+     recorded them as admin. Auth metadata roles are client-assignable,
+     so meta.role is never trusted here either: ONLY the profiles row
+     decides the role. sbEnterWithUser rejects a null role with the
+     standard "not an admin/staff account" message and signs the user
+     out, exactly like a customer or seller. */
+  return { id: user.id, supabaseId: user.id, name: meta.name || meta.full_name || user.email, email: user.email, phone: meta.phone || "—", role: null, status: "active", last: "Now · signed in", joined: monthLabel() };
 }
 $("#logoutBtn").addEventListener("click", async function(){
   /* P0-6 (2026-11-21): signOut is awaited, THEN every in-memory PII array is
