@@ -879,12 +879,12 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 </head>
 <body>
 <div class="topstrip"><span data-i18n="topDelDhaka">🚚 ঢাকায় ডেলিভারি</span> <b id="topDhakaFee">৳60</b> • <span data-i18n="topDelCountry">সারা দেশে</span> <b id="topOutsideFee">৳120</b><span id="topFreeDelWrap">&nbsp;•&nbsp; <span id="topFreeDel">ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b></span></span><span id="topPromoWrap">&nbsp;•&nbsp; <span data-i18n="topPromo">প্রোমো কোড <b>ANBO10</b> = 10% ছাড়</span></span></div>
-<div class="supanotice" id="supabaseNotice" style="display:none">⚠️ অ্যাকাউন্ট ও অর্ডার এখন শুধু এই ব্রাউজারে সংরক্ষিত হচ্ছে — অনলাইন অ্যাকাউন্ট চালু হলে এখানেই জানিয়ে দেওয়া হবে।</div>
+<div class="supanotice" id="supabaseNotice" data-i18n="supaNotice" style="display:none">⚠️ অ্যাকাউন্ট ও অর্ডার এখন শুধু এই ব্রাউজারে সংরক্ষিত হচ্ছে — অনলাইন অ্যাকাউন্ট চালু হলে এখানেই জানিয়ে দেওয়া হবে।</div>
 
 <header class="site">
   <div class="wrap">
     <div class="nav">
-      <a class="logo" href="/" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></a>
+      <a class="logo" href="/" data-i18n-aria="auAriaHome" aria-label="AnboBD হোম"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></a>
       <div class="searchwrap">
       <form class="searchbar" id="searchForm" role="search">
         <input id="searchInput" type="search" placeholder="পণ্য খুঁজুন…" data-i18n-ph="searchPh" data-i18n-aria="searchAria" aria-label="পণ্য খুঁজুন" autocomplete="off" aria-expanded="false" aria-controls="searchSuggest" />
@@ -895,16 +895,16 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
       <div class="navbtns">
         <button class="rolebtn" id="accountBtn">👤 লগইন / সাইন আপ</button>
         <button class="iconbtn langbtn" id="langBtn" aria-label="ভাষা বদলান / Switch language">EN</button>
-        <button class="iconbtn hideS" id="trackBtn" aria-label="অর্ডার ট্র্যাক করুন">📦</button>
-        <button class="iconbtn" id="wishBtn" aria-label="উইশলিস্ট খুলুন">❤️<span class="cartcount lime" id="wishCount">0</span></button>
+        <button class="iconbtn hideS" id="trackBtn" data-i18n-aria="trackTitle" aria-label="অর্ডার ট্র্যাক করুন">📦</button>
+        <button class="iconbtn" id="wishBtn" data-i18n-aria="auAriaWish" aria-label="উইশলিস্ট খুলুন">❤️<span class="cartcount lime" id="wishCount">0</span></button>
         <span class="notifwrap">
-          <button class="iconbtn" id="notifBtn" aria-label="নোটিফিকেশন দেখুন">🔔<span class="cartcount" id="notifCount" style="display:none">0</span></button>
-          <div class="notifdrop" id="notifDrop" role="menu" aria-label="নোটিফিকেশন"></div>
+          <button class="iconbtn" id="notifBtn" data-i18n-aria="auAriaNotif" aria-label="নোটিফিকেশন দেখুন">🔔<span class="cartcount" id="notifCount" style="display:none">0</span></button>
+          <div class="notifdrop" id="notifDrop" role="menu" data-i18n-aria="notifTitle" aria-label="নোটিফিকেশন"></div>
         </span>
-        <button class="iconbtn" id="cartBtn" aria-label="কার্ট খুলুন">🛒<span class="cartcount" id="cartCount">0</span></button>
+        <button class="iconbtn" id="cartBtn" data-i18n-aria="auAriaCart" aria-label="কার্ট খুলুন">🛒<span class="cartcount" id="cartCount">0</span></button>
       </div>
     </div>
-    <nav class="catnav" id="catNav" aria-label="ক্যাটাগরি">
+    <nav class="catnav" id="catNav" data-i18n-aria="navCats" aria-label="ক্যাটাগরি">
       <button data-cat="all" class="on" data-i18n="catAll">সব পণ্য</button>
       <button data-cat="electronics">ইলেকট্রনিক্স</button>
       <button data-cat="fashion">ফ্যাশন</button>
@@ -951,7 +951,7 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 </div>
 
 <main class="wrap">
-  <div class="services" aria-label="সেবা">
+  <div class="services" data-i18n-aria="auAriaServices" aria-label="সেবা">
     <div class="svc"><span class="sic s1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 8h13v9H1z"/><path d="M14 11h4l3 3v3h-7z"/><circle cx="6" cy="19" r="1.8"/><circle cx="17.5" cy="19" r="1.8"/></svg></span><div class="stx"><b data-i18n="svc1t">দ্রুত ডেলিভারি</b><span data-i18n="svc1s">ঢাকায় 24 ঘণ্টা, বাইরে 48–72 ঘণ্টা</span></div></div>
     <div class="svc"><span class="sic s2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M5.5 9.5h.01M18.5 14.5h.01"/></svg></span><div class="stx"><b data-i18n="svc2t">ক্যাশ অন ডেলিভারি</b><span data-i18n="svc2s">পণ্য হাতে পেয়ে টাকা দিন</span></div></div>
     <div class="svc"><span class="sic s3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.6-6.3"/><path d="M3 4v5h5"/></svg></span><div class="stx"><b data-i18n="svc3t">7 দিনের রিটার্ন</b><span data-i18n="svc3s">সমস্যা থাকলেই রিপ্লেস / রিফান্ড</span></div></div>
@@ -1223,17 +1223,17 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
   <button id="cartBtnM"><span class="bi">🛒</span><span data-i18n="navCart">কার্ট</span><span class="bdg" id="cartCountM">0</span></button>
   <button id="accountBtnM"><span class="bi">👤</span><span data-i18n="navAccount">অ্যাকাউন্ট</span></button>
 </nav></div>
-<button class="totop" id="toTop" aria-label="উপরে যান">↑</button>
+<button class="totop" id="toTop" data-i18n-aria="auAriaTop" aria-label="উপরে যান">↑</button>
 
 <div class="scrim" id="scrim"></div>
 
 <!-- CART DRAWER (template থেকে প্রয়োজনে তৈরি হয়) -->
 <template id="cartTpl">
-<aside class="drawer" id="cartDrawer" aria-label="শপিং কার্ট">
-  <header><h3><span data-i18n="cartTitle">🛒 আপনার কার্ট</span> (<span id="drawerCount">0</span>)</h3><button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button></header>
+<aside class="drawer" id="cartDrawer" data-i18n-aria="cartTitle" aria-label="শপিং কার্ট">
+  <header><h3><span data-i18n="cartTitle">🛒 আপনার কার্ট</span> (<span id="drawerCount">0</span>)</h3><button class="xbtn" data-close data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button></header>
   <div id="cartMain" style="display:flex;flex-direction:column;flex:1;min-height:0">
     <div class="ship" id="shipBox"></div>
-    <div class="zonesel" role="radiogroup" aria-label="ডেলিভারি এলাকা">
+    <div class="zonesel" role="radiogroup" data-i18n-aria="auAriaZone" aria-label="ডেলিভারি এলাকা">
       <label><input type="radio" name="zone" value="dhaka" checked> <span data-i18n="zoneDhaka">ঢাকার ভিতরে (৳60)</span></label>
       <label><input type="radio" name="zone" value="outside"> <span data-i18n="zoneOutside">ঢাকার বাইরে (৳120)</span></label>
     </div>
@@ -1252,13 +1252,13 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 
   <!-- CHECKOUT FORM -->
   <form class="coform" id="checkoutForm" novalidate>
-    <div style="display:flex;align-items:center;gap:10px"><button type="button" class="xbtn" id="backToCart" aria-label="কার্টে ফিরুন">←</button><b style="font-size:1.05rem" data-i18n="coTitle">ডেলিভারির তথ্য দিন</b></div>
+    <div style="display:flex;align-items:center;gap:10px"><button type="button" class="xbtn" id="backToCart" data-i18n-aria="auAriaBackCart" aria-label="কার্টে ফিরুন">←</button><b style="font-size:1.05rem" data-i18n="coTitle">ডেলিভারির তথ্য দিন</b></div>
     <div class="guestnote">👤 <b data-i18n="coGuestT">গেস্ট চেকআউট</b> — <span data-i18n="coGuestS">অ্যাকাউন্ট বা লগইন লাগবে না। নিচে অর্ডারের <b>পুরো হিসাব আগেই</b> দেখানো হয়েছে, লুকানো কোনো চার্জ নেই।</span></div>
     <div id="coAddrPickWrap" style="display:none">
-      <div class="fld" style="margin-bottom:8px"><label for="coAddrSel">💾 সেভ করা ঠিকানা</label>
+      <div class="fld" style="margin-bottom:8px"><label for="coAddrSel"><span data-i18n="coSavedAddrLbl">💾 সেভ করা ঠিকানা</span></label>
         <select id="coAddrSel" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--ink)"></select>
       </div>
-      <label id="coSaveAddrLbl" style="display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:600;margin-bottom:4px"><input type="checkbox" id="coSaveAddr" style="min-height:0"> 💾 এই ঠিকানাটি সেভ করুন</label>
+      <label id="coSaveAddrLbl" style="display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:600;margin-bottom:4px"><input type="checkbox" id="coSaveAddr" style="min-height:0"> <span data-i18n="coSaveAddr">💾 এই ঠিকানাটি সেভ করুন</span></label>
     </div>
     <div class="cosummary" id="coSummary"></div>
     <p class="deldate" id="coEta" style="margin:0"></p>
@@ -1270,7 +1270,7 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
       <span class="err" data-i18n="coErrDist">জেলা বেছে নিন।</span></div>
     <!-- P2 (2026-11-23): delivery slot — Admin/Seller-er kache order-e jay; DB column orders.delivery_slot na thakle local record + success screen-e dekhay. -->
     <div class="fld"><label data-i18n="coSlot">ডেলিভারির সময় (স্লট) *</label>
-      <div class="slotgrid" role="radiogroup" aria-label="ডেলিভারি স্লট">
+      <div class="slotgrid" role="radiogroup" data-i18n-aria="auAriaSlot" aria-label="ডেলিভারি স্লট">
         <label><input type="radio" name="slot" value="anytime" checked> <span data-i18n="slotAny">যেকোনো সময়</span></label>
         <label><input type="radio" name="slot" value="morning"> <span data-i18n="slotMorning">সকাল ৯টা–১২টা</span></label>
         <label><input type="radio" name="slot" value="afternoon"> <span data-i18n="slotAfternoon">দুপুর ১২টা–৩টা</span></label>
@@ -1291,7 +1291,7 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
       <div class="manualnote" data-i18n="coManualNote">📱 <b>ম্যানুয়াল পেমেন্টের নিয়ম:</b> (1) নিচে দেখানো অফিসিয়াল নম্বরে মোট টাকা <b>Send Money</b> করুন — Cash Out বা Payment করবেন না। (2) যে নম্বর থেকে টাকা পাঠিয়েছেন তা ও <b>Transaction ID</b> দিন — TrxID ছাড়া অর্ডার কনফার্ম হবে না। Admin ট্রান্সাকশন যাচাই করে কনফার্ম না করা পর্যন্ত অর্ডারটি <b>Admin যাচাইয়ের অপেক্ষায়</b> থাকবে। ভুল নম্বরে টাকা গেলে বা ভুল TrxID দিলে অর্ডার কনফার্ম হবে না।</div>
       <div id="platformPayInfo"></div>
       <div class="fld" id="fPaySender"><label for="coPaySender" data-i18n="coPaySenderLbl">যে নম্বর থেকে টাকা পাঠিয়েছেন *</label><input id="coPaySender" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /><span class="err" data-i18n="coPaySenderErr">সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।</span></div>
-      <div class="fld" id="fTrx"><label for="coTrxId">Transaction ID *</label><input id="coTrxId" placeholder="যেমন: 9H7XXXXXXX" style="text-transform:uppercase" /><span class="err" data-i18n="coTrxErr">পেমেন্টের Transaction ID দিন (কমপক্ষে 6 অক্ষর) — Admin এটি মিলিয়ে যাচাই করবে।</span></div>
+      <div class="fld" id="fTrx"><label for="coTrxId">Transaction ID *</label><input id="coTrxId" data-i18n-ph="coTrxPh" placeholder="যেমন: 9H7XXXXXXX" style="text-transform:uppercase" /><span class="err" data-i18n="coTrxErr">পেমেন্টের Transaction ID দিন (কমপক্ষে 6 অক্ষর) — Admin এটি মিলিয়ে যাচাই করবে।</span></div>
       <!-- P2 (2026-11-23): saved payment number — shudhu nijer sender number, per method, per account, localStorage-e; card kokhono na. -->
       <label style="display:flex;gap:8px;align-items:center;font-size:.9rem;font-weight:600;margin:4px 0 2px"><input type="checkbox" id="coSavePay" style="min-height:0"> <span data-i18n="coSavePay">💾 আমার এই নম্বরটি মনে রাখুন — পরের বার এই মাধ্যমে ব্যবহার করব</span></label>
       <button type="button" class="btn-sec" id="coForgetPay" data-i18n="coForgetPay" style="display:none;margin-top:6px">🗑️ সেভ করা নম্বর ভুলে যান</button>
@@ -1313,11 +1313,11 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
     <div class="sumbox" id="orderSummary"></div>
     <div class="paystatus" id="orderSyncStatus" style="display:none;text-align:left"></div>
     <div class="timeline">
-      <div class="done"><span class="tdot">✓</span><div><b>অর্ডার গৃহীত — Admin যাচাইয়ে আছে</b><span>AnboBD Admin অর্ডারটি যাচাই করছে</span></div></div>
-      <div><span class="tdot">2</span><div><b>Admin কনফার্ম → Seller-এর কাছে পাঠানো হবে</b><span>কনফার্ম হলেই Seller অর্ডারটি পেয়ে যাবে</span></div></div>
-      <div><span class="tdot">3</span><div><b>Seller প্যাক করবে</b><span>Seller পণ্য প্যাক করে প্রস্তুত করবে</span></div></div>
-      <div><span class="tdot">4</span><div><b>Seller পাঠিয়ে দেবে — কুরিয়ারের পথে</b><span>ডেলিভারির দিন কুরিয়ার ফোন করবে</span></div></div>
-      <div><span class="tdot">5</span><div><b>Delivered — ডেলিভারি সম্পন্ন</b><span id="etaTxt">আনুমানিক 24–72 ঘণ্টা</span></div></div>
+      <div class="done"><span class="tdot">✓</span><div><b data-i18n="okStep1T">অর্ডার গৃহীত — Admin যাচাইয়ে আছে</b><span data-i18n="okStep1S">AnboBD Admin অর্ডারটি যাচাই করছে</span></div></div>
+      <div><span class="tdot">2</span><div><b data-i18n="okStep2T">Admin কনফার্ম → Seller-এর কাছে পাঠানো হবে</b><span data-i18n="okStep2S">কনফার্ম হলেই Seller অর্ডারটি পেয়ে যাবে</span></div></div>
+      <div><span class="tdot">3</span><div><b data-i18n="okStep3T">Seller প্যাক করবে</b><span data-i18n="okStep3S">Seller পণ্য প্যাক করে প্রস্তুত করবে</span></div></div>
+      <div><span class="tdot">4</span><div><b data-i18n="okStep4T">Seller পাঠিয়ে দেবে — কুরিয়ারের পথে</b><span data-i18n="okStep4S">ডেলিভারির দিন কুরিয়ার ফোন করবে</span></div></div>
+      <div><span class="tdot">5</span><div><b data-i18n="okStep5T">Delivered — ডেলিভারি সম্পন্ন</b><span id="etaTxt">আনুমানিক 24–72 ঘণ্টা</span></div></div>
     </div>
     <button class="checkout" id="trackFromSuccess" style="background:var(--teal);box-shadow:0 5px 0 #063f38" data-i18n="okTrack">📦 অর্ডার ট্র্যাক করুন</button>
     <button class="ghostbtn" id="continueBtn" data-i18n="okContinue">আরও কেনাকাটা করুন</button>
@@ -1327,8 +1327,8 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 
 <!-- WISHLIST DRAWER -->
 <template id="wishTpl">
-<aside class="drawer" id="wishDrawer" aria-label="উইশলিস্ট">
-  <header><h3><span data-i18n="wishTitle">❤️ উইশলিস্ট</span> (<span id="wishDrawerCount">0</span>)</h3><button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button></header>
+<aside class="drawer" id="wishDrawer" data-i18n-aria="wishTitle" aria-label="উইশলিস্ট">
+  <header><h3><span data-i18n="wishTitle">❤️ উইশলিস্ট</span> (<span id="wishDrawerCount">0</span>)</h3><button class="xbtn" data-close data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button></header>
   <div class="items" id="wishItems"></div>
   <footer><p style="margin:0 0 10px;font-size:.88rem;color:var(--muted)" data-i18n="wishNote">পছন্দের পণ্য এখানে জমা থাকে — দাম কমলেই কিনে ফেলুন! উইশলিস্ট থেকে সরাসরি কার্টে যোগ করা যায়।</p><button class="btn-sec" type="button" id="shareWishBtn" data-i18n="wishShare">🔗 উইশলিস্ট শেয়ার করুন</button></footer>
 </aside>
@@ -1337,9 +1337,9 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 <!-- QUICK VIEW MODAL -->
 <div class="modal" id="modal" role="dialog" aria-modal="true" data-i18n-aria="modalDetails" aria-label="পণ্যের বিস্তারিত">
   <div class="modal-card">
-    <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
+    <button class="xbtn" data-close data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button>
     <div class="mside">
-      <div class="mimg" id="mImgWrap" title="জুম করতে ছবিতে ক্লিক করুন"><img id="mImg" src="/assets/headphones.jpg" alt="পণ্যের ছবি" /><button type="button" class="mslide-nav prev" id="mPrev" aria-label="আগের ছবি" style="display:none">‹</button><button type="button" class="mslide-nav next" id="mNext" aria-label="পরের ছবি" style="display:none">›</button><span class="mslide-count" id="mCount" style="display:none">1/1</span><span class="zoomhint" data-i18n="modalZoomHint">🔍 ক্লিক করলে জুম হবে</span></div>
+      <div class="mimg" id="mImgWrap" data-i18n-title="auZoomHint" title="জুম করতে ছবিতে ক্লিক করুন"><img id="mImg" src="/assets/headphones.jpg" alt="পণ্যের ছবি" /><button type="button" class="mslide-nav prev" id="mPrev" data-i18n-aria="auPrevImg" aria-label="আগের ছবি" style="display:none">‹</button><button type="button" class="mslide-nav next" id="mNext" data-i18n-aria="auNextImg" aria-label="পরের ছবি" style="display:none">›</button><span class="mslide-count" id="mCount" style="display:none">1/1</span><span class="zoomhint" data-i18n="modalZoomHint">🔍 ক্লিক করলে জুম হবে</span></div>
       <div class="mthumbs" id="mThumbs" style="display:none"></div>
     </div>
     <div class="mbody">
@@ -1354,7 +1354,7 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
       <p style="font-size:.88rem;color:var(--muted);margin:6px 0 0" data-i18n="modalPayLine">ক্যাশ অন ডেলিভারি • bKash / Nagad / Rocket ম্যানুয়াল পেমেন্ট • ↩️ 7 দিনের সহজ রিটার্ন</p>
       <div class="delbox" id="mDelBox" data-i18n="modalDelBox">🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে ৳60 — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে ৳120 — 48–72 ঘণ্টায় ডেলিভারি • ঢাকায় ৳2,000+ অর্ডারে ডেলিভারি <b>ফ্রি</b> • ক্যাশ অন ডেলিভারি (COD) সুবিধা আছে<br>↩️ <b>রিটার্ন পলিসি:</b> 7 দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন</div>
       <div class="sellercard" id="mSeller"></div>
-      <div class="mqty"><span style="font-weight:700" data-i18n="modalQtyLbl">পরিমাণ:</span><span class="qty"><button id="mDec" aria-label="কমান">−</button><b id="mQty">1</b><button id="mInc" aria-label="বাড়ান">+</button></span>
+      <div class="mqty"><span style="font-weight:700" data-i18n="modalQtyLbl">পরিমাণ:</span><span class="qty"><button id="mDec" data-i18n-aria="qtyDec" aria-label="কমান">−</button><b id="mQty">1</b><button id="mInc" data-i18n-aria="qtyInc" aria-label="বাড়ান">+</button></span>
       <button class="wishbtn" id="mWish" style="position:static" data-i18n-aria="wishAdd" aria-label="উইশলিস্টে যোগ করুন">🤍</button>
       <button type="button" class="sharebtn" id="mShare" data-i18n="modalShare" aria-label="পণ্যের লিংক কপি করে শেয়ার করুন">🔗 শেয়ার</button></div>
       <div class="cardbtns">
@@ -1362,11 +1362,11 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
         <button class="buybtn" id="mBuy" data-i18n="cardBuy">এখনই কিনুন</button>
       </div>
       <div class="fbt" id="mFbtWrap">
-        <h4>🛍️ Frequently Bought Together — একসাথে কিনলেই সাশ্রয়</h4>
+        <h4 data-i18n="modalFbtHead">🛍️ Frequently Bought Together — একসাথে কিনলেই সাশ্রয়</h4>
         <div id="mFbt"></div>
       </div>
       <div class="reviews">
-        <h4>⭐ কাস্টমার রিভিউ</h4>
+        <h4 data-i18n="modalRevHead">⭐ কাস্টমার রিভিউ</h4>
         <div id="mReviews"></div>
       </div>
       <div class="fbt">
@@ -1380,7 +1380,7 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 <!-- P2 (2026-11-23): product comparison — max 3, shudhu asol data. -->
 <div class="modal" id="compareModal" role="dialog" aria-modal="true" data-i18n-aria="cmpTitle" aria-label="পণ্য তুলনা">
   <div class="modal-card single">
-    <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
+    <button class="xbtn" data-close data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
       <h3 style="font-size:1.4rem;margin:0 0 6px" data-i18n="cmpTitle">পণ্য তুলনা</h3>
       <p style="color:var(--muted);margin:0 0 14px;line-height:1.6" data-i18n="cmpSub">পাশাপাশি দেখে সিদ্ধান্ত নিন — দাম, স্টক, দোকান, রেটিং সব এক জায়গায়।</p>
@@ -1390,12 +1390,12 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 </div>
 
 <!-- P2 (2026-11-23): shared wishlist view — #wishlist=<id1>,<id2> link theke khole; read-only, shudhu Add-to-Cart. -->
-<div class="modal" id="sharedWishModal" role="dialog" aria-modal="true" aria-label="শেয়ার করা উইশলিস্ট">
+<div class="modal" id="sharedWishModal" role="dialog" aria-modal="true" data-i18n-aria="wishSharedTitle" aria-label="শেয়ার করা উইশলিস্ট">
   <div class="modal-card single">
-    <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
+    <button class="xbtn" data-close data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
-      <h3 style="font-size:1.4rem;margin:0 0 6px">💝 শেয়ার করা উইশলিস্ট</h3>
-      <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">এটি অন্য কারো শেয়ার করা উইশলিস্ট — শুধু দেখা ও কার্টে নেওয়া যাবে। শেয়ার করা পণ্য লাইভ না থাকলে এখানে দেখাবে না।</p>
+      <h3 style="font-size:1.4rem;margin:0 0 6px" data-i18n="wishSharedTitle">💝 শেয়ার করা উইশলিস্ট</h3>
+      <p style="color:var(--muted);margin:0 0 14px;line-height:1.6" data-i18n="wishSharedSub">এটি অন্য কারো শেয়ার করা উইশলিস্ট — শুধু দেখা ও কার্টে নেওয়া যাবে। শেয়ার করা পণ্য লাইভ না থাকলে এখানে দেখাবে না।</p>
       <div id="sharedWishBody"></div>
     </div>
   </div>
@@ -1405,9 +1405,9 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 <div class="compare-bar" id="compareBar"><span id="compareBarTxt"></span><button type="button" class="cgo" data-compare-open data-i18n="cmpOpen">তুলনা করুন</button><button type="button" class="cclear" data-compare-clear data-i18n="cmpClear">✕ মুছুন</button></div>
 
 <!-- TRACK MODAL -->
-<div class="modal" id="trackModal" role="dialog" aria-modal="true" aria-label="অর্ডার ট্র্যাকিং">
+<div class="modal" id="trackModal" role="dialog" aria-modal="true" data-i18n-aria="trackTitle" aria-label="অর্ডার ট্র্যাকিং">
   <div class="modal-card single">
-    <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
+    <button class="xbtn" data-close data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
       <h3 style="font-size:1.4rem;margin:0 0 6px" data-i18n="trackTitle">📦 অর্ডার ট্র্যাক করুন</h3>
       <p style="color:var(--muted);margin:0 0 14px;line-height:1.6" data-i18n="trackSub">অর্ডার কনফার্মেশনে পাওয়া নম্বরটি দিন (যেমন <b>#ANBO123456</b>)। আগের সেশনের অর্ডার হলে অর্ডারের সময় দেওয়া মোবাইল নম্বরটিও দিন — অনলাইনে খুঁজে দেখা হবে।</p>
@@ -1424,75 +1424,75 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 <!-- P0-4 (2026-11-21): homepage seller-apply form deleted — one seller road only: /seller. The form's shops insert sent non-existent columns and could never save. -->
 
 <!-- INVOICE MODAL (P1) — printable invoice; @media print prints ONLY this modal -->
-<div class="modal" id="invoiceModal" role="dialog" aria-modal="true" aria-label="অর্ডারের ইনভয়েস">
+<div class="modal" id="invoiceModal" role="dialog" aria-modal="true" data-i18n-aria="invTitle" aria-label="অর্ডারের ইনভয়েস">
   <div class="modal-card single">
-    <button class="xbtn noprint" data-close-invoice aria-label="বন্ধ করুন">✕</button>
+    <button class="xbtn noprint" data-close-invoice data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button>
     <div class="mbody" id="invoiceBody"></div>
-    <div style="padding:0 24px 24px" class="noprint"><button class="checkout" id="invoicePrintBtn" type="button" style="margin:0">🖨️ প্রিন্ট করুন</button></div>
+    <div style="padding:0 24px 24px" class="noprint"><button class="checkout" id="invoicePrintBtn" type="button" style="margin:0" data-i18n="invPrint">🖨️ প্রিন্ট করুন</button></div>
   </div>
 </div>
 
 <!-- ================= AUTH (Sign Up / Sign In / Account) ================= -->
-<div class="modal" id="authModal" role="dialog" aria-modal="true" aria-label="অ্যাকাউন্ট">
+<div class="modal" id="authModal" role="dialog" aria-modal="true" data-i18n-aria="auAcct" aria-label="অ্যাকাউন্ট">
   <div class="modal-card single">
-    <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
+    <button class="xbtn" data-close data-i18n-aria="auClose" aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
       <div id="auForms">
-        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><span class="auth-acct">অ্যাকাউন্ট</span><p>আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।</p><div class="auth-trust">নিরাপদ পেমেন্ট <i>•</i> দ্রুত ডেলিভারি <i>•</i> সহজ রিটার্ন</div></div>
-        <div class="notice" id="auSupabaseNotice" style="display:none;margin-bottom:14px">⚠️ অ্যাকাউন্ট এখন শুধু এই ব্রাউজারে সংরক্ষিত থাকছে।</div>
-        <div class="authtabs" role="tablist" aria-label="সাইন ইন / সাইন আপ">
-          <button type="button" id="auTabIn" class="on">সাইন ইন</button>
-          <button type="button" id="auTabUp">সাইন আপ (নতুন অ্যাকাউন্ট)</button>
+        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><span class="auth-acct" data-i18n="auAcct">অ্যাকাউন্ট</span><p data-i18n="auTagline">আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।</p><div class="auth-trust" data-i18n="auTrust">নিরাপদ পেমেন্ট <i>•</i> দ্রুত ডেলিভারি <i>•</i> সহজ রিটার্ন</div></div>
+        <div class="notice" id="auSupabaseNotice" data-i18n="auSupaNotice" style="display:none;margin-bottom:14px">⚠️ অ্যাকাউন্ট এখন শুধু এই ব্রাউজারে সংরক্ষিত থাকছে।</div>
+        <div class="authtabs" role="tablist" data-i18n-aria="auTabsAria" aria-label="সাইন ইন / সাইন আপ">
+          <button type="button" id="auTabIn" class="on" data-i18n="auTabIn">সাইন ইন</button>
+          <button type="button" id="auTabUp" data-i18n="auTabUp">সাইন আপ (নতুন অ্যাকাউন্ট)</button>
         </div>
         <form id="auInForm" novalidate style="display:grid;gap:12px">
-          <div class="fld"><label for="auInEmail">ইমেইল</label><input id="auInEmail" type="email" autocomplete="username" placeholder="name@example.com" /></div>
-          <div class="fld"><label for="auInPass">পাসওয়ার্ড</label>
-            <div class="passwrap"><input id="auInPass" type="password" autocomplete="current-password" placeholder="আপনার পাসওয়ার্ড" /><button type="button" data-passtoggle="auInPass">Show</button></div>
+          <div class="fld"><label for="auInEmail" data-i18n="auEmailLbl">ইমেইল</label><input id="auInEmail" type="email" autocomplete="username" placeholder="name@example.com" /></div>
+          <div class="fld"><label for="auInPass" data-i18n="auPassLbl">পাসওয়ার্ড</label>
+            <div class="passwrap"><input id="auInPass" type="password" autocomplete="current-password" data-i18n-ph="auPassPh" placeholder="আপনার পাসওয়ার্ড" /><button type="button" data-passtoggle="auInPass">Show</button></div>
           </div>
           <div class="login-err" id="auInErr"></div>
-          <button class="checkout" type="submit" style="margin-top:2px">সাইন ইন করুন →</button>
-          <p style="font-size:.86rem;margin:0"><button type="button" id="auForgotBtn" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0;text-decoration:underline;text-underline-offset:3px">পাসওয়ার্ড ভুলে গেছেন?</button></p>
+          <button class="checkout" type="submit" style="margin-top:2px" data-i18n="auSignInBtn">সাইন ইন করুন →</button>
+          <p style="font-size:.86rem;margin:0"><button type="button" id="auForgotBtn" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0;text-decoration:underline;text-underline-offset:3px" data-i18n="auForgot">পাসওয়ার্ড ভুলে গেছেন?</button></p>
           <p class="notice" id="auForgotMsg" role="status" style="display:none;margin:0"></p>
-          <p style="font-size:.86rem;color:var(--muted);margin:0">অ্যাকাউন্ট নেই? <button type="button" id="auGoUp" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0">সাইন আপ করুন</button> — নাম, ইমেইল, মোবাইল আর পাসওয়ার্ড দিলেই হবে।</p>
-          <div class="auth-or"><span></span>অথবা<span></span></div>
-          <button type="button" class="btn-sec" id="auGoogleBtn" style="width:100%"><span class="gmark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg></span>Google দিয়ে লগইন</button>
+          <p style="font-size:.86rem;color:var(--muted);margin:0"><span data-i18n="auNoAcctPre">অ্যাকাউন্ট নেই? </span><button type="button" id="auGoUp" data-i18n="auGoUp" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0">সাইন আপ করুন</button><span data-i18n="auNoAcctPost"> — নাম, ইমেইল, মোবাইল আর পাসওয়ার্ড দিলেই হবে।</span></p>
+          <div class="auth-or"><span></span><span data-i18n="auOr">অথবা</span><span></span></div>
+          <button type="button" class="btn-sec" id="auGoogleBtn" style="width:100%"><span class="gmark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg></span><span data-i18n="auGoogleIn">Google দিয়ে লগইন</span></button>
           <div class="auth-otp">
-            <div class="fld"><label for="auPhone">মোবাইল নম্বর দিয়ে লগইন</label><input id="auPhone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /></div>
-            <button type="button" class="btn-sec" id="auOtpSendBtn">📩 OTP পাঠান</button>
-            <div class="fld" id="auOtpWrap" style="display:none"><label for="auOtp">OTP কোড (6 ডিজিট)</label><input id="auOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" /></div>
-            <button type="button" class="checkout" id="auOtpVerifyBtn" style="display:none">✅ OTP দিয়ে লগইন</button>
+            <div class="fld"><label for="auPhone" data-i18n="auOtpTitle">মোবাইল নম্বর দিয়ে লগইন</label><input id="auPhone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /></div>
+            <button type="button" class="btn-sec" id="auOtpSendBtn" data-i18n="auOtpSend">📩 OTP পাঠান</button>
+            <div class="fld" id="auOtpWrap" style="display:none"><label for="auOtp" data-i18n="auOtpLbl">OTP কোড (6 ডিজিট)</label><input id="auOtp" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="123456" /></div>
+            <button type="button" class="checkout" id="auOtpVerifyBtn" style="display:none" data-i18n="auOtpVerify">✅ OTP দিয়ে লগইন</button>
             <p class="notice" id="auOtpMsg" role="status" style="display:none;margin:0"></p>
           </div>
         </form>
         <form id="auUpForm" novalidate style="display:none;gap:12px">
-          <div class="fld"><label for="auName">আপনার নাম *</label><input id="auName" autocomplete="name" placeholder="পুরো নাম লিখুন" /></div>
-          <div class="fld"><label for="auEmail">ইমেইল *</label><input id="auEmail" type="email" autocomplete="email" placeholder="name@example.com" /></div>
-          <div class="fld"><label for="auMobile">মোবাইল নম্বর *</label><input id="auMobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /></div>
-          <div class="fld"><label for="auRole">অ্যাকাউন্টের ধরন *</label>
+          <div class="fld"><label for="auName"><span data-i18n="auNameLbl">আপনার নাম</span> *</label><input id="auName" autocomplete="name" data-i18n-ph="auNamePh" placeholder="পুরো নাম লিখুন" /></div>
+          <div class="fld"><label for="auEmail"><span data-i18n="auEmailLbl">ইমেইল</span> *</label><input id="auEmail" type="email" autocomplete="email" placeholder="name@example.com" /></div>
+          <div class="fld"><label for="auMobile"><span data-i18n="auMobileLbl">মোবাইল নম্বর</span> *</label><input id="auMobile" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /></div>
+          <div class="fld"><label for="auRole"><span data-i18n="auRoleLbl">অ্যাকাউন্টের ধরন</span> *</label>
             <select id="auRole"><option value="customer" data-i18n="auRoleCustomer">Customer — কেনাকাটার জন্য</option><option value="seller" data-i18n="auRoleSeller">Seller — নিজের দোকান খুলব</option></select>
           </div>
-          <div class="fld" id="auShopWrap" style="display:none"><label for="auShop">দোকানের নাম *</label><input id="auShop" placeholder="যেমন: আমার গ্যাজেট শপ" /></div>
-          <div class="fld"><label for="auPass">পাসওয়ার্ড * (কমপক্ষে 6 অক্ষর)</label>
-            <div class="passwrap"><input id="auPass" type="password" autocomplete="new-password" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auPass">Show</button></div>
+          <div class="fld" id="auShopWrap" style="display:none"><label for="auShop"><span data-i18n="auShopLbl">দোকানের নাম</span> *</label><input id="auShop" data-i18n-ph="auShopPh" placeholder="যেমন: আমার গ্যাজেট শপ" /></div>
+          <div class="fld"><label for="auPass"><span data-i18n="auPassLbl">পাসওয়ার্ড</span> * <span data-i18n="auPassHint">(কমপক্ষে 6 অক্ষর)</span></label>
+            <div class="passwrap"><input id="auPass" type="password" autocomplete="new-password" data-i18n-ph="auNewPassPh" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auPass">Show</button></div>
           </div>
-          <div class="fld"><label for="auPass2">পাসওয়ার্ড আবার দিন *</label><input id="auPass2" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
+          <div class="fld"><label for="auPass2"><span data-i18n="auPass2Lbl">পাসওয়ার্ড আবার দিন</span> *</label><input id="auPass2" type="password" autocomplete="new-password" data-i18n-ph="auPass2Ph" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
           <div class="login-err" id="auUpErr"></div>
-          <button class="checkout" type="submit" style="margin-top:2px">অ্যাকাউন্ট তৈরি করুন →</button>
-          <div class="auth-or"><span></span>অথবা<span></span></div>
-          <button type="button" class="btn-sec" id="auGoogleBtnUp" style="width:100%"><span class="gmark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg></span>Google দিয়ে সাইন আপ</button>
-          <p class="auth-note">সাইন আপ করলেই সাইন ইন হয়ে যাবেন। নতুন অ্যাকাউন্ট একদম খালি থাকে — কোনো অর্ডার, কার্ট বা উইশলিস্ট আগে থেকে থাকে না।</p>
+          <button class="checkout" type="submit" style="margin-top:2px" data-i18n="auSignUpBtn">অ্যাকাউন্ট তৈরি করুন →</button>
+          <div class="auth-or"><span></span><span data-i18n="auOr">অথবা</span><span></span></div>
+          <button type="button" class="btn-sec" id="auGoogleBtnUp" style="width:100%"><span class="gmark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg></span><span data-i18n="auGoogleUp">Google দিয়ে সাইন আপ</span></button>
+          <p class="auth-note" data-i18n="auSignUpNote">সাইন আপ করলেই সাইন ইন হয়ে যাবেন। নতুন অ্যাকাউন্ট একদম খালি থাকে — কোনো অর্ডার, কার্ট বা উইশলিস্ট আগে থেকে থাকে না।</p>
         </form>
       </div>
       <div id="auReset" style="display:none">
-        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><p>নতুন পাসওয়ার্ড দিন</p><div class="auth-trust">নিরাপদ পেমেন্ট <i>•</i> দ্রুত ডেলিভারি <i>•</i> সহজ রিটার্ন</div></div>
-        <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">ইমেইলে পাওয়া রিসেট লিংক থেকে এসেছেন — এখানে নতুন পাসওয়ার্ড দিন।</p>
+        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><p data-i18n="auResetTitle">নতুন পাসওয়ার্ড দিন</p><div class="auth-trust" data-i18n="auTrust">নিরাপদ পেমেন্ট <i>•</i> দ্রুত ডেলিভারি <i>•</i> সহজ রিটার্ন</div></div>
+        <p style="color:var(--muted);margin:0 0 14px;line-height:1.6" data-i18n="auResetSub">ইমেইলে পাওয়া রিসেট লিংক থেকে এসেছেন — এখানে নতুন পাসওয়ার্ড দিন।</p>
         <form id="auResetForm" novalidate style="display:grid;gap:12px">
-          <div class="fld"><label for="auNewPass">নতুন পাসওয়ার্ড * (কমপক্ষে 6 অক্ষর)</label>
-            <div class="passwrap"><input id="auNewPass" type="password" autocomplete="new-password" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auNewPass">Show</button></div>
+          <div class="fld"><label for="auNewPass"><span data-i18n="auNewPassLbl">নতুন পাসওয়ার্ড</span> * <span data-i18n="auPassHint">(কমপক্ষে 6 অক্ষর)</span></label>
+            <div class="passwrap"><input id="auNewPass" type="password" autocomplete="new-password" data-i18n-ph="auNewPassPh" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auNewPass">Show</button></div>
           </div>
-          <div class="fld"><label for="auNewPass2">নতুন পাসওয়ার্ড আবার দিন *</label><input id="auNewPass2" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
+          <div class="fld"><label for="auNewPass2"><span data-i18n="auNewPass2Lbl">নতুন পাসওয়ার্ড আবার দিন</span> *</label><input id="auNewPass2" type="password" autocomplete="new-password" data-i18n-ph="auPass2Ph" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
           <div class="login-err" id="auResetErr"></div>
-          <button class="checkout" type="submit" style="margin-top:2px">পাসওয়ার্ড বদলে সাইন ইন করুন →</button>
+          <button class="checkout" type="submit" style="margin-top:2px" data-i18n="auResetBtn">পাসওয়ার্ড বদলে সাইন ইন করুন →</button>
         </form>
         <p class="notice" id="auResetMsg" role="status" style="display:none;margin-top:12px"></p>
       </div>
@@ -1500,75 +1500,75 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
         <div class="acct-head"><span class="av" id="auAv">?</span><div><b id="auProfileName"></b><span id="auProfileMeta"></span><br><span class="rolebadge" id="auProfileRole"></span></div></div>
         <div id="auSellerPending" style="display:none;margin-top:12px"></div>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">✏️</span><h4>প্রোফাইল এডিট করুন</h4></div>
+        <div class="acct-h"><span class="acct-ic">✏️</span><h4 data-i18n="auHProfile">প্রোফাইল এডিট করুন</h4></div>
         <form id="auEditForm" style="display:grid;gap:8px">
-          <div class="fld"><label for="auEditName">আপনার নাম *</label><input id="auEditName" autocomplete="name" /></div>
-          <div class="fld"><label for="auEditPhone">মোবাইল নম্বর *</label><input id="auEditPhone" inputmode="tel" autocomplete="tel" /></div>
-          <button class="btn-sec" type="submit">💾 প্রোফাইল সেভ করুন</button>
+          <div class="fld"><label for="auEditName"><span data-i18n="auNameLbl">আপনার নাম</span> *</label><input id="auEditName" autocomplete="name" /></div>
+          <div class="fld"><label for="auEditPhone"><span data-i18n="auMobileLbl">মোবাইল নম্বর</span> *</label><input id="auEditPhone" inputmode="tel" autocomplete="tel" /></div>
+          <button class="btn-sec" type="submit" data-i18n="auSaveProfile">💾 প্রোফাইল সেভ করুন</button>
           <p class="notice" id="auEditMsg" role="status" style="display:none;margin:0"></p>
         </form>
         </section>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">📍</span><h4>আমার ঠিকানা</h4></div>
-        <div id="auAddressBox"><p style="color:var(--muted);margin:0;font-size:.88rem;line-height:1.6">ঠিকানা লোড হচ্ছে…</p></div>
+        <div class="acct-h"><span class="acct-ic">📍</span><h4 data-i18n="auHAddr">আমার ঠিকানা</h4></div>
+        <div id="auAddressBox"><p style="color:var(--muted);margin:0;font-size:.88rem;line-height:1.6" data-i18n="auLoading">ঠিকানা লোড হচ্ছে…</p></div>
         </section>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">🔑</span><h4>পাসওয়ার্ড বদলান</h4></div>
+        <div class="acct-h"><span class="acct-ic">🔑</span><h4 data-i18n="auHPass">পাসওয়ার্ড বদলান</h4></div>
         <form id="auPassForm" style="display:grid;gap:8px">
-          <div class="fld"><label for="auNewPass3">নতুন পাসওয়ার্ড * (কমপক্ষে 6 অক্ষর)</label>
-            <div class="passwrap"><input id="auNewPass3" type="password" autocomplete="new-password" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auNewPass3">Show</button></div>
+          <div class="fld"><label for="auNewPass3"><span data-i18n="auNewPassLbl">নতুন পাসওয়ার্ড</span> * <span data-i18n="auPassHint">(কমপক্ষে 6 অক্ষর)</span></label>
+            <div class="passwrap"><input id="auNewPass3" type="password" autocomplete="new-password" data-i18n-ph="auNewPassPh" placeholder="নতুন পাসওয়ার্ড দিন" /><button type="button" data-passtoggle="auNewPass3">Show</button></div>
           </div>
-          <div class="fld"><label for="auNewPass4">নতুন পাসওয়ার্ড আবার দিন *</label><input id="auNewPass4" type="password" autocomplete="new-password" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
-          <button class="btn-sec" type="submit">🔑 পাসওয়ার্ড বদলান</button>
+          <div class="fld"><label for="auNewPass4"><span data-i18n="auNewPass2Lbl">নতুন পাসওয়ার্ড আবার দিন</span> *</label><input id="auNewPass4" type="password" autocomplete="new-password" data-i18n-ph="auPass2Ph" placeholder="একই পাসওয়ার্ড আবার লিখুন" /></div>
+          <button class="btn-sec" type="submit" data-i18n="auChangePass">🔑 পাসওয়ার্ড বদলান</button>
           <p class="notice" id="auPassMsg" role="status" style="display:none;margin:0"></p>
         </form>
         </section>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">⭐</span><h4>আমার Loyalty Point</h4></div>
+        <div class="acct-h"><span class="acct-ic">⭐</span><h4 data-i18n="auHLoyalty">আমার Loyalty Point</h4></div>
         <div id="auLoyalty"></div>
         </section>
         <!-- P3 (2026-11-23): My reviews + collected vouchers (renderAccount theke bhorbe). -->
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">⭐</span><h4>আমার রিভিউ</h4></div>
-        <div id="auMyReviews"><p class="muted" style="font-size:.9rem">লোড হচ্ছে…</p></div>
+        <div class="acct-h"><span class="acct-ic">⭐</span><h4 data-i18n="auHReviews">আমার রিভিউ</h4></div>
+        <div id="auMyReviews"><p class="muted" style="font-size:.9rem" data-i18n="auLoading">লোড হচ্ছে…</p></div>
         </section>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">🎟️</span><h4>আমার সংগ্রহ করা ভাউচার</h4></div>
-        <div id="auVouchers"><p class="muted" style="font-size:.9rem">লোড হচ্ছে…</p></div>
+        <div class="acct-h"><span class="acct-ic">🎟️</span><h4 data-i18n="auHVouchers">আমার সংগ্রহ করা ভাউচার</h4></div>
+        <div id="auVouchers"><p class="muted" style="font-size:.9rem" data-i18n="auLoading">লোড হচ্ছে…</p></div>
         </section>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">💬</span><h4>AnboBD থেকে মেসেজ</h4></div>
+        <div class="acct-h"><span class="acct-ic">💬</span><h4 data-i18n="auHMessages">AnboBD থেকে মেসেজ</h4></div>
         <div id="auMessages"></div>
         </section>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">✉️</span><h4>সাপোর্টে লিখুন</h4></div>
-        <div id="auSupportBox"><p style="color:var(--muted);margin:0 0 8px;font-size:.88rem">অর্ডার, পেমেন্ট বা ডেলিভারি নিয়ে সমস্যা হলে এখানে লিখুন — Admin Support পেজে দেখবে।</p>
+        <div class="acct-h"><span class="acct-ic">✉️</span><h4 data-i18n="auHSupport">সাপোর্টে লিখুন</h4></div>
+        <div id="auSupportBox"><p style="color:var(--muted);margin:0 0 8px;font-size:.88rem" data-i18n="auSupNote">অর্ডার, পেমেন্ট বা ডেলিভারি নিয়ে সমস্যা হলে এখানে লিখুন — Admin Support পেজে দেখবে।</p>
         <form id="auSupportForm" style="display:grid;gap:8px">
-        <select id="auSupTopic"><option>অর্ডার সংক্রান্ত</option><option>পেমেন্ট / Transaction ID</option><option>ডেলিভারি</option><option>রিটার্ন / রিফান্ড</option><option>অন্যান্য</option></select>
-        <textarea id="auSupMsg" rows="3" placeholder="আপনার সমস্যাটা লিখুন…" required></textarea>
-        <button class="btn-sec" type="submit">📩 টিকিট পাঠান</button>
+        <select id="auSupTopic"><option data-i18n="auSupT1">অর্ডার সংক্রান্ত</option><option data-i18n="auSupT2">পেমেন্ট / Transaction ID</option><option data-i18n="auSupT3">ডেলিভারি</option><option data-i18n="auSupT4">রিটার্ন / রিফান্ড</option><option data-i18n="auSupT5">অন্যান্য</option></select>
+        <textarea id="auSupMsg" rows="3" data-i18n-ph="auSupMsgPh" placeholder="আপনার সমস্যাটা লিখুন…" required></textarea>
+        <button class="btn-sec" type="submit" data-i18n="auSendTicket">📩 টিকিট পাঠান</button>
         <p class="notice" id="auSupMsg2" role="status" style="display:none;margin:0"></p>
         </form></div>
         </section>
         <section class="acct-card">
-        <div class="acct-h"><span class="acct-ic">📦</span><h4>আমার অর্ডার</h4></div>
+        <div class="acct-h"><span class="acct-ic">📦</span><h4 data-i18n="auHOrders">আমার অর্ডার</h4></div>
         <div id="auMyOrders"></div>
         </section>
         <div id="auReviewBox" style="display:none">
-        <div class="acct-h"><span class="acct-ic">⭐</span><h4>রিভিউ দিন — <span id="auReviewProd"></span></h4></div>
+        <div class="acct-h"><span class="acct-ic">⭐</span><h4><span data-i18n="auHRevGive">রিভিউ দিন</span> — <span id="auReviewProd"></span></h4></div>
         <form id="auReviewForm" style="display:grid;gap:8px">
         <select id="auRevRating"><option value="5">★★★★★ (5)</option><option value="4">★★★★ (4)</option><option value="3">★★★ (3)</option><option value="2">★★ (2)</option><option value="1">★ (1)</option></select>
-        <textarea id="auRevText" rows="3" placeholder="পণ্যটা কেমন লেগেছে লিখুন…" required></textarea>
-        <div style="display:flex;gap:8px"><button class="btn-sec" type="submit">✅ রিভিউ জমা দিন</button><button class="ghostbtn" type="button" id="auReviewCancel">বাতিল</button></div>
+        <textarea id="auRevText" rows="3" data-i18n-ph="auRevPh" placeholder="পণ্যটা কেমন লেগেছে লিখুন…" required></textarea>
+        <div style="display:flex;gap:8px"><button class="btn-sec" type="submit" data-i18n="auSubmitReview">✅ রিভিউ জমা দিন</button><button class="ghostbtn" type="button" id="auReviewCancel" data-i18n="auCancel">বাতিল</button></div>
         <p class="notice" id="auRevMsg" role="status" style="display:none;margin:0"></p>
         </form></div>
         <div class="gatebtns" style="margin-top:16px">
-          <button class="checkout" type="button" id="auGoSeller" style="margin:0;display:none">🏪 Seller Center খুলুন</button>
-          <button class="ghostbtn" type="button" id="auLogoutBtn" style="margin:0">লগআউট</button>
+          <button class="checkout" type="button" id="auGoSeller" style="margin:0;display:none" data-i18n="auGoSeller">🏪 Seller Center খুলুন</button>
+          <button class="ghostbtn" type="button" id="auLogoutBtn" style="margin:0" data-i18n="auLogout">লগআউট</button>
           <!-- P3 (2026-11-23): Delete-account REQUEST — Admin-er kache request
                jabe; account sathe sathe delete hoy na. -->
-          <button class="ghostbtn" type="button" id="auDeleteBtn" style="margin:0;color:#b3261e;border-color:#b3261e">অ্যাকাউন্ট মুছে ফেলার অনুরোধ</button>
-          <p class="muted" style="font-size:.78rem;margin:6px 0 0">অ্যাকাউন্ট মুছতে চাইলে অনুরোধ পাঠান — Admin যাচাই করে মুছে দেবেন। অনুরোধ পাঠানোর পর আপনাকে সাইন আউট করা হবে।</p>
+          <button class="ghostbtn" type="button" id="auDeleteBtn" style="margin:0;color:#b3261e;border-color:#b3261e" data-i18n="auDeleteReq">অ্যাকাউন্ট মুছে ফেলার অনুরোধ</button>
+          <p class="muted" style="font-size:.78rem;margin:6px 0 0" data-i18n="auDeleteNote">অ্যাকাউন্ট মুছতে চাইলে অনুরোধ পাঠান — Admin যাচাই করে মুছে দেবেন। অনুরোধ পাঠানোর পর আপনাকে সাইন আউট করা হবে।</p>
         </div>
       </div>
     </div>
@@ -2049,7 +2049,246 @@ modalShare:"🔗 শেয়ার",
 modalZoomHint:"🔍 ক্লিক করলে জুম হবে",
 modalFbtTitle:"💡 আপনার জন্য আরও পছন্দ হতে পারে",
 modalPayLine:"ক্যাশ অন ডেলিভারি • bKash / Nagad / Rocket ম্যানুয়াল পেমেন্ট • ↩️ 7 দিনের সহজ রিটার্ন",
-modalDelBox:"🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে ৳60 — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে ৳120 — 48–72 ঘণ্টায় ডেলিভারি • ঢাকায় ৳2,000+ অর্ডারে ডেলিভারি <b>ফ্রি</b> • ক্যাশ অন ডেলিভারি (COD) সুবিধা আছে<br>↩️ <b>রিটার্ন পলিসি:</b> 7 দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন"
+modalDelBox:"🚚 <b>ডেলিভারি তথ্য:</b> ঢাকার ভিতরে ৳60 — 24 ঘণ্টায় ডেলিভারি • ঢাকার বাইরে ৳120 — 48–72 ঘণ্টায় ডেলিভারি • ঢাকায় ৳2,000+ অর্ডারে ডেলিভারি <b>ফ্রি</b> • ক্যাশ অন ডেলিভারি (COD) সুবিধা আছে<br>↩️ <b>রিটার্ন পলিসি:</b> 7 দিনের সহজ রিটার্ন — পণ্যে সমস্যা থাকলে ফেরত বা বদলি পাবেন",
+invPrint:"🖨️ প্রিন্ট করুন",
+auAriaServices:"সেবা",
+auAriaZone:"ডেলিভারি এলাকা",
+auAriaSlot:"ডেলিভারি স্লট",
+pageTitle:"AnboBD — সবকিছু, এক ঠিকানায় | 3D Online Shopping in Bangladesh",
+supaNotice:"⚠️ অ্যাকাউন্ট ও অর্ডার এখন শুধু এই ব্রাউজারে সংরক্ষিত হচ্ছে — অনলাইন অ্যাকাউন্ট চালু হলে এখানেই জানিয়ে দেওয়া হবে।",
+okStep1T:"অর্ডার গৃহীত — Admin যাচাইয়ে আছে",
+okStep1S:"AnboBD Admin অর্ডারটি যাচাই করছে",
+okStep2T:"Admin কনফার্ম → Seller-এর কাছে পাঠানো হবে",
+okStep2S:"কনফার্ম হলেই Seller অর্ডারটি পেয়ে যাবে",
+okStep3T:"Seller প্যাক করবে",
+okStep3S:"Seller পণ্য প্যাক করে প্রস্তুত করবে",
+okStep4T:"Seller পাঠিয়ে দেবে — কুরিয়ারের পথে",
+okStep4S:"ডেলিভারির দিন কুরিয়ার ফোন করবে",
+okStep5T:"Delivered — ডেলিভারি সম্পন্ন",
+modalFbtHead:"🛍️ Frequently Bought Together — একসাথে কিনলেই সাশ্রয়",
+modalRevHead:"⭐ কাস্টমার রিভিউ",
+wishSharedTitle:"💝 শেয়ার করা উইশলিস্ট",
+wishSharedSub:"এটি অন্য কারো শেয়ার করা উইশলিস্ট — শুধু দেখা ও কার্টে নেওয়া যাবে। শেয়ার করা পণ্য লাইভ না থাকলে এখানে দেখাবে না।",
+myShop:"আমার দোকান",
+auAcct:"অ্যাকাউন্ট",
+auTagline:"আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।",
+auTrust:"নিরাপদ পেমেন্ট <i>•</i> দ্রুত ডেলিভারি <i>•</i> সহজ রিটার্ন",
+auSupaNotice:"⚠️ অ্যাকাউন্ট এখন শুধু এই ব্রাউজারে সংরক্ষিত থাকছে।",
+auTabsAria:"সাইন ইন / সাইন আপ",
+auTabIn:"সাইন ইন",
+auTabUp:"সাইন আপ (নতুন অ্যাকাউন্ট)",
+auEmailLbl:"ইমেইল",
+auPassLbl:"পাসওয়ার্ড",
+auPassPh:"আপনার পাসওয়ার্ড",
+auPassHint:"(কমপক্ষে 6 অক্ষর)",
+auSignInBtn:"সাইন ইন করুন →",
+auForgot:"পাসওয়ার্ড ভুলে গেছেন?",
+auNoAcctPre:"অ্যাকাউন্ট নেই? ",
+auGoUp:"সাইন আপ করুন",
+auNoAcctPost:" — নাম, ইমেইল, মোবাইল আর পাসওয়ার্ড দিলেই হবে।",
+auOr:"অথবা",
+auGoogleIn:"Google দিয়ে লগইন",
+auGoogleUp:"Google দিয়ে সাইন আপ",
+auOtpTitle:"মোবাইল নম্বর দিয়ে লগইন",
+auOtpSend:"📩 OTP পাঠান",
+auOtpLbl:"OTP কোড (6 ডিজিট)",
+auOtpVerify:"✅ OTP দিয়ে লগইন",
+auNameLbl:"আপনার নাম",
+auNamePh:"পুরো নাম লিখুন",
+auMobileLbl:"মোবাইল নম্বর",
+auRoleLbl:"অ্যাকাউন্টের ধরন",
+auShopLbl:"দোকানের নাম",
+auShopPh:"যেমন: আমার গ্যাজেট শপ",
+auNewPassLbl:"নতুন পাসওয়ার্ড",
+auNewPassPh:"নতুন পাসওয়ার্ড দিন",
+auNewPass2Lbl:"নতুন পাসওয়ার্ড আবার দিন",
+auPass2Lbl:"পাসওয়ার্ড আবার দিন",
+auPass2Ph:"একই পাসওয়ার্ড আবার লিখুন",
+auSignUpBtn:"অ্যাকাউন্ট তৈরি করুন →",
+auSignUpNote:"সাইন আপ করলেই সাইন ইন হয়ে যাবেন। নতুন অ্যাকাউন্ট একদম খালি থাকে — কোনো অর্ডার, কার্ট বা উইশলিস্ট আগে থেকে থাকে না।",
+auResetTitle:"নতুন পাসওয়ার্ড দিন",
+auResetSub:"ইমেইলে পাওয়া রিসেট লিংক থেকে এসেছেন — এখানে নতুন পাসওয়ার্ড দিন।",
+auResetBtn:"পাসওয়ার্ড বদলে সাইন ইন করুন →",
+auHProfile:"প্রোফাইল এডিট করুন",
+auHAddr:"আমার ঠিকানা",
+auHRevGive:"রিভিউ দিন",
+auHPass:"পাসওয়ার্ড বদলান",
+auHLoyalty:"আমার Loyalty Point",
+auHReviews:"আমার রিভিউ",
+auHVouchers:"আমার সংগ্রহ করা ভাউচার",
+auHMessages:"AnboBD থেকে মেসেজ",
+auHSupport:"সাপোর্টে লিখুন",
+auHOrders:"আমার অর্ডার",
+auSaveProfile:"💾 প্রোফাইল সেভ করুন",
+auChangePass:"🔑 পাসওয়ার্ড বদলান",
+auSupNote:"অর্ডার, পেমেন্ট বা ডেলিভারি নিয়ে সমস্যা হলে এখানে লিখুন — Admin Support পেজে দেখবে।",
+auSupT1:"অর্ডার সংক্রান্ত",
+auSupT2:"পেমেন্ট / Transaction ID",
+auSupT3:"ডেলিভারি",
+auSupT4:"রিটার্ন / রিফান্ড",
+auSupT5:"অন্যান্য",
+auSupMsgPh:"আপনার সমস্যাটা লিখুন…",
+auSendTicket:"📩 টিকিট পাঠান",
+auRevPh:"পণ্যটা কেমন লেগেছে লিখুন…",
+auSubmitReview:"✅ রিভিউ জমা দিন",
+auCancel:"বাতিল",
+auGoSeller:"🏪 Seller Center খুলুন",
+auLogout:"লগআউট",
+auDeleteReq:"অ্যাকাউন্ট মুছে ফেলার অনুরোধ",
+auDeleteNote:"অ্যাকাউন্ট মুছতে চাইলে অনুরোধ পাঠান — Admin যাচাই করে মুছে দেবেন। অনুরোধ পাঠানোর পর আপনাকে সাইন আউট করা হবে।",
+auLoading:"লোড হচ্ছে…",
+auShow:"দেখুন",
+auHide:"লুকান",
+auPoint:"পয়েন্ট",
+auLoyaltyEarned:"(অর্জিত {e} · ব্যবহৃত {s})",
+auLoyaltyDesc:"Delivered অর্ডারে প্রতি ৳100-এ {per100} পয়েন্ট — {points} পয়েন্ট = ৳{value} ছাড়, চেকআউটে ব্যবহার করা যায়।",
+auPendShop1T:"🏪 আপনার দোকান এখন Pending",
+auPendShop1B:"Admin অনুমোদনের আগে <b>NID কপি আপলোড</b> করে আবেদন সম্পূর্ণ করুন — NID ছাড়া দোকান Approve হবে না।",
+auPendShop1Btn:"Seller Center-এ আবেদন সম্পূর্ণ করুন →",
+auPendShop2T:"🏪 দোকানের আবেদন এখনো সম্পূর্ণ হয়নি",
+auPendShop2B:"Seller Center-এ গিয়ে দোকানের তথ্য আর NID কপি জমা দিন — তারপর Admin যাচাই করে অনুমোদন দেবে।",
+auPendShop2Btn:"Seller Center খুলুন →",
+auNoVouchers:"এখনো কোনো ভাউচার সংগ্রহ করেননি — ভাউচার সেকশন থেকে সংগ্রহ করুন।",
+auNoReviews:"এখনো কোনো রিভিউ দেননি — Delivered অর্ডার থেকে রিভিউ দিতে পারবেন।",
+auNoMessages:"এখনো কোনো মেসেজ নেই।",
+auMsgYou:"আপনি",
+auProdFallback:"পণ্য",
+auDeleteConfirm:"নিশ্চিত মুছে ফেলতে চান? আবার ক্লিক করুন",
+auDelNoConn:"⚠️ অনলাইন সংযোগ নেই — অনুরোধ পাঠানো যায়নি, পরে আবার চেষ্টা করুন।",
+auDelSent:"✅ অ্যাকাউন্ট মুছে ফেলার অনুরোধ Admin-এর কাছে পাঠানো হয়েছে — Admin যাচাই করে মুছে দেবেন। আপনাকে সাইন আউট করা হচ্ছে।",
+auDelFail:"⚠️ অনুরোধ পাঠানো যায়নি — {e}।",
+auShopErr:"দোকান তৈরি হয়নি",
+auDbFail:"ডাটাবেসে লেখা যায়নি",
+auTryAgain:"আবার চেষ্টা করুন",
+auNoConn:"⚠ অনলাইন সংযোগ নেই — পরে আবার চেষ্টা করুন।",
+auSupEmpty:"⚠ সমস্যাটা লিখুন।",
+auSupSent:"✅ টিকিট পাঠানো হয়েছে — Admin দেখে জানাবে।",
+auSupFail:"⚠ টিকিট পাঠানো যায়নি — {e}।",
+auRevEmpty:"⚠ রিভিউটা লিখুন।",
+auRevSent:"✅ রিভিউ জমা হয়েছে — প্রোডাক্ট পেজে দেখাবে।",
+auRevOnlyDelivered:"শুধু ডেলিভারি পাওয়া গ্রাহকরাই রিভিউ দিতে পারেন।",
+auRevAlready:"আপনি এই পণ্যে আগেই রিভিউ দিয়েছেন।",
+auRevFail:"⚠ রিভিউ জমা হয়নি — {e}।",
+auProfName:"⚠ আপনার পুরো নাম লিখুন (কমপক্ষে 3 অক্ষর)।",
+auProfSaved:"✅ প্রোফাইল সেভ হয়েছে।",
+auProfFail:"⚠ প্রোফাইল সেভ হয়নি — {e}।",
+auPassShort:"⚠ পাসওয়ার্ড কমপক্ষে 6 অক্ষরের হতে হবে।",
+auPassMismatch:"⚠ দুটি পাসওয়ার্ড মেলেনি — আবার দেখে লিখুন।",
+auPassChanged:"✅ পাসওয়ার্ড বদলে গেছে — পরের বার নতুন পাসওয়ার্ড দিয়ে সাইন ইন করবেন।",
+auPassFail:"⚠ পাসওয়ার্ড বদলানো যায়নি — {e}।",
+auShopErrNote:" ⚠️ দোকান অনলাইনে তৈরি হয়নি ({e}) — Seller Center-এ গিয়ে আবেদন সম্পূর্ণ করুন।",
+auShopPendingNote:" 🏪 দোকান এখন Pending — NID কপি আপলোড করে আবেদন সম্পূর্ণ করুন (Seller Center)।",
+auShopApplyNote:" 🏪 দোকানের আবেদন সম্পূর্ণ করতে Seller Center-এ যান।",
+auWelcomeNew:"🎉 স্বাগতম, <b>{name}</b>! অ্যাকাউন্ট তৈরি হয়ে সাইন ইন হয়েছে ({role})।{sellerNote}",
+auWelcomeBack:"👋 স্বাগতম ফিরে আসায়, <b>{name}</b>! ({role})",
+auLogoutMsg:"লগআউট হয়েছে — আবার দেখা হবে!",
+auGoogleNeedConn:"⚠ Google লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।",
+auGoogleFail:"⚠ Google লগইন চালু হয়নি — {e}",
+auGoogleErr:"⚠ Google লগইন হয়নি — {e}।",
+auOtpNeedConn:"⚠ OTP লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।",
+auOtpBadPhone:"সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।",
+auOtpCooldown:"আবার {s} সেকেন্ড পরে OTP পাঠাতে পারবেন।",
+auOtpSendFail:"⚠ OTP পাঠানো যায়নি — {e}",
+auOtpSent:"✅ OTP পাঠানো হয়েছে {phone}-এ — 6 ডিজিটের কোডটি লিখে Verify চাপ দিন।",
+auOtpNeedPhone:"আগে সঠিক মোবাইল নম্বর দিয়ে OTP পাঠান।",
+auOtpNeedCode:"6 ডিজিটের OTP কোডটি লিখুন।",
+auOtpLock:"অনেকবার ভুল OTP দেওয়া হয়েছে — {s} সেকেন্ড পরে আবার চেষ্টা করুন।",
+auOtpWrong:"⚠ OTP মেলেনি — কোডটি ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।",
+auOtpNoProfile:"⚠ লগইন হয়েছে, কিন্তু প্রোফাইল লোড হয়নি — পেজ রিলোড করে আবার চেষ্টা করুন।",
+auOtpVerifyFail:"⚠ OTP যাচাই করা যায়নি — {e}",
+auLoginLock:"অনেকবার ভুল চেষ্টা হয়েছে — {s} সেকেন্ড পরে আবার চেষ্টা করুন।",
+auForgotCooldown:"আবার {s} সেকেন্ড পরে রিসেট লিংক পাঠাতে পারবেন।",
+auResetExpired:"এই রিসেট লিংকটির মেয়াদ শেষ হয়েছে বা ইতিমধ্যে ব্যবহার করা হয়েছে — উপরে ইমেইল দিয়ে আবার রিসেট লিংক পাঠান।",
+auResetDone:"✅ পাসওয়ার্ড বদলে গেছে — এখন নতুন পাসওয়ার্ড দিয়ে সাইন ইন করুন।",
+auResetFail:"পাসওয়ার্ড বদলানো যায়নি — {e}",
+auClose:"বন্ধ করুন",
+auZoomHint:"জুম করতে ছবিতে ক্লিক করুন",
+auAriaWish:"উইশলিস্ট খুলুন",
+auAriaNotif:"নোটিফিকেশন দেখুন",
+auAriaCart:"কার্ট খুলুন",
+auAriaTop:"উপরে যান",
+auAriaBackCart:"কার্টে ফিরুন",
+auAriaHome:"AnboBD হোম",
+auAriaCat:"ক্যাটাগরি",
+auPrevImg:"আগের ছবি",
+auNextImg:"পরের ছবি",
+coSavedAddrLbl:"💾 সেভ করা ঠিকানা",
+coSaveAddr:"💾 এই ঠিকানাটি সেভ করুন",
+coTrxPh:"যেমন: 9H7XXXXXXX",
+msgPromoCleared:"🛒 কার্ট খালি হওয়ায় প্রোমো কোড <b>{code}</b> সরিয়ে দেওয়া হয়েছে।",
+msgOutOfStock:"😔 দুঃখিত, এই পণ্যের স্টক শেষ!",
+msgVariantOut:"😔 দুঃখিত, এই ভ্যারিয়েন্টের স্টক শেষ!",
+msgAddedCart:"✅ <b>{name}</b> কার্টে যোগ হয়েছে!",
+msgWishRemoved:"🤍 উইশলিস্ট থেকে সরানো হয়েছে",
+msgWishAdded:"❤️ <b>{name}</b> উইশলিস্টে যোগ হয়েছে!",
+msgCopyFail:"⚠️ লিংক কপি করা যায়নি — লিংকটি হাতে কপি করুন: {link}",
+msgBannerEmpty:"এই ক্যাটাগরিতে এখনো কোনো পণ্য লাইভ নেই — শীঘ্রই আসছে।",
+msgCartEmptyCheckout:"🛒 কার্ট খালি — আগে পণ্য যোগ করুন!",
+msgOtpLock:"⚠️ অনেকবার ভুল কোড চেষ্টা হয়েছে — {s} সেকেন্ড পরে আবার চেষ্টা করুন।",
+msgPromoBad:"❌ কোডটি সঠিক নয়, মেয়াদ শেষ বা Pause করা আছে",
+msgPromoExpired:"⏰ এই ভাউচারের মেয়াদ শেষ",
+msgPromoShopOnly:"🏪 {code} শুধু <b>{shop}</b>-এর পণ্যে চলবে — কার্টে ওই দোকানের পণ্য নেই",
+msgVoucherCollected:"🎟️ ভাউচার <b>{code}</b> সংগৃহীত! কার্টে কোডটি বসালেই ছাড় পাবেন।",
+msgAccountBlocked:"🚫 আপনার অ্যাকাউন্টটি ব্লক করা হয়েছে — এখন অর্ডার করা যাবে না। সাহায্যের জন্য সাপোর্টে যোগাযোগ করুন।",
+msgLoyaltyShort:"⭐ লয়ালটি পয়েন্ট কম — রিডিম করতে {points} পয়েন্ট লাগবে",
+msgPromoMega:"🔥 Mega price-এর পণ্যে এই শপ কুপন চলবে না — Admin Settings-এ Mega stacking OFF আছে",
+msgPromoMin:"⚠️ {code} পেতে কমপক্ষে {amt} অর্ডার লাগবে",
+msgPromoMinShop:"⚠️ {code} পেতে ওই দোকানের কমপক্ষে {amt} অর্ডার লাগবে",
+msgPromoUsed:"⚠️ আপনি এই কুপনটি <b>{n} বার</b> ব্যবহার করেছেন — এই কুপনের সীমা {limit} বার, আর চলবে না",
+msgNew200:"🎟️ NEW200 শুধু নতুন গ্রাহকদের জন্য — এই কুপনটি ব্যবহার করতে সাইন ইন করুন",
+msgPromoApplied:"🎉 কুপন <b>{code}</b> প্রযোজ্য হয়েছে!",
+msgPromoAppliedShop:"🎉 কুপন <b>{code}</b> প্রযোজ্য হয়েছে! (শপ কুপন — {shop})",
+msgLinkCopied:"🔗 পণ্যের লিংক কপি হয়েছে — যেখানে খুশি শেয়ার করুন!",
+msgOrderNotFound:"❌ অর্ডারটি পাওয়া যায়নি",
+msgCancelNotAllowed:"⚠️ এই অর্ডারটি এখন বাতিল করা যাবে না — Admin ইতিমধ্যে প্রসেস শুরু করেছে",
+msgCancelFailPre:"❌ অর্ডার বাতিল হয়নি — ",
+msgCancelFailPost:"। অর্ডারটি আগের অবস্থায়ই আছে।",
+msgDbNoConn:"ডাটাবেস সংযোগ নেই বা অর্ডারটি অনলাইনে সেভ হয়নি",
+msgDbWriteFail:"ডাটাবেসে লেখা যায়নি ({e})",
+msgCancelNoMatch:"ডাটাবেসে লেখা যায়নি (অর্ডারটি বাতিল করা যায়নি — ফোন নম্বর মেলেনি বা Admin ইতিমধ্যে কনফার্ম করেছে)",
+msgOrderNotFoundDb:"অর্ডারটি খুঁজে পাওয়া যায়নি",
+msgCancelDone:"✅ অর্ডার <b>{id}</b> বাতিল হয়েছে",
+msgCancelSubWarn:" — সেলারের কপি আপডেট হয়নি (সেলারের কাছে এখনো pending দেখাতে পারে), Admin Orders থেকে ঠিক করে নেবে",
+msgOrderItemsMissing:"❌ এই অর্ডারের আইটেম পাওয়া যায়নি",
+msgBuyAgain:"🔁 <b>{n}টি আইটেম</b> আবার কার্টে যোগ হয়েছে (আজকের দামে){skipped}",
+msgBuyAgainSkipped:" — {n}টি আইটেমের স্টক নেই বলে যোগ হয়নি",
+msgBuyAgainNone:"😔 এই অর্ডারের কোনো আইটেমেরই স্টক নেই এখন",
+msgNotifTotal:"মোট {amt}",
+msgCheckoutInvalid:"⚠️ লাল দাগ দেওয়া ঘরগুলো ঠিক করে দিন",
+msgNoPayMethod:"⚠️ এই মুহূর্তে কোনো পেমেন্ট মাধ্যম চালু নেই — পরে আবার চেষ্টা করুন",
+msgAddrName:"⚠️ নাম লিখুন (কমপক্ষে 3 অক্ষর)",
+msgAddrPhone:"⚠️ সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)",
+msgAddrFull:"⚠️ পুরো ঠিকানা লিখুন",
+msgAddrDist:"⚠️ জেলা বেছে নিন",
+msgAddrSaveFail:"❌ ঠিকানা সেভ হয়নি — ডাটাবেসে লেখা যায়নি। আবার চেষ্টা করুন।",
+msgAddrSaved:"✅ ঠিকানা সেভ হয়েছে",
+msgAddrDelFail:"❌ ঠিকানা মোছা যায়নি — ডাটাবেসে লেখা যায়নি।",
+msgAddrDeleted:"✅ ঠিকানা মুছে ফেলা হয়েছে",
+msgAddrDefFail:"❌ ডিফল্ট ঠিকানা বদলানো যায়নি — ডাটাবেসে লেখা যায়নি।",
+msgAddrDefSet:"✅ ডিফল্ট ঠিকানা সেট হয়েছে",
+msgSaveLater:"💾 পরে কেনার জন্য সরিয়ে রাখা হয়েছে (Save for Later)",
+msgBackToCart:"🛒 কার্টে ফেরত নেওয়া হয়েছে",
+msgDispNoInfo:"⚠️ অর্ডারটির সম্পূর্ণ তথ্য পাওয়া যায়নি — Dispute এখন করা যাচ্ছে না, হটলাইনে (09638-555555) যোগাযোগ করুন।",
+qtyDec:"কমান",
+qtyInc:"বাড়ান",
+slideView:"ছবি {n} দেখুন",
+shopLogoAlt:"দোকানের লোগো",
+errBadRequest:"⚠️ অর্ডারের তথ্যে ভুল আছে — নাম, নম্বর, ঠিকানা আর পণ্য ঠিক করে আবার চেষ্টা করুন",
+errBadCustomer:"🚫 আপনার অ্যাকাউন্টটি ব্লক করা হয়েছে — এখন অর্ডার করা যাবে না। সাহায্যের জন্য সাপোর্টে যোগাযোগ করুন।",
+errBadProduct:"❌ কার্টের কোনো পণ্য আর লাইভ নেই বা পাওয়া যাচ্ছে না — পণ্যটি সরিয়ে আবার চেষ্টা করুন",
+errOutOfStock:"📦 কার্টের কোনো পণ্যের স্টক শেষ — পরিমাণ কমিয়ে বা পণ্যটি সরিয়ে আবার চেষ্টা করুন",
+errBadCouponNew:"🎟️ এই কুপনটি শুধু নতুন গ্রাহকদের জন্য — সাইন ইন করে আবার চেষ্টা করুন, অথবা কুপনটি সরিয়ে দিন",
+errBadCoupon:"❌ এই কুপনটি এখন আর চলছে না — কুপনটি সরিয়ে আবার চেষ্টা করুন",
+errCouponExpired:"⏰ এই ভাউচারের মেয়াদ শেষ",
+errCouponLimit:"⚠️ এই কুপনের ব্যবহারের সীমা শেষ হয়ে গেছে",
+errBadLoyaltySignin:"⭐ Loyalty point ব্যবহার করতে সাইন ইন করুন",
+errBadLoyaltyLow:"⭐ Loyalty point কম — 100 পয়েন্ট না থাকলে redeem হবে না",
+errBadPayment:"📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে",
+errDupTrx:"⚠️ এই Transaction ID দিয়ে আগেই একটি অর্ডার করা হয়েছে — নতুন পেমেন্টের Transaction ID দিন",
+errBadOrder:"⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন",
+errRateLimited:"⏰ এক ঘণ্টায় এই নম্বর থেকে অনেকগুলো অর্ডার দেওয়া হয়েছে — একটু পরে আবার চেষ্টা করুন।",
+errBadCaptcha:"🛡️ যাচাই সম্পন্ন হয়নি — আবার চেষ্টা করুন",
+errDefault:"⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন"
 },
 en:{
 heroStatDistrictsNum:"Nationwide", heroStatReturnNum:"7 days",
@@ -2372,7 +2611,246 @@ modalShare:"🔗 Share",
 modalZoomHint:"🔍 Click to zoom",
 modalFbtTitle:"💡 You may also like",
 modalPayLine:"Cash on Delivery • bKash / Nagad / Rocket manual payment • ↩️ Easy 7-day return",
-modalDelBox:"🚚 <b>Delivery info:</b> Inside Dhaka ৳60 — delivery in 24 hours • Outside Dhaka ৳120 — delivery in 48–72 hours • Free delivery on Dhaka orders over ৳2,000 • Cash on Delivery (COD) available<br>↩️ <b>Return policy:</b> Easy 7-day return — if there's a problem with the product, you'll get a refund or replacement"
+modalDelBox:"🚚 <b>Delivery info:</b> Inside Dhaka ৳60 — delivery in 24 hours • Outside Dhaka ৳120 — delivery in 48–72 hours • Free delivery on Dhaka orders over ৳2,000 • Cash on Delivery (COD) available<br>↩️ <b>Return policy:</b> Easy 7-day return — if there's a problem with the product, you'll get a refund or replacement",
+invPrint:"🖨️ Print",
+auAriaServices:"Services",
+auAriaZone:"Delivery area",
+auAriaSlot:"Delivery slot",
+pageTitle:"AnboBD — Everything, in one place | 3D Online Shopping in Bangladesh",
+supaNotice:"⚠️ Accounts and orders are currently saved only in this browser — we'll let you know here once online accounts are live.",
+okStep1T:"Order received — awaiting Admin verification",
+okStep1S:"AnboBD Admin is verifying the order",
+okStep2T:"Admin confirms → sent to the seller",
+okStep2S:"The seller gets the order as soon as it's confirmed",
+okStep3T:"Seller will pack it",
+okStep3S:"The seller packs the product and gets it ready",
+okStep4T:"Seller ships it — on its way by courier",
+okStep4S:"The courier will call you on delivery day",
+okStep5T:"Delivered",
+modalFbtHead:"🛍️ Frequently Bought Together — save more when you buy together",
+modalRevHead:"⭐ Customer reviews",
+wishSharedTitle:"💝 Shared wishlist",
+wishSharedSub:"This is someone else's shared wishlist — you can view it and add items to your cart. Shared products that aren't live won't show here.",
+myShop:"My Shop",
+auAcct:"Account",
+auTagline:"Your orders, wishlist and cart live only in your account.",
+auTrust:"Secure payment <i>•</i> Fast delivery <i>•</i> Easy returns",
+auSupaNotice:"⚠️ Your account is currently saved only in this browser.",
+auTabsAria:"Sign in / Sign up",
+auTabIn:"Sign in",
+auTabUp:"Sign up (new account)",
+auEmailLbl:"Email",
+auPassLbl:"Password",
+auPassPh:"Your password",
+auPassHint:"(at least 6 characters)",
+auSignInBtn:"Sign in →",
+auForgot:"Forgot your password?",
+auNoAcctPre:"No account? ",
+auGoUp:"Sign up",
+auNoAcctPost:" — just your name, email, mobile and password.",
+auOr:"or",
+auGoogleIn:"Log in with Google",
+auGoogleUp:"Sign up with Google",
+auOtpTitle:"Log in with your mobile number",
+auOtpSend:"📩 Send OTP",
+auOtpLbl:"OTP code (6 digits)",
+auOtpVerify:"✅ Log in with OTP",
+auNameLbl:"Your name",
+auNamePh:"Enter your full name",
+auMobileLbl:"Mobile number",
+auRoleLbl:"Account type",
+auShopLbl:"Shop name",
+auShopPh:"e.g. My Gadget Shop",
+auNewPassLbl:"New password",
+auNewPassPh:"Enter a new password",
+auNewPass2Lbl:"Confirm new password",
+auPass2Lbl:"Confirm password",
+auPass2Ph:"Re-enter the same password",
+auSignUpBtn:"Create account →",
+auSignUpNote:"You'll be signed in right after signing up. A new account starts completely empty — no orders, cart or wishlist carried over.",
+auResetTitle:"Set a new password",
+auResetSub:"You came from the reset link in your email — set your new password here.",
+auResetBtn:"Change password and sign in →",
+auHProfile:"Edit profile",
+auHAddr:"My addresses",
+auHRevGive:"Write a review",
+auHPass:"Change password",
+auHLoyalty:"My loyalty points",
+auHReviews:"My reviews",
+auHVouchers:"My collected vouchers",
+auHMessages:"Messages from AnboBD",
+auHSupport:"Write to support",
+auHOrders:"My orders",
+auSaveProfile:"💾 Save profile",
+auChangePass:"🔑 Change password",
+auSupNote:"If you have a problem with an order, payment or delivery, write here — Admin will see it on the Support page.",
+auSupT1:"Order problem",
+auSupT2:"Payment / Transaction ID",
+auSupT3:"Delivery",
+auSupT4:"Return / Refund",
+auSupT5:"Something else",
+auSupMsgPh:"Describe your problem…",
+auSendTicket:"📩 Send ticket",
+auRevPh:"Write how you liked the product…",
+auSubmitReview:"✅ Submit review",
+auCancel:"Cancel",
+auGoSeller:"🏪 Open Seller Center",
+auLogout:"Log out",
+auDeleteReq:"Request account deletion",
+auDeleteNote:"If you want to delete your account, send a request — Admin will verify and delete it. You'll be signed out after sending the request.",
+auLoading:"Loading…",
+auShow:"Show",
+auHide:"Hide",
+auPoint:"point",
+auLoyaltyEarned:"(earned {e} · used {s})",
+auLoyaltyDesc:"You earn {per100} point per ৳100 on Delivered orders — {points} points = ৳{value} off, usable at checkout.",
+auPendShop1T:"🏪 Your shop is Pending",
+auPendShop1B:"Before Admin approves, complete your application by uploading your <b>NID copy</b> — without an NID the shop won't be approved.",
+auPendShop1Btn:"Complete the application in Seller Center →",
+auPendShop2T:"🏪 Your shop application isn't complete yet",
+auPendShop2B:"Go to Seller Center and submit your shop details and NID copy — Admin will then verify and approve it.",
+auPendShop2Btn:"Open Seller Center →",
+auNoVouchers:"You haven't collected any vouchers yet — collect one from the voucher section.",
+auNoReviews:"You haven't written any reviews yet — you can review from a Delivered order.",
+auNoMessages:"No messages yet.",
+auMsgYou:"You",
+auProdFallback:"Product",
+auDeleteConfirm:"Are you sure you want to delete it? Click again to confirm.",
+auDelNoConn:"⚠️ No internet connection — the request couldn't be sent. Please try again later.",
+auDelSent:"✅ Your account deletion request was sent to Admin — they'll verify and delete it. You're being signed out.",
+auDelFail:"⚠️ Request couldn't be sent — {e}.",
+auShopErr:"Shop was not created",
+auDbFail:"Couldn't save to the database",
+auTryAgain:"Please try again",
+auNoConn:"⚠ No internet connection — please try again later.",
+auSupEmpty:"⚠ Please describe the problem.",
+auSupSent:"✅ Ticket sent — Admin will review and reply.",
+auSupFail:"⚠ Ticket couldn't be sent — {e}.",
+auRevEmpty:"⚠ Please write your review.",
+auRevSent:"✅ Review submitted — it will show on the product page.",
+auRevOnlyDelivered:"Only customers who received their delivery can review.",
+auRevAlready:"You've already reviewed this product.",
+auRevFail:"⚠ Review couldn't be submitted — {e}.",
+auProfName:"⚠ Please enter your full name (at least 3 characters).",
+auProfSaved:"✅ Profile saved.",
+auProfFail:"⚠ Profile couldn't be saved — {e}.",
+auPassShort:"⚠ Password must be at least 6 characters.",
+auPassMismatch:"⚠ The two passwords don't match — please check again.",
+auPassChanged:"✅ Password changed — please sign in with the new password next time.",
+auPassFail:"⚠ Password couldn't be changed — {e}.",
+auShopErrNote:" ⚠️ Your shop wasn't created online ({e}) — please complete the application in Seller Center.",
+auShopPendingNote:" 🏪 Your shop is Pending — upload your NID copy to complete the application (Seller Center).",
+auShopApplyNote:" 🏪 Go to Seller Center to complete your shop application.",
+auWelcomeNew:"🎉 Welcome, <b>{name}</b>! Your account was created and you're signed in ({role}).{sellerNote}",
+auWelcomeBack:"👋 Welcome back, <b>{name}</b>! ({role})",
+auLogoutMsg:"Logged out — see you again!",
+auGoogleNeedConn:"⚠ Google login needs a live connection — please try again on the live site.",
+auGoogleFail:"⚠ Google login didn't start — {e}",
+auGoogleErr:"⚠ Google login failed — {e}.",
+auOtpNeedConn:"⚠ OTP login needs a live connection — please try again on the live site.",
+auOtpBadPhone:"Please enter a valid 11-digit mobile number (starts with 01).",
+auOtpCooldown:"You can resend the OTP in {s} seconds.",
+auOtpSendFail:"⚠ OTP couldn't be sent — {e}",
+auOtpSent:"✅ OTP sent to {phone} — enter the 6-digit code and press Verify.",
+auOtpNeedPhone:"First send an OTP to a valid mobile number.",
+auOtpNeedCode:"Please enter the 6-digit OTP code.",
+auOtpLock:"Too many wrong OTP attempts — try again in {s} seconds.",
+auOtpWrong:"⚠ OTP didn't match — please check the code and try again.",
+auOtpNoProfile:"⚠ You're logged in, but your profile didn't load — please reload the page and try again.",
+auOtpVerifyFail:"⚠ OTP couldn't be verified — {e}",
+auLoginLock:"Too many wrong attempts — try again in {s} seconds.",
+auForgotCooldown:"You can request another reset link in {s} seconds.",
+auResetExpired:"This reset link has expired or was already used — request a new one with your email above.",
+auResetDone:"✅ Password changed — please sign in with the new password now.",
+auResetFail:"Password couldn't be changed — {e}",
+auClose:"Close",
+auZoomHint:"Click the image to zoom",
+auAriaWish:"Open wishlist",
+auAriaNotif:"View notifications",
+auAriaCart:"Open cart",
+auAriaTop:"Go to top",
+auAriaBackCart:"Back to cart",
+auAriaHome:"AnboBD home",
+auAriaCat:"Categories",
+auPrevImg:"Previous image",
+auNextImg:"Next image",
+coSavedAddrLbl:"💾 Saved addresses",
+coSaveAddr:"💾 Save this address",
+coTrxPh:"e.g. 9H7XXXXXXX",
+msgPromoCleared:"🛒 Your cart is empty, so promo code <b>{code}</b> was removed.",
+msgOutOfStock:"😔 Sorry, this product is out of stock!",
+msgVariantOut:"😔 Sorry, this variant is out of stock!",
+msgAddedCart:"✅ <b>{name}</b> added to cart!",
+msgWishRemoved:"🤍 Removed from wishlist",
+msgWishAdded:"❤️ <b>{name}</b> added to your wishlist!",
+msgCopyFail:"⚠️ Couldn't copy the link — please copy it manually: {link}",
+msgBannerEmpty:"No live products in this category yet — coming soon.",
+msgCartEmptyCheckout:"🛒 Your cart is empty — add something first!",
+msgOtpLock:"⚠️ Too many wrong attempts — try again in {s} seconds.",
+msgPromoBad:"❌ This code is invalid, expired or paused",
+msgPromoExpired:"⏰ This voucher has expired",
+msgPromoShopOnly:"🏪 {code} only works on <b>{shop}</b> products — your cart has none from that shop",
+msgVoucherCollected:"🎟️ Voucher <b>{code}</b> collected! Apply the code at checkout to get the discount.",
+msgAccountBlocked:"🚫 Your account has been blocked — you can't place orders right now. Please contact support for help.",
+msgLoyaltyShort:"⭐ Not enough loyalty points — you need {points} points to redeem",
+msgPromoMega:"🔥 This shop coupon doesn't work on Mega Sale items — Mega stacking is OFF in Admin Settings",
+msgPromoMin:"⚠️ To use {code} you need an order of at least {amt}",
+msgPromoMinShop:"⚠️ To use {code} you need at least {amt} from that shop",
+msgPromoUsed:"⚠️ You've already used this coupon <b>{n} times</b> — its limit is {limit} uses, and it won't work again",
+msgNew200:"🎟️ NEW200 is for new customers only — please sign in to use it",
+msgPromoApplied:"🎉 Coupon <b>{code}</b> applied!",
+msgPromoAppliedShop:"🎉 Coupon <b>{code}</b> applied! (shop coupon — {shop})",
+msgLinkCopied:"🔗 Product link copied — share it anywhere!",
+msgOrderNotFound:"❌ Order not found",
+msgCancelNotAllowed:"⚠️ This order can't be cancelled now — Admin has already started processing it",
+msgCancelFailPre:"❌ Order not cancelled — ",
+msgCancelFailPost:". The order is unchanged.",
+msgDbNoConn:"No database connection, or the order isn't saved online",
+msgDbWriteFail:"Couldn't save to the database ({e})",
+msgCancelNoMatch:"Couldn't save to the database (the order couldn't be cancelled — phone number didn't match, or Admin already confirmed it)",
+msgOrderNotFoundDb:"Order not found",
+msgCancelDone:"✅ Order <b>{id}</b> cancelled",
+msgCancelSubWarn:" — the seller's copy wasn't updated (it may still show pending for the seller); fix it from Admin Orders",
+msgOrderItemsMissing:"❌ This order's items were not found",
+msgBuyAgain:"🔁 <b>{n} items</b> added back to your cart (at today's prices){skipped}",
+msgBuyAgainSkipped:" — {n} items couldn't be added (out of stock)",
+msgBuyAgainNone:"😔 None of this order's items are in stock right now",
+msgNotifTotal:"Total {amt}",
+msgCheckoutInvalid:"⚠️ Please fix the highlighted fields",
+msgNoPayMethod:"⚠️ No payment method is available right now — please try again later",
+msgAddrName:"⚠️ Please enter a name (at least 3 characters)",
+msgAddrPhone:"⚠️ Please enter a valid 11-digit mobile number (starts with 01)",
+msgAddrFull:"⚠️ Please enter the full address",
+msgAddrDist:"⚠️ Please choose a district",
+msgAddrSaveFail:"❌ Address couldn't be saved — database write failed. Please try again.",
+msgAddrSaved:"✅ Address saved",
+msgAddrDelFail:"❌ Address couldn't be deleted — database write failed.",
+msgAddrDeleted:"✅ Address deleted",
+msgAddrDefFail:"❌ Default address couldn't be changed — database write failed.",
+msgAddrDefSet:"✅ Default address set",
+msgSaveLater:"💾 Moved to Save for Later",
+msgBackToCart:"🛒 Moved back to cart",
+msgDispNoInfo:"⚠️ The full order details weren't found — you can't file a dispute right now, please call the hotline (09638-555555).",
+qtyDec:"Decrease",
+qtyInc:"Increase",
+slideView:"View image {n}",
+shopLogoAlt:"shop logo",
+errBadRequest:"⚠️ There's a problem with the order details — please check the name, number, address and products and try again",
+errBadCustomer:"🚫 Your account has been blocked — you can't order right now. Please contact support for help.",
+errBadProduct:"❌ One of the products in your cart is no longer live or can't be found — please remove it and try again",
+errOutOfStock:"📦 One of the products in your cart is out of stock — please reduce the quantity or remove it and try again",
+errBadCouponNew:"🎟️ This coupon is for new customers only — please sign in and try again, or remove the coupon",
+errBadCoupon:"❌ This coupon isn't working anymore — please remove it and try again",
+errCouponExpired:"⏰ This voucher has expired",
+errCouponLimit:"⚠️ This coupon's usage limit has been reached",
+errBadLoyaltySignin:"⭐ Please sign in to use loyalty points",
+errBadLoyaltyLow:"⭐ Not enough loyalty points — you need at least 100 points to redeem",
+errBadPayment:"📱 For manual payment, enter your number and Transaction ID — Admin will verify and confirm the order",
+errDupTrx:"⚠️ An order was already placed with this Transaction ID — please use a new payment's Transaction ID",
+errBadOrder:"⚠️ The order couldn't be placed — please try again a little later",
+errRateLimited:"⏰ Too many orders from this number in the last hour — please try again later.",
+errBadCaptcha:"🛡️ Verification did not complete — please try again.",
+errDefault:"⚠️ The order couldn't be placed — please try again a little later"
 }
 };
 /* SEC-P2-2 (2026-11-26): client-side rate limiting — 60s lockout after 5 failed
@@ -2415,6 +2893,13 @@ function applyLang(){
   document.querySelectorAll("[data-i18n-ph]").forEach(function(el){ el.setAttribute("placeholder", t(el.getAttribute("data-i18n-ph"))); });
   document.querySelectorAll("[data-i18n-aria]").forEach(function(el){ el.setAttribute("aria-label", t(el.getAttribute("data-i18n-aria"))); });
   document.querySelectorAll("[data-i18n-alt]").forEach(function(el){ el.setAttribute("alt", t(el.getAttribute("data-i18n-alt"))); });
+  document.querySelectorAll("[data-i18n-title]").forEach(function(el){ el.setAttribute("title", t(el.getAttribute("data-i18n-title"))); });
+  document.title = t("pageTitle");
+  /* Passtoggle button-er label input-er type onujayi Show/Hide. */
+  document.querySelectorAll("[data-passtoggle]").forEach(function(b){ var inp = document.getElementById(b.getAttribute("data-passtoggle")); if(inp) b.textContent = inp.type === "password" ? t("auShow") : t("auHide"); });
+  /* Checkout totals/loyalty box — fillCheckoutSummary t()-based, kintu
+     __anboRender-er baire; toggle-e na dakle purono bhasha theke jeto. */
+  if(typeof fillCheckoutSummary === "function"){ try{ fillCheckoutSummary(); }catch(e){} }
   /* Hero title/lead — Admin override thakle setai thakbe; na thakle dict. */
   var st = window.__anboPlatformSettings;
   var hasAdminHero = st && ((typeof st.heroTitle === "string" && st.heroTitle.trim()) || (typeof st.heroLead === "string" && st.heroLead.trim()));
@@ -2433,6 +2918,27 @@ function applyLang(){
   syncCatNav();
   renderCompareBar();
   if(window.__anboRender) window.__anboRender();
+  /* i18n (2026-11-27): khola modal/dialog — toggle-er somoy purono bhashay
+     theke jeto, karon __anboRender egulo chhuy na. */
+  var am = document.getElementById("authModal");
+  if(am && am.classList.contains("open") && window.__anboCurrentUser && typeof window.renderAccount === "function"){
+    /* Account panel rebuild korle type kora input muche jeto — focus
+       modal-er bhitore thakle skip (user type korche). */
+    var ae = document.activeElement;
+    if(!ae || !am.contains(ae)){ try{ window.renderAccount(); }catch(e){} }
+  }
+  var tm = document.getElementById("trackModal");
+  if(tm && tm.classList.contains("open") && window.__anboLastTrackedOrder && typeof renderTracking === "function"){ try{ renderTracking(window.__anboLastTrackedOrder); }catch(e){} }
+  var cm = document.getElementById("compareModal");
+  if(cm && cm.classList.contains("open") && typeof openCompare === "function"){ try{ openCompare(); }catch(e){} }
+  var pm = document.getElementById("modal");
+  if(pm && pm.classList.contains("open") && window.__anboModalId && typeof openModal === "function"){ try{ openModal(window.__anboModalId); }catch(e){} }
+  var im = document.getElementById("invoiceModal");
+  if(im && im.classList.contains("open") && window.__anboInvoiceOrderId && typeof anboInvoiceHtml === "function"){
+    var io = ANBOBD_STORE.orders.filter(function(x){ return x.id === window.__anboInvoiceOrderId; })[0];
+    var ib = document.getElementById("invoiceBody");
+    if(io && ib){ try{ ib.innerHTML = anboInvoiceHtml(io); }catch(e){} }
+  }
 }
 function anboSetLang(l){
   if(l !== "en" && l !== "bn") return;
@@ -2901,7 +3407,7 @@ function renderCart(){
   if(cartCount()===0 && promoCode){
     var hadPromo = promoCode; promoCode = null;
     var pi = document.getElementById("promoInput"); if(pi) pi.value = "";
-    toast("🛒 কার্ট খালি হওয়ায় প্রোমো কোড <b>"+hadPromo+"</b> সরিয়ে দেওয়া হয়েছে।");
+    toast(t("msgPromoCleared", {code: hadPromo}));
   }
   var tt = totals();
   document.getElementById("subTotal").textContent = fmt(tt.sub);
@@ -2928,7 +3434,7 @@ function renderCart(){
     if(!p) return ""; /* Buy Now drawer fix 2026-11-21: catalog na ele P(k) undefined — escHtml(p.name) throw kore AUTH IIFE-ke mere felto, ?checkout=1 handler install-i hoto na. Catalog ele porer render-e item fire asbe. */
     var vLabel = cartKeyVariant(k), uPrice = cartUnitPrice(k);
     return '<div class="citem"><img src="'+safeImgFor(p)+'"'+imgFallbackAttr(p)+' alt="'+escHtml(p.name)+'"><div><div class="nm">'+escHtml(p.name)+(vLabel?' <span style="color:var(--muted);font-size:.82rem">('+escHtml(vLabel)+')</span>':'')+'</div><div class="pr">'+fmt(uPrice)+' × '+cart[k]+' = '+fmt(uPrice*cart[k])+'</div><div>'+stockLine({stockQty:cartVariantStock(k)})+'</div><button class="rm" data-rm="'+escHtml(k)+'">'+t("cartRemove")+'</button> <button class="rm" style="color:var(--teal)" data-save="'+escHtml(k)+'">'+t("cartSaveLater")+'</button></div>' +
-    '<div class="qty"><button data-dec="'+escHtml(k)+'" aria-label="কমান">−</button><b>'+cart[k]+'</b><button data-inc="'+escHtml(k)+'" aria-label="বাড়ান">+</button></div></div>';
+    '<div class="qty"><button data-dec="'+escHtml(k)+'" aria-label="'+t("qtyDec")+'">−</button><b>'+cart[k]+'</b><button data-inc="'+escHtml(k)+'" aria-label="'+t("qtyInc")+'">+</button></div></div>';
   }).join("");
   /* Save for Later */
   var sIds = Object.keys(savedLater), sBox = document.getElementById("savedBox");
@@ -2959,16 +3465,16 @@ function toast(msg){ var t=document.getElementById("toast"); t.innerHTML=msg; t.
 /* P2: variantLabel thakle cart key "id||label" — purono cart-e shudhu id thake (base variant). */
 function addToCart(id, qty, variantLabel){
   var p = P(id); qty = qty||1;
-  if(!p || p.stockQty<=0){ toast("😔 দুঃখিত, এই পণ্যের স্টক শেষ!"); return; }
+  if(!p || p.stockQty<=0){ toast(t("msgOutOfStock")); return; }
   var key = String(id), cap = p.stockQty;
-  if(variantLabel){ key = String(id) + "||" + String(variantLabel); cap = cartVariantStock(key); if(cap<=0){ toast("😔 দুঃখিত, এই ভ্যারিয়েন্টের স্টক শেষ!"); return; } }
+  if(variantLabel){ key = String(id) + "||" + String(variantLabel); cap = cartVariantStock(key); if(cap<=0){ toast(t("msgVariantOut")); return; } }
   cart[key] = Math.min((cart[key]||0)+qty, cap);
   renderCart();
-  toast("✅ <b>"+escHtml(p.name)+"</b> কার্টে যোগ হয়েছে!");
+  toast(t("msgAddedCart", {name: p.name}));
 }
 function toggleWish(id){
-  if(wishlist[id]){ delete wishlist[id]; toast("🤍 উইশলিস্ট থেকে সরানো হয়েছে"); }
-  else { wishlist[id]=true; toast("❤️ <b>"+escHtml(P(id).name)+"</b> উইশলিস্টে যোগ হয়েছে!"); }
+  if(wishlist[id]){ delete wishlist[id]; toast(t("msgWishRemoved")); }
+  else { wishlist[id]=true; toast(t("msgWishAdded", {name: P(id).name})); }
   renderCart(); renderProducts(); renderFlash(); renderUnder();
   if(modalId===id) syncModalWish();
 }
@@ -3044,7 +3550,7 @@ function shareWishlist(){
   if(!ids.length){ toast("🤍 "+t("wishEmptyShare")); return; }
   var link = location.origin + "/#wishlist=" + ids.map(encodeURIComponent).join(",");
   function done(){ toast(t("wishShared")); }
-  function fail(){ toast("⚠️ লিংক কপি করা যায়নি — লিংকটি হাতে কপি করুন: " + link); }
+  function fail(){ toast(t("msgCopyFail", {link: link})); }
   if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(link).then(done, function(){ fallbackCopy(link); done(); }); }
   else { if(fallbackCopy(link)) done(); else fail(); }
 }
@@ -3132,7 +3638,7 @@ function renderSlider(p){
   var th = document.getElementById("mThumbs");
   th.style.display = multi ? "flex" : "none";
   th.innerHTML = multi ? modalImages.map(function(u, i){
-    return '<button type="button" class="mthumb'+(i===0?" on":"")+'" data-slide="'+i+'" aria-label="ছবি '+(i+1)+' দেখুন"><img loading="lazy" src="'+safeImg(u)+'" alt=""></button>';
+    return '<button type="button" class="mthumb'+(i===0?" on":"")+'" data-slide="'+i+'" aria-label="'+t("slideView", {n:i+1})+'"><img loading="lazy" src="'+safeImg(u)+'" alt=""></button>';
   }).join("") : "";
   var wrap = document.getElementById("mImgWrap");
   wrap.classList.remove("zoomed");
@@ -3148,7 +3654,7 @@ function renderRecent(){
 }
 function openModal(id){
   var p = P(id); if(!p) return;
-  modalId = id; modalQty = 1; document.getElementById("mQty").textContent = "1";
+  modalId = id; window.__anboModalId = id; modalQty = 1; document.getElementById("mQty").textContent = "1";
   /* P1-15 — hash routing: product khulle URL e #product-<id> boshe.
      Share button (mShare) ekhon canonical /product.html?id=<id> link
      banay; purono #product- link khulleo modal khulbe
@@ -3171,7 +3677,7 @@ function openModal(id){
   var s = SL(p.sellerId) || { name:"AnboBD Seller", area:distOf(), rating:0 };
   var scp = (ANBOBD_STORE.shopCoupons||[]).filter(function(x){return x.sellerId===p.sellerId && x.active;})[0];
   var scMono = '<span class="scmono" aria-hidden="true">'+escHtml((String(s.name||"A").trim().charAt(0) || "A").toUpperCase())+'</span>';
-  var scLogo = s.logoUrl ? '<img class="sclogo" src="'+safeImg(s.logoUrl)+'" alt="'+escHtml(s.name)+' — দোকানের লোগো" onerror="this.remove()">' : '';
+  var scLogo = s.logoUrl ? '<img class="sclogo" src="'+safeImg(s.logoUrl)+'" alt="'+escHtml(s.name)+' — '+t("shopLogoAlt")+'" onerror="this.remove()">' : '';
   document.getElementById("mSeller").innerHTML =
     '<span class="scava">'+scMono+scLogo+'</span>' +
     '<div style="flex:1;min-width:0"><div class="scname">🏪 <a href="/shop?id='+encodeURIComponent(s.id)+'" style="color:inherit;text-decoration:underline;text-underline-offset:2px">'+escHtml(s.name)+'</a></div>' +
@@ -3268,9 +3774,13 @@ async function anboSaveAddressesToDb(addrs){
   return { ok:true };
 }
 function anboAddrDistricts(){ return ["ঢাকা","চট্টগ্রাম","খুলনা","রাজশাহী","বরিশাল","সিলেট","রংপুর","ময়মনসিংহ","কুমিল্লা","নারায়ণগঞ্জ","গাজীপুর","অন্যান্য"]; }
+/* i18n (2026-11-27): জেলার নাম BN-এ store হয়; EN mode-e option/card-e
+   ইংরেজি label দেখাবে, value BN-ই থাকবে (save/match বদলাবে না). */
+var ANBO_DISTRICT_EN = {"ঢাকা":"Dhaka","চট্টগ্রাম":"Chattogram","খুলনা":"Khulna","রাজশাহী":"Rajshahi","বরিশাল":"Barishal","সিলেট":"Sylhet","রংপুর":"Rangpur","ময়মনসিংহ":"Mymensingh","কুমিল্লা":"Cumilla","নারায়ণগঞ্জ":"Narayanganj","গাজীপুর":"Gazipur","অন্যান্য":"Other"};
+function anboDistLabel(d){ return (typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en" && ANBO_DISTRICT_EN[d]) ? ANBO_DISTRICT_EN[d] : d; }
 function anboAddrFormHtml(a){
   a = a || { label:(ANBO_LANG==="en"?"Home":"বাসা"), name:"", phone:"", address:"", district:"" };
-  var opts = anboAddrDistricts().map(function(d){ return '<option value="'+d+'"'+(a.district===d?" selected":"")+'>'+d+'</option>'; }).join("");
+  var opts = anboAddrDistricts().map(function(d){ return '<option value="'+d+'"'+(a.district===d?" selected":"")+'>'+anboDistLabel(d)+'</option>'; }).join("");
   return '<div class="ocard" style="background:#f4fbd9;border-color:var(--lime)"><div style="display:grid;gap:8px">' +
     '<div class="fld" style="margin:0"><label>'+t("addrFormLbl")+'</label><input id="auAddrLabel" value="'+escHtml(a.label||(ANBO_LANG==="en"?"Home":"বাসা"))+'" placeholder="'+t("addrFormLblPh")+'" /></div>' +
     '<div class="fld" style="margin:0"><label>'+t("addrFormName")+'</label><input id="auAddrName" value="'+escHtml(a.name||"")+'" placeholder="'+t("addrFormNamePh")+'" /></div>' +
@@ -3289,7 +3799,7 @@ function renderAddressBook(editIdx){
     html += '<p style="color:var(--muted);margin:0 0 10px;font-size:.88rem;line-height:1.6">'+t("addrEmpty")+'</p>';
   }
   html += list.map(function(a, i){
-    return '<div class="ocard"><div style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between"><div style="line-height:1.6"><b>'+escHtml(a.label||t("addrFallback"))+'</b>'+(a.default?' <span class="st st-ship" style="font-size:.75rem">'+t("addrDefault")+'</span>':'')+'<br><span style="font-size:.9rem">'+escHtml(a.name||"")+' • '+escHtml(a.phone||"")+'</span><br><span style="font-size:.9rem;color:var(--muted)">'+escHtml(a.address||"")+', '+escHtml(a.district||"")+'</span></div>' +
+    return '<div class="ocard"><div style="display:flex;gap:8px;align-items:flex-start;justify-content:space-between"><div style="line-height:1.6"><b>'+escHtml(a.label||t("addrFallback"))+'</b>'+(a.default?' <span class="st st-ship" style="font-size:.75rem">'+t("addrDefault")+'</span>':'')+'<br><span style="font-size:.9rem">'+escHtml(a.name||"")+' • '+escHtml(a.phone||"")+'</span><br><span style="font-size:.9rem;color:var(--muted)">'+escHtml(a.address||"")+', '+escHtml(anboDistLabel(a.district||""))+'</span></div>' +
     '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="btn-sec" data-addr-edit="'+i+'">'+t("addrEdit")+'</button><button type="button" class="btn-sec" data-addr-del="'+i+'">'+t("addrDel")+'</button>'+(a.default?'':'<button type="button" class="btn-sec" data-addr-default="'+i+'">'+t("addrMakeDefault")+'</button>')+'</div></div></div>';
   }).join("");
   if(editIdx == null || editIdx === undefined) html += '<button type="button" class="btn-sec" data-addr-add>'+t("addrAdd")+'</button>';
@@ -3301,33 +3811,33 @@ async function anboSaveAddressForm(){
   var phone = ((document.getElementById("auAddrPhone")||{}).value||"").trim();
   var address = ((document.getElementById("auAddrText")||{}).value||"").trim();
   var district = (document.getElementById("auAddrDist")||{}).value || "";
-  if(name.length < 3){ toast("⚠️ নাম লিখুন (কমপক্ষে 3 অক্ষর)"); return; }
-  if(!/^01[3-9]\d{8}$/.test(phone)){ toast("⚠️ সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)"); return; }
-  if(address.length < 8){ toast("⚠️ পুরো ঠিকানা লিখুন"); return; }
-  if(!district){ toast("⚠️ জেলা বেছে নিন"); return; }
+  if(name.length < 3){ toast(t("msgAddrName")); return; }
+  if(!/^01[3-9]\d{8}$/.test(phone)){ toast(t("msgAddrPhone")); return; }
+  if(address.length < 8){ toast(t("msgAddrFull")); return; }
+  if(!district){ toast(t("msgAddrDist")); return; }
   var list = anboAddresses().slice();
   var entry = { label: label.trim() || (ANBO_LANG==="en"?"Home":"বাসা"), name: name, phone: phone, address: address, district: district, default: false };
   if(anboAddrEditIdx === -1){ if(!list.length) entry.default = true; list.push(entry); }
   else if(anboAddrEditIdx != null && list[anboAddrEditIdx]){ entry.default = !!list[anboAddrEditIdx].default; list[anboAddrEditIdx] = entry; }
   else { if(!list.length) entry.default = true; list.push(entry); }
   var res = await anboSaveAddressesToDb(list);
-  if(!res.ok){ toast("❌ ঠিকানা সেভ হয়নি — ডাটাবেসে লেখা যায়নি। আবার চেষ্টা করুন।"); return; }
-  anboSetAddresses(list); anboAddrEditIdx = null; renderAddressBook(null); syncCheckoutAddress(); toast("✅ ঠিকানা সেভ হয়েছে");
+  if(!res.ok){ toast(t("msgAddrSaveFail")); return; }
+  anboSetAddresses(list); anboAddrEditIdx = null; renderAddressBook(null); syncCheckoutAddress(); toast(t("msgAddrSaved"));
 }
 async function anboDeleteAddress(i){
   var list = anboAddresses().slice(); if(!list[i]) return;
   var wasDefault = !!list[i].default; list.splice(i, 1);
   if(wasDefault && list.length) list[0].default = true;
   var res = await anboSaveAddressesToDb(list);
-  if(!res.ok){ toast("❌ ঠিকানা মোছা যায়নি — ডাটাবেসে লেখা যায়নি।"); return; }
-  anboSetAddresses(list); renderAddressBook(null); syncCheckoutAddress(); toast("✅ ঠিকানা মুছে ফেলা হয়েছে");
+  if(!res.ok){ toast(t("msgAddrDelFail")); return; }
+  anboSetAddresses(list); renderAddressBook(null); syncCheckoutAddress(); toast(t("msgAddrDeleted"));
 }
 async function anboSetDefaultAddress(i){
   var list = anboAddresses().slice(); if(!list[i]) return;
   list.forEach(function(a, j){ a.default = (j === i); });
   var res = await anboSaveAddressesToDb(list);
-  if(!res.ok){ toast("❌ ডিফল্ট ঠিকানা বদলানো যায়নি — ডাটাবেসে লেখা যায়নি।"); return; }
-  anboSetAddresses(list); renderAddressBook(null); toast("✅ ডিফল্ট ঠিকানা সেট হয়েছে");
+  if(!res.ok){ toast(t("msgAddrDefFail")); return; }
+  anboSetAddresses(list); renderAddressBook(null); toast(t("msgAddrDefSet"));
 }
 function anboApplyAddress(i){
   var list = anboAddresses(); var a = list[i]; if(!a) return;
@@ -3347,7 +3857,7 @@ function syncCheckoutAddress(){
   wrap.style.display = "";
   var sel = document.getElementById("coAddrSel"); if(!sel) return;
   var prev = sel.value;
-  sel.innerHTML = '<option value="">'+t("addrNew")+'</option>' + list.map(function(a, i){ return '<option value="'+i+'">'+escHtml((a.label||t("addrFallback"))+' — '+a.name+', '+a.address+', '+a.district)+'</option>'; }).join("");
+  sel.innerHTML = '<option value="">'+t("addrNew")+'</option>' + list.map(function(a, i){ return '<option value="'+i+'">'+escHtml((a.label||t("addrFallback"))+' — '+a.name+', '+a.address+', '+anboDistLabel(a.district))+'</option>'; }).join("");
   var defIdx = list.findIndex(function(a){ return a.default; }); if(defIdx < 0) defIdx = 0;
   sel.value = (prev !== "" && list[+prev]) ? prev : String(defIdx);
   if(sel.value !== "") anboApplyAddress(+sel.value);
@@ -3355,8 +3865,8 @@ function syncCheckoutAddress(){
 /* ---------- P1: customer order cancellation (AwaitingAdmin only) ---------- */
 async function anboCancelOrder(orderId, btn){
   var o = ANBOBD_STORE.orders.filter(function(x){ return x.id === orderId; })[0];
-  if(!o){ toast("❌ অর্ডারটি পাওয়া যায়নি"); return; }
-  if(o.status !== "AwaitingAdmin"){ toast("⚠️ এই অর্ডারটি এখন বাতিল করা যাবে না — Admin ইতিমধ্যে প্রসেস শুরু করেছে"); return; }
+  if(!o){ toast(t("msgOrderNotFound")); return; }
+  if(o.status !== "AwaitingAdmin"){ toast(t("msgCancelNotAllowed")); return; }
   if(!btn || !btn.dataset.confirm){
     if(btn){ btn.dataset.confirm = "1"; btn.textContent = t("myCancelConfirm"); setTimeout(function(){ if(btn.isConnected){ delete btn.dataset.confirm; btn.textContent = t("myCancel"); } }, 5000); }
     return;
@@ -3364,8 +3874,8 @@ async function anboCancelOrder(orderId, btn){
   btn.disabled = true; btn.textContent = t("myCancelBusy");
   var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
   var oid = o.supabaseId || o.id;
-  function fail(msg){ btn.disabled = false; delete btn.dataset.confirm; btn.textContent = t("myCancel"); toast("❌ অর্ডার বাতিল হয়নি — "+msg+"। অর্ডারটি আগের অবস্থায়ই আছে।"); }
-  if(!sb || (!anboIsUuid(oid) && typeof oid !== "number")){ fail("ডাটাবেস সংযোগ নেই বা অর্ডারটি অনলাইনে সেভ হয়নি"); return; }
+  function fail(msg){ btn.disabled = false; delete btn.dataset.confirm; btn.textContent = t("myCancel"); toast(t("msgCancelFailPre")+msg+t("msgCancelFailPost")); }
+  if(!sb || (!anboIsUuid(oid) && typeof oid !== "number")){ fail(t("msgDbNoConn")); return; }
   /* sub_orders best-effort age (Admin cancel cascade-er moto, shudhu real
      column `status` — seller_status column nei). Fail holeo master cancel cholbe.
      Cascade TA master update-er AGE cholte hobe: notun "sub_orders customer
@@ -3382,9 +3892,9 @@ async function anboCancelOrder(orderId, btn){
   if(useRpc){
     try{
       var rc = await sb.rpc('anbo_cancel_order', { p_order_id: oid, p_phone: (o.customer && o.customer.phone) || "" });
-      if(rc.error){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml(rc.error.message || "database error")+")"); return; }
-      if(!rc.data){ fail("ডাটাবেসে লেখা যায়নি (অর্ডারটি বাতিল করা যায়নি — ফোন নম্বর মেলেনি বা Admin ইতিমধ্যে কনফার্ম করেছে)"); return; }
-    }catch(e){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml((e && e.message) ? e.message : "exception")+")"); return; }
+      if(rc.error){ fail(t("msgDbWriteFail", {e: rc.error.message || "database error"})); return; }
+      if(!rc.data){ fail(t("msgCancelNoMatch")); return; }
+    }catch(e){ fail(t("msgDbWriteFail", {e: (e && e.message) ? e.message : "exception"})); return; }
   }
   if(!useRpc){
   /* P3 (2026-11-23): order-er kono sub-order row na thakle cascade-e kichu
@@ -3401,13 +3911,13 @@ async function anboCancelOrder(orderId, btn){
      200 + 0 row dey, error dey na; khali data manei row flip hoy ni, tai
      seta fail (age ekhane fake success hoto). */
   var r1 = await sb.from("orders").update({ status:"Cancelled" }).eq("id", oid).select("id");
-  if(r1.error || !r1.data || !r1.data.length){ fail("ডাটাবেসে লেখা যায়নি ("+escHtml((r1.error && r1.error.message) || "অর্ডারটি খুঁজে পাওয়া যায়নি")+")"); return; }
+  if(r1.error || !r1.data || !r1.data.length){ fail(t("msgDbWriteFail", {e: (r1.error && r1.error.message) || t("msgOrderNotFoundDb")})); return; }
   }
   o.status = "Cancelled"; if(window.__anboPersistState) window.__anboPersistState();
   /* P1 follow-up (2026-11-23): undo this session's optimistic stock reservation (see finishCheckoutUI) — the order never sold, so stock returns. Only reservations made in THIS session exist in __anboReservedStock, so a cancel days later cannot inflate stock. */
   var resv = (window.__anboReservedStock || {})[orderId];
   if(resv){ resv.forEach(function(rv){ var p = P(rv.id); if(p) p.stockQty = (p.stockQty || 0) + rv.qty; }); delete window.__anboReservedStock[orderId]; if(window.__anboRender) window.__anboRender(); }
-  toast("✅ অর্ডার <b>"+escHtml(orderId)+"</b> বাতিল হয়েছে"+(subWarn?" — সেলারের কপি আপডেট হয়নি (সেলারের কাছে এখনো pending দেখাতে পারে), Admin Orders থেকে ঠিক করে নেবে"+subErr:""));
+  toast(t("msgCancelDone", {id: orderId})+(subWarn ? t("msgCancelSubWarn")+subErr : ""));
   if(window.renderAccount) renderAccount();
   /* P3 fix: Track modal-e ei order khola thakle view refresh koro — guest-er
      khetre Track-i ekmatro view, My Orders nei. */
@@ -3419,7 +3929,7 @@ async function anboCancelOrder(orderId, btn){
    honest toast-e janano hobe. */
 function anboBuyAgain(orderId){
   var o = ANBOBD_STORE.orders.filter(function(x){ return x.id === orderId; })[0];
-  if(!o || !o.items || !o.items.length){ toast("❌ এই অর্ডারের আইটেম পাওয়া যায়নি"); return; }
+  if(!o || !o.items || !o.items.length){ toast(t("msgOrderItemsMissing")); return; }
   var added = 0, skipped = 0;
   o.items.forEach(function(it){
     var p = P(it.productId); if(!p) return;
@@ -3431,7 +3941,7 @@ function anboBuyAgain(orderId){
   });
   renderCart();
   if(added) openCart();
-  toast(added ? ("🔁 <b>"+added+"টি আইটেম</b> আবার কার্টে যোগ হয়েছে (আজকের দামে)"+(skipped ? " — "+skipped+"টি আইটেমের স্টক নেই বলে যোগ হয়নি" : "")) : "😔 এই অর্ডারের কোনো আইটেমেরই স্টক নেই এখন");
+  toast(added ? t("msgBuyAgain", {n: added, skipped: skipped ? t("msgBuyAgainSkipped", {n: skipped}) : ""}) : t("msgBuyAgainNone"));
 }
 /* ---------- P1: printable invoice ---------- */
 function anboInvoiceHtml(o){
@@ -3450,7 +3960,8 @@ function anboInvoiceHtml(o){
 }
 function openInvoice(orderId){
   var o = ANBOBD_STORE.orders.filter(function(x){ return x.id === orderId; })[0];
-  if(!o){ toast("❌ অর্ডারটি পাওয়া যায়নি"); return; }
+  if(!o){ toast(t("msgOrderNotFound")); return; }
+  window.__anboInvoiceOrderId = orderId;
   document.getElementById("invoiceBody").innerHTML = anboInvoiceHtml(o);
   openModalStacked("invoiceModal");
 }
@@ -3463,7 +3974,7 @@ function anboNotifItems(){
     var fm = FLOW_META[o.status] || { label:o.status };
     var ts = o.placedAt || "";
     if(o.statusHistory && o.statusHistory.length) ts = o.statusHistory[o.statusHistory.length-1].at || ts;
-    items.push({ kind:"order", id:o.id, ts:ts, title:(ANBO_LANG==="en"?"Order "+o.id+" — ":"অর্ডার "+o.id+" — ")+flowLabel(o.status), body:"মোট "+fmt((o.amounts||{}).total||0)+" • "+(o.items||[]).map(function(it){ return it.name; }).join(", "), target:"orders" });
+    items.push({ kind:"order", id:o.id, ts:ts, title:(ANBO_LANG==="en"?"Order "+o.id+" — ":"অর্ডার "+o.id+" — ")+flowLabel(o.status), body:t("msgNotifTotal", {amt: fmt((o.amounts||{}).total||0)})+" • "+(o.items||[]).map(function(it){ return it.name; }).join(", "), target:"orders" });
   });
   (window.__anboCustomerMessages || []).forEach(function(m){
     items.push({ kind:"message", id:m.id || m.subject || m.created_at || "msg", ts:m.created_at || "", title:(ANBO_LANG==="en"?"Admin's message":"Admin-এর বার্তা"), body:String(m.message || "").slice(0, 140), target:"messages" });
@@ -3741,17 +4252,17 @@ async function checkoutSubmit(e){
   ok = fldBad("fPhone", !/^01[3-9]\d{8}$/.test(phone)) && ok;
   ok = fldBad("fAddr", addr.length<8) && ok;
   ok = fldBad("fDist", !dist) && ok;
-  if(!ok){ __coUnlock(); toast("⚠️ লাল দাগ দেওয়া ঘরগুলো ঠিক করে দিন"); return; }
+  if(!ok){ __coUnlock(); toast(t("msgCheckoutInvalid")); return; }
   /* Blocked customer — order toiri howar agei thamano hoy: local push,
      payment step, DB insert — konotai hobe na. */
   if(window.__anboCurrentUser && window.__anboCurrentUser.id){
     if(await anboIsCustomerBlocked(window.__anboCurrentUser.id)){
-      toast("🚫 Apnar account ti block kora hoyeche — ekhon order kora jabe na. Sahajjer jonno support e jogajog korun.");
+      toast(t("msgAccountBlocked"));
       __coUnlock(); return;
     }
   }
   var payEl = document.querySelector('input[name="pay"]:checked');
-  if(!payEl || payEl.disabled || (payEl.closest && payEl.closest("label") && payEl.closest("label").style.display === "none")){ __coUnlock(); toast("⚠️ এই মুহূর্তে কোনো পেমেন্ট মাধ্যম চালু নেই — পরে আবার চেষ্টা করুন"); return; }
+  if(!payEl || payEl.disabled || (payEl.closest && payEl.closest("label") && payEl.closest("label").style.display === "none")){ __coUnlock(); toast(t("msgNoPayMethod")); return; }
   var pay = payEl.value;
   var isManual = (pay==="bKash" || pay==="Nagad" || pay==="Rocket");
   var paySender = "", trxId = "";
@@ -3761,12 +4272,12 @@ async function checkoutSubmit(e){
     trxId = txEl ? txEl.value.trim().toUpperCase() : "";
     ok = fldBad("fPaySender", !/^01[3-9]\d{8}$/.test(paySender)) && ok;
     ok = fldBad("fTrx", trxId.length<6) && ok;
-    if(!ok){ __coUnlock(); toast("📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে"); return; }
+    if(!ok){ __coUnlock(); toast(t("errBadPayment")); return; }
   }
   if (loyaltyRedeem){
     if (promoCode) promoCode = null;
     var _lb = loyaltyBalance(), _cfg = loyaltyCfg();
-    if (_lb.balance < _cfg.points){ __coUnlock(); toast("⭐ Loyalty point kom — "+_cfg.points+" point na thakle redeem hobe na"); return; }
+    if (_lb.balance < _cfg.points){ __coUnlock(); toast(t("msgLoyaltyShort", {points: _cfg.points})); return; }
   }
   var note = document.getElementById("coNote").value.trim();
   var tt = totals();
@@ -3971,6 +4482,7 @@ function anboLoadTrackingSubs(order){
   }).catch(function(e){ console.warn("tracking: sub_orders courier lookup failed", e); });
 }
 function renderTracking(order){
+  window.__anboLastTrackedOrder = order;
   var flow = ANBOBD_STORE.orderFlow, idx = flow.indexOf(order.status);
   var labels = { AwaitingAdmin:trackLabel("AwaitingAdmin"), AdminConfirmed:trackLabel("AdminConfirmed"), Packed:trackLabel("Packed"), Shipped:trackLabel("Shipped"), Delivered:trackLabel("Delivered") };
   var subs = { AwaitingAdmin:trackSubLabel("AwaitingAdmin"), AdminConfirmed:trackSubLabel("AdminConfirmed"), Packed:trackSubLabel("Packed"), Shipped:trackSubLabel("Shipped"), Delivered:trackSubLabel("Delivered") };
@@ -4024,7 +4536,7 @@ function renderTracking(order){
     /* P2 (2026-11-23): Dispute — Delivered order-e Admin-er kache abedon (disputes table; Admin side alada builder). */
     var _filed = window.__anboDisputesFiled && (window.__anboDisputesFiled[order.id] || (order.supabaseId && window.__anboDisputesFiled[order.supabaseId]));
     html += '<div id="dispBox" style="margin-top:14px;border-top:1.5px dashed var(--line);padding-top:12px">'
-      + '<b>⚖️ Dispute</b><p style="color:var(--muted);margin:6px 0 10px;line-height:1.6">'+t("dispIntro")+'</p>'
+      + '<b>'+t("myDispute")+'</b><p style="color:var(--muted);margin:6px 0 10px;line-height:1.6">'+t("dispIntro")+'</p>'
       + (_filed ? '<p style="color:var(--teal);font-weight:800">'+t("dispFiled")+'</p>'
       : '<button class="btn-sec" type="button" id="dispStartBtn">'+t("dispStartBtn")+'</button><div id="dispFormWrap" style="margin-top:10px"></div>')
       + '</div>';
@@ -4136,7 +4648,7 @@ async function anboStartDispute(order){
   /* SEC-P2-8: RPC-tracked order-er UUID thake na — supId na thakle form
      dekhale order_id null diye orphan dispute insert hoto. Honest message
      diye atkao; UUID RPC-te ferot ele (parent) ei guard ar cholbe na. */
-  if(!supId){ wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">⚠️ অর্ডারটির সম্পূর্ণ তথ্য পাওয়া যায়নি — Dispute এখন করা যাচ্ছে না, হটলাইনে (09638-555555) যোগাযোগ করুন।</p>'; return; }
+  if(!supId){ wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">'+t("msgDispNoInfo")+'</p>'; return; }
   /* Agei dispute ache kina — best effort (table na thakle skip). */
   if(supId){
     try{
@@ -4173,7 +4685,7 @@ async function anboStartDispute(order){
       var r = await sb.from("disputes").insert(payload).select("id");
       if(r.error) throw r.error;
       /* P1-8: insert verify — 0-row return manei row toiri hoy ni. */
-      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
+      if(!r.data || !r.data.length) throw new Error(t("auDbFail"));
       window.__anboDisputesFiled[order.id] = true; if(order.supabaseId) window.__anboDisputesFiled[order.supabaseId] = true;
       wrap.innerHTML = '<p style="color:var(--teal);font-weight:800">'+t("dispOk") + escHtml(order.id) + '</p>';
       if(btn) btn.style.display = "none";
@@ -4223,8 +4735,8 @@ document.addEventListener("click", function(e){
   var inc = e.target.closest("[data-inc]"); if(inc){ var ik=inc.dataset.inc; cart[ik]=Math.min((cart[ik]||0)+1, cartVariantStock(ik)||99); renderCart(); return; }
   var dec = e.target.closest("[data-dec]"); if(dec){ var id=dec.dataset.dec; cart[id]--; if(cart[id]<=0) delete cart[id]; renderCart(); return; }
   var rm = e.target.closest("[data-rm]"); if(rm){ delete cart[rm.dataset.rm]; renderCart(); return; }
-  var sv = e.target.closest("[data-save]"); if(sv){ var id2=sv.dataset.save; savedLater[id2]=(savedLater[id2]||0)+(cart[id2]||0); delete cart[id2]; renderCart(); toast("💾 পরে কেনার জন্য সরিয়ে রাখা হয়েছে (Save for Later)"); return; }
-  var us = e.target.closest("[data-unsave]"); if(us){ var id3=us.dataset.unsave; cart[id3]=Math.min((cart[id3]||0)+(savedLater[id3]||1), cartVariantStock(id3)||99); delete savedLater[id3]; renderCart(); toast("🛒 কার্টে ফেরত নেওয়া হয়েছে"); return; }
+  var sv = e.target.closest("[data-save]"); if(sv){ var id2=sv.dataset.save; savedLater[id2]=(savedLater[id2]||0)+(cart[id2]||0); delete cart[id2]; renderCart(); toast(t("msgSaveLater")); return; }
+  var us = e.target.closest("[data-unsave]"); if(us){ var id3=us.dataset.unsave; cart[id3]=Math.min((cart[id3]||0)+(savedLater[id3]||1), cartVariantStock(id3)||99); delete savedLater[id3]; renderCart(); toast(t("msgBackToCart")); return; }
   var sd = e.target.closest("[data-savedel]"); if(sd){ delete savedLater[sd.dataset.savedel]; renderCart(); return; }
   var wrm = e.target.closest("[data-wishrm]"); if(wrm){ toggleWish(wrm.dataset.wishrm); return; }
   /* P2: compare / wishlist share / search history */
@@ -4236,10 +4748,10 @@ document.addEventListener("click", function(e){
   var hs = e.target.closest("[data-hist]"); if(hs){ searchInput.value = hs.dataset.hist; query = hs.dataset.hist.toLowerCase(); hideSuggest(); syncSearchUrl(); renderProducts(); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
   var hc = e.target.closest("[data-hist-clear]"); if(hc){ e.stopPropagation(); anboClearSearchHistory(); return; }
   var tile = e.target.closest("[data-tile]"); if(tile){ if(tile.dataset.tile==="flash"){ setFlashFilter(); return; } setCat(tile.dataset.tile); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
-  var bn = e.target.closest("[data-banner]"); if(bn){ if(!liveCatCount(bn.dataset.banner)){ toast("এই ক্যাটাগরিতে এখনো কোনো পণ্য লাইভ নেই — শীঘ্রই আসছে।"); return; } setCat(bn.dataset.banner); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
+  var bn = e.target.closest("[data-banner]"); if(bn){ if(!liveCatCount(bn.dataset.banner)){ toast(t("msgBannerEmpty")); return; } setCat(bn.dataset.banner); document.getElementById("products").scrollIntoView({behavior:"smooth"}); return; }
   var shs = e.target.closest("[data-shopsug]"); if(shs){ hideSuggest(); location.href = "/shop?id=" + encodeURIComponent(shs.dataset.shopsug); return; }
   var vc = e.target.closest("[data-voucher]"); if(vc){ var code = vc.dataset.voucher;
-    if(!collected[code]){ collected[code]=true; renderVouchers(); if(window.renderShopCoupons) window.renderShopCoupons(); if(window.__anboPersistState) window.__anboPersistState(); toast("🎟️ ভাউচার <b>"+code+"</b> সংগৃহীত! কার্টে কোডটি বসালেই ছাড় পাবেন।"); }
+    if(!collected[code]){ collected[code]=true; renderVouchers(); if(window.renderShopCoupons) window.renderShopCoupons(); if(window.__anboPersistState) window.__anboPersistState(); toast(t("msgVoucherCollected", {code: code})); }
     else { openCart(); document.getElementById("promoInput").value = code; applyPromo(); }
     return; }
   var sug = e.target.closest("[data-sug]"); if(sug){ hideSuggest(); openModal(sug.dataset.sug); return; }
@@ -4310,7 +4822,7 @@ function ensureDrawers(){
   document.querySelectorAll('input[name="pay"]').forEach(function(r){ r.addEventListener("change", syncManualPay); });
   document.getElementById("promoBtn").addEventListener("click", applyPromo);
   document.getElementById("toCheckoutBtn").addEventListener("click", function(){
-    if(cartCount()===0){ toast("🛒 কার্ট খালি — আগে পণ্য যোগ করুন!"); return; }
+    if(cartCount()===0){ toast(t("msgCartEmptyCheckout")); return; }
     document.getElementById("cartMain").style.display="none";
     document.getElementById("checkoutForm").classList.add("open");
     /* P3 Part B (SEC-P1-7): render the Turnstile widget now, so its
@@ -4341,36 +4853,36 @@ function anboCouponUseCount(code){
    attempts for 60 seconds. */
 function applyPromo(){
   var lk = anboRateLocked("coupon");
-  if(lk){ toast("⚠️ অনেকবার ভুল কোড চেষ্টা হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"); return; }
+  if(lk){ toast(t("msgOtpLock", {s: lk})); return; }
   var ok = applyPromoInner();
   if(ok) anboRateReset("coupon"); else anboRateHit("coupon");
 }
 function applyPromoInner(){
   var code = document.getElementById("promoInput").value.trim().toUpperCase();
   var c = findCouponAny(code);
-  if(!c || !c.active){ promoCode=null; renderCart(); toast("❌ কোডটি সঠিক নয়, মেয়াদ শেষ বা Pause করা আছে"); return false; }
-  if(couponExpired(c)){ promoCode=null; renderCart(); toast("⏰ এই ভাউচারের মেয়াদ শেষ"); return false; }
-  if(c.sellerId && couponEligibleSub(c)===0){ promoCode=null; renderCart(); toast("🏪 "+code+" শুধু <b>"+escHtml(SL(c.sellerId).name)+"</b>-এর পণ্যে চলবে — কার্টে ওই দোকানের পণ্য নেই"); return false; }
-  if(megaStackingBlocked(c)){ promoCode=null; renderCart(); toast("🔥 Mega price-এর পণ্যে এই শপ কুপন চলবে না — Admin Settings-এ Mega stacking OFF আছে"); return false; }
+  if(!c || !c.active){ promoCode=null; renderCart(); toast(t("msgPromoBad")); return false; }
+  if(couponExpired(c)){ promoCode=null; renderCart(); toast(t("msgPromoExpired")); return false; }
+  if(c.sellerId && couponEligibleSub(c)===0){ promoCode=null; renderCart(); toast(t("msgPromoShopOnly", {code: code, shop: SL(c.sellerId).name})); return false; }
+  if(megaStackingBlocked(c)){ promoCode=null; renderCart(); toast(t("msgPromoMega")); return false; }
   var es = c.sellerId ? couponEligibleSub(c) : cartSubtotal();
-  if(es < c.minSpend){ promoCode=null; renderCart(); toast("⚠️ "+code+" পেতে "+(c.sellerId?"ওই দোকানের ":"")+"কমপক্ষে "+fmt(c.minSpend)+" অর্ডার লাগবে"); return false; }
+  if(es < c.minSpend){ promoCode=null; renderCart(); toast(t(c.sellerId ? "msgPromoMinShop" : "msgPromoMin", {code: code, amt: fmt(c.minSpend)})); return false; }
   /* P3: per-customer limit — coupon-er per_customer_limit thakle ar signed-in
      customer agei sei sima chhuye fele thakle coupon cholbe na. Null limit =
      kono sima nei. Guest: count kora jay na, tai skip (claim-o kora hoy na). */
   if(c.perCustomerLimit!=null && !isNaN(+c.perCustomerLimit) && window.__anboCurrentUser){
     var usedN = anboCouponUseCount(code);
-    if(usedN >= +c.perCustomerLimit){ promoCode=null; renderCart(); toast("⚠️ Ei coupon ti apni <b>"+usedN+" bar</b> use korechen — ei coupon-er সীমা "+(+c.perCustomerLimit)+" bar, ar cholbe na"); return false; }
+    if(usedN >= +c.perCustomerLimit){ promoCode=null; renderCart(); toast(t("msgPromoUsed", {n: usedN, limit: +c.perCustomerLimit})); return false; }
   }
   /* P0-6: NEW200 is new-customers-only — the RPC refuses it for guests (once
      the new_customer_only flag is live in the DB). A guest must sign in
      first; never let them reach submit and fail there. */
   if(code === "NEW200" && !window.__anboCurrentUser){
     promoCode = null; renderCart();
-    toast("🎟️ NEW200 শুধু নতুন গ্রাহকদের জন্য — এই কুপনটি ব্যবহার করতে সাইন ইন করুন");
+    toast(t("msgNew200"));
     if(typeof openAuth === "function") openAuth("signin");
     return false;
   }
-  promoCode = code; c.used = (c.used||0)+1; renderCart(); toast("🎉 কুপন <b>"+code+"</b> প্রযোজ্য হয়েছে!"+(c.sellerId?" (শপ কুপন — "+escHtml(SL(c.sellerId).name)+")":""));
+  promoCode = code; c.used = (c.used||0)+1; renderCart(); toast(c.sellerId ? t("msgPromoAppliedShop", {code: code, shop: SL(c.sellerId).name}) : t("msgPromoApplied", {code: code}));
   return true;
 }
 /* Track Order: phone chara kon order khola jabe — sudhu ei session/account-er
@@ -4460,8 +4972,8 @@ document.getElementById("mImgWrap").addEventListener("pointermove", function(e){
 document.getElementById("mShare").addEventListener("click", function(){
   if(!modalId) return;
   var link = "https://anbobd-azure.vercel.app/product.html?id=" + encodeURIComponent(modalId);
-  function copied(){ toast("🔗 পণ্যের লিংক কপি হয়েছে — যেখানে খুশি শেয়ার করুন!"); }
-  function failed(){ toast("⚠️ লিংক কপি করা যায়নি — লিংকটি হাতে কপি করুন: " + link); }
+  function copied(){ toast(t("msgLinkCopied")); }
+  function failed(){ toast(t("msgCopyFail", {link: link})); }
   function fallbackCopy(){
     try{
       var ta = document.createElement("textarea");
@@ -4711,9 +5223,30 @@ function anboOrderFromRow(row, user){
     statusHistory: [], placedAt: row.created_at||new Date().toISOString(),
     estimatedDelivery: (meta&&meta.estimatedDelivery)?anboFmtIsoDate(meta.estimatedDelivery):"", source:"supabase", userId: row.customer_id||null, userEmail: user ? user.email : "" };
 }
+/* i18n (2026-11-27): anboDbErr-er "what" string-gulo BN literal — EN mode-e
+   lookup table theke English dekhabe; ochena string hole BN-tai thakbe. */
+var ANBO_DBERR_EN = {
+"দোকানের তালিকা অনলাইন থেকে লোড করা যায়নি":"The shop list couldn't be loaded online",
+"পণ্যের তালিকা অনলাইন থেকে লোড করা যায়নি":"The product list couldn't be loaded online",
+"কুপন অনলাইন থেকে লোড করা যায়নি":"Coupons couldn't be loaded online",
+"আপনার অর্ডারগুলো অনলাইন থেকে লোড করা যায়নি":"Your orders couldn't be loaded online",
+"সব অর্ডার অনলাইন থেকে লোড করা যায়নি":"All orders couldn't be loaded online",
+"দোকানের অর্ডার অনলাইন থেকে লোড করা যায়নি":"The shop's orders couldn't be loaded online",
+"Mega Sale আবেদন অনলাইন থেকে লোড করা যায়নি":"Mega Sale applications couldn't be loaded online",
+"পণ্যটি অনলাইনে সেভ হয়নি":"The product couldn't be saved online",
+"কুপনটি অনলাইনে সেভ হয়নি":"The coupon couldn't be saved online",
+"Mega Sale আবেদনটি অনলাইনে পাঠানো যায়নি":"The Mega Sale application couldn't be sent online",
+"Mega Sale সিদ্ধান্তটি অনলাইনে সেভ হয়নি":"The Mega Sale decision couldn't be saved online",
+"Payout রিকোয়েস্টটি অনলাইনে পাঠানো যায়নি":"The payout request couldn't be sent online",
+"দোকানের তথ্য অনলাইনে সেভ হয়নি":"The shop info couldn't be saved online",
+"দোকানটি অনলাইনে তৈরি করা যায়নি":"The shop couldn't be created online"
+};
 function anboDbErr(what, err){
   console.warn(what, err);
-  if(typeof toast==="function") toast("⚠️ " + what + " — আবার চেষ্টা করুন।");
+  if(typeof toast==="function"){
+    var w = (typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en" && ANBO_DBERR_EN[what]) ? ANBO_DBERR_EN[what] : what;
+    toast("⚠️ " + w + ((typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en") ? " — please try again." : " — আবার চেষ্টা করুন।"));
+  }
 }
 /* ---------- P0-6: place_order RPC error mapping ----------
    The RPC raises '<code>: <detail>'; PostgREST returns it in
@@ -4732,24 +5265,24 @@ function anboRpcErrCode(err){
 function anboRpcErrMessage(code, detail){
   var d = String(detail || "");
   switch(code){
-    case "bad_request": return "⚠️ অর্ডারের তথ্যে ভুল আছে — নাম, নম্বর, ঠিকানা আর পণ্য ঠিক করে আবার চেষ্টা করুন";
-    case "bad_customer": return "🚫 Apnar account ti block kora hoyeche — ekhon order kora jabe na. Sahajjer jonno support e jogajog korun.";
-    case "bad_product": return "❌ কার্টের কোনো পণ্য আর লাইভ নেই বা পাওয়া যাচ্ছে না — পণ্যটি সরিয়ে আবার চেষ্টা করুন";
-    case "out_of_stock": return "📦 কার্টের কোনো পণ্যের স্টক শেষ — পরিমাণ কমিয়ে বা পণ্যটি সরিয়ে আবার চেষ্টা করুন";
+    case "bad_request": return t("errBadRequest");
+    case "bad_customer": return t("errBadCustomer");
+    case "bad_product": return t("errBadProduct");
+    case "out_of_stock": return t("errOutOfStock");
     case "bad_coupon":
-      if(d.indexOf("new customers only") !== -1) return "🎟️ এই কুপনটি শুধু নতুন গ্রাহকদের জন্য — সাইন ইন করে আবার চেষ্টা করুন, অথবা কুপনটি সরিয়ে দিন";
-      return "❌ এই কুপনটি এখন আর চলছে না — কুপনটি সরিয়ে আবার চেষ্টা করুন";
-    case "coupon_expired": return "⏰ এই ভাউচারের মেয়াদ শেষ";
-    case "coupon_limit": return "⚠️ এই কুপনের ব্যবহারের সীমা শেষ হয়ে গেছে";
+      if(d.indexOf("new customers only") !== -1) return t("errBadCouponNew");
+      return t("errBadCoupon");
+    case "coupon_expired": return t("errCouponExpired");
+    case "coupon_limit": return t("errCouponLimit");
     case "bad_loyalty":
-      if(d.indexOf("signed-in") !== -1 || d.indexOf("sign in") !== -1) return "⭐ Loyalty point ব্যবহার করতে সাইন ইন করুন";
-      return "⭐ Loyalty point kom — 100 point na thakle redeem hobe na";
-    case "bad_payment": return "📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে";
-    case "dup_trx": return "⚠️ এই Transaction ID দিয়ে আগেই একটি অর্ডার করা হয়েছে — নতুন পেমেন্টের Transaction ID দিন";
-    case "bad_order": return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
-    case "rate_limited": return (typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en") ? "⏰ Too many orders from this number in the last hour — please try again later." : "⏰ এক ঘণ্টায় এই নম্বর থেকে অনেকগুলো অর্ডার দেওয়া হয়েছে — একটু পরে আবার চেষ্টা করুন।";
-    case "bad_captcha": return (typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en") ? "🛡️ Verification did not complete — please try again." : "🛡️ যাচাই সম্পন্ন হয়নি — আবার চেষ্টা করুন";
-    default: return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
+      if(d.indexOf("signed-in") !== -1 || d.indexOf("sign in") !== -1) return t("errBadLoyaltySignin");
+      return t("errBadLoyaltyLow");
+    case "bad_payment": return t("errBadPayment");
+    case "dup_trx": return t("errDupTrx");
+    case "bad_order": return t("errBadOrder");
+    case "rate_limited": return t("errRateLimited");
+    case "bad_captcha": return t("errBadCaptcha");
+    default: return t("errDefault");
   }
 }
 
@@ -4897,7 +5430,7 @@ var ANBOBD_DB = {
       (shr.data||[]).forEach(function(r){
         if(r.id==null) return;
         if(String(r.status||"approved")!=="approved") return;
-        var entry = { id:r.id, supabaseId:r.id, name:r.shop_name||"দোকান", logoUrl:r.logo_url||"", area:r.district||"বাংলাদেশ", rating:0, status:r.status||"approved", deliveryFee:(r.delivery_fee!=null?Number(r.delivery_fee):null), freeDeliveryThreshold:(r.free_delivery_threshold!=null?Number(r.free_delivery_threshold):null), ownerId:r.owner_id||null, createdAt:r.created_at||"" };
+        var entry = { id:r.id, supabaseId:r.id, name:r.shop_name||(ANBO_LANG==="en"?"Shop":"দোকান"), logoUrl:r.logo_url||"", area:r.district||(ANBO_LANG==="en"?"Bangladesh":"বাংলাদেশ"), rating:0, status:r.status||"approved", deliveryFee:(r.delivery_fee!=null?Number(r.delivery_fee):null), freeDeliveryThreshold:(r.free_delivery_threshold!=null?Number(r.free_delivery_threshold):null), ownerId:r.owner_id||null, createdAt:r.created_at||"" };
         var ex = ANBOBD_STORE.sellers.filter(function(s){ return String(s.id)===String(r.id); })[0];
         if(ex){ for(var k in entry) ex[k]=entry[k]; } else ANBOBD_STORE.sellers.push(entry);
       });
@@ -4913,7 +5446,7 @@ var ANBOBD_DB = {
           PRODUCTS.length = 0;
           mapped.forEach(function(m){
             PRODUCTS.push(m);
-            if(!SL(m.sellerId)) ANBOBD_STORE.sellers.push({ id:m.sellerId, name:"AnboBD Seller", area:"বাংলাদেশ", rating:0, _placeholder:true }); /* P1: placeholder seller — shop search/shop page-e kokhono dekhabe na. */
+            if(!SL(m.sellerId)) ANBOBD_STORE.sellers.push({ id:m.sellerId, name:"AnboBD Seller", area:(ANBO_LANG==="en"?"Bangladesh":"বাংলাদেশ"), rating:0, _placeholder:true }); /* P1: placeholder seller — shop search/shop page-e kokhono dekhabe na. */
           });
         }
       }
@@ -5105,7 +5638,7 @@ function __anboMyOrdersDone(){
   window.__anboMyOrdersLoading = false; window.__anboMyOrdersLoaded = true;
   var am = document.getElementById("authModal");
   var mo = document.getElementById("auMyOrders");
-  if(window.renderAccount && am && am.classList.contains("open") && mo && mo.textContent.indexOf("লোড হচ্ছে") !== -1) window.renderAccount();
+  if(window.renderAccount && am && am.classList.contains("open") && mo && mo.textContent.indexOf(t("myOrdersLoading")) !== -1) window.renderAccount();
 }
 window.ANBOBD_DB = ANBOBD_DB;
 
@@ -5370,7 +5903,7 @@ ANBOBD_DB.createShopForSeller = async function(ownerId, shopName, phone, ownerNa
   var sb = this.sb(); if(!sb) return null;
   ANBOBD_DB.lastShopError = "";
   try{
-    var nm = (shopName||"").trim() || "আমার দোকান";
+    var nm = (shopName||"").trim() || t("myShop");
     var ph = phone ? String(phone).trim() : "";
     var slug = nm.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + "-" + String(ownerId||"").slice(0, 6);
     /* Seller Center registration-er (seller L1548) payload-er motoi full set — storefront signup-e ja jana jay na (category/district/address/NID) tar jonno form-er default (Fashion/Dhaka/bKash) ba khali string; seller pore Seller Center registration-e giye asol tothyo diye update korbe. Copy-URL duto pathano hoy na — NID upload Seller Center-er pending-page KYC card theke hoy, tokhon UPDATE-e bosbe. */
@@ -5485,7 +6018,7 @@ function anboCreateLocalShop(user, shopName, email, mobile){
   var shopId = "shop-"+user.id;
   user.sellerId = shopId;
   if(!ANBOBD_STORE.sellers.some(function(s){ return s.id===shopId; })){
-    ANBOBD_STORE.sellers.push({ id:shopId, name:(shopName||"").trim()||"আমার দোকান", area:"বাংলাদেশ", rating:0, email:email, phone:mobile,
+    ANBOBD_STORE.sellers.push({ id:shopId, name:(shopName||"").trim()||t("myShop"), area:(ANBO_LANG==="en"?"Bangladesh":"বাংলাদেশ"), rating:0, email:email, phone:mobile,
       payoutMethod:"bKash", payoutNo:mobile, status:"Approved", ownerId:user.id });
   }
   return shopId;
@@ -5530,7 +6063,7 @@ function anboAdoptDbShop(user, row){
   if(!user || !row || row.id==null) return;
   var placeholderId = "shop-"+user.id;
   ANBOBD_STORE.sellers = ANBOBD_STORE.sellers.filter(function(s){ return !(String(s.id)===placeholderId && String(row.id)!==placeholderId); });
-  var entry = { id:row.id, supabaseId:row.id, name:row.shop_name || row.name || "আমার দোকান", logoUrl:row.logo_url || "", area:row.district || "বাংলাদেশ", rating:Number(row.rating||0), email:user.email, phone:row.phone || user.mobile, payoutMethod:row.payout_method || "bKash", payoutNo:row.payout_account || user.mobile, status:row.status || "approved", ownerId:user.id, deliveryFee:(row.delivery_fee!=null?Number(row.delivery_fee):null), freeDeliveryThreshold:(row.free_delivery_threshold!=null?Number(row.free_delivery_threshold):null) };
+  var entry = { id:row.id, supabaseId:row.id, name:row.shop_name || row.name || t("myShop"), logoUrl:row.logo_url || "", area:row.district || (ANBO_LANG==="en"?"Bangladesh":"বাংলাদেশ"), rating:Number(row.rating||0), email:user.email, phone:row.phone || user.mobile, payoutMethod:row.payout_method || "bKash", payoutNo:row.payout_account || user.mobile, status:row.status || "approved", ownerId:user.id, deliveryFee:(row.delivery_fee!=null?Number(row.delivery_fee):null), freeDeliveryThreshold:(row.free_delivery_threshold!=null?Number(row.free_delivery_threshold):null) };
   var ex = ANBOBD_STORE.sellers.filter(function(s){ return String(s.id)===String(row.id); })[0];
   if(ex){ for(var k in entry) ex[k]=entry[k]; } else ANBOBD_STORE.sellers.push(entry);
   user.sellerId = row.id;
@@ -5584,12 +6117,12 @@ var ANBOBD_AUTH = {
       if(shopRow && shopRow.id){
         user.sellerId = shopRow.id;
         if(!ANBOBD_STORE.sellers.some(function(s){ return String(s.id)===String(shopRow.id); })){
-          ANBOBD_STORE.sellers.push({ id:shopRow.id, supabaseId:shopRow.id, name:shopRow.shop_name || shopRow.name || (d.shopName||"").trim() || "আমার দোকান", logoUrl:shopRow.logo_url || "", area:shopRow.district || "বাংলাদেশ", rating:0, email:email, phone:d.mobile.trim(), payoutMethod:"bKash", payoutNo:d.mobile.trim(), status:shopRow.status || "pending", ownerId:au.id });
+          ANBOBD_STORE.sellers.push({ id:shopRow.id, supabaseId:shopRow.id, name:shopRow.shop_name || shopRow.name || (d.shopName||"").trim() || t("myShop"), logoUrl:shopRow.logo_url || "", area:shopRow.district || (ANBO_LANG==="en"?"Bangladesh":"বাংলাদেশ"), rating:0, email:email, phone:d.mobile.trim(), payoutMethod:"bKash", payoutNo:d.mobile.trim(), status:shopRow.status || "pending", ownerId:au.id });
         }
       } else {
         /* Re-audit seller-signup fix (2026-11-21): shop insert fail korle kokhono local "Approved" shop banano jabe na — age eitai hoto, tai toast "Pending" bolto kintu Seller Center shop khuje peto na. Account toiri hoye geche, tai signup ok thakbe; shopError dekhe afterAuth asol karon janabe, ar Account page "আবেদন এখনো সম্পূর্ণ হয়নি" banner dekhabe (Seller Center registration diye shop toiri kora jabe). */
         user.sellerId = null;
-        user.shopError = ANBOBD_DB.lastShopError || "দোকান তৈরি হয়নি";
+        user.shopError = ANBOBD_DB.lastShopError || t("auShopErr");
       }
     }
     this.session = user; window.__anboCurrentUser = user;
@@ -5844,10 +6377,10 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         var sh = currentSeller();
         if(sh && String(sh.status || "").toLowerCase() === "pending"){
           pend.style.display = "";
-          pend.innerHTML = '<div class="ocard" style="border-color:var(--lime);background:#f4fbd9"><b>🏪 আপনার দোকান এখন Pending</b><p style="margin:6px 0 8px;line-height:1.6">Admin অনুমোদনের আগে <b>NID কপি আপলোড</b> করে আবেদন সম্পূর্ণ করুন — NID ছাড়া দোকান Approve হবে না।</p><button class="btn-sec" type="button" onclick="window.location.href=\'/seller/\'">Seller Center-এ আবেদন সম্পূর্ণ করুন →</button></div>';
+          pend.innerHTML = '<div class="ocard" style="border-color:var(--lime);background:#f4fbd9"><b>'+t("auPendShop1T")+'</b><p style="margin:6px 0 8px;line-height:1.6">'+t("auPendShop1B")+'</p><button class="btn-sec" type="button" onclick="window.location.href=\'/seller/\'">'+t("auPendShop1Btn")+'</button></div>';
         } else if(!sh){
           pend.style.display = "";
-          pend.innerHTML = '<div class="ocard" style="border-color:var(--lime);background:#f4fbd9"><b>🏪 দোকানের আবেদন এখনো সম্পূর্ণ হয়নি</b><p style="margin:6px 0 8px;line-height:1.6">Seller Center-এ গিয়ে দোকানের তথ্য আর NID কপি জমা দিন — তারপর Admin যাচাই করে অনুমোদন দেবে।</p><button class="btn-sec" type="button" onclick="window.location.href=\'/seller/\'">Seller Center খুলুন →</button></div>';
+          pend.innerHTML = '<div class="ocard" style="border-color:var(--lime);background:#f4fbd9"><b>'+t("auPendShop2T")+'</b><p style="margin:6px 0 8px;line-height:1.6">'+t("auPendShop2B")+'</p><button class="btn-sec" type="button" onclick="window.location.href=\'/seller/\'">'+t("auPendShop2Btn")+'</button></div>';
         } else { pend.style.display = "none"; pend.innerHTML = ""; }
       } else { pend.style.display = "none"; pend.innerHTML = ""; }
     }
@@ -5861,9 +6394,9 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">' + t("myTrack") + '</button>' + ' <button class="btn-sec" data-invoice-order="' + o.id + '">' + t("myInvoice") + '</button>' + (o.status === "AwaitingAdmin" ? ' <button class="btn-sec" data-cancel-order="' + o.id + '">' + t("myCancel") + '</button>' : '') + (o.status === "Delivered" ? ' <button class="btn-sec" data-buyagain-order="' + o.id + '">' + t("myBuyAgain") + '</button>' + ' <button class="btn-sec" data-return-order="' + o.id + '">' + t("myReturn") + '</button>' + ' <button class="btn-sec" data-dispute-order="' + o.id + '"' + (filed ? ' disabled' : '') + '>' + (filed ? t("myDisputeFiled") : t("myDispute")) + '</button>' + reviewBtnsFor(o, u) : '') + '</div></div>';
     }).join("") : (window.__anboMyOrdersLoaded ? '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("myOrdersEmpty")+'</p>' : '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("myOrdersLoading")+'</p>');
     var lbEl = document.getElementById("auLoyalty");
-    if(lbEl){ var lb3 = loyaltyBalance(), cfg3 = loyaltyCfg(); lbEl.innerHTML = '<div class="ocard"><div style="font-size:1.05rem"><b>'+lb3.balance+' point</b> <span style="color:var(--muted);font-size:.85rem">(earned '+lb3.earned+' · used '+lb3.spent+')</span></div><div style="font-size:.88rem;color:var(--muted);margin-top:4px">Delivered order e proti ৳100 e '+cfg3.per100+' point — '+cfg3.points+' point = ৳'+cfg3.value+' discount, checkout e use kora jay.</div></div>'; }
+    if(lbEl){ var lb3 = loyaltyBalance(), cfg3 = loyaltyCfg(); lbEl.innerHTML = '<div class="ocard"><div style="font-size:1.05rem"><b>'+lb3.balance+' '+t("auPoint")+'</b> <span style="color:var(--muted);font-size:.85rem">'+t("auLoyaltyEarned", {e: lb3.earned, s: lb3.spent})+'</span></div><div style="font-size:.88rem;color:var(--muted);margin-top:4px">'+t("auLoyaltyDesc", {per100: cfg3.per100, points: cfg3.points, value: cfg3.value})+'</div></div>'; }
     var msgEl = document.getElementById("auMessages");
-    if(msgEl){ msgEl.innerHTML = '<p style="color:var(--muted);margin:0">লোড হচ্ছে…</p>'; loadCustomerMessages(u); }
+    if(msgEl){ msgEl.innerHTML = '<p style="color:var(--muted);margin:0">'+t("auLoading")+'</p>'; loadCustomerMessages(u); }
     loadMyDisputes(u); /* P2: Dispute file kora order-der button state. */
     var sf2 = document.getElementById("auSupportForm"); if(sf2 && !sf2.__bound){ sf2.__bound = true; sf2.addEventListener("submit", function(e){ e.preventDefault(); submitSupportTicket(u); }); }
     var ef2 = document.getElementById("auEditForm"); if(ef2 && !ef2.__bound){ ef2.__bound = true; ef2.addEventListener("submit", function(e){ e.preventDefault(); saveProfileEdit(u); }); }
@@ -5885,7 +6418,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
   function renderMyVouchers(){
     var el = document.getElementById("auVouchers"); if(!el) return;
     var codes = Object.keys(collected||{}).filter(function(c){ return collected[c]; });
-    if(!codes.length){ el.innerHTML = '<p class="muted" style="font-size:.9rem;margin:0">এখনো কোনো ভাউচার সংগ্রহ করেননি — ভাউচার সেকশন থেকে সংগ্রহ করুন।</p>'; return; }
+    if(!codes.length){ el.innerHTML = '<p class="muted" style="font-size:.9rem;margin:0">'+t("auNoVouchers")+'</p>'; return; }
     el.innerHTML = codes.map(function(code){
       var c = findCouponAny(code);
       /* P3 fix: terms khali hole desc fallback — kono collected voucher-i
@@ -5916,12 +6449,12 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
         });
       });
     }
-    if(!rows.length){ el.innerHTML = '<p class="muted" style="font-size:.9rem;margin:0">এখনো কোনো রিভিউ দেননি — Delivered অর্ডার থেকে রিভিউ দিতে পারবেন।</p>'; return; }
+    if(!rows.length){ el.innerHTML = '<p class="muted" style="font-size:.9rem;margin:0">'+t("auNoReviews")+'</p>'; return; }
     el.innerHTML = rows.map(function(rv){
       var p = P(rv.product_id);
       var n = Math.max(0, Math.min(5, Math.round(+rv.rating||0)));
       var stars = "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n);
-      return '<div class="ocard"><div style="display:flex;justify-content:space-between;gap:10px"><b>'+escHtml(p ? p.name : "পণ্য")+'</b><span style="color:var(--muted);font-size:.85rem">'+escHtml(rv.created_at ? String(rv.created_at).slice(0,10) : "")+'</span></div><div style="color:#e8a200;margin:4px 0">'+stars+' ('+(+rv.rating||0)+')</div><p style="margin:0;line-height:1.6">'+escHtml(rv.comment||"")+'</p>' + (rv.seller_reply ? '<div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:10px"><b style="color:var(--teal)">💬 '+escHtml(t("revReplyBy"))+':</b> '+escHtml(rv.seller_reply)+(rv.seller_replied_at ? ' <span style="color:var(--muted);font-size:.82rem">• '+escHtml(String(rv.seller_replied_at).slice(0,10))+'</span>' : '')+'</div>' : '') + '</div>'; /* P2-14: seller reply thakle nijer review-er niche dekhabe */
+      return '<div class="ocard"><div style="display:flex;justify-content:space-between;gap:10px"><b>'+escHtml(p ? p.name : t("auProdFallback"))+'</b><span style="color:var(--muted);font-size:.85rem">'+escHtml(rv.created_at ? String(rv.created_at).slice(0,10) : "")+'</span></div><div style="color:#e8a200;margin:4px 0">'+stars+' ('+(+rv.rating||0)+')</div><p style="margin:0;line-height:1.6">'+escHtml(rv.comment||"")+'</p>' + (rv.seller_reply ? '<div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:10px"><b style="color:var(--teal)">💬 '+escHtml(t("revReplyBy"))+':</b> '+escHtml(rv.seller_reply)+(rv.seller_replied_at ? ' <span style="color:var(--muted);font-size:.82rem">• '+escHtml(String(rv.seller_replied_at).slice(0,10))+'</span>' : '')+'</div>' : '') + '</div>'; /* P2-14: seller reply thakle nijer review-er niche dekhabe */
     }).join("");
   }
   /* P3 (2026-11-23): Delete-account REQUEST — support_tickets-e Admin-er
@@ -5932,12 +6465,12 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var btn = document.getElementById("auDeleteBtn");
     if(btn && btn.dataset.confirm !== "1"){
       btn.dataset.confirm = "1";
-      btn.textContent = "নিশ্চিত মুছে ফেলতে চান? আবার ক্লিক করুন";
-      setTimeout(function(){ if(btn.isConnected){ delete btn.dataset.confirm; btn.textContent = "অ্যাকাউন্ট মুছে ফেলার অনুরোধ"; } }, 5000);
+      btn.textContent = t("auDeleteConfirm");
+      setTimeout(function(){ if(btn.isConnected){ delete btn.dataset.confirm; btn.textContent = t("auDeleteReq"); } }, 5000);
       return;
     }
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
-    if(!sb){ toast("⚠️ অনলাইন সংযোগ নেই — অনুরোধ পাঠানো যায়নি, পরে আবার চেষ্টা করুন।"); return; }
+    if(!sb){ toast(t("auDelNoConn")); return; }
     try{
       var r = await sb.from("support_tickets").insert({
         subject: "ACCOUNT-DELETE | " + (u.email||"") + " | " + (u.name||""),
@@ -5950,9 +6483,9 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
          read-back is needed. Read-back would false-fail here: this subject
          carries email, not phone, so the phone-matched customer-select policy
          cannot read the row back. */
-      toast("✅ অ্যাকাউন্ট মুছে ফেলার অনুরোধ Admin-এর কাছে পাঠানো হয়েছে — Admin যাচাই করে মুছে দেবেন। আপনাকে সাইন আউট করা হচ্ছে।");
+      toast(t("auDelSent"));
       setTimeout(function(){ doLogout(); }, 1200);
-    }catch(e){ toast("⚠️ অনুরোধ পাঠানো যায়নি — " + escHtml((e && e.message) || "database error") + "।"); }
+    }catch(e){ toast(t("auDelFail", {e: (e && e.message) || "database error"})); }
   }
   /* P2-31 (2026-11-26) — customer reads Admin messages in Account →
      Messages from the dedicated customer_messages table via the
@@ -5966,16 +6499,16 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
   async function loadCustomerMessages(u){
     var el = document.getElementById("auMessages"); if(!el || !u) return;
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
-    if(!sb){ el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; return; }
+    if(!sb){ el.innerHTML = '<p style="color:var(--muted);margin:0">'+t("auNoMessages")+'</p>'; return; }
     try{
       var ph = String(u.mobile || "").replace(/\D/g, "");
-      if(!ph){ window.__anboCustomerMessages = []; el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; renderNotifs(); return; }
+      if(!ph){ window.__anboCustomerMessages = []; el.innerHTML = '<p style="color:var(--muted);margin:0">'+t("auNoMessages")+'</p>'; renderNotifs(); return; }
       var r = await sb.rpc("get_customer_messages", { p_phone: ph });
-      if(r.error || !r.data || !r.data.length){ window.__anboCustomerMessages = []; el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; renderNotifs(); return; }
+      if(r.error || !r.data || !r.data.length){ window.__anboCustomerMessages = []; el.innerHTML = '<p style="color:var(--muted);margin:0">'+t("auNoMessages")+'</p>'; renderNotifs(); return; }
       window.__anboCustomerMessages = r.data.map(function(m){ return { id: m.id, message: m.body, body: m.body, sender: m.sender, created_at: m.created_at }; }); /* P1: notification bell-o ei message-gulo dekhay. */
       renderNotifs();
-      el.innerHTML = r.data.map(function(m){ var who = m.sender === "customer" ? "আপনি" : "AnboBD Admin"; return '<div class="ocard"><div style="font-size:.88rem;color:var(--muted)">' + escHtml(m.created_at ? String(m.created_at).slice(0, 10) : "") + ' · ' + escHtml(who) + '</div><p style="margin:6px 0 0;line-height:1.6">' + escHtml(m.body || "") + '</p></div>'; }).join("");
-    }catch(e){ el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; }
+      el.innerHTML = r.data.map(function(m){ var who = m.sender === "customer" ? t("auMsgYou") : "AnboBD Admin"; return '<div class="ocard"><div style="font-size:.88rem;color:var(--muted)">' + escHtml(m.created_at ? String(m.created_at).slice(0, 10) : "") + ' · ' + escHtml(who) + '</div><p style="margin:6px 0 0;line-height:1.6">' + escHtml(m.body || "") + '</p></div>'; }).join("");
+    }catch(e){ el.innerHTML = '<p style="color:var(--muted);margin:0">'+t("auNoMessages")+'</p>'; }
   }
   /* P2 (2026-11-23): Dispute file kora order — My Orders-er Dispute button
      "জমা দেওয়া হয়েছে" dekhabe. Table na thakle / RLS block hole chupchap
@@ -6008,9 +6541,9 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var msgEl = document.getElementById("auSupMsg2");
     var topicEl = document.getElementById("auSupTopic"), txtEl = document.getElementById("auSupMsg");
     var msg = txtEl ? txtEl.value.trim() : "";
-    if(!msg){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = "⚠ সমস্যাটা লিখুন।"; } return; }
+    if(!msg){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = t("auSupEmpty"); } return; }
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
-    if(!sb){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = "⚠ অনলাইন সংযোগ নেই — pore abar cheshta koro।"; } return; }
+    if(!sb){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = t("auNoConn"); } return; }
     var ph = String((u && u.mobile) || "").replace(/\D/g, "");
     var topic = topicEl ? topicEl.value : "অন্যান্য";
     try{
@@ -6022,8 +6555,8 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
          no SELECT policy on support_tickets (SEC-P1-1 fix dropped select-any),
          so a successful insert returns zero rows. */
       if(txtEl) txtEl.value = "";
-      if(msgEl){ msgEl.style.display=""; msgEl.textContent = "✅ টিকিট পাঠানো হয়েছে — Admin dekhe janabe।"; }
-    }catch(e){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = "⚠ টিকিট পাঠানো যায়নি — " + ((e && e.message) || "database error") + "।"; } }
+      if(msgEl){ msgEl.style.display=""; msgEl.textContent = t("auSupSent"); }
+    }catch(e){ if(msgEl){ msgEl.style.display=""; msgEl.textContent = t("auSupFail", {e: (e && e.message) || "database error"}); } }
   }
   /* P1-20 (2026-11-21): Delivered order er review — sudhu oi order kineche emon
      customer, sudhu Delivered order er item e. reviews table e lekhe
@@ -6063,21 +6596,21 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var txtEl = document.getElementById("auRevText");
     var txt = txtEl ? txtEl.value.trim() : "";
     if(!__auReviewPid){ return; }
-    if(!txt){ if(m){ m.style.display=""; m.textContent = "⚠ রিভিউটা লিখুন।"; } return; }
+    if(!txt){ if(m){ m.style.display=""; m.textContent = t("auRevEmpty"); } return; }
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
-    if(!sb){ if(m){ m.style.display=""; m.textContent = "⚠ অনলাইন সংযোগ নেই — pore abar cheshta koro।"; } return; }
+    if(!sb){ if(m){ m.style.display=""; m.textContent = t("auNoConn"); } return; }
     var rating = parseInt((document.getElementById("auRevRating")||{}).value || "5", 10) || 5;
     try{
       var r = await sb.from("reviews").insert({ product_id: __auReviewPid, rating: rating, comment: txt, customer_name: (u && u.name) || "Customer" }).select("id");
       if(r.error) throw r.error;
       /* P1-8 / SEC-P1-9: insert verify — 0-row return manei review joma hoy ni.
          Local list-e push + success message shudhu verify-er POREI hobe. */
-      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
+      if(!r.data || !r.data.length) throw new Error(t("auDbFail"));
       var key = String(__auReviewPid);
       ANBOBD_STORE.productReviews[key] = ANBOBD_STORE.productReviews[key] || [];
       ANBOBD_STORE.productReviews[key].push({ n: (u && u.name) || "Customer", uid: (u && u.id) || null, d: new Date().toISOString().slice(0,10), w: "", t: txt, rating: rating, reply:"", replyAt:"" }); /* P2-8: reviewer id sathe rakha — naam diye match korle same-name customer guliye jeto */
       if(txtEl) txtEl.value = "";
-      if(m){ m.style.display=""; m.textContent = "✅ রিভিউ জমা হয়েছে — product page e dekhabe।"; }
+      if(m){ m.style.display=""; m.textContent = t("auRevSent"); }
       renderAccount();
       /* P2 fix (2026-11-23) — Bug A: notun review sathe sathe homepage
          card-eo asol gar dekhabe — reload-er opekkha na. */
@@ -6090,9 +6623,9 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       var _em = String((e && e.message) || "");
       if(m){
         m.style.display = "";
-        if(_em.indexOf("not_allowed") !== -1) m.textContent = "শুধু ডেলিভারি পাওয়া গ্রাহকরাই রিভিউ দিতে পারেন।";
-        else if(_em.indexOf("reviews_one_per_customer_product") !== -1) m.textContent = "আপনি এই পণ্যে আগেই রিভিউ দিয়েছেন।";
-        else m.textContent = "⚠ রিভিউ জমা হয়নি — " + (_em || "database error") + "।";
+        if(_em.indexOf("not_allowed") !== -1) m.textContent = t("auRevOnlyDelivered");
+        else if(_em.indexOf("reviews_one_per_customer_product") !== -1) m.textContent = t("auRevAlready");
+        else m.textContent = t("auRevFail", {e: _em || "database error"});
       }
     }
   }
@@ -6102,39 +6635,39 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     function show(t){ if(m){ m.style.display=""; m.textContent=t; } }
     var nm = ((document.getElementById("auEditName")||{}).value || "").trim();
     var ph = ((document.getElementById("auEditPhone")||{}).value || "").trim();
-    if(nm.length < 3) return show("⚠ আপনার পুরো নাম লিখুন (কমপক্ষে 3 অক্ষর)।");
-    if(!/^01[3-9]\d{8}$/.test(ph)) return show("⚠ সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।");
+    if(nm.length < 3) return show(t("auProfName"));
+    if(!/^01[3-9]\d{8}$/.test(ph)) return show(t("msgAddrPhone"));
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
     /* P2-9 (2026-11-26): offline/no client hole success claim kora jabe na —
        submitReview/changeAccountPassword-er motoi "online connection needed"
        janiye ferot jao; local user object-e kichu bodlabe na. */
-    if(!sb) return show("⚠ অনলাইন সংযোগ নেই — pore abar cheshta koro।");
+    if(!sb) return show(t("auNoConn"));
     try{
       var r = await sb.from("profiles").update({ full_name:nm, phone:ph }).eq("id", u.id).select("id");
       if(r.error) throw r.error;
       /* P1-8: RLS-blocked UPDATE 200 + 0 row dey — khali data manei save hoy ni;
          local name/phone + success message shudhu verify-er POREI hobe. */
-      if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
+      if(!r.data || !r.data.length) throw new Error(t("auDbFail"));
       try{ await sb.auth.updateUser({ data:{ full_name:nm, phone:ph } }); }catch(e2){ console.warn("auth metadata update:", e2); }
       if(u){ u.name = nm; u.mobile = ph; } window.__anboCurrentUser = u;
-      show("✅ প্রোফাইল সেভ হয়েছে।"); renderAccount();
-    }catch(e){ show("⚠ প্রোফাইল সেভ হয়নি — " + ((e && e.message) || "database error") + "।"); }
+      show(t("auProfSaved")); renderAccount();
+    }catch(e){ show(t("auProfFail", {e: (e && e.message) || "database error"})); }
   }
   async function changeAccountPassword(u){
     var m = document.getElementById("auPassMsg");
     function show(t){ if(m){ m.style.display=""; m.textContent=t; } }
     var p1 = (document.getElementById("auNewPass3")||{}).value || "";
     var p2 = (document.getElementById("auNewPass4")||{}).value || "";
-    if(p1.length < 6) return show("⚠ পাসওয়ার্ড কমপক্ষে 6 অক্ষরের হতে হবে।");
-    if(p1 !== p2) return show("⚠ দুটি পাসওয়ার্ড মেলেনি — আবার দেখে লিখুন।");
+    if(p1.length < 6) return show(t("auPassShort"));
+    if(p1 !== p2) return show(t("auPassMismatch"));
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
-    if(!sb) return show("⚠ অনলাইন সংযোগ নেই — pore abar cheshta koro।");
+    if(!sb) return show(t("auNoConn"));
     try{
       var r = await sb.auth.updateUser({ password:p1 });
       if(r.error) throw r.error;
       var f = document.getElementById("auPassForm"); if(f) f.reset();
-      show("✅ পাসওয়ার্ড বদলে গেছে — পরের বার নতুন পাসওয়ার্ড দিয়ে সাইন ইন করবেন।");
-    }catch(e){ show("⚠ পাসওয়ার্ড বদলানো যায়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।") + "।"); }
+      show(t("auPassChanged"));
+    }catch(e){ show(t("auPassFail", {e: (e && e.message) || t("auTryAgain")})); }
   }
   function afterAuth(user, isNew){
     snapshotState();
@@ -6145,12 +6678,12 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     /* Re-audit seller-signup fix (2026-11-21): seller toast age sobsomoy "Pending" bolto — shop insert fail korleo. Ekhon shop-er asol obostha onujayi: DB shop thakle Pending, insert fail korle asol error, ar na thakle Seller Center-e jete bolbe. */
     var sellerNote = "";
     if(user.role === "seller"){
-      if(user.shopError) sellerNote = " ⚠️ দোকান অনলাইনে তৈরি হয়নি (" + esc(user.shopError) + ") — Seller Center-এ গিয়ে আবেদন সম্পূর্ণ করুন।";
-      else if(user.sellerId) sellerNote = " 🏪 দোকান এখন Pending — NID কপি আপলোড করে আবেদন সম্পূর্ণ করুন (Seller Center)।";
-      else sellerNote = " 🏪 দোকানের আবেদন সম্পূর্ণ করতে Seller Center-এ যান।";
+      if(user.shopError) sellerNote = t("auShopErrNote", {e: user.shopError});
+      else if(user.sellerId) sellerNote = t("auShopPendingNote");
+      else sellerNote = t("auShopApplyNote");
     }
-    toast(isNew ? "🎉 স্বাগতম, <b>" + esc(user.name) + "</b>! অ্যাকাউন্ট তৈরি হয়ে সাইন ইন হয়েছে (" + roleLabel(user.role) + ")।" + sellerNote
-                : "👋 স্বাগতম ফিরে আসায়, <b>" + esc(user.name) + "</b>! (" + roleLabel(user.role) + ")");
+    toast(isNew ? t("auWelcomeNew", {name: user.name, role: roleLabel(user.role), sellerNote: sellerNote})
+                : t("auWelcomeBack", {name: user.name, role: roleLabel(user.role)}));
   }
   function doLogout(){
     snapshotState();
@@ -6159,7 +6692,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     rerenderStore();
     if(window.refreshPanels) refreshPanels();
     closeAll();
-    toast("লগআউট হয়েছে — আবার দেখা হবে!");
+    toast(t("auLogoutMsg"));
   }
   window.anboLogout = doLogout;
 
@@ -6172,13 +6705,13 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     return null;
   }
   async function anboGoogleLogin(){
-    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ toast("⚠ Google লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ toast(t("auGoogleNeedConn")); return; }
     try{
       var sb = ANBOBD_DB.sb();
       var r = await sb.auth.signInWithOAuth({ provider:"google", options:{ redirectTo: location.origin + location.pathname } });
-      if(r && r.error) toast("⚠ Google লগইন চালু হয়নি — " + (r.error.message || "আবার চেষ্টা করুন।"));
+      if(r && r.error) toast(t("auGoogleFail", {e: r.error.message || t("auTryAgain")}));
       /* success hole Supabase Google-e redirect korbe; fire asle restoreSession session nibe. */
-    }catch(e){ toast("⚠ Google লগইন চালু হয়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।")); }
+    }catch(e){ toast(t("auGoogleFail", {e: (e && e.message) || t("auTryAgain")})); }
   }
   /* Google / phone OTP diye sign-in-er por local session toiri — email login-er motoi (profile ensure + seller shop resolve). */
   async function anboFinishSupabaseLogin(authUser){
@@ -6200,25 +6733,25 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var msgEl = document.getElementById("auOtpMsg");
     function show(t){ msgEl.textContent = t; msgEl.style.display = "block"; }
     hideErr("auInErr");
-    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show("⚠ OTP লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show(t("auOtpNeedConn")); return; }
     var ph = anboNormBdPhone(document.getElementById("auPhone").value);
-    if(!ph){ show("সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।"); return; }
+    if(!ph){ show(t("auOtpBadPhone")); return; }
     window.__anboOtpPhone = ph;
     /* SEC-P2-2: OTP resend cooldown — 60 seconds between sends. */
     var cd = anboCooldownLeft("otp-send", 60);
-    if(cd){ show("আবার "+cd+" সেকেন্ড পরে OTP পাঠাতে পারবেন।"); return; }
+    if(cd){ show(t("auOtpCooldown", {s: cd})); return; }
     this.disabled = true;
     try{
       var sb = ANBOBD_DB.sb();
       var r = await sb.auth.signInWithOtp({ phone: ph });
-      if(r && r.error){ show("⚠ OTP পাঠানো যায়নি — " + (r.error.message || "আবার চেষ্টা করুন।")); }
+      if(r && r.error){ show(t("auOtpSendFail", {e: r.error.message || t("auTryAgain")})); }
       else {
         anboCooldownSet("otp-send");
         document.getElementById("auOtpWrap").style.display = "";
         document.getElementById("auOtpVerifyBtn").style.display = "";
-        show("✅ OTP পাঠানো হয়েছে " + ph + "-এ — 6 ডিজিটের কোডটি লিখে Verify চাপ দিন।");
+        show(t("auOtpSent", {phone: ph}));
       }
-    }catch(e){ show("⚠ OTP পাঠানো যায়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।")); }
+    }catch(e){ show(t("auOtpSendFail", {e: (e && e.message) || t("auTryAgain")})); }
     this.disabled = false;
   });
   document.getElementById("auOtpVerifyBtn").addEventListener("click", async function(){
@@ -6227,21 +6760,21 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     hideErr("auInErr");
     var ph = window.__anboOtpPhone || anboNormBdPhone(document.getElementById("auPhone").value);
     var code = String(document.getElementById("auOtp").value || "").replace(/\D/g,"");
-    if(!ph){ show("আগে সঠিক মোবাইল নম্বর দিয়ে OTP পাঠান।"); return; }
-    if(code.length !== 6){ show("6 ডিজিটের OTP কোডটি লিখুন।"); return; }
-    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show("⚠ OTP লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    if(!ph){ show(t("auOtpNeedPhone")); return; }
+    if(code.length !== 6){ show(t("auOtpNeedCode")); return; }
+    if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show(t("auOtpNeedConn")); return; }
     /* SEC-P2-2: 5 wrong OTP codes in 10 minutes locks verify for 60 seconds. */
     var lk = anboRateLocked("otp-verify");
-    if(lk){ show("অনেকবার ভুল OTP দেওয়া হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"); return; }
+    if(lk){ show(t("auOtpLock", {s: lk})); return; }
     this.disabled = true;
     try{
       var sb = ANBOBD_DB.sb();
       var r = await sb.auth.verifyOtp({ phone: ph, token: code, type: "sms" });
-      if(r && (r.error || !r.data || !r.data.user)){ anboRateHit("otp-verify"); show("⚠ OTP মেলেনি — কোডটি ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।"); return; }
+      if(r && (r.error || !r.data || !r.data.user)){ anboRateHit("otp-verify"); show(t("auOtpWrong")); return; }
       var ok = await anboFinishSupabaseLogin(r.data.user);
       if(ok){ anboRateReset("otp-verify"); var f = document.getElementById("auInForm"); if(f) f.reset(); }
-      else show("⚠ লগইন হয়েছে, কিন্তু প্রোফাইল লোড হয়নি — পেজ রিলোড করে আবার চেষ্টা করুন।");
-    }catch(e){ show("⚠ OTP যাচাই করা যায়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।")); }
+      else show(t("auOtpNoProfile"));
+    }catch(e){ show(t("auOtpVerifyFail", {e: (e && e.message) || t("auTryAgain")})); }
     this.disabled = false;
   });
 
@@ -6289,8 +6822,8 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
   document.getElementById("auTabUp").addEventListener("click", function(){ showAuthTab(true); });
   document.getElementById("auGoUp").addEventListener("click", function(){ showAuthTab(true); });
   document.addEventListener("click", function(e){
-    var t = e.target.closest("[data-passtoggle]");
-    if(t){ var inp = document.getElementById(t.getAttribute("data-passtoggle")); if(inp){ var show = inp.type === "password"; inp.type = show ? "text" : "password"; t.textContent = show ? "Hide" : "Show"; } }
+    var btn = e.target.closest("[data-passtoggle]");
+    if(btn){ var inp = document.getElementById(btn.getAttribute("data-passtoggle")); if(inp){ var show = inp.type === "password"; inp.type = show ? "text" : "password"; btn.textContent = show ? t("auHide") : t("auShow"); } }
   });
   function syncShopField(){
     document.getElementById("auShopWrap").style.display = document.getElementById("auRole").value === "seller" ? "" : "none";
@@ -6324,7 +6857,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     e.preventDefault(); hideErr("auInErr");
     /* SEC-P2-2: 5 failed logins in 10 minutes locks sign-in for 60 seconds. */
     var lk = anboRateLocked("login");
-    if(lk){ showErr("auInErr", "অনেকবার ভুল চেষ্টা হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"); return; }
+    if(lk){ showErr("auInErr", t("auLoginLock", {s: lk})); return; }
     var form = this;
     Promise.resolve(ANBOBD_AUTH.login(document.getElementById("auInEmail").value, document.getElementById("auInPass").value)).then(function(res){
       if(!res.ok){ anboRateHit("login"); return showErr("auInErr", res.error); }
@@ -6345,7 +6878,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show(t("auForgotNoConn")); return; }
     /* SEC-P2-2: reset link resend cooldown — 60 seconds between sends. */
     var cd = anboCooldownLeft("forgot", 60);
-    if(cd){ show("আবার "+cd+" সেকেন্ড পরে রিসেট লিংক পাঠাতে পারবেন।"); return; }
+    if(cd){ show(t("auForgotCooldown", {s: cd})); return; }
     this.disabled = true;
     try{
       var sb = ANBOBD_DB.sb();
@@ -6402,7 +6935,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       if(!sess || !sess.user){
         openAuth("signin");
         var m = document.getElementById("auForgotMsg");
-        if(m){ m.textContent = "এই রিসেট লিংকটির মেয়াদ শেষ হয়েছে বা ইতিমধ্যে ব্যবহার করা হয়েছে — উপরে ইমেইল দিয়ে আবার রিসেট লিংক পাঠান।"; m.style.display = "block"; }
+        if(m){ m.textContent = t("auResetExpired"); m.style.display = "block"; }
         return;
       }
       document.getElementById("auForms").style.display = "none";
@@ -6418,31 +6951,31 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var errEl = document.getElementById("auResetErr"), msgEl = document.getElementById("auResetMsg");
     errEl.textContent = "";
     function show(t){ msgEl.textContent = t; msgEl.style.display = "block"; }
-    if(p1.length < 6){ errEl.textContent = "পাসওয়ার্ড কমপক্ষে 6 অক্ষরের হতে হবে।"; return; }
-    if(p1 !== p2){ errEl.textContent = "দুটি পাসওয়ার্ড মেলেনি — আবার দেখে লিখুন।"; return; }
+    if(p1.length < 6){ errEl.textContent = t("auPassShort"); return; }
+    if(p1 !== p2){ errEl.textContent = t("auPassMismatch"); return; }
     var sb = ANBOBD_DB.sb();
     sb.auth.updateUser({ password: p1 }).then(function(r){
-      if(r && r.error){ errEl.textContent = "পাসওয়ার্ড বদলানো যায়নি — " + (r.error.message || "আবার চেষ্টা করুন।"); return; }
-      show("✅ পাসওয়ার্ড বদলে গেছে — এখন নতুন পাসওয়ার্ড দিয়ে সাইন ইন করুন।");
+      if(r && r.error){ errEl.textContent = t("auResetFail", {e: r.error.message || t("auTryAgain")}); return; }
+      show(t("auResetDone"));
       document.getElementById("auResetForm").reset();
       setTimeout(function(){
         document.getElementById("auReset").style.display = "none";
         openAuth("signin");
         var em = document.getElementById("auInEmail"); if(em) em.focus();
       }, 1800);
-    }).catch(function(err){ errEl.textContent = "পাসওয়ার্ড বদলানো যায়নি — " + ((err && err.message) || "আবার চেষ্টা করুন।"); });
+    }).catch(function(err){ errEl.textContent = t("auResetFail", {e: (err && err.message) || t("auTryAgain")}); });
   });
   /* Social login (2026-11-24): OAuth callback theke fire asha — error hole asol karon toast-e, success hole welcome toast. */
   function anboCheckOAuthReturn(){
     try{
       var sp = new URLSearchParams(location.search);
       var errDesc = sp.get("error_description") || sp.get("error");
-      if(errDesc){ openAuth("signin"); toast("⚠ Google লগইন হয়নি — " + errDesc + "।"); return; }
+      if(errDesc){ openAuth("signin"); toast(t("auGoogleErr", {e: errDesc})); return; }
       if(String(location.hash || "").indexOf("access_token") < 0) return;
       var tries = 0;
       (function waitUser(){
         var u = window.__anboCurrentUser;
-        if(u){ toast("👋 স্বাগতম ফিরে আসায়, <b>" + esc(u.name) + "</b>! (" + roleLabel(u.role) + ")"); return; }
+        if(u){ toast(t("auWelcomeBack", {name: u.name, role: roleLabel(u.role)})); return; }
         if(tries++ < 10) setTimeout(waitUser, 500);
       })();
     }catch(e){}
