@@ -1129,14 +1129,20 @@ async function sbLoadAll(){
   }
   var megaRows = await fetchTable("mega_submissions");
   if (megaRows){
-    /* Real mega_submissions columns: id, shop_id, product_id, campaign_price,
-       status, admin_note, created_at. No campaign name, allocated stock or
-       product name — product comes from the products table by product_id. */
+    /* Real mega_submissions columns: id, shop_id, product_id, campaign,
+       campaign_price, allocated_stock, status, admin_note, created_at
+       (+ P1-1 prev_price / prev_old_price / prev_sale_start / prev_sale_end
+       — approve-er somoy ager dam/window-er snapshot, restore-er jonno).
+       Product name/price comes from the products table by product_id.
+       Approved row-e pp.price nijei campaign price, tai card-er
+       strikethrough-er jonno prev_price (regular dam) dekhate hoy. */
     var prodById = {};
     products.forEach(function(pp){ prodById[pp.id] = pp; });
     megaRequests = megaRows.map(function(rw){
       var pp = prodById[rw.product_id] || {};
-      return { id: rw.id, supabaseId: rw.id, product: pp.name || "Product", shop: shopNameById[rw.shop_id] || "Shop", sku: pp.sku || "", price: pp.price || 0, megaPrice: rw.campaign_price || 0, status: rw.status || "pending", campaign: "Mega Sale", stockForCampaign: 0, requested: sbDateLabel(rw.created_at), note: rw.admin_note || "", img: safeImg(pp.img || ""), approvedOn: "" };
+      var approvedLive = String(rw.status || "").toLowerCase() === "approved";
+      var shownPrice = (approvedLive && rw.prev_price != null) ? rw.prev_price : (pp.price || 0);
+      return { id: rw.id, supabaseId: rw.id, productId: rw.product_id || "", product: pp.name || "Product", shop: shopNameById[rw.shop_id] || "Shop", sku: pp.sku || "", price: shownPrice, megaPrice: rw.campaign_price || 0, status: rw.status || "pending", campaign: rw.campaign || "Mega Sale", stockForCampaign: rw.allocated_stock || 0, requested: sbDateLabel(rw.created_at), note: rw.admin_note || "", img: safeImg(pp.img || ""), approvedOn: "", prevPrice: rw.prev_price != null ? rw.prev_price : null, prevOldPrice: rw.prev_old_price != null ? rw.prev_old_price : null, prevSaleStart: rw.prev_sale_start || null, prevSaleEnd: rw.prev_sale_end || null };
     });
   }
   var payoutRows = await fetchTable("payouts");
@@ -1494,6 +1500,14 @@ var payoutPaidAdjustments = {}; /* sellerId -> amount already marked Paid in thi
 function maskNidAdmin(v){ var d = String(v==null ? "" : v).replace(/\D/g, ""); if(!d) return "—"; if(d.length<=5) return "•••••"; return d.slice(0,3)+"••••"+d.slice(-2); }
 function maskLicenceAdmin(v){ var t = String(v==null ? "" : v).trim(); if(!t || t==="—") return "—"; if(t.length<=4) return "••••"; return "••••"+t.slice(-4); }
 function maskPayoutMethod(full){ if(!full || full==="—") return "— (not set)"; var parts=String(full).split("·"); var kind=(parts[0]||"").trim(); var num=(parts[1]||"").trim(); var digits=num.replace(/\D/g,""); if(digits.length>=2) return kind+" ••••"+digits.slice(-2)+" (full number hidden in Admin)"; return kind+" •••• (hidden)"; }
+/* P1-20 (2026-11-26): payout method kind — shops.payout_method is the FULL
+   string ("Bank Transfer", "bKash", "Nagad") and Admin builds payoutMethod as
+   "<method> · <account>". Splitting on " " truncated "Bank Transfer" to
+   "Bank" in payouts.method + history. Split on "·" (like maskPayoutMethod)
+   so the full method is stored; fall back to bKash when unset. The seller's
+   own payout-request flow already inserts the full "Bank Transfer" string
+   (Seller Center wMethod select), so the column accepts it. */
+function payoutMethodKind(full){ var k=String(full||"").split("·")[0].trim(); return (k && k!=="—") ? k : "bKash"; }
 function liveSellerCouponCount(){ return sellerCoupons.filter(function(c){return c.status==="live";}).length; }
 function pendingSellerCouponCount(){ return sellerCoupons.filter(function(c){return c.status==="pending";}).length; }
 
@@ -2085,7 +2099,23 @@ function payoutEligible(o){
 }
 function sellerDeliveredLedger(sellerObj){ var shop=sellerObj.shop; var gross=0, comm=0, disc=0, count=0, inHold=0, inHoldCount=0; orders.forEach(function(o){ if(o.status!=="delivered") return; var so=subOrderForShop(o, shop); if(so){ if (!payoutEligible(o)){ inHold += (so.subtotal - so.discount - so.commission); inHoldCount++; return; } gross+=so.subtotal; comm+=so.commission; disc+=so.discount; count++; } }); var refunds=returnRequests.filter(function(r){ return r.seller===shop && (r.status==="Refunded"||r.status.indexOf("refund pending")!==-1); }).reduce(function(a,r){ return a+r.amount; },0); var net=gross-disc-comm; var due=Math.max(0, net - refunds - (payoutPaidAdjustments[sellerObj.id]||0)); return {shop:shop, deliveredCount:count, gross:gross, discount:disc, commission:comm, refunds:refunds, net:net, due:due, inHold:inHold, inHoldCount:inHoldCount}; }
 function derivedPayoutDue(sellerObj){ if(!sellerObj || sellerObj.status!=="approved") return 0; return sellerDeliveredLedger(sellerObj).due; }
-function platformCommissionEarned(){ var t=0; orders.forEach(function(o){ if(o.status!=="cancelled") t+=orderCommission(o); }); return t; }
+/* P1-22 (2026-11-26): "earned" / "received" counts only orders that are
+   actually confirmed-and-beyond. Pending (AwaitingAdmin) orders may still be
+   cancelled or unpaid, so they must not inflate commission, GMV or payments.
+   Confirmed-and-beyond = confirmed / ready / packed / shipped / delivered. */
+function isCountedForEarnings(o){ return !!o && o.status!=="pending" && o.status!=="cancelled"; }
+/* "Payment received" — COD cash is collected by the rider on delivery, so a
+   COD order counts only once delivered; manual payments (bKash / Nagad /
+   Rocket) count once Admin has verified the TrxID (payment_status
+   "confirmed"); Card settles through the gateway, so it counts once the
+   order is confirmed. */
+function isPaymentReceived(o){
+  if (!o || o.status==="cancelled") return false;
+  if (o.pay==="COD") return o.status==="delivered";
+  if (o.pay==="Card") return o.status!=="pending";
+  return orderPaymentStatus(o)==="confirmed";
+}
+function platformCommissionEarned(){ var t=0; orders.forEach(function(o){ if(isCountedForEarnings(o)) t+=orderCommission(o); }); return t; }
 function platformGMV(){ return orders.filter(function(o){ return o.status!=="cancelled"; }).reduce(function(a,o){ return a+orderTotal(o); },0); }
 function statusBadge(s){ return '<span class="badge b-'+s+'">'+s.charAt(0).toUpperCase()+s.slice(1)+'</span>'; }
 function lowStock(){ return products.filter(function(p){ return p.stock<=5; }); }
@@ -2370,7 +2400,7 @@ function renderDashboard(){
   var counts = {pending:0, confirmed:0, packed:0, shipped:0, delivered:0, cancelled:0};
   orders.forEach(function(o){ var b = effectiveStatusBucket(o); if(counts[b]!==undefined) counts[b]++; });
   var payTotals = {}, payCount = {};
-  orders.forEach(function(o){ if(o.status!=="cancelled"){ payTotals[o.pay]=(payTotals[o.pay]||0)+orderTotal(o); payCount[o.pay]=(payCount[o.pay]||0)+1; } });
+  orders.forEach(function(o){ if(isPaymentReceived(o)){ payTotals[o.pay]=(payTotals[o.pay]||0)+orderTotal(o); payCount[o.pay]=(payCount[o.pay]||0)+1; } });
   var payMax = 0; Object.keys(payTotals).forEach(function(k){ if(payTotals[k]>payMax) payMax=payTotals[k]; });
   var top = products.slice().sort(function(a,b){ return b.sold-a.sold; }).slice(0,5);
   var maxSold = top.length ? top[0].sold : 0;
@@ -2389,7 +2419,7 @@ function renderDashboard(){
   html += '<div class="kpis">'
     + kpi("Platform GMV · All recorded orders", fmt(platformGMV()), '<span class="sub">Sob seller + own stock mile · Cancelled order bad diye hisab</span>')
     + kpi("Total orders · Platform", plural(orders.length,"master order","master orders")+" · "+plural(subOrderCount,"sub-order","sub-orders"), '<span class="sub">'+plural(pendingCount(),"master order","master orders")+' pending confirm · Order aslei ekhane jog hobe</span>')
-    + kpi("Platform commission earned", fmt(platformCommissionEarned()), '<span class="sub">Sub-order commission er jog · Finance e ledger ache</span>')
+    + kpi("Platform commission earned", fmt(platformCommissionEarned()), '<span class="sub">Confirmed order er sub-order commission er jog · Pending order bad · Finance e ledger ache</span>')
     + kpi("Sellers · Customers", plural(sellers.filter(function(s){return s.status==="approved";}).length,"seller","sellers")+" · "+plural(registeredCustomerCount,"registered customer","registered customers"), '<span class="sub">'+plural(pendingSellerCount(),"seller","sellers")+' pending · '+plural(guestBuyerCount,"guest buyer","guest buyers")+' · Payout due (derived) '+fmt(sellers.reduce(function(a,s){return a+derivedPayoutDue(s);},0))+'</span>')
     + "</div>";
 
@@ -2423,7 +2453,7 @@ function renderDashboard(){
     + (top.length ? top.map(function(p, i){
         return '<div class="top-item"><img src="'+esc(safeImg(p.img))+'" alt="" /><div><div class="nm">'+(i+1)+". "+esc(p.name)+'</div><div class="bar"><i style="width:'+Math.round(p.sold/maxSold*100)+'%"></i></div></div><b class="num">'+p.sold.toLocaleString("en-IN")+'</b></div>';
       }).join("") : '<p class="note" style="margin:0">No products yet.</p>') + "</div>"
-    + '<div class="card"><h3>Payments received</h3><p class="hint">Recent non-cancelled orders, by method</p>'
+    + '<div class="card"><h3>Payments received</h3><p class="hint">Payment-confirmed orders only, by method — COD counts once delivered</p>'
     + ["COD","bKash","Nagad","Rocket","Card"].map(function(m){
         var v = payTotals[m]||0;
         return '<div class="pay-row"><span><b>'+m+'</b></span><div class="bar"><i style="width:'+(payMax?Math.round(v/payMax*100):0)+'%"></i></div><b class="num">'+fmt(v)+'</b></div>';
@@ -2708,9 +2738,15 @@ function fullBackupJSON(){
 function monthlyFigures(m){
   var inM = orders.filter(function(o){ return o.createdRaw && String(o.createdRaw).slice(0, 7) === m; });
   var nc = inM.filter(function(o){ return o.status !== "cancelled"; });
-  var gmv = nc.reduce(function(a, o){ return a + orderTotal(o); }, 0);
-  var comm = nc.reduce(function(a, o){ return a + orderCommission(o); }, 0);
-  return { month: m, total: inM.length, nonCancelled: nc.length, delivered: nc.filter(function(o){ return o.status === "delivered"; }).length, cancelled: inM.filter(function(o){ return o.status === "cancelled"; }).length, gmv: gmv, commission: comm, sellerEarning: gmv - comm, avg: nc.length ? Math.round(gmv / nc.length) : 0 };
+  /* P1-22: GMV / commission / seller earning count only confirmed-and-beyond
+     orders (pending AwaitingAdmin orders are not earned yet). Seller earning
+     is Σ(subtotal − seller-coupon discount − commission) via
+     orderSellerEarning(), so delivery fee never inflates it. */
+  var paid = nc.filter(function(o){ return o.status !== "pending"; });
+  var gmv = paid.reduce(function(a, o){ return a + orderTotal(o); }, 0);
+  var comm = paid.reduce(function(a, o){ return a + orderCommission(o); }, 0);
+  var earn = paid.reduce(function(a, o){ return a + orderSellerEarning(o); }, 0);
+  return { month: m, total: inM.length, nonCancelled: nc.length, delivered: nc.filter(function(o){ return o.status === "delivered"; }).length, cancelled: inM.filter(function(o){ return o.status === "cancelled"; }).length, gmv: gmv, commission: comm, sellerEarning: earn, avg: paid.length ? Math.round(gmv / paid.length) : 0 };
 }
 function monthlySummaryRows(m){
   if (!m) return '<p class="note">Ekhono kono order nei — monthly report khali.</p>';
@@ -2720,7 +2756,7 @@ function monthlySummaryRows(m){
     + '<div class="kv"><span>Non-cancelled orders</span><b class="num">' + f.nonCancelled + '</b></div>'
     + '<div class="kv"><span>Delivered orders</span><b class="num">' + f.delivered + '</b></div>'
     + '<div class="kv"><span>Cancelled orders</span><b class="num">' + f.cancelled + '</b></div>'
-    + '<div class="kv"><span>GMV (non-cancelled)</span><b class="num">' + fmt(f.gmv) + '</b></div>'
+    + '<div class="kv"><span>GMV (confirmed orders)</span><b class="num">' + fmt(f.gmv) + '</b></div>'
     + '<div class="kv"><span>Platform commission</span><b class="num">' + fmt(f.commission) + '</b></div>'
     + '<div class="kv"><span>Seller earnings</span><b class="num">' + fmt(f.sellerEarning) + '</b></div>'
     + '<div class="kv"><span>Average order value</span><b class="num">' + fmt(f.avg) + '</b></div>';
@@ -3324,6 +3360,31 @@ function renderCoupons(){
 }
 
 /* ==================== CAMPAIGNS / MEGA SALE ==================== */
+/* P1-1 (2026-11-26): live Mega deal restore — product-er dam/window prev_*
+   snapshot diye firiye dao + mega_deal=false. Approve fail-er rollback,
+   approved reject (A3) ar "Live theke soran" (A4) — tin jaygatei eki
+   helper, jate restore kokhono alada-alada na hoy. prev_* khali thakle
+   (approve P1-1-er age hoyeche) fallback: old_price-e thaka regular dam. */
+async function megaRestoreProduct(m){
+  if (!sbReady()) return { ok: false, error: "Supabase connect hoy ni" };
+  var prod = null;
+  if (m.productId) prod = products.filter(function(p){ return String(p.supabaseId || p.id) === String(m.productId); })[0];
+  if (!prod && m.sku) prod = products.filter(function(p){ return String(p.sku || "") === String(m.sku); })[0];
+  if (!prod) return { ok: false, error: "Product ta Admin-er list e paoa jay ni" };
+  var hasSnap = (m.prevPrice != null);
+  var patch = hasSnap
+    ? { price: m.prevPrice, old_price: (m.prevOldPrice != null ? m.prevOldPrice : m.prevPrice), sale_start: m.prevSaleStart || null, sale_end: m.prevSaleEnd || null, mega_deal: false }
+    : { price: (prod.old != null ? prod.old : prod.price), old_price: (prod.old != null ? prod.old : prod.price), sale_start: null, sale_end: null, mega_deal: false };
+  var r;
+  try { r = await sb.from("products").update(patch).eq("id", prod.supabaseId || prod.id).select("id"); }
+  catch(e){ return { ok: false, error: (e && e.message) || "database error" }; }
+  if (!r || r.error || !r.data || r.data.length !== 1) return { ok: false, error: (r && r.error && r.error.message) || "product restore verify hoy ni (0 row)" };
+  prod.price = patch.price;
+  prod.old = patch.old_price;
+  prod.saleStart = patch.sale_start;
+  prod.saleEnd = patch.sale_end;
+  return { ok: true, prod: prod };
+}
 function renderCampaigns(){
   var el = $("#view-campaigns");
   var pending = megaRequests.filter(function(m){return m.status==="pending";});
@@ -3333,7 +3394,7 @@ function renderCampaigns(){
     var pct = megaDiscountPct(m);
     return '<div class="card" style="margin-bottom:12px"><div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center"><img src="'+esc(safeImg(m.img))+'" alt="" style="width:64px;height:64px;border-radius:10px;object-fit:cover" /><div style="flex:1;min-width:220px"><b>'+esc(m.product)+'</b> <span class="badge b-mega">−'+pct+'% MEGA</span><br /><span class="note">'+esc(m.shop)+' · '+esc(m.sku)+' · '+esc(m.campaign)+' · Requested '+m.requested+'</span><br /><span class="note">'+esc(m.note)+'</span></div><div style="text-align:right"><span style="text-decoration:line-through;color:var(--muted)" class="num">'+fmt(m.price)+'</span><br /><span class="mega-price num">'+fmt(m.megaPrice)+'</span><br /><span class="note">Campaign stock: '+m.stockForCampaign+' units</span></div></div>'
       + (showActions ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm" type="button" data-mega-approve="'+m.id+'">✓ Approve &amp; Go Live on Mega Sale</button><button class="btn danger sm" type="button" data-mega-reject="'+m.id+'">Reject</button><span class="note" style="align-self:center">Approve korlei storefront er Mega Sale section e live hobe — er age na.</span></div>' : "")
-      + (m.status==="approved" ? '<p style="margin:10px 0 0"><span class="coupon-live-dot">Live on storefront — Mega Sale section</span> <span class="note">· Approved '+(m.approvedOn||"")+'</span></p>' : "")
+      + (m.status==="approved" ? '<p style="margin:10px 0 0"><span class="coupon-live-dot">Live on storefront — Mega Sale section</span> <span class="note">· Approved '+(m.approvedOn||"")+'</span></p><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn sm" type="button" data-mega-unlive="'+m.id+'">Live theke soran</button><span class="note" style="align-self:center">Deal sorale dam ager moto hobe ar submission abar pending-e jabe.</span></div>' : "")
       + (m.status==="rejected" ? '<p class="note" style="margin:10px 0 0;color:var(--danger)">Rejected — seller resubmit korte parbe</p>' : "")
       + '</div>';
   }
@@ -3357,8 +3418,95 @@ function renderCampaigns(){
     + '<h3 style="margin:22px 0 10px">✅ Approved &amp; live ('+approved.length+')</h3>'
     + approved.map(function(m){return megaCard(m,false);}).join("")
     + (rejected.length ? '<h3 style="margin:22px 0 10px">Rejected ('+rejected.length+')</h3>' + rejected.map(function(m){return megaCard(m,false);}).join("") : "");
-  Array.prototype.forEach.call(el.querySelectorAll("[data-mega-approve]"), function(b){ b.addEventListener("click", function(){ var m=megaRequests.filter(function(x){return String(x.id)===String(b.getAttribute("data-mega-approve"));})[0]; if(!m) return; m.status="approved"; m.approvedOn=nowLabel(); sbUpdate("mega_submissions", "id", m.supabaseId || m.id, { status: "approved" }); logActivity("Approved Mega Sale submission: " + m.product + " (" + m.shop + ")"); toast("<span class='lime'>⚡ Mega Sale live!</span> — "+esc(m.product)+" ekhon "+fmt(m.megaPrice)+" te storefront e"); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-mega-reject]"), function(b){ b.addEventListener("click", function(){ var m=megaRequests.filter(function(x){return String(x.id)===String(b.getAttribute("data-mega-reject"));})[0]; if(!m) return; askConfirmReason("Reject mega request?", m.shop+" er "+m.product+" — karon ta activity log e record thakbe.", function(reason){ m.status="rejected"; sbUpdate("mega_submissions", "id", m.supabaseId || m.id, { status: "rejected" }); logActivity("Rejected Mega Sale submission: " + m.product + " — Reason: " + reason); toast("Mega request rejected — <b>"+esc(m.product)+"</b>"); renderAll(); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-mega-approve]"), function(b){ b.addEventListener("click", async function(){
+    var m=megaRequests.filter(function(x){return String(x.id)===String(b.getAttribute("data-mega-approve"));})[0];
+    if(!m) return;
+    if (!sbReady()){ toast("⚠ Supabase connect hoy ni — reload kore abar chesta korun."); return; }
+    /* P1-1 (2026-11-26): approve = (a) submission approve + prev_* snapshot,
+       tarpor (b) product-er dam campaign price-e bosano — duitai
+       .select("id") diye verify. sbUpdate use kora jabe na (or .select()
+       nai, 0-row verify kora jay na — P1-8). (b) fail korle (a)-ke pending-e
+       firiye dao, na hole submission approved thakbe kintu dam jabe na. */
+    var prod = null;
+    if (m.productId) prod = products.filter(function(p){ return String(p.supabaseId || p.id) === String(m.productId); })[0];
+    if (!prod && m.sku) prod = products.filter(function(p){ return String(p.sku || "") === String(m.sku); })[0];
+    if (!prod){ toast("⚠ Product ta Admin-er list e paoa jay ni — approve kora jabe na."); return; }
+    var camp = MEGA_CAMPAIGNS.filter(function(c){ return c.name === m.campaign; })[0];
+    if (!camp || !camp.start || !camp.end){ toast("Campaign er date paoa jay ni — age Campaign dates save korun"); return; }
+    var saleStart = camp.start + "T00:00:00+06:00";
+    var saleEnd = camp.end + "T23:59:59+06:00";
+    if (Date.now() > new Date(saleEnd).getTime()){ toast("⚠ Campaign sesh hoye geche — ei submission approve kora jabe na."); return; }
+    /* Ager dam/window-er snapshot DB theke taza kore nao — local row-e
+       sale_start/sale_end thake na, ar dam-o purono hote pare. */
+    var cur;
+    try { cur = await sb.from("products").select("id,price,old_price,sale_start,sale_end").eq("id", prod.supabaseId || prod.id).single(); }
+    catch(e){ cur = null; }
+    if (!cur || cur.error || !cur.data){ toast("⚠ Product er asol dam porte pari ni — approve kora jabe na."); return; }
+    var curPrice = Number(cur.data.price) || 0;
+    var curOld = (cur.data.old_price != null ? Number(cur.data.old_price) : curPrice) || 0;
+    var curRegular = Math.max(curPrice, curOld);
+    if (!(m.megaPrice > 0) || m.megaPrice >= curRegular){ toast("⚠ Mega price asol dam er cheye kom hote hobe — approve kora jabe na."); return; }
+    var disc = Math.round((1 - m.megaPrice / curRegular) * 100);
+    if (disc < (camp.minDiscount || 0)){ toast("⚠ Discount " + disc + "% — " + esc(camp.name) + " er minimum " + camp.minDiscount + "% lagbe. Approve kora jabe na."); return; }
+    var ra;
+    try { ra = await sb.from("mega_submissions").update({ status: "approved", prev_price: curPrice, prev_old_price: curOld, prev_sale_start: cur.data.sale_start || null, prev_sale_end: cur.data.sale_end || null }).eq("id", m.supabaseId || m.id).select("id"); }
+    catch(e){ ra = { error: e }; }
+    if (!ra || ra.error || !ra.data || ra.data.length !== 1){
+      if (ra && ra.error && ra.error.code === "23505") toast("⚠ Ei product er arekta deal already live — age seta soran, tarpor approve korun.");
+      else sbSaveFailed("mega_submissions", ra && ra.error ? ra.error : "approve verify hoy ni (0 row)");
+      return;
+    }
+    var rb;
+    try { rb = await sb.from("products").update({ price: m.megaPrice, old_price: curRegular, sale_start: saleStart, sale_end: saleEnd, mega_deal: true }).eq("id", prod.supabaseId || prod.id).select("id"); }
+    catch(e){ rb = { error: e }; }
+    if (!rb || rb.error || !rb.data || rb.data.length !== 1){
+      try { await sb.from("mega_submissions").update({ status: "pending", prev_price: null, prev_old_price: null, prev_sale_start: null, prev_sale_end: null }).eq("id", m.supabaseId || m.id); } catch(e){}
+      sbSaveFailed("products", rb && rb.error ? rb.error : "product update verify hoy ni (0 row)");
+      return;
+    }
+    m.status = "approved"; m.approvedOn = nowLabel();
+    m.prevPrice = curPrice; m.prevOldPrice = curOld; m.prevSaleStart = cur.data.sale_start || null; m.prevSaleEnd = cur.data.sale_end || null;
+    prod.price = m.megaPrice; prod.old = curRegular; prod.saleStart = saleStart; prod.saleEnd = saleEnd;
+    logActivity("Approved Mega Sale submission: " + m.product + " (" + m.shop + ") — " + fmt(curRegular) + " → " + fmt(m.megaPrice));
+    toast("<span class='lime'>⚡ Mega Sale live!</span> — " + esc(m.product) + " ekhon " + fmt(m.megaPrice) + " te storefront e");
+    renderAll();
+  }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-mega-reject]"), function(b){ b.addEventListener("click", function(){ var m=megaRequests.filter(function(x){return String(x.id)===String(b.getAttribute("data-mega-reject"));})[0]; if(!m) return; askConfirmReason("Reject mega request?", m.shop+" er "+m.product+" — karon ta activity log e record thakbe.", async function(reason){
+    if (m.status === "approved"){
+      /* P1-1 (2026-11-26): live deal reject korar age dam/window firiye
+         dao (restore), tarpor status bodlao. Restore fail hole status
+         chhobe na — na hole deal live thakbe kintu submission rejected. */
+      var rr = await megaRestoreProduct(m);
+      if (!rr.ok){ sbSaveFailed("products", rr.error || "restore hoy ni"); return; }
+      var rs;
+      try { rs = await sb.from("mega_submissions").update({ status: "rejected", prev_price: null, prev_old_price: null, prev_sale_start: null, prev_sale_end: null }).eq("id", m.supabaseId || m.id).select("id"); }
+      catch(e){ rs = { error: e }; }
+      if (!rs || rs.error || !rs.data || rs.data.length !== 1){ sbSaveFailed("mega_submissions", rs && rs.error ? rs.error : "reject verify hoy ni (0 row) — dam restore hoyeche, status approved-i ache"); return; }
+      m.status = "rejected"; m.prevPrice = null; m.prevOldPrice = null; m.prevSaleStart = null; m.prevSaleEnd = null;
+      logActivity("Rejected live Mega Sale submission (deal sorano holo): " + m.product + " — Reason: " + reason);
+      toast("Mega request rejected — <b>" + esc(m.product) + "</b> (live deal sorano hoyeche)");
+      renderAll();
+      return;
+    }
+    m.status="rejected"; sbUpdate("mega_submissions", "id", m.supabaseId || m.id, { status: "rejected" }); logActivity("Rejected Mega Sale submission: " + m.product + " — Reason: " + reason); toast("Mega request rejected — <b>"+esc(m.product)+"</b>"); renderAll();
+  }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-mega-unlive]"), function(b){ b.addEventListener("click", async function(){
+    var m = megaRequests.filter(function(x){ return String(x.id)===String(b.getAttribute("data-mega-unlive")); })[0];
+    if (!m || m.status !== "approved") return;
+    if (!sbReady()){ toast("⚠ Supabase connect hoy ni — reload kore abar chesta korun."); return; }
+    /* P1-1 (2026-11-26): live deal sorano — restore age, tarpor status
+       'pending'-e (rejected na — seller abar approve-er opekkhay thakbe). */
+    var rr = await megaRestoreProduct(m);
+    if (!rr.ok){ sbSaveFailed("products", rr.error || "restore hoy ni"); return; }
+    var rs;
+    try { rs = await sb.from("mega_submissions").update({ status: "pending", prev_price: null, prev_old_price: null, prev_sale_start: null, prev_sale_end: null }).eq("id", m.supabaseId || m.id).select("id"); }
+    catch(e){ rs = { error: e }; }
+    if (!rs || rs.error || !rs.data || rs.data.length !== 1){ sbSaveFailed("mega_submissions", rs && rs.error ? rs.error : "status update verify hoy ni (0 row) — dam restore hoyeche, deal approved-i ache"); return; }
+    m.status = "pending"; m.approvedOn = ""; m.prevPrice = null; m.prevOldPrice = null; m.prevSaleStart = null; m.prevSaleEnd = null;
+    logActivity("Mega deal live theke sorano holo: " + m.product + " (" + m.shop + ") — submission abar pending");
+    toast("Mega deal sorano hoyeche — <b>" + esc(m.product) + "</b> ekhon ager dam e, submission abar pending");
+    renderAll();
+  }); });
   var scd=$("#saveCampaignDates"); if(scd) scd.addEventListener("click", async function(){
     var bad = "";
     Array.prototype.forEach.call(el.querySelectorAll("[data-camp-name]"), function(inp){ var i=+inp.getAttribute("data-camp-name"); var v=inp.value.trim(); if(v) MEGA_CAMPAIGNS[i].name=v; });
@@ -3741,7 +3889,20 @@ function renderStaff(){
   $("#addStaffBtn").addEventListener("click", function(){ openStaffForm(null); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-staff-edit]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-edit")); })[0]; openStaffForm(s); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-staff-toggle]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-toggle")); })[0]; if(!s) return; s.status = s.status==="suspended" ? "active" : "suspended"; s.last = s.status==="active" ? "Reactivated today" : s.last; sbSyncStaffRow(s); logActivity((s.status==="active"?"Activated":"Suspended")+" staff account "+s.name); toast("Staff <b>"+esc(s.name)+"</b> is now <span class='lime'>"+s.status+"</span>"+(s.status!=="active"?" — ekhon ar login korte parbe na":"")); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-staff-del]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-del")); })[0]; if(!s) return; askConfirm("Remove "+s.name+"?", s.name+" will lose admin access immediately. Their past order actions stay in the history.", function(){ if (s.supabaseId){ sbDelete("staff", "user_id", s.supabaseId); sbDelete("profiles", "id", s.supabaseId); } logActivity("Removed staff account " + s.name); staff = staff.filter(function(x){ return String(x.id)!==String(s.id); }); toast("🗑 Staff removed — <b>"+esc(s.name)+"</b>"); renderAll(); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-staff-del]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-del")); })[0]; if(!s) return; askConfirm("Remove "+s.name+"?", s.name+" will lose admin access immediately. Their past order actions stay in the history.", async function(){
+    /* P1-24 (2026-11-26): verified delete — the old code fired both deletes
+       fire-and-forget and toasted success no matter what, so an RLS/FK-blocked
+       delete left a half-removed account. Await both deletes (sbDelete already
+       surfaces failures via sbSaveFailed); only when BOTH succeed is the row
+       removed locally and success toasted. If the staff row is gone but the
+       profile delete fails, the entry stays in the list so Admin can retry. */
+    if (s.supabaseId){
+      var rStaff = await sbDelete("staff", "user_id", s.supabaseId);
+      if (!rStaff || rStaff.error){ toast("⚠ Staff remove hoy ni — staff row delete korte pari ni. Abar chesta korun."); return; }
+      var rProf = await sbDelete("profiles", "id", s.supabaseId);
+      if (!rProf || rProf.error){ toast("⚠ Staff access sorano hoyeche, kintu profile delete hoy ni — profile row roye geche. Abar chesta korun."); return; }
+    }
+    logActivity("Removed staff account " + s.name); staff = staff.filter(function(x){ return String(x.id)!==String(s.id); }); toast("🗑 Staff removed — <b>"+esc(s.name)+"</b>"); renderAll(); }); }); });
 }
 function updateStaffPermPreview(){
   var role = $("#sfRole").value;
@@ -4055,7 +4216,7 @@ function bindSellerActions(root){
       });
     });
   }); });
-  Array.prototype.forEach.call(root.querySelectorAll("[data-seller-pay]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){ return String(x.id)===String(b.getAttribute("data-seller-pay")); })[0]; if(!s) return; var amt=derivedPayoutDue(s); askConfirm("Pay "+fmt(amt)+" to "+s.shop+"?", "Payout via "+maskPayoutMethod(s.payoutMethod)+", after "+s.commissionRate+"% commission. This marks the balance as settled.", function(){ payoutPaidAdjustments[s.id]=(payoutPaidAdjustments[s.id]||0)+amt; sellerPayoutHistory.unshift({seller:s.shop, amount:amt, method:(s.payoutMethod.split(" ")[0]||"bKash"), date:nowLabel(), status:"Paid"}); sbInsert("payouts", { shop_id: s.supabaseId || s.id, amount: amt, method: (s.payoutMethod.split(" ")[0]||"bKash"), status: "paid", paid_at: new Date().toISOString() }); logActivity("Paid out " + fmt(amt) + " to " + s.shop); toast('<span class="lime">✓ Paid</span> — '+fmt(amt)+" sent to "+esc(s.shop)); renderAll(); if($("#sellerDetailWrap").classList.contains("show")) openSellerDetail(s.id); }); }); });
+  Array.prototype.forEach.call(root.querySelectorAll("[data-seller-pay]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){ return String(x.id)===String(b.getAttribute("data-seller-pay")); })[0]; if(!s) return; var amt=derivedPayoutDue(s); askConfirm("Pay "+fmt(amt)+" to "+s.shop+"?", "Payout via "+maskPayoutMethod(s.payoutMethod)+", after "+s.commissionRate+"% commission. This marks the balance as settled.", function(){ payoutPaidAdjustments[s.id]=(payoutPaidAdjustments[s.id]||0)+amt; sellerPayoutHistory.unshift({seller:s.shop, amount:amt, method:payoutMethodKind(s.payoutMethod), date:nowLabel(), status:"Paid"}); sbInsert("payouts", { shop_id: s.supabaseId || s.id, amount: amt, method: payoutMethodKind(s.payoutMethod), status: "paid", paid_at: new Date().toISOString() }); logActivity("Paid out " + fmt(amt) + " to " + s.shop); toast('<span class="lime">✓ Paid</span> — '+fmt(amt)+" sent to "+esc(s.shop)); renderAll(); if($("#sellerDetailWrap").classList.contains("show")) openSellerDetail(s.id); }); }); });
 }
 /* ===== Seller KYC documents (seller detail only) =====
    Sellers upload their NID copy (required) and trade licence copy
@@ -4712,12 +4873,12 @@ function renderFinance(){
     + '<div class="card" style="margin-top:16px"><h3>🧾 VAT report — ' + settings.vatRate + '% (price er moddhe included)</h3><p class="hint">Shudhu Delivered order theke hisab — VAT = delivered total × ' + settings.vatRate + '/' + (100 + settings.vatRate) + '. Month onujayi breakdown.</p>'
     + (vatRows.length ? '<div class="table-card"><table><thead><tr><th>Month</th><th>Delivered orders</th><th>Delivered total</th><th>VAT (' + settings.vatRate + '%)</th></tr></thead><tbody>' + vatRows.map(function(r){ return '<tr><td><b>' + esc(r.month) + '</b></td><td class="num">' + r.count + '</td><td class="num">' + fmt(r.total) + '</td><td class="num">' + fmt(r.vat) + '</td></tr>'; }).join("") + '</tbody></table></div><p class="note" style="margin:10px 0 0">Total VAT: ' + fmt(vatRows.reduce(function(a, r){ return a + r.vat; }, 0)) + ' · Delivered total: ' + fmt(vatRows.reduce(function(a, r){ return a + r.total; }, 0)) + '</p><div style="margin-top:10px"><button class="btn ghost" type="button" id="vatExport">⬇ VAT CSV</button></div>' : '<p class="note">Ekhono kono order Delivered hoy ni — VAT ৳0. Delivered order asle mas onujayi ekhane VAT dekhabe.</p>')
     + '</div>';
-  Array.prototype.forEach.call(el.querySelectorAll("[data-fin-pay]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){return String(x.id)===String(b.getAttribute("data-fin-pay"));})[0]; if(!s) return; var amt=derivedPayoutDue(s); askConfirm("Pay "+fmt(amt)+" to "+s.shop+"?", "Via "+maskPayoutMethod(s.payoutMethod)+" · "+s.commissionRate+"% commission already deducted.", function(){ payoutPaidAdjustments[s.id]=(payoutPaidAdjustments[s.id]||0)+amt; sellerPayoutHistory.unshift({seller:s.shop, amount:amt, method:(s.payoutMethod.split(" ")[0]||"bKash"), date:nowLabel(), status:"Paid"}); sbInsert("payouts", { shop_id: s.supabaseId || s.id, amount: amt, method: (s.payoutMethod.split(" ")[0]||"bKash"), status: "paid", paid_at: new Date().toISOString() }); logActivity("Paid out "+fmt(amt)+" to "+s.shop); toast("<span class='lime'>✓ Paid</span> — "+fmt(amt)+" → "+esc(s.shop)); renderAll(); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-fin-pay]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){return String(x.id)===String(b.getAttribute("data-fin-pay"));})[0]; if(!s) return; var amt=derivedPayoutDue(s); askConfirm("Pay "+fmt(amt)+" to "+s.shop+"?", "Via "+maskPayoutMethod(s.payoutMethod)+" · "+s.commissionRate+"% commission already deducted.", function(){ payoutPaidAdjustments[s.id]=(payoutPaidAdjustments[s.id]||0)+amt; sellerPayoutHistory.unshift({seller:s.shop, amount:amt, method:payoutMethodKind(s.payoutMethod), date:nowLabel(), status:"Paid"}); sbInsert("payouts", { shop_id: s.supabaseId || s.id, amount: amt, method: payoutMethodKind(s.payoutMethod), status: "paid", paid_at: new Date().toISOString() }); logActivity("Paid out "+fmt(amt)+" to "+s.shop); toast("<span class='lime'>✓ Paid</span> — "+fmt(amt)+" → "+esc(s.shop)); renderAll(); }); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-payq-ok]"), function(b){ b.addEventListener("click", function(){ setPaymentStatus(b.getAttribute("data-payq-ok"), "confirmed"); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-payq-no]"), function(b){ b.addEventListener("click", function(){ var oid = b.getAttribute("data-payq-no"); var oo = orders.filter(function(x){ return String(x.id)===String(oid); })[0]; var lbl = oo ? (oo.localId || oo.id) : oid; askConfirm("Reject this payment?", "Txn ID jachai e mile ni — order " + lbl + " seller er kache pathano hobe na.", function(){ setPaymentStatus(oid, "rejected"); }); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-payreq-ok]"), function(b){ b.addEventListener("click", function(){ var pr=payoutRequests[parseInt(b.getAttribute("data-payreq-ok"),10)]; var sx=sellerOfShop(pr.shop); if(sx && pr.amount>derivedPayoutDue(sx)){ toast("⚠ Balance er beshi — approve hobe na"); return; } pr.status="Approved — processing"; sbUpdate("payouts", "id", pr.supabaseId || pr.id, { status: "approved" }); logActivity("Approved payout "+pr.id); toast("<span class='lime'>✓ Approved</span> — "+esc(pr.id)); renderAll(); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-payreq-hold]"), function(b){ b.addEventListener("click", function(){ var pr=payoutRequests[parseInt(b.getAttribute("data-payreq-hold"),10)]; pr.status="On hold"; sbUpdate("payouts", "id", pr.supabaseId || pr.id, { status: "on_hold" }); logActivity("Held payout "+pr.id); toast("⏸ On hold — <b>"+esc(pr.id)+"</b>"); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-payreq-paid]"), function(b){ b.addEventListener("click", function(){ var pr=payoutRequests[parseInt(b.getAttribute("data-payreq-paid"),10)]; var sx=sellerOfShop(pr.shop); if(sx) payoutPaidAdjustments[sx.id]=(payoutPaidAdjustments[sx.id]||0)+pr.amount; pr.status="Paid"; sbUpdate("payouts", "id", pr.supabaseId || pr.id, { status: "paid" }); sellerPayoutHistory.unshift({seller:pr.shop, amount:pr.amount, method:(pr.method.split(" ")[0]||"bKash"), date:nowLabel(), status:"Paid"}); logActivity("Paid "+pr.id+" "+fmt(pr.amount)); toast("<span class='lime'>✓ Paid</span> — "+esc(pr.id)); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-payreq-paid]"), function(b){ b.addEventListener("click", function(){ var pr=payoutRequests[parseInt(b.getAttribute("data-payreq-paid"),10)]; var sx=sellerOfShop(pr.shop); if(sx) payoutPaidAdjustments[sx.id]=(payoutPaidAdjustments[sx.id]||0)+pr.amount; pr.status="Paid"; sbUpdate("payouts", "id", pr.supabaseId || pr.id, { status: "paid" }); sellerPayoutHistory.unshift({seller:pr.shop, amount:pr.amount, method:payoutMethodKind(pr.method), date:nowLabel(), status:"Paid"}); logActivity("Paid "+pr.id+" "+fmt(pr.amount)); toast("<span class='lime'>✓ Paid</span> — "+esc(pr.id)); renderAll(); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-fin-stmt]"), function(b){ b.addEventListener("click", function(){ var s=sellers.filter(function(x){return String(x.id)===String(b.getAttribute("data-fin-stmt"));})[0]; if(!s) return; var rows=[["Order","Customer","Status","Subtotal","Discount","Commission ("+s.commissionRate+"%)","Seller earning"]]; orders.filter(function(o){ return sellerShopsForOrder(o).indexOf(s.shop)!==-1; }).forEach(function(o){ var so2=subOrderForShop(o,s.shop); if(so2) rows.push([so2.id+" (master "+o.id+")",o.customer,o.status,so2.subtotal,so2.discount,so2.commission,so2.earning]); }); rows.push(["TOTAL","","", "", "", sellerCommission(s), sellerNet(s)]); downloadCSV("statement-"+s.id+".csv", rows.map(function(r){ return r.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(","); }).join("\n")); }); });
   var vx=$("#vatExport"); if(vx) vx.addEventListener("click", function(){ var rows=[["Month","Delivered orders","Delivered total (BDT)","VAT (BDT)"]]; vatReportRows().forEach(function(r){ rows.push([r.month, r.count, r.total, Math.round(r.vat * 100) / 100]); }); downloadCSV("anbobd-vat-" + todayStamp() + ".csv", csvRows(rows)); });
 }
