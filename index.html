@@ -3485,19 +3485,19 @@ function platformPayNumber(method){ var st = window.__anboPlatformSettings || {}
 function loyaltyCfg(){ var st = window.__anboPlatformSettings || {}; return { per100: (st.loyaltyPer100 || 1), points: (st.loyaltyRedeemPoints || 100), value: (st.loyaltyRedeemValue || 50) }; }
 function fallbackCopy(t){ try{ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta); }catch(e){} }
 /* Decision 7 — loyalty balance, DERIVED from real Delivered orders only.
-   Earned: floor(Delivered total / 100) * per100 points. Spent: 100 points
-   per order whose promo_code is LOYALTY100 (the redemption is recorded on
-   the order row itself — no points table/column exists). Guests: 0. */
+   Earned per Delivered order: floor(order total / 100) * per100 points
+   (same per-order rule as the loyalty_points ledger — earn rows written by
+   the orders status trigger, spend rows by place_order at redemption).
+   Spent: 100 points per order whose promo_code is LOYALTY100. Guests: 0. */
 function loyaltyBalance(){
   var u = window.__anboCurrentUser; if(!u) return { earned:0, spent:0, balance:0 };
   var cfg = loyaltyCfg();
   var mine = ANBOBD_STORE.orders.filter(function(o){ return o.userId === u.id; });
-  var delTotal = 0, spent = 0;
+  var earned = 0, spent = 0;
   mine.forEach(function(o){
-    if(o.status === "Delivered") delTotal += (o.amounts && o.amounts.total) || 0;
+    if(o.status === "Delivered") earned += Math.floor(((o.amounts && o.amounts.total) || 0) / 100) * cfg.per100;
     if(o.promoCode === "LOYALTY100") spent += cfg.points;
   });
-  var earned = Math.floor(delTotal / 100) * cfg.per100;
   return { earned: earned, spent: spent, balance: Math.max(0, earned - spent) };
 }
 /* ============ P2 (2026-11-23): Saved payment number (manual only) ============
