@@ -60,16 +60,16 @@ a{color:var(--teal)}
 .brand-logo{font-family:"Bricolage Grotesque",sans-serif;font-size:30px;font-weight:800;letter-spacing:-.02em;line-height:1;white-space:nowrap}
 .brand-logo .an{color:#fff}.brand-logo .bo{color:#ff6b4a}
 .brand-logo .bd{display:inline-block;background:#a8e10c;color:#243b00;border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg);position:relative}
-/* Logo animation (2026-11-25, option 4 "Bounce Landing", BD box only, loops 3.4s):
+/* Logo animation (2026-11-25, option 4 "Bounce Landing", BD box only, loops 4.5s):
    B slides in from the left, D a bit later from the right, both land with a tiny
    3px bounce overshoot, hold, then slide out and the cycle repeats; the lime
    ripple ring expands after they settle. */
 .brand-logo .bd .lb,.brand-logo .bd .ld,.side-logo .bd .lb,.side-logo .bd .ld{display:inline-block}
-.brand-logo .bd .lb,.side-logo .bd .lb{animation:anboBin 3.4s ease-in-out infinite}
+.brand-logo .bd .lb,.side-logo .bd .lb{animation:anboBin 4.5s ease-in-out infinite}
 @keyframes anboBin{0%{transform:translateX(-18px);opacity:0}13%{transform:translateX(3px);opacity:1}18%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(-18px);opacity:0}}
-.brand-logo .bd .ld,.side-logo .bd .ld{animation:anboDin 3.4s ease-in-out infinite}
+.brand-logo .bd .ld,.side-logo .bd .ld{animation:anboDin 4.5s ease-in-out infinite}
 @keyframes anboDin{0%,10%{transform:translateX(18px);opacity:0}23%{transform:translateX(-3px);opacity:1}28%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(18px);opacity:0}}
-.brand-logo .bd::after,.side-logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:3px solid #7fb800;box-shadow:0 0 14px rgba(127,184,0,.55);animation:anboRipple 3.4s ease-out infinite;pointer-events:none}
+.brand-logo .bd::after,.side-logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:3px solid #7fb800;box-shadow:0 0 14px rgba(127,184,0,.55);animation:anboRipple 4.5s ease-out infinite;pointer-events:none}
 @keyframes anboRipple{0%,32%{transform:scale(1);opacity:0}44%{opacity:.9}78%,100%{transform:scale(1.7);opacity:0}}
 @media (prefers-reduced-motion:reduce){.brand-logo .bd .lb,.brand-logo .bd .ld,.brand-logo .bd::after,.side-logo .bd .lb,.side-logo .bd .ld,.side-logo .bd::after{animation:none}}
 .brand-tag{display:inline-block;margin-left:10px;font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;background:var(--lime);color:var(--lime-ink);padding:4px 9px;border-radius:99px;vertical-align:middle}
