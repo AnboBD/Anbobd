@@ -90,14 +90,14 @@
       .brand-logo .bd{background:#a8e10c;color:#243b00;border-radius:8px;padding:1px 7px;margin-left:3px;box-shadow:0 4px 0 #6f9a06;transform:rotate(-2deg);display:inline-block;position:relative}
       /* Logo animation (2026-11-25): BD box only — B slides in from the left, D a bit later
          from the right, both land with a tiny 3px bounce overshoot, then a lime ripple ring
-         expands after they settle; the 3.4s cycle loops forever. Overflow stays visible so
+         expands after they settle; the 4.5s cycle loops forever. Overflow stays visible so
          the letters can slide in from outside the box. */
       .brand-logo .bd .lb,.brand-logo .bd .ld{display:inline-block}
-      .brand-logo .bd .lb{animation:anboBin 3.4s ease-in-out infinite}
+      .brand-logo .bd .lb{animation:anboBin 4.5s ease-in-out infinite}
       @keyframes anboBin{0%{transform:translateX(-18px);opacity:0}13%{transform:translateX(3px);opacity:1}18%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(-18px);opacity:0}}
-      .brand-logo .bd .ld{animation:anboDin 3.4s ease-in-out infinite}
+      .brand-logo .bd .ld{animation:anboDin 4.5s ease-in-out infinite}
       @keyframes anboDin{0%,10%{transform:translateX(18px);opacity:0}23%{transform:translateX(-3px);opacity:1}28%{transform:translateX(0)}68%{transform:translateX(0);opacity:1}84%,100%{transform:translateX(18px);opacity:0}}
-      .brand-logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:3px solid #7fb800;box-shadow:0 0 14px rgba(127,184,0,.55);animation:anboRipple 3.4s ease-out infinite;pointer-events:none}
+      .brand-logo .bd::after{content:"";position:absolute;inset:-2px;border-radius:10px;border:3px solid #7fb800;box-shadow:0 0 14px rgba(127,184,0,.55);animation:anboRipple 4.5s ease-out infinite;pointer-events:none}
       @keyframes anboRipple{0%,32%{transform:scale(1);opacity:0}44%{opacity:.9}78%,100%{transform:scale(1.7);opacity:0}}
       @media (prefers-reduced-motion:reduce){.brand-logo .bd .lb,.brand-logo .bd .ld,.brand-logo .bd::after{animation:none}}
       @media (prefers-color-scheme: dark){.brand-logo .an{color:#fff}}
