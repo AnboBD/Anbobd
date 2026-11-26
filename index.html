@@ -1953,6 +1953,7 @@ myDispute:"⚖️ Dispute",
 myDisputeFiled:"⚖️ Dispute জমা দেওয়া হয়েছে",
 myReviewDone:"⭐ রিভিউ দেওয়া হয়েছে",
 myReviewGive:"⭐ রিভিউ দিন",
+revReplyBy:"দোকানদারের উত্তর",
 myOrdersEmpty:"এখনো কোনো অর্ডার নেই — কেনাকাটা করে অর্ডার করলেই তা এখানে দেখা যাবে।",
 myOrdersLoading:"… লোড হচ্ছে",
 retOff:"↩️ রিটার্ন আবেদন এখন বন্ধ আছে (Admin Settings) — সাহায্যের জন্য হটলাইনে কল করুন: 09638-555555",
@@ -2274,6 +2275,7 @@ myDispute:"⚖️ Dispute",
 myDisputeFiled:"⚖️ Dispute submitted",
 myReviewDone:"⭐ Review given",
 myReviewGive:"⭐ Write a review",
+revReplyBy:"Seller's reply",
 myOrdersEmpty:"No orders yet — once you shop, your orders will appear here.",
 myOrdersLoading:"… Loading",
 retOff:"↩️ Return requests are currently closed (Admin Settings) — please call the hotline for help: 09638-555555",
@@ -3151,7 +3153,7 @@ function openModal(id){
       ? '<div class="rbreak"><div><span class="big">'+Number(r||0).toFixed(1)+'</span><div class="stars">'+stars(r)+'</div><span style="font-size:.78rem;color:var(--muted)">'+t("cardReviews", {n:ratedCount, s:(ratedCount===1?"":"s")})+'</span></div><div class="bars">'+bars+'</div></div>'
       : '<p style="color:var(--muted);margin:0 0 10px">'+t("modalRevNone")+'</p>') +
     (realReviews.length ? realReviews.map(function(rv){
-      return '<div class="review"><div class="rh"><span class="av">'+escHtml(String(rv.n||"C").charAt(0))+'</span><div><b style="font-size:.92rem">'+escHtml(rv.n||"Customer")+'</b> <span style="color:var(--muted);font-size:.78rem">• '+escHtml(rv.d||"")+(rv.w ? ' • '+escHtml(rv.w) : '')+'</span></div><span class="stars" style="margin-left:auto">'+stars(rv.rating||p.rating).split(" <span>")[0]+'</span></div><p>'+escHtml(rv.t||"")+'</p></div>';
+      return '<div class="review"><div class="rh"><span class="av">'+escHtml(String(rv.n||"C").charAt(0))+'</span><div><b style="font-size:.92rem">'+escHtml(rv.n||"Customer")+'</b> <span style="color:var(--muted);font-size:.78rem">• '+escHtml(rv.d||"")+(rv.w ? ' • '+escHtml(rv.w) : '')+'</span></div><span class="stars" style="margin-left:auto">'+stars(rv.rating||p.rating).split(" <span>")[0]+'</span></div><p>'+escHtml(rv.t||"")+'</p>' + (rv.reply ? '<div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:10px"><b style="color:var(--teal)">💬 '+escHtml(t("revReplyBy"))+':</b> '+escHtml(rv.reply)+(rv.replyAt ? ' <span style="color:var(--muted);font-size:.82rem">• '+escHtml(rv.replyAt)+'</span>' : '')+'</div>' : '') + '</div>'; /* P2-14: seller reply thakle review-er niche dekhabe */
     }).join("") : (p.reviewCount>0 ? "" : '<p style="color:var(--muted);margin:0">'+t("modalRevEmpty")+'</p>'));
   /* Recommended */
   var reco = PRODUCTS.filter(function(x){ return x.categoryId===p.categoryId && x.id!==p.id && x.status==="active"; })
@@ -3411,7 +3413,7 @@ function anboNotifItems(){
     items.push({ kind:"order", id:o.id, ts:ts, title:(ANBO_LANG==="en"?"Order "+o.id+" — ":"অর্ডার "+o.id+" — ")+flowLabel(o.status), body:"মোট "+fmt((o.amounts||{}).total||0)+" • "+(o.items||[]).map(function(it){ return it.name; }).join(", "), target:"orders" });
   });
   (window.__anboCustomerMessages || []).forEach(function(m){
-    items.push({ kind:"message", id:m.subject || m.created_at || "msg", ts:m.created_at || "", title:(ANBO_LANG==="en"?"Admin's message":"Admin-এর বার্তা"), body:String(m.message || "").slice(0, 140), target:"messages" });
+    items.push({ kind:"message", id:m.id || m.subject || m.created_at || "msg", ts:m.created_at || "", title:(ANBO_LANG==="en"?"Admin's message":"Admin-এর বার্তা"), body:String(m.message || "").slice(0, 140), target:"messages" });
   });
   items.sort(function(a, b){ return String(b.ts||"").localeCompare(String(a.ts||"")); });
   return items;
@@ -4745,7 +4747,8 @@ var ANBOBD_DB = {
             n: r.customer_name || r.name || r.reviewer || r.customer || "Customer",
             uid: r.user_id || r.customer_id || null, /* P2-8: reviewer id (reviews_one_per_customer_product index user_id) — name diye match korle same-name customer guliye jeto */
             d: r.created_at ? String(r.created_at).slice(0,10) : "",
-            w: "", t: String(txt), rating: Number(r.rating||0)||0 });
+            w: "", t: String(txt), rating: Number(r.rating||0)||0,
+            reply: r.seller_reply || "", replyAt: r.seller_replied_at ? String(r.seller_replied_at).slice(0,10) : "" }); /* P2-14: seller reply */
         });
       }
     }catch(e){ console.warn("Reviews load failed (showing No reviews yet):", e); } })()
@@ -5660,14 +5663,14 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
     if(sb){
       try{
-        var r = await sb.from("reviews").select("product_id,rating,comment,created_at,user_id").eq("user_id", u.id).order("created_at", { ascending:false }).limit(20);
+        var r = await sb.from("reviews").select("product_id,rating,comment,created_at,user_id,seller_reply,seller_replied_at").eq("user_id", u.id).order("created_at", { ascending:false }).limit(20); /* P2-14: seller reply-o pora hobe */
         if(!r.error && r.data) rows = r.data;
       }catch(e){}
     }
     if(!rows.length){
       Object.keys(ANBOBD_STORE.productReviews||{}).forEach(function(pid){
         (ANBOBD_STORE.productReviews[pid]||[]).forEach(function(rv){
-          if(rv.uid ? rv.uid === u.id : rv.n === u.name) rows.push({ product_id: pid, rating: rv.rating, comment: rv.t, created_at: rv.d }); /* P2-8: reviewer id diye match, id na thakle naam fallback */
+          if(rv.uid ? rv.uid === u.id : rv.n === u.name) rows.push({ product_id: pid, rating: rv.rating, comment: rv.t, created_at: rv.d, seller_reply: rv.reply || "", seller_replied_at: rv.replyAt || "" }); /* P2-8: reviewer id diye match, id na thakle naam fallback */
         });
       });
     }
@@ -5676,7 +5679,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       var p = P(rv.product_id);
       var n = Math.max(0, Math.min(5, Math.round(+rv.rating||0)));
       var stars = "★★★★★".slice(0, n) + "☆☆☆☆☆".slice(0, 5 - n);
-      return '<div class="ocard"><div style="display:flex;justify-content:space-between;gap:10px"><b>'+escHtml(p ? p.name : "পণ্য")+'</b><span style="color:var(--muted);font-size:.85rem">'+escHtml(rv.created_at ? String(rv.created_at).slice(0,10) : "")+'</span></div><div style="color:#e8a200;margin:4px 0">'+stars+' ('+(+rv.rating||0)+')</div><p style="margin:0;line-height:1.6">'+escHtml(rv.comment||"")+'</p></div>';
+      return '<div class="ocard"><div style="display:flex;justify-content:space-between;gap:10px"><b>'+escHtml(p ? p.name : "পণ্য")+'</b><span style="color:var(--muted);font-size:.85rem">'+escHtml(rv.created_at ? String(rv.created_at).slice(0,10) : "")+'</span></div><div style="color:#e8a200;margin:4px 0">'+stars+' ('+(+rv.rating||0)+')</div><p style="margin:0;line-height:1.6">'+escHtml(rv.comment||"")+'</p>' + (rv.seller_reply ? '<div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:10px"><b style="color:var(--teal)">💬 '+escHtml(t("revReplyBy"))+':</b> '+escHtml(rv.seller_reply)+(rv.seller_replied_at ? ' <span style="color:var(--muted);font-size:.82rem">• '+escHtml(String(rv.seller_replied_at).slice(0,10))+'</span>' : '')+'</div>' : '') + '</div>'; /* P2-14: seller reply thakle nijer review-er niche dekhabe */
     }).join("");
   }
   /* P3 (2026-11-23): Delete-account REQUEST — support_tickets-e Admin-er
@@ -5709,21 +5712,27 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       setTimeout(function(){ doLogout(); }, 1200);
     }catch(e){ toast("⚠️ অনুরোধ পাঠানো যায়নি — " + escHtml((e && e.message) || "database error") + "।"); }
   }
-  /* Decision 7 — customer reads Admin messages in Account → Messages.
-     support_tickets has no customer_id column, so Admin writes the phone in
-     the subject ("ADMIN-MSG | <phone> | <name>") and we read by that phone.
-     Read failure (RLS) just shows the empty state — never an error. */
+  /* P2-31 (2026-11-26) — customer reads Admin messages in Account →
+     Messages from the dedicated customer_messages table via the
+     get_customer_messages RPC (SECURITY DEFINER, phone normalised
+     server-side — same pattern as anbo_track_order). The old
+     "ADMIN-MSG | <phone> | <name>" subject hack on support_tickets is
+     retired. NOTE: the RPC is NOT a security boundary against someone
+     who already knows the phone — it only stops cross-phone leakage
+     via a table-wide read. Read failure just shows the empty state —
+     never an error. */
   async function loadCustomerMessages(u){
     var el = document.getElementById("auMessages"); if(!el || !u) return;
     var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
     if(!sb){ el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; return; }
     try{
       var ph = String(u.mobile || "").replace(/\D/g, "");
-      var r = await sb.from("support_tickets").select("subject,message,created_at").ilike("subject", "%" + ph + "%").order("created_at", { ascending: false }).limit(10);
+      if(!ph){ window.__anboCustomerMessages = []; el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; renderNotifs(); return; }
+      var r = await sb.rpc("get_customer_messages", { p_phone: ph });
       if(r.error || !r.data || !r.data.length){ window.__anboCustomerMessages = []; el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; renderNotifs(); return; }
-      window.__anboCustomerMessages = r.data; /* P1: notification bell-o ei message-gulo dekhay. */
+      window.__anboCustomerMessages = r.data.map(function(m){ return { id: m.id, message: m.body, body: m.body, sender: m.sender, created_at: m.created_at }; }); /* P1: notification bell-o ei message-gulo dekhay. */
       renderNotifs();
-      el.innerHTML = r.data.map(function(m){ return '<div class="ocard"><div style="font-size:.88rem;color:var(--muted)">' + escHtml(m.created_at ? String(m.created_at).slice(0, 10) : "") + ' · AnboBD Admin</div><p style="margin:6px 0 0;line-height:1.6">' + escHtml(m.message || "") + '</p></div>'; }).join("");
+      el.innerHTML = r.data.map(function(m){ var who = m.sender === "customer" ? "আপনি" : "AnboBD Admin"; return '<div class="ocard"><div style="font-size:.88rem;color:var(--muted)">' + escHtml(m.created_at ? String(m.created_at).slice(0, 10) : "") + ' · ' + escHtml(who) + '</div><p style="margin:6px 0 0;line-height:1.6">' + escHtml(m.body || "") + '</p></div>'; }).join("");
     }catch(e){ el.innerHTML = '<p style="color:var(--muted);margin:0">এখনো কোনো মেসেজ নেই।</p>'; }
   }
   /* P2 (2026-11-23): Dispute file kora order — My Orders-er Dispute button
@@ -5750,7 +5759,9 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
 
   /* P1-20 (2026-11-21): customer support ticket — support_tickets e lekhe.
      Table e customer_id column nei, tai subject e phone + naam + topic thake
-     (Admin 7 er ADMIN-MSG pattern). Insert policy na thakle asol error dekhay. */
+     ("SUPPORT | <phone> | <name> | <topic>" — sudhu ticket-er jonno; Admin →
+     customer message ekhon customer_messages table-e jay, P2-31).
+     Insert policy na thakle asol error dekhay. */
   async function submitSupportTicket(u){
     var msgEl = document.getElementById("auSupMsg2");
     var topicEl = document.getElementById("auSupTopic"), txtEl = document.getElementById("auSupMsg");
@@ -5822,7 +5833,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       if(!r.data || !r.data.length) throw new Error("ডাটাবেসে লেখা যায়নি");
       var key = String(__auReviewPid);
       ANBOBD_STORE.productReviews[key] = ANBOBD_STORE.productReviews[key] || [];
-      ANBOBD_STORE.productReviews[key].push({ n: (u && u.name) || "Customer", uid: (u && u.id) || null, d: new Date().toISOString().slice(0,10), w: "", t: txt, rating: rating }); /* P2-8: reviewer id sathe rakha — naam diye match korle same-name customer guliye jeto */
+      ANBOBD_STORE.productReviews[key].push({ n: (u && u.name) || "Customer", uid: (u && u.id) || null, d: new Date().toISOString().slice(0,10), w: "", t: txt, rating: rating, reply:"", replyAt:"" }); /* P2-8: reviewer id sathe rakha — naam diye match korle same-name customer guliye jeto */
       if(txtEl) txtEl.value = "";
       if(m){ m.style.display=""; m.textContent = "✅ রিভিউ জমা হয়েছে — product page e dekhabe।"; }
       renderAccount();
