@@ -4239,11 +4239,13 @@ async function sbAddStaffFromProfile(data, newPw){
        account banano hoy — thik seller-registration-er pattern
        (signUp + session dhore rakha, sheshe finally-te sign out, admin
        session-e haat dewa hoy na). Tarpor throwaway client profiles row
-       banay role NULL diye — restricted insert_own whitelist NULL /
-       customer / seller / seller_staff chhara ar kichu ney na, tai staff
-       role (manager ityadi) diye upsert korle 42501 hoto (eitai ager
-       bug). Role upgrade-ta Admin client kore (step 4), tai ekhane
-       kono staff role lekha hoy na. */
+       banay role 'customer' diye — profiles.role NOT NULL, tai role null
+       pathale 23502 hoy ("null value in column role violates not-null
+       constraint", live-verified 2026-11-26); 'customer' restricted
+       insert_own whitelist-e ache (NULL / customer / seller /
+       seller_staff), ar staff role (manager ityadi) diye upsert korle
+       42501 hoto (eitai ager bug). Role upgrade-ta Admin client kore
+       (step 4), tai ekhane kono staff role lekha hoy na. */
     if (!newPw || newPw.length < 8) throw new Error("Notun staff er jonno kompokkhe 8 character er password set koro — ei password diyei se login korbe");
     var tmp = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anonKey, { auth: { persistSession: false, storageKey: "anbobd-staff-signup" } });
     try{
@@ -4258,6 +4260,17 @@ async function sbAddStaffFromProfile(data, newPw){
           var si = await tmp.auth.signInWithPassword({ email: data.email, password: newPw });
           if (si.error || !si.data || !si.data.user) throw new Error("Ei email diye account agei ache, kintu deoa password diye sign in kora jay ni — thik password dao");
           uid = si.data.user.id;
+          /* Orphan recovery (2026-11-26): ager ekta failed attempt Auth
+             user rekhe geleo profiles row toiri hoy ni — row na thakle
+             ekhanei 'customer' role-e baniye nao, na hole nicher Admin
+             role UPDATE 0 row match korbe ar staff add fail korbe. Row
+             thakle kichu kora hoy na. */
+          var prOrphan = await tmp.from("profiles").select("id").eq("id", uid).maybeSingle();
+          if (prOrphan.error) throw prOrphan.error;
+          if (!prOrphan.data){
+            var prIns = await tmp.from("profiles").insert({ id: uid, email: data.email, full_name: data.name, phone: data.phone, role: "customer" });
+            if (prIns.error) throw prIns.error;
+          }
         } else throw su.error;
       } else {
         uid = su.data && su.data.user ? su.data.user.id : null;
@@ -4269,7 +4282,10 @@ async function sbAddStaffFromProfile(data, newPw){
         if (su.data && su.data.session){ try{ await tmp.auth.setSession({ access_token: su.data.session.access_token, refresh_token: su.data.session.refresh_token }); }catch(e2){} }
         else { var si2 = await tmp.auth.signInWithPassword({ email: data.email, password: newPw }); if (si2.error || !si2.data || !si2.data.user) throw new Error("Auth account toiri hoyeche kintu session pelam na — abar try koro"); }
       }
-      var pr2 = await tmp.from("profiles").upsert({ id: uid, email: data.email, full_name: data.name, phone: data.phone, role: null }, { onConflict: "id" }).select("id");
+      /* profiles.role NOT NULL — role null pathale 23502 hoy (live
+         2026-11-26); 'customer' whitelist-e ache, Admin pore staff
+         role-e upgrade kore (step 4). */
+      var pr2 = await tmp.from("profiles").upsert({ id: uid, email: data.email, full_name: data.name, phone: data.phone, role: "customer" }, { onConflict: "id" }).select("id");
       if (pr2.error) throw pr2.error;
       if (!pr2.data || !pr2.data.length) throw new Error("Profile row toiri hoy ni — database theke row fire asheni");
       isNew = true;
