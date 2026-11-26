@@ -1138,7 +1138,7 @@
   ];
   /* P1 (2026-11-23): Admin-controlled settings read via the public anon
      select on the settings table (same pattern as the storefront). */
-  var sellerSettings = { payoutDay: "Thursday", payoutHoldDays: 7 };
+  var sellerSettings = { payoutDay: "Thursday", payoutHoldDays: 7, defaultCommission: 10 };
   /* P1-21 (2026-11-26): payout hold ek tai number — settings er
      payout_hold_days; settings read na hole 7 din default (return window
      er soman — hold sesh howar age return kora jay, tai hold return
@@ -1155,6 +1155,7 @@
         var v = sellerSettingsVal(row.value);
         if (row.key === "payout_day" && typeof v === "string" && v) sellerSettings.payoutDay = v;
         if (row.key === "payout_hold_days" && !isNaN(+v)) sellerSettings.payoutHoldDays = +v;
+        if (row.key === "default_commission_percent" && !isNaN(+v)) sellerSettings.defaultCommission = +v; /* P2-36: Admin er global default commission — adminCatRate er fallback ekhan theke ase, hardcoded 10 noy */
         var m = /^mega_campaign_([123])_(name|start|end|min_discount)$/.exec(row.key);
         if (m) {
           var cp = CAMPAIGN_TYPES[+m[1] - 1]; if (!cp) return;
@@ -1293,8 +1294,15 @@
      processing kata bad deya holo, jate Admin ar Seller er number mile.
      Rate hisabe Admin er category rate (adminCatRate) lage — Seller er
      nijer COMMISSION map (age Grocery 5 chilo) na, karon Admin ledger Grocery te 8% dhore. */
-  function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id || it.productId); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*adminCatRate(p.cat)/100; } }); return Math.round(e); }
-  function orderCommPctLbl(o){ /* Commission label fix (2026-11-26): show the rate of the AMOUNT displayed, not the stored shop rate — derive it from the actual commission (subtotal − earning) over the subtotal, so the label can never disagree with the amount. Falls back to the stored rate / "category rate" when there is no subtotal. */ var t=orderTotal(o); if(t>0) return Math.round((t-orderEarning(o))/t*100)+"%"; return (typeof o.commissionRate==="number"?o.commissionRate+"%":"category rate"); }
+  /* P2-23 (2026-11-26): earning SUDHU stored snapshot theke — ajker
+     product price diye kokhono recompute kora hobe na (price edit
+     korle history bodle jeto). _earning thakle setai; na thakle stored
+     subtotal − stored commission; na thakle stored subtotal − stored
+     rate; kichui na thakle null — display te "—", jog/bioger somoy 0. */
+  function orderEarning(o){ if (o && typeof o._earning === "number") return o._earning; if (o && typeof o._total === "number" && typeof o._commission === "number") return Math.round(o._total - o._commission); if (o && typeof o._total === "number" && typeof o.commissionRate === "number") return Math.round(o._total - o._total*o.commissionRate/100); return null; }
+  function fmtEarn(o){ var e = orderEarning(o); return e == null ? "—" : fmt(e); }
+  function fmtEarnComm(o){ var e = orderEarning(o); if (e == null) return "—"; var t = (o && typeof o._total === "number") ? o._total : orderTotal(o); return fmt(t - e); }
+  function orderCommPctLbl(o){ /* Commission label fix (2026-11-26): show the rate of the AMOUNT displayed, not the stored shop rate — derive it from the actual commission (subtotal − earning) over the subtotal, so the label can never disagree with the amount. Falls back to the stored rate / "category rate" when there is no subtotal. P2-23: earning na thakle (null) 100% dekhabe na — stored rate e fero. */ var t=orderTotal(o); if(t>0) { var e=orderEarning(o); if(e==null) return (typeof o.commissionRate==="number"?o.commissionRate+"%":"category rate"); return Math.round((t-e)/t*100)+"%"; } return (typeof o.commissionRate==="number"?o.commissionRate+"%":"category rate"); }
   /* Wallet settlement — single source of truth, derived from the
      seller's OWN orders/payouts/returns (Admin derives it the same
      way). Delivered earning sits in pendingClearance for the payout hold
@@ -1307,7 +1315,7 @@
     var bal = 0, pend = 0, now = Date.now();
     (s.orders || []).forEach(function(o){
       if (o.status !== "Delivered") { o.settled = false; return; }
-      var earn = orderEarning(o);
+      var earn = orderEarning(o) || 0; /* P2-23: earning na thakle (null) wallet e 0 dhoro */
       var d = o.deliveredAt ? Date.parse(o.deliveredAt) : NaN;
       if (!isNaN(d) && now - d >= holdMs()) { bal += earn; o.settled = true; }
       else { pend += earn; o.settled = false; }
@@ -1449,11 +1457,16 @@
     if (low === "pending") return "Awaiting Admin";
     if (low === "confirmed") return "Admin Confirmed";
     if (low === "cancelled") return "Cancelled";
-    return "Awaiting Admin";
+    /* P2-35: chena status na hole raw value + "(?)" — age shob ochena
+       status "Awaiting Admin" hoye jeto, corrupt row o normal pending
+       mone hoto ar advanceOrder atke jeto. Khali status ager motoi
+       "Awaiting Admin" (status nei mane sotti pending). */
+    if (!s) return "Awaiting Admin";
+    return s + " (?)";
   }
   /* Admin er category commission rate — Admin er ledger ei rate ei hisab
      kore (grocery 8, electronics 10, fashion 12, home 10, beauty 10,
-     shoesbags 11, default 10). Display gulo (Products table, dashboard
+     shoesbags 11, default = global defaultCommission). Display gulo (Products table, dashboard
      summary) ekhon ei function tai bebohar kore — COMMISSION map sudhu
      category list hisabe thake, ar tar value gulo ei rate er sathe milano. */
   function adminCatRate(cat){
@@ -1464,7 +1477,11 @@
     if (k.indexOf("home") > -1) return 10;
     if (k.indexOf("beaut") > -1) return 10;
     if (k.indexOf("shoe") > -1 || k.indexOf("bag") > -1) return 11;
-    return 10;
+    /* P2-36: ochena category te kono category rate noy — Admin er global
+       default commission (settings.default_commission_percent, offline
+       fallback 10). Age ekhane hardcoded 10 chilo; ekhon Admin global
+       default bodlale Seller side o sathe sathe mile jabe. */
+    return (typeof sellerSettings !== "undefined" && sellerSettings && typeof sellerSettings.defaultCommission === "number") ? sellerSettings.defaultCommission : 10;
   }
   /* sub_orders row + tar master order (orders table) mile ekta order view.
      Customer, items, payment ar #ANBO number master order ei thake —
@@ -1507,6 +1524,7 @@
       effRate = adminCatRate(cat);
     }
     var storedEarn = Number(r.seller_earning);
+    var storedComm = (r.commission_amount != null && !isNaN(Number(r.commission_amount))) ? Number(r.commission_amount) : null; /* P2-23: stored commission snapshot — orderEarning subtotal − commission hisab korte pare, ajker price na. */
     var earning = storedEarn > 0 ? storedEarn : Math.max(0, subtotal - Math.round(subtotal * effRate / 100));
     var payMethod = m.payment_method || r.payment_method || "";
     var payStatus = String(m.payment_status || r.payment_status || "").toLowerCase();
@@ -1516,7 +1534,7 @@
     else payVis = r.pay_visibility || "";
     var masterCancelled = String(m.status || "").toLowerCase().indexOf("cancel") > -1;
     var status = masterCancelled ? "Cancelled" : subOrderStatusLabel(r.status);
-    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, localId: localId, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: m.customer_name || r.customer_name || r.customer || "", phone: m.customer_phone || r.customer_phone || r.phone || "", district: m.district || r.district || "", shipAddress: m.address || m.ship_address || r.ship_address || r.address || "", items: items, status: status, masterStatus: m.status || "", commissionRate: effRate, trackingId: r.tracking_id || m.tracking_id || "", courier: r.courier || "", codCollect: r.cod_collect || null, payVisibility: payVis, payment: payMethod, paymentStatus: m.payment_status || "", _total: subtotal, _earning: earning, deliveryFee: deliveryFee, discount: discountAmt, deliveredAt: r.delivered_at || null, settled: false, createdAt: r.created_at || m.created_at || null, txnId: m.transaction_id || r.transaction_id || "" };
+    return { id: String(r.master_order_id || r.order_id || r.id), subId: String(r.id), shop_id: r.shop_id, localId: localId, date: r.created_at ? fmtDate(r.created_at) : (r.date || ""), time: r.time || "", customer: m.customer_name || r.customer_name || r.customer || "", phone: m.customer_phone || r.customer_phone || r.phone || "", district: m.district || r.district || "", shipAddress: m.address || m.ship_address || r.ship_address || r.address || "", items: items, status: status, masterStatus: m.status || "", commissionRate: effRate, trackingId: r.tracking_id || m.tracking_id || "", courier: r.courier || "", codCollect: r.cod_collect || null, payVisibility: payVis, payment: payMethod, paymentStatus: m.payment_status || "", _total: subtotal, _earning: earning, _commission: storedComm, deliveryFee: deliveryFee, discount: discountAmt, deliveredAt: r.delivered_at || null, settled: false, createdAt: r.created_at || m.created_at || null, txnId: m.transaction_id || r.transaction_id || "" };
   }
   function mapMegaRow(r){
     return { id: r.id, shop_id: r.shop_id, sellerId: r.shop_id, pid: r.product_id || r.pid, camp: r.campaign || r.camp || "Mega Sale", campPrice: Number(r.campaign_price || r.camp_price || 0), alloc: Number(r.allocated_stock || r.alloc || 0), status: (String(r.status || "pending").toLowerCase() === "approved" ? "Approved" : (String(r.status || "").toLowerCase() === "rejected" ? "Rejected" : (String(r.status || "").toLowerCase() === "withdrawn" ? "Withdrawn" : "Pending Approval"))), adminNote: r.admin_note || "Admin er review er opekkhay ache.", prevPrice: r.prev_price ?? null, prevOldPrice: r.prev_old_price ?? null, prevSaleStart: r.prev_sale_start || null, prevSaleEnd: r.prev_sale_end || null };
@@ -2435,7 +2453,7 @@
     }).join("") + '<div class="comm-row"><span style="font-weight:800">Baki ongsho</span><b style="color:var(--brand)">apnar earning</b></div>';
 
     $("recentOrdersBody").innerHTML = orders.length ? orders.slice(0,5).map(function(o){
-      return '<tr style="cursor:pointer" data-order="' + o.id + '"><td><b>' + esc(o.localId || o.subId || o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td>' + esc(o.customer) + '</td><td>' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b></td><td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td><td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span></td></tr>';
+      return '<tr style="cursor:pointer" data-order="' + o.id + '"><td><b>' + esc(o.localId || o.subId || o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td>' + esc(o.customer) + '</td><td>' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b></td><td style="color:var(--brand);font-weight:700">' + fmtEarn(o) + '</td><td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span></td></tr>';
     }).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.4rem">Ekhono kono order aseni — Admin confirm kora sub-order ekhane dekhabe.</td></tr>';
     /* P1-18: per-order earning column sudhu finance permission thakle. */
     var rt = $("recentTbl"); if (rt) rt.classList.toggle("hide-earn", !staffCanFinance());
@@ -2468,7 +2486,7 @@
     var r = analyticsOrders();
     var orders = r.orders;
     var totalSales = orders.reduce(function(sum, o){ return sum + orderTotal(o); }, 0);
-    var totalEarn = orders.reduce(function(sum, o){ return sum + orderEarning(o); }, 0);
+    var totalEarn = orders.reduce(function(sum, o){ return sum + (orderEarning(o) || 0); }, 0);
     var avg = orders.length ? Math.round(totalSales / orders.length) : 0;
     var kpis = [
       { lbl: "Sales (ei range)", val: fmt(totalSales) },
@@ -2795,6 +2813,7 @@
           var idx = function(h){ return header.indexOf(h); };
           var cats = Object.keys(COMMISSION);
           var okRows = [], failRows = [];
+          var csvSkuTag = String(Date.now()).slice(-6) + Math.random().toString(36).slice(2, 6).toUpperCase(); /* P2-18: one random tag per import — auto-SKUs stay unique even if two imports land in the same millisecond. */
           for (var li = 1; li < lines.length; li++) {
             var cols = parseCsvLine(lines[li]);
             var get = function(h){ var i = idx(h); return i > -1 ? (cols[i] || "").trim() : ""; };
@@ -2812,7 +2831,7 @@
             if (oldP != null && (isNaN(oldP) || oldP < 0)) { failRows.push("Row " + rowNo + " (" + nm + "): old_price sothik na"); continue; }
             var ps = get("pack_size") === "" ? null : parseFloat(get("pack_size"));
             if (ps != null && (isNaN(ps) || ps <= 0)) { failRows.push("Row " + rowNo + " (" + nm + "): pack_size sothik na"); continue; }
-            okRows.push({ name: nm, sku: get("sku") || ("SKU-" + String(Date.now()).slice(-6) + "-" + li), cat: catMatch, price: pr, oldPrice: oldP, stock: stk, desc: "", packSize: ps, unit: get("unit"), packaging: get("packaging") });
+            okRows.push({ name: nm, sku: get("sku") || ("SKU-" + csvSkuTag + "-" + li), cat: catMatch, price: pr, oldPrice: oldP, stock: stk, desc: "", packSize: ps, unit: get("unit"), packaging: get("packaging") });
           }
           if (!okRows.length) { $("csvErr").textContent = "Kono valid row pelam na — header/column check korun."; return; }
           var saved = 0, saveFails = [];
@@ -2828,7 +2847,7 @@
                 saved++;
               } catch(e){ saveFails.push(r.name + ": " + (e && e.message ? e.message : "database error")); continue; }
             } else {
-              s.products.unshift({ id: Date.now() + k, sellerId: s.shopId, shop_id: s.shopId, approval: "Pending Approval", name: r.name, sku: r.sku, cat: r.cat, price: r.price, oldPrice: r.oldPrice, stock: r.stock, desc: "", sold: 0, status: "Active", packSize: r.packSize, unit: r.unit, packaging: r.packaging, images: [], imageUrl: "", variants: [], saleStart: "", saleEnd: "" });
+              s.products.unshift({ id: Date.now() + k, sellerId: s.shopId, shop_id: s.shopId, approval: "Pending Approval", name: r.name, sku: r.sku, cat: r.cat, price: r.price, oldPrice: r.oldPrice, stock: r.stock, desc: "", sold: 0, status: "pending", /* P2-19: offline import mirrors the online DB status */ packSize: r.packSize, unit: r.unit, packaging: r.packaging, images: [], imageUrl: "", variants: [], saleStart: "", saleEnd: "" });
               saved++;
             }
           }
@@ -3007,8 +3026,8 @@
             toast("Product update hoyeche");
             logStaffActivity("Product edit", p.name + " — ৳" + p.price + ", stock " + p.stock);
           } else {
-            var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6));
-            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"Active", packSize: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "", variants: cleanVars, saleStart: saleStartVal ? new Date(saleStartVal).toISOString() : "", saleEnd: saleEndVal ? new Date(saleEndVal).toISOString() : "" };
+            var sku = $("mSku").value.trim() || ("SKU-" + String(Date.now()).slice(-6) + "-" + Math.random().toString(36).slice(2, 6).toUpperCase()); /* P2-18: random suffix — two manual creates in the same millisecond must not share a SKU. */
+            var newProd = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId || s.id, approval:"Pending Approval", name:name, sku:sku, cat:$("mCat").value, price:price, oldPrice:+$("mOld").value || null, stock:stock, desc:desc, sold:0, status:"pending", /* P2-19: offline create mirrors the online DB status */ packSize: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, images: finalImages, imageUrl: finalImages.length ? finalImages[0] : "", variants: cleanVars, saleStart: saleStartVal ? new Date(saleStartVal).toISOString() : "", saleEnd: saleEndVal ? new Date(saleEndVal).toISOString() : "" };
             if (supabaseConnected && supabase) {
               try { var insPayload = { shop_id: s.shopId, name: name, sku: sku, category: $("mCat").value, price: price, old_price: +$("mOld").value || null, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: packSizeVal === "" ? null : +packSizeVal, unit: packUnitVal, packaging: packVal, status: "pending" }; if (DB_HAS.variants !== false) insPayload.variants = cleanVars; if (DB_HAS.saleStart !== false) { insPayload.sale_start = saleStartVal ? new Date(saleStartVal).toISOString() : null; insPayload.sale_end = saleEndVal ? new Date(saleEndVal).toISOString() : null; } var ins = await productSaveWithFallback(insPayload, false, null, s.shopId); if (ins.error) { $("mErr").textContent = ins.error.message; return; } if (!ins.data) { $("mErr").textContent = "Product save hoy ni — database e kono row toiri hoy ni."; return; } newProd = mapProductRow(ins.data); if (ins.degraded) toast("Sale / variations column ekhono database e nei — baki sob save hoyeche."); } catch(e){ $("mErr").textContent = "Product save hoy ni — abar chesta korun."; return; }
             }
@@ -3044,7 +3063,7 @@
       var src = o.status==="Awaiting Admin" ? '<div class="psku">Admin confirmation er opekkhay</div>' : (o.adminBy ? '<div class="psku">✓ ' + esc(o.adminBy) + '</div>' : '');
       return '<tr><td><b>' + esc(o.localId || o.subId || o.id) + '</b>' + (o.localId ? '<div class="psku">Master order</div>' : '') + '</td><td>' + esc(o.date) + '<div class="psku">' + esc(o.time) + '</div></td><td><b>' + esc(o.customer) + '</b><div class="psku">' + esc(o.phone) + (o.district ? ' · ' + esc(o.district) : '') + '</div>' + (o.shipAddress ? '<div class="psku">' + esc(o.shipAddress) + '</div>' : '') + '</td>'
         + '<td style="max-width:240px">' + esc(orderItemsText(o)) + '</td><td><b>' + fmt(orderTotal(o)) + '</b><div class="psku">' + esc(o.payVisibility || "—") + (o.codCollect ? '<br>COD collect: <b>' + fmt(o.codCollect) + '</b>' : '') + (o.courier ? '<br>Courier: <b>' + esc(o.courier) + '</b>' : '') + (o.trackingId ? '<br>Tracking: <b>' + esc(o.trackingId) + '</b>' : '') + '</div></td>'
-        + '<td style="color:var(--brand);font-weight:700">' + fmt(orderEarning(o)) + '</td>'
+        + '<td style="color:var(--brand);font-weight:700">' + fmtEarn(o) + '</td>'
         + '<td><span class="status ' + statusClass(o.status) + '">' + o.status + '</span>' + src + '</td>'
         + '<td><div class="row-actions"><button class="mini-btn" data-view-order="' + o.id + '" type="button">View</button><button class="mini-btn" data-invoice="' + o.id + '" type="button">Invoice</button>' + (o.status === "Cancelled" ? '' : '<button class="mini-btn" data-label="' + o.id + '" type="button">Print Label</button>')
         + (next ? '<button class="mini-btn" data-advance="' + o.id + '" type="button">' + NEXT_LABEL[o.status] + '</button>' : '')
@@ -3099,8 +3118,8 @@
       + (Number(o.discount || 0) > 0 ? '<div class="kv"><span>Discount</span><b style="color:var(--red)">−' + fmt(o.discount) + '</b></div>' : '')
       + (Number(o.deliveryFee || 0) > 0 ? '<div class="kv"><span>Delivery fee</span><b>' + fmt(o.deliveryFee) + '</b></div>' : '')
       + '<div class="kv"><span>Order total</span><b>' + fmt(Math.max(0, orderTotal(o) - Number(o.discount || 0) + Number(o.deliveryFee || 0))) + '</b></div>'
-      + '<div class="kv"><span>AnboBD commission (' + orderCommPctLbl(o) + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
-      + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
+      + '<div class="kv"><span>AnboBD commission (' + orderCommPctLbl(o) + ')</span><b style="color:var(--red)">−' + fmtEarnComm(o) + '</b></div>'
+      + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmtEarn(o) + '</b></div>'
       + (o.codCollect ? '<div class="kv"><span>COD collect</span><b>' + fmt(o.codCollect) + '</b></div>' : '')
       + '</div>'
       + '<div style="display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem"><button class="btn" id="invPrint" type="button">Print / Save as PDF</button><button class="btn ghost" id="invClose" type="button">Close</button></div>',
@@ -3247,7 +3266,7 @@
     var dispId = o.localId || o.id;
     if (o.status === "Packed") toast(dispId + " packed — ekhon tracking ID diye ship korun");
     else if (o.status === "Shipped") toast(dispId + " shipped — parcel delivery partner er kache hand over hoyeche");
-    else if (o.status === "Delivered") { toast(dispId + " delivered — earning " + fmt(orderEarning(o)) + " " + holdDays() + " diner return window e ache, tarpor wallet e settle hobe"); }
+    else if (o.status === "Delivered") { toast(dispId + " delivered — earning " + fmtEarn(o) + " " + holdDays() + " diner return window e ache, tarpor wallet e settle hobe"); }
     else toast(dispId + " ekhon " + o.status);
     logStaffActivity("Order " + o.status, o.localId || o.id);
     await sbPropagateMasterStatus(o, o.status);
@@ -3288,8 +3307,8 @@
       + (Number(o.discount || 0) > 0 ? '<div class="kv"><span>Discount</span><b style="color:var(--red)">−' + fmt(o.discount) + '</b></div>' : '')
       + (Number(o.deliveryFee || 0) > 0 ? '<div class="kv"><span>Delivery fee</span><b>' + fmt(o.deliveryFee) + '</b></div>' : '')
       + '<div class="kv"><span>Order total</span><b>' + fmt(Math.max(0, orderTotal(o) - Number(o.discount || 0) + Number(o.deliveryFee || 0))) + '</b></div>'
-      + '<div class="kv"><span>Commission (' + orderCommPctLbl(o) + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
-      + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
+      + '<div class="kv"><span>Commission (' + orderCommPctLbl(o) + ')</span><b style="color:var(--red)">−' + fmtEarnComm(o) + '</b></div>'
+      + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmtEarn(o) + '</b></div>'
       + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Tracking — Admin → Seller → Customer</h3><ul class="timeline">' + tl + '</ul>' + (o.status==="Cancelled" ? '' : '<button class="btn ghost" id="drawerLabel" type="button" style="width:100%;margin-bottom:.6rem">Print Shipping Label</button>')
       + '<button class="btn ghost" id="drawerInvoice" type="button" style="width:100%;margin-bottom:.6rem">Download / Print Invoice</button>'
       + (o.status==="Awaiting Admin" ? '<div class="locked-note"><b>Waiting for Admin confirmation.</b> Admin panel theke confirm hole order ta “Ready to Ship” hoye asbe — tokhon e ship korte parben. Seller hisebe apni order confirm ba cancel korte parben na.</div>' : '')
@@ -3306,7 +3325,7 @@
   function closeDrawer(){ $("drawerRoot").innerHTML = ""; }
   $("exportOrdersBtn").addEventListener("click", function(){
     var rows = [["Order ID","Date","Customer","District","Items","Total (BDT)","Your Earning (BDT)","Payment","Status"]];
-    ownOrders().forEach(function(o){ rows.push([o.subId || o.id, o.date, o.customer, o.district, orderItemsText(o), orderTotal(o), orderEarning(o), o.payment, o.status]); });
+    ownOrders().forEach(function(o){ rows.push([o.subId || o.id, o.date, o.customer, o.district, orderItemsText(o), orderTotal(o), (orderEarning(o) == null ? "" : orderEarning(o)), o.payment, o.status]); });
     downloadCSV("anbobd-my-orders.csv", rows);
     toast(ownOrders().length ? "Orders CSV download hocche" : "Export korar moto kono order ekhono nei");
   });
@@ -3422,17 +3441,22 @@
           if (ownCoupons().some(function(x){ return x.code===code; })) { $("cErr").textContent = "Ei code diye agei coupon ache — onno code din."; return; }
           if (!(val>0)) { $("cErr").textContent = "Discount value din."; return; }
           if (type==="Percent" && val>70) { $("cErr").textContent = "Percent discount sorbochcho 70% hote pare."; return; }
+          /* P2-13: Flat chhar minimum order er subtotal er beshi hote pare na — na hole ৳5000 chhar ৳500 order e lege jeto. Coupon sudhu min-er soman ba boro order e lage, tai min-i sobcheye chhoto subtotal. */
+          if (type==="Flat" && min>0 && val>min) { $("cErr").textContent = "Flat discount minimum order (" + fmt(min) + ") er cheye beshi hote pare na — chhar order er subtotal er beshi hoye jabe."; return; }
           if (!(limit>0)) { $("cErr").textContent = "Usage limit din."; return; }
           var perCust = $("cPerCust").value.trim();
           if (perCust !== "" && !(+perCust > 0)) { $("cErr").textContent = "Per-customer limit sothik songkhay din (1 ba tar beshi)."; return; }
+          /* P2-13: per-customer limit mot usage limit er beshi hote pare na. */
+          if (perCust !== "" && +perCust > limit) { $("cErr").textContent = "Per-customer limit mot usage limit (" + limit + ") er cheye beshi hote pare na."; return; }
           var exp = $("cExp").value.trim();
           if (!exp) { $("cErr").textContent = "Expiry date din."; return; }
           var expDate = Date.parse(exp);
           if (isNaN(expDate)) { $("cErr").textContent = "Expiry date din — date picker theke ekta din beche nin."; return; }
           if (expDate <= Date.now()) { $("cErr").textContent = "Expiry date obossoi agami din hote hobe — meyad sesh coupon live kora jabe na."; return; }
+          var expEOD = new Date(exp + "T23:59:59+06:00").toISOString(); /* P2-11: coupon stays valid till end of the expiry day (Dhaka time) — midnight UTC would end it at 06:00. */
           var newCoupon = { id: Date.now(), sellerId: s.shopId || s.id, shop_id: s.shopId, cap: +$("cCap").value || 0, code: code, type: type, value: val, min: min, expiry: exp, limit: limit, used: 0, scope: $("cScope").value, status: "Pending Approval", perCustomerLimit: perCust === "" ? null : +perCust };
           if (supabaseConnected && supabase) {
-            try { var insCPayload = { shop_id: s.shopId, code: code, discount_type: String(type).toLowerCase(), discount_value: val, min_order: min, max_cap: +$("cCap").value || 0, usage_limit: limit, expires_at: new Date(expDate).toISOString(), status: "pending", scope: $("cScope").value }; if (DB_HAS.couponPerCustomer !== false && perCust !== "") insCPayload.per_customer_limit = +perCust; var insC = await supabase.from('coupons').insert(insCPayload).select().single(); if (insC.error && insC.error.code === "42703" && insCPayload.per_customer_limit != null) { DB_HAS.couponPerCustomer = false; delete insCPayload.per_customer_limit; insC = await supabase.from('coupons').insert(insCPayload).select().single(); } if (insC.error) { $("cErr").textContent = insC.error.message; return; } if (insC.data) newCoupon = mapCouponRow(insC.data); } catch(e){ $("cErr").textContent = "Coupon save hoy ni — abar chesta korun."; return; }
+            try { var insCPayload = { shop_id: s.shopId, code: code, discount_type: String(type).toLowerCase(), discount_value: val, min_order: min, max_cap: +$("cCap").value || 0, usage_limit: limit, expires_at: expEOD, status: "pending", scope: $("cScope").value }; if (DB_HAS.couponPerCustomer !== false && perCust !== "") insCPayload.per_customer_limit = +perCust; var insC = await supabase.from('coupons').insert(insCPayload).select().single(); if (insC.error && insC.error.code === "42703" && insCPayload.per_customer_limit != null) { DB_HAS.couponPerCustomer = false; delete insCPayload.per_customer_limit; insC = await supabase.from('coupons').insert(insCPayload).select().single(); } if (insC.error) { $("cErr").textContent = insC.error.message; return; } if (insC.data) newCoupon = mapCouponRow(insC.data); } catch(e){ $("cErr").textContent = "Coupon save hoy ni — abar chesta korun."; return; }
           }
           s.coupons.unshift(newCoupon);
           closeModal(); renderAll(); showView("coupons");
@@ -3467,20 +3491,25 @@
           var type = $("cType").value, val = +$("cVal").value, min = +$("cMin").value || 0, limit = +$("cLimit").value;
           if (!(val>0)) { $("cErr").textContent = "Discount value din."; return; }
           if (type==="Percent" && val>70) { $("cErr").textContent = "Percent discount sorbochcho 70% hote pare."; return; }
+          /* P2-13: Flat chhar minimum order er subtotal er beshi hote pare na — na hole ৳5000 chhar ৳500 order e lege jeto. Coupon sudhu min-er soman ba boro order e lage, tai min-i sobcheye chhoto subtotal. */
+          if (type==="Flat" && min>0 && val>min) { $("cErr").textContent = "Flat discount minimum order (" + fmt(min) + ") er cheye beshi hote pare na — chhar order er subtotal er beshi hoye jabe."; return; }
           if (!(limit>0)) { $("cErr").textContent = "Usage limit din."; return; }
           var perCust = $("cPerCust").value.trim();
           if (perCust !== "" && !(+perCust > 0)) { $("cErr").textContent = "Per-customer limit sothik songkhay din (1 ba tar beshi)."; return; }
+          /* P2-13: per-customer limit mot usage limit er beshi hote pare na. */
+          if (perCust !== "" && +perCust > limit) { $("cErr").textContent = "Per-customer limit mot usage limit (" + limit + ") er cheye beshi hote pare na."; return; }
           var exp = $("cExp").value.trim();
           if (!exp) { $("cErr").textContent = "Expiry date din."; return; }
           var expDate = Date.parse(exp);
           if (isNaN(expDate)) { $("cErr").textContent = "Expiry date din — date picker theke ekta din beche nin."; return; }
           if (expDate <= Date.now()) { $("cErr").textContent = "Expiry date obossoi agami din hote hobe — meyad sesh coupon live kora jabe na."; return; }
+          var expEOD = new Date(exp + "T23:59:59+06:00").toISOString(); /* P2-11: coupon stays valid till end of the expiry day (Dhaka time). */
           var prev = { type: c.type, value: c.value, min: c.min, limit: c.limit, cap: c.cap, scope: c.scope, expiry: c.expiry, perCustomerLimit: c.perCustomerLimit };
           var wasLive = (c.status === "Live"); /* P1-17: Live coupon er terms bodlale abar Admin re-approval lagbe. */
           c.type = type; c.value = val; c.min = min; c.limit = limit; c.cap = +$("cCap").value || 0; c.scope = $("cScope").value; c.expiry = exp; c.perCustomerLimit = perCust === "" ? null : +perCust;
           if (supabaseConnected && supabase) {
             try {
-              var upPayload = { discount_type: String(type).toLowerCase(), discount_value: val, min_order: min, max_cap: c.cap, usage_limit: limit, expires_at: new Date(expDate).toISOString(), scope: c.scope };
+              var upPayload = { discount_type: String(type).toLowerCase(), discount_value: val, min_order: min, max_cap: c.cap, usage_limit: limit, expires_at: expEOD, scope: c.scope };
               if (wasLive) upPayload.status = "pending"; /* P1-17: Live coupon edit korle status abar pending — Admin re-approval chara notun terms live hobe na. Trigger live→pending ke badha dey na (sudhu pending/rejected→live block kore). */
               if (DB_HAS.couponPerCustomer !== false) upPayload.per_customer_limit = perCust === "" ? null : +perCust;
               var upC = await supabase.from('coupons').update(upPayload).eq('id', c.id).eq('shop_id', s.shopId).select().single();
@@ -3621,7 +3650,7 @@
         function calc(){
           var cp = campTypeByName($("cpCamp").value), p = prodById($("cpProd").value), price = +$("cpPrice").value;
           $("cpHint").textContent = cp ? ("Minimum discount " + cp.minDisc + "% · Admin approval lagbe") : "";
-          if (p && price>0 && price<p.price) { var d = Math.round((1 - price/p.price) * 100); $("cpCalc").innerHTML = "Discount hobe: <span style='color:var(--red)'>" + d + "% OFF</span> · Normal " + fmt(p.price) + " → " + fmt(price) + (cp && d<cp.minDisc ? " · <span style='color:var(--red)'>Ei campaign e kompokkhe " + cp.minDisc + "% lagbe</span>" : " · <span style='color:var(--brand)'>Minimum puron hoyeche</span>"); }
+          if (p && price>0 && price<p.price) { var dRaw = (1 - price/p.price) * 100; var d = Math.round(dRaw); $("cpCalc").innerHTML = "Discount hobe: <span style='color:var(--red)'>" + d + "% OFF</span> · Normal " + fmt(p.price) + " → " + fmt(price) + (cp && dRaw<cp.minDisc ? " · <span style='color:var(--red)'>Ei campaign e kompokkhe " + cp.minDisc + "% lagbe</span>" : " · <span style='color:var(--brand)'>Minimum puron hoyeche</span>"); }
           else $("cpCalc").textContent = p ? "Normal price: " + fmt(p.price) + " — er cheye kom campaign price din" : "";
         }
         calc();
@@ -3631,8 +3660,8 @@
         $("cpSave").addEventListener("click", async function(){
           var cp = campTypeByName($("cpCamp").value), p = prodById($("cpProd").value), price = +$("cpPrice").value, alloc = +$("cpAlloc").value;
           if (!p || !(price>0) || price>=p.price) { $("cpErr").textContent = "Campaign price normal price er cheye kom hote hobe."; return; }
-          var d = Math.round((1 - price/p.price) * 100);
-          if (cp && d < cp.minDisc) { $("cpErr").textContent = cp.name + " er jonno kompokkhe " + cp.minDisc + "% discount lagbe (apni diyechen " + d + "%)."; return; }
+          var dRaw = (1 - price/p.price) * 100; var d = Math.round(dRaw); /* P2-12: minimum check uses the unrounded discount — 19.6% must not pass a 20% minimum. */
+          if (cp && dRaw < cp.minDisc) { $("cpErr").textContent = cp.name + " er jonno kompokkhe " + cp.minDisc + "% discount lagbe (apni diyechen " + d + "%)."; return; }
           if (!(alloc>0) || alloc>p.stock) { $("cpErr").textContent = "Allocated stock 1 theke apnar stock (" + (p ? p.stock : 0) + ") er moddhe hote hobe."; return; }
           if (supabaseConnected && supabase) {
             try {
@@ -3805,7 +3834,7 @@
       else if (o.settled) { settleTxt = "Settled — Available balance e jog hoyeche"; settleCls = "st-paid"; }
       else if (o.deliveredAt && !isNaN(Date.parse(o.deliveredAt))) { settleTxt = "Return window e ache — settle hobe " + fmtDate(new Date(Date.parse(o.deliveredAt) + holdMs()).toISOString()); settleCls = "st-processing"; }
       else { settleTxt = "Return window e ache"; settleCls = "st-processing"; }
-      return '<tr><td><b>' + esc(o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td style="max-width:220px">' + esc(orderItemsText(o)) + '</td><td>' + fmt(orderTotal(o)) + '</td><td style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</td><td style="color:var(--brand);font-weight:800">' + fmt(orderEarning(o)) + '</td><td><span class="status ' + settleCls + '">' + settleTxt + '</span></td></tr>';
+      return '<tr><td><b>' + esc(o.id) + '</b><div class="psku">' + esc(o.date) + '</div></td><td style="max-width:220px">' + esc(orderItemsText(o)) + '</td><td>' + fmt(orderTotal(o)) + '</td><td style="color:var(--red)">−' + fmtEarnComm(o) + '</td><td style="color:var(--brand);font-weight:800">' + fmtEarn(o) + '</td><td><span class="status ' + settleCls + '">' + settleTxt + '</span></td></tr>';
     }).join("") : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:1.3rem">Delivered order hole earning er hisab ekhane asbe.</td></tr>';
   }
   $("withdrawBtn").addEventListener("click", function(){
@@ -4028,6 +4057,10 @@
                 /* P3: login link bosle local model eo user_id bosao —
                    na hole list e "Invited" dekhabe jodio link hoye geche. */
                 newStaff.user_id = uid;
+              } else {
+                /* P2-22: sign-up returned no user id — the staff row exists but no login is linked. Never claim success here. */
+                $("nsErr").textContent = "Staff login account toiri hoyeche, kintu user id pawa jay ni — staff row toiri hoyeche, kintu se sign in korte parbe na. Abar chesta korun.";
+                return;
               }
             } catch(e){ $("nsErr").textContent = "Staff save hoy ni — " + (e && e.message ? e.message : "database error") + ". Abar chesta korun."; return; }
           }
