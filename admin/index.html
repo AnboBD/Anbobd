@@ -714,7 +714,20 @@ function sbSaveFailed(table, err){
 }
 function sbUpdate(table, col, val, patch){
   if (!sbReady()) return Promise.resolve(null);
-  return sb.from(table).update(patch).eq(col, val).then(function(r){ if (r && r.error) sbSaveFailed(table, r.error); return r; }).catch(function(e){ sbSaveFailed(table, e); return null; });
+  /* P1-8 residual (2026-11-26): verified write — the update ends with
+     .select("id") so callers can require data.length === 1. An
+     RLS-blocked write returns success with 0 rows and NO error, so
+     error-only checking lies (live 2026-11-26: staff delete toasted
+     "Staff removed" while the row came back after reload, because
+     profiles had no DELETE policy). Every table sbUpdate writes has an
+     "id" column and an admin SELECT policy for all 5 roles, so the
+     read-back works for every call site. Callers use the standard
+     check — if (!r || r.error || !r.data || r.data.length !== 1) —
+     and only toast for the null / 0-row case, because on .error the
+     detailed reason was already shown by sbSaveFailed above. sbDelete
+     is NOT changed the same way: the settings table (zone delete) has
+     no "id" column, so its delete callers use .select("key") directly. */
+  return sb.from(table).update(patch).eq(col, val).select("id").then(function(r){ if (r && r.error) sbSaveFailed(table, r.error); return r; }).catch(function(e){ sbSaveFailed(table, e); return null; });
 }
 function sbInsert(table, row){
   if (!sbReady()) return Promise.resolve(null);
@@ -1778,10 +1791,13 @@ async function runSettingsSync(){
       if (typeof prev === "string" && prev !== "") return Promise.resolve({ key: r.key, error: null });
     }
     var q = existing[r.key] !== undefined
-      ? sb.from("settings").update({ value: val }).eq("key", r.key)
-      : sb.from("settings").insert({ key: r.key, value: val });
+      ? sb.from("settings").update({ value: val }).eq("key", r.key).select("key")
+      : sb.from("settings").insert({ key: r.key, value: val }).select("key");
     return Promise.resolve(q).then(
-      function(res){ return { key: r.key, error: (res && res.error) || null }; },
+      /* P1-8 residual (2026-11-26): verified write — a 0-row result
+         (RLS-blocked write, no error) is an error here, so the failed
+         key reaches settingsSyncFailed instead of passing silently. */
+      function(res){ var err = (res && res.error) || null; if (!err && (!res || !res.data || res.data.length !== 1)) err = new Error("Settings row save hoy ni — 0 row (" + r.key + ")"); return { key: r.key, error: err }; },
       function(err){ return { key: r.key, error: err }; }
     );
   }));
@@ -1872,8 +1888,10 @@ async function saveDeliveryZones(btn){
     var ok = true;
     for (var slug in next){
       var key = "delivery_zone_" + slug + "_fee";
-      var r = have[key] ? await sb.from("settings").update({ value: String(next[slug]) }).eq("key", key) : await sb.from("settings").insert({ key: key, value: String(next[slug]) });
+      var r = have[key] ? await sb.from("settings").update({ value: String(next[slug]) }).eq("key", key).select("key") : await sb.from("settings").insert({ key: key, value: String(next[slug]) }).select("key");
+      /* P1-8 residual (2026-11-26): verified write — 0-row guard. */
       if (r.error){ ok = false; toast("⚠ Zone save hoy ni — " + esc(r.error.message || "")); }
+      else if (!r.data || r.data.length !== 1){ ok = false; toast("⚠ Zone save hoy ni — " + esc(key) + " database e save hoy ni, abar chesta korun."); }
     }
     return done(ok);
   }catch(e){ toast("⚠ Zone save hoy ni — " + esc(e.message || e)); return done(false); }
@@ -1942,6 +1960,11 @@ var ROLE_ACTIONS = {
   "settings_save": ["Super Admin"],
   "pages_edit": ["Super Admin", "Manager"],
   "customer_block": ["Super Admin", "Manager"],
+  /* Job 2(b)/(c) (2026-11-26): customer message — Warehouse cannot message
+     customers; internal note / assignment — Support + Warehouse cannot
+     change it. */
+  "customer_message": ["Super Admin", "Manager", "Order Manager", "Support"],
+  "internal_note": ["Super Admin", "Manager", "Order Manager"],
   "dispute_resolve": ["Super Admin", "Manager", "Support"],
   "qa_answer": ["Super Admin", "Manager", "Support"],
   "review_remove": ["Super Admin", "Manager"],
@@ -2803,21 +2826,32 @@ async function cancelRealSubOrders(o){
    resends and reloads add nothing; cancellations add nothing. Updates the
    DB (products.sold = sold + qty per product) AND the in-memory products
    list, so both tables refresh immediately. A failed DB write is reported
-   by sbUpdate, never silent. */
-function bumpSoldCounts(o){
+   by sbUpdate, never silent.
+   P1-8 residual (2026-11-26): verified write — each increment is awaited
+   and requires data.length === 1; the local count flips only when the DB
+   write landed. A failed increment never fails the order confirm, but it
+   is never silent either. */
+async function bumpSoldCounts(o){
   if (!o || !o.items || !o.items.length) return;
   var qtyByProduct = {};
   o.items.forEach(function(it){
     var pid = String(it[0]); var q = Number(it[1]) || 1;
     qtyByProduct[pid] = (qtyByProduct[pid] || 0) + q;
   });
-  Object.keys(qtyByProduct).forEach(function(pid){
+  var pids = Object.keys(qtyByProduct);
+  for (var k = 0; k < pids.length; k++){
+    var pid = pids[k];
     var p = products.filter(function(x){ return String(x.id) === pid; })[0];
-    if (!p) return;
+    if (!p) continue;
     var next = (Number(p.sold) || 0) + qtyByProduct[pid];
+    if (!sbReady()) continue;
+    var r = await sbUpdate("products", "id", p.id, { sold: next });
+    if (!r || r.error || !r.data || r.data.length !== 1){
+      if (!r || !r.error) toast("⚠ Sold count save hoy ni — <b>" + esc(p.name || "") + "</b> er sold count database e barlo na; order confirm hoyeche, kintu Best sellers hisab pichiye thakbe.", 6500);
+      continue;
+    }
     p.sold = next;
-    if (sbReady()) sbUpdate("products", "id", p.id, { sold: next });
-  });
+  }
 }
 async function setOrderStatus(id, status){
   var o = orders.filter(function(x){ return String(x.id)===String(id); })[0]; if(!o) return false;
@@ -2859,7 +2893,7 @@ async function setOrderStatus(id, status){
   }
   if (!ok) return false;
   o.status = status; logActivity("Order "+(o.localId || id)+" status → "+status+(status==="confirmed"?" (sent to "+sellerForOrder(o)+")":""));
-  if (status === "confirmed" && prevStatus !== "confirmed") bumpSoldCounts(o);
+  if (status === "confirmed" && prevStatus !== "confirmed") await bumpSoldCounts(o);
   if (status === "cancelled") cancelRealSubOrders(o);
   if(status==="confirmed"){ o.sentToSeller=true; o.sellerStatus="Sent to seller — waiting for seller to pack"; o.sentAt="Just now · by Admin"; toast("✓ Master <b>"+esc(o.localId || id)+"</b> confirmed — <span class='lime'>"+getSubOrders(o).length+" sub-order</span> prottek seller ke pathano hoyeche: "+esc(sellerShopsForOrder(o).join(", "))); }
   else if(status==="packed"){ o.sentToSeller=true; o.sellerStatus="Seller packed — ready for rider pickup"; toast("📦 Seller packed order <b>"+esc(o.localId || id)+"</b> — rider pickup er jonno ready"); }
@@ -3057,9 +3091,9 @@ function openOrder(id){
     + '<div class="kv"><span>Total</span><b class="num" style="font-size:17px">'+fmt(orderTotal(o))+'</b></div>'
     + '<h4 style="margin:20px 0 4px">Tracking timeline</h4><ul class="timeline">'+timeline+'</ul>'
     + '<div class="card" style="margin-top:12px"><h4 style="margin:0 0 6px">🗒 Internal note — Admin only</h4><p class="note" style="margin:0 0 8px">Ei note ar assignment shudhu Admin panel e dekhabe — customer ba seller dekhte pabe na.</p>'
-    + '<div class="field"><label>Assign to</label><select id="drawerAssign"><option value="">Unassigned</option>' + staff.map(function(m){ return '<option value="' + esc(m.supabaseId || m.id || "") + '"' + (String(o.assignedTo || "") === String(m.supabaseId || m.id || "") ? " selected" : "") + '>' + esc(m.name) + ' — ' + esc(m.role || "") + '</option>'; }).join("") + '</select></div>'
-    + '<div class="field"><label>Internal note</label><textarea id="drawerNote" rows="3" placeholder="Order niye internal kotha likho — jemon: customer ke call dite hobe…">' + esc(o.internalNote || "") + '</textarea></div>'
-    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="btn sm" type="button" id="drawerNoteSave">Save note &amp; assignment</button><span class="note" id="drawerNoteState">' + (o.assignedTo ? "Assigned: " + esc(assignedStaffName(o.assignedTo)) : "") + '</span></div></div>'
+    + '<div class="field"><label>Assign to</label><select id="drawerAssign"' + (canDo("internal_note") ? "" : " disabled") + '><option value="">Unassigned</option>' + staff.map(function(m){ return '<option value="' + esc(m.supabaseId || m.id || "") + '"' + (String(o.assignedTo || "") === String(m.supabaseId || m.id || "") ? " selected" : "") + '>' + esc(m.name) + ' — ' + esc(m.role || "") + '</option>'; }).join("") + '</select></div>'
+    + '<div class="field"><label>Internal note</label><textarea id="drawerNote" rows="3" placeholder="Order niye internal kotha likho — jemon: customer ke call dite hobe…"' + (canDo("internal_note") ? "" : " disabled") + '>' + esc(o.internalNote || "") + '</textarea></div>'
+    + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' + (canDo("internal_note") ? '<button class="btn sm" type="button" id="drawerNoteSave">Save note &amp; assignment</button>' : "") + '<span class="note" id="drawerNoteState">' + (o.assignedTo ? "Assigned: " + esc(assignedStaffName(o.assignedTo)) : "") + '</span></div></div>'
     + '<div class="drawer-actions">'
     + '<button class="btn ghost sm" type="button" id="drawerPrint">🖨️ Print Invoice / Packing Slip</button>'
     + (canDo("order_confirm") && next ? '<button class="btn" type="button" id="drawerNext">'+nextLabel+'</button>' : "")
@@ -3075,10 +3109,15 @@ function openOrder(id){
   var dp = $("#drawerPrint"); if (dp) dp.addEventListener("click", function(){ printOrderInvoice(o); });
   var rsb = $("#drawerSendSubs"); if (rsb) rsb.addEventListener("click", function(){ /* P1-23 (2026-11-26): order confirm — Super Admin / Manager / Order Manager (setOrderStatus bypass kore direct ensureSubOrders). */ if (!canDo("order_confirm")) return denyAction("order_confirm"); ensureSubOrders(o, "AdminConfirmed", true); });
   var ns = $("#drawerNoteSave"); if (ns) ns.addEventListener("click", async function(){
+    /* Job 2(c) (2026-11-26): internal note / assignment — Super Admin /
+       Manager / Order Manager only (Support + Warehouse cannot change it). */
+    if (!canDo("internal_note")) return denyAction("internal_note");
     var noteEl = $("#drawerNote"), asEl = $("#drawerAssign");
     var note = noteEl ? noteEl.value : ""; var asg = asEl ? asEl.value : "";
     var r = await sbUpdate("orders", "id", o.supabaseId || o.id, { internal_note: note, assigned_to: asg || null });
-    if (!r || r.error){ toast("⚠ Note save hoy ni — database e jay ni (orders.internal_note / assigned_to column check korun)"); return; }
+    /* P1-8 residual (2026-11-26): verified write — 0-row guard; on
+       .error sbUpdate already showed the reason via sbSaveFailed. */
+    if (!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Note save hoy ni — database e jay ni, abar chesta korun"); return; }
     o.internalNote = note; o.assignedTo = asg || "";
     logActivity("Updated internal note / assignment for " + displayId + (asg ? " → " + assignedStaffName(asg) : " → Unassigned"));
     toast("✓ <span class='lime'>Note saved</span> — Admin only");
@@ -3094,16 +3133,26 @@ $("#drawerOverlay").addEventListener("click", closeDrawer);
 /* P1 (2026-11-23): reject reason persists — products.reject_reason exists.
    Pass {reject_reason} as extra on reject so the reason survives reload
    and shows on the product row. */
-function sbProductDecision(a, status, extra){
+async function sbProductDecision(a, status, extra){
   /* P1-23 (2026-11-26): product moderate — Super Admin / Manager.
-     Choke-point guard (prottek listener-eo gate ache, local flip-er age). */
+     Choke-point guard (prottek listener-eo gate ache, local flip-er age).
+     P1-8 residual (2026-11-26): verified write — the decision is
+     awaited and requires data.length === 1; returns true only when
+     the DB write landed. Callers flip local state only on true, so a
+     blocked write can no longer show "Approved & Live" while the
+     product stays Pending in the database. */
   if (!canDo("product_moderate")) return denyAction("product_moderate");
-  if (!sbReady() || !a) return;
+  if (!sbReady() || !a) return false;
   var pid = a.supabaseId || a.id;
-  if (!pid) return;
+  if (!pid) return false;
   var patch = { status: status };
   if (extra) Object.keys(extra).forEach(function(k){ patch[k] = extra[k]; });
-  sbUpdate("products", "id", pid, patch);
+  var r = await sbUpdate("products", "id", pid, patch);
+  if (!r || r.error || !r.data || r.data.length !== 1){
+    if (!r || !r.error) toast("⚠ Product moderation save hoy ni — <b>" + esc(a.product || "") + "</b> er status database e bodlay ni, abar chesta korun.", 6500);
+    return false;
+  }
+  return true;
 }
 /* ==================== PRODUCTS ==================== */
 var prodQuery = "", prodCat = "all";
@@ -3163,22 +3212,22 @@ function renderProducts(){
   /* Decision 5: Edit buttons wired just below — Admin edit is allowed and
      logged; add/delete stays with the seller in Seller Center. */
   Array.prototype.forEach.call(el.querySelectorAll("[data-prod-edit]"), function(b){ b.addEventListener("click", function(){ openProductEdit(b.getAttribute("data-prod-edit")); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-mod-ok]"), function(b){ b.addEventListener("click", function(){ var a=productApprovals[parseInt(b.getAttribute("data-mod-ok"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. Local flip-er AGEI gate. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); a.status="Approved"; var pp=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp) pp.status="approved"; sbProductDecision(a, "approved"); logActivity("Moderation approved: "+a.product); toast("<span class='lime'>✓ Approved &amp; Live</span> — "+esc(a.product)); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-mod-no]"), function(b){ b.addEventListener("click", function(){ var a=productApprovals[parseInt(b.getAttribute("data-mod-no"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); askConfirmReason("Reject product?", a.product+" — "+a.shop+" — karon ta activity log e record thakbe.", function(reason){ sbProductDecision(a, "rejected", { reject_reason: reason }); var pp3=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp3){ pp3.status="rejected"; pp3.rejectReason=reason; } logActivity("Moderation rejected: " + a.product + " — Reason: " + reason); productApprovals=productApprovals.filter(function(x){return x!==a;}); toast("Product rejected — <b>"+esc(a.product)+"</b>"); renderAll(); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-mod-ok]"), function(b){ b.addEventListener("click", async function(){ var a=productApprovals[parseInt(b.getAttribute("data-mod-ok"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. Local flip-er AGEI gate. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); if (!await sbProductDecision(a, "approved")) return; a.status="Approved"; var pp=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp) pp.status="approved"; logActivity("Moderation approved: "+a.product); toast("<span class='lime'>✓ Approved &amp; Live</span> — "+esc(a.product)); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-mod-no]"), function(b){ b.addEventListener("click", function(){ var a=productApprovals[parseInt(b.getAttribute("data-mod-no"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); askConfirmReason("Reject product?", a.product+" — "+a.shop+" — karon ta activity log e record thakbe.", async function(reason){ if (!await sbProductDecision(a, "rejected", { reject_reason: reason })) return; var pp3=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp3){ pp3.status="rejected"; pp3.rejectReason=reason; } logActivity("Moderation rejected: " + a.product + " — Reason: " + reason); productApprovals=productApprovals.filter(function(x){return x!==a;}); toast("Product rejected — <b>"+esc(a.product)+"</b>"); renderAll(); }); }); });
   /* P1 (2026-11-23): bulk product moderation — select kore ekbare Approve /
      Reject. Reject e EK-TA karon chawa hoy, sob gulote sei karon-i jay
      (products.reject_reason e save hoy). */
   function updateModBulkBar(){ var boxes = el.querySelectorAll("[data-mod-check]"); var n = el.querySelectorAll("[data-mod-check]:checked").length; var bar = $("#modBulkBar"); if(bar) bar.style.display = n ? "" : "none"; var c = $("#modBulkCount"); if(c) c.textContent = n + " ta product select kora"; var all = $("#modCheckAll"); if(all){ all.checked = boxes.length > 0 && n === boxes.length; all.indeterminate = n > 0 && n < boxes.length; } }
   Array.prototype.forEach.call(el.querySelectorAll("[data-mod-check]"), function(cb){ cb.addEventListener("change", updateModBulkBar); });
   var modAll = $("#modCheckAll"); if (modAll) modAll.addEventListener("change", function(){ Array.prototype.forEach.call(el.querySelectorAll("[data-mod-check]"), function(cb){ cb.checked = modAll.checked; }); updateModBulkBar(); });
-  var mbOk = $("#modBulkOk"); if (mbOk) mbOk.addEventListener("click", function(){
+  var mbOk = $("#modBulkOk"); if (mbOk) mbOk.addEventListener("click", async function(){
     /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. */
     if (!canDo("product_moderate")) return denyAction("product_moderate");
     var idx = Array.prototype.map.call(document.querySelectorAll("[data-mod-check]:checked"), function(c){ return parseInt(c.getAttribute("data-mod-check"),10); });
     if (!idx.length){ toast("⚠ Age product select koro"); return; }
-    var done = 0;
-    idx.forEach(function(i){ var a = productApprovals[i]; if (!a || a.status !== "Pending") return; a.status = "Approved"; var pp = products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if (pp) pp.status = "approved"; sbProductDecision(a, "approved"); logActivity("Moderation approved: " + a.product); done++; });
-    toast("<span class='lime'>✓ Bulk approve</span> — <b>" + done + " ta product</b> live holo");
+    var done = 0, failed = 0;
+    for (var k = 0; k < idx.length; k++){ var a = productApprovals[idx[k]]; if (!a || a.status !== "Pending") continue; if (!await sbProductDecision(a, "approved")){ failed++; continue; } a.status = "Approved"; var pp = products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if (pp) pp.status = "approved"; logActivity("Moderation approved: " + a.product); done++; }
+    toast("<span class='lime'>✓ Bulk approve</span> — <b>" + done + " ta product</b> live holo" + (failed ? " — ⚠ " + failed + " ta save hoy ni" : ""));
     renderAll();
   });
   var mbNo = $("#modBulkNo"); if (mbNo) mbNo.addEventListener("click", function(){
@@ -3186,11 +3235,11 @@ function renderProducts(){
     if (!canDo("product_moderate")) return denyAction("product_moderate");
     var idx = Array.prototype.map.call(document.querySelectorAll("[data-mod-check]:checked"), function(c){ return parseInt(c.getAttribute("data-mod-check"),10); });
     if (!idx.length){ toast("⚠ Age product select koro"); return; }
-    askConfirmReason("Reject selected products?", idx.length + " ta product reject hobe — EK-TA karon sob gulote jabe, karon ta database + activity log e record thakbe.", function(reason){
-      var done = 0, rejected = [];
-      idx.forEach(function(i){ var a = productApprovals[i]; if (!a || a.status !== "Pending") return; sbProductDecision(a, "rejected", { reject_reason: reason }); var pp = products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if (pp){ pp.status = "rejected"; pp.rejectReason = reason; } logActivity("Moderation rejected: " + a.product + " — Reason: " + reason); rejected.push(a); done++; });
+    askConfirmReason("Reject selected products?", idx.length + " ta product reject hobe — EK-TA karon sob gulote jabe, karon ta database + activity log e record thakbe.", async function(reason){
+      var done = 0, failed = 0, rejected = [];
+      for (var k = 0; k < idx.length; k++){ var a = productApprovals[idx[k]]; if (!a || a.status !== "Pending") continue; if (!await sbProductDecision(a, "rejected", { reject_reason: reason })){ failed++; continue; } var pp = products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if (pp){ pp.status = "rejected"; pp.rejectReason = reason; } logActivity("Moderation rejected: " + a.product + " — Reason: " + reason); rejected.push(a); done++; }
       productApprovals = productApprovals.filter(function(x){ return rejected.indexOf(x) === -1; });
-      toast("Product rejected — <b>" + done + " ta product</b>");
+      toast("Product rejected — <b>" + done + " ta product</b>" + (failed ? " — ⚠ " + failed + " ta save hoy ni" : ""));
       renderAll();
     });
   });
@@ -3245,11 +3294,14 @@ function openProductEdit(pid){
     + '<div style="display:flex;gap:.6rem;justify-content:flex-end"><button class="btn ghost" id="peCancel" type="button">Cancel</button><button class="btn" id="peSave" type="button">Save changes</button></div>'
     + '<p class="note" style="margin:12px 0 0">Save korle change ta database e jabe ar activity log e old → new value soho record hobe.</p></div>';
   document.body.appendChild(wrap);
-  /* P1-23 (2026-11-26): stock-only role (Warehouse) price/chhobi
-     bodlate parbe na — input disabled (UI), save-time check-i ashol
-     enforcement (niche). */
+  /* P1-23 (2026-11-26) + Job 2(a) (2026-11-26): the product-edit gate
+     covers the WHOLE product record, not just price — name, category,
+     description and pack fields fold into the product_price gate, so a
+     stock-only role (Warehouse) can only change stock (product_stock).
+     Inputs are disabled here (UI); the save-time check is the real
+     enforcement (below). */
   if (!canDo("product_price")){
-    ["pePrice", "peOld", "peImages"].forEach(function(id){ var el2 = document.getElementById(id); if (el2) el2.disabled = true; });
+    ["pePrice", "peOld", "peImages", "peName", "peCat", "pePackSize", "peUnit", "pePack", "peDesc"].forEach(function(id){ var el2 = document.getElementById(id); if (el2) el2.disabled = true; });
   }
   var imgItems = (p.images || []).map(function(u){ return { kind: "url", url: u }; });
   function renderPeImgs(){
@@ -3293,13 +3345,17 @@ function openProductEdit(pid){
     if (pePackSizeVal !== "" && !(+pePackSizeVal > 0)){ errEl.textContent = "পরিমাণ সঠিক সংখ্যায় দিন (e.g. 500)।"; return; }
     if (!name || !(price > 0) || isNaN(stock) || stock < 0){ errEl.textContent = "Name, sothik price ar stock din."; return; }
     if (imgItems.length < 1){ errEl.textContent = "Komপক্ষে ১টি chhobi rakhte hobe — sob chhobi sorale product save hobe na."; return; }
-    /* P1-23 (2026-11-26): stock-only role (Warehouse) price/chhobi
-       bodlate parbe na — disabled input bypass kore keu save korte
-       chaileo ekhane atke jabe, upload howar AGEI. (Design-er spec-e
-       price check chilo; chhobi-o product_price action-er ongsho, tai
-       image change-o ekhanei check holo.) */
+    /* P1-23 (2026-11-26) + Job 2(a) (2026-11-26): the product-edit gate
+       covers the WHOLE product record, not just price — a stock-only
+       role (Warehouse) may only change stock. Disabled input bypass
+       kore keu save korte chaileo ekhane atke jabe, upload howar AGEI.
+       Pack size is compared as number-or-null and unit/packaging as
+       string-or-empty, so an unchanged field never trips the gate.
+       (catChanged ignores a legacy category the select cannot show.) */
     var imgsChanged = imgItems.some(function(it){ return it.kind !== "url"; }) || imgItems.map(function(it){ return it.url || ""; }).join("\n") !== (p.images || []).join("\n");
-    if (!canDo("product_price") && (price !== p.price || oldP !== (p.old || null) || imgsChanged)){ errEl.textContent = "🔒 Tomar role (" + currentUserRole + ") e price/chhobi bodlano jabe na — Super Admin ke bolo"; denyAction("product_price"); return; }
+    var packChanged = (pePackSizeVal === "" ? null : +pePackSizeVal) !== (p.packSize != null && p.packSize !== "" ? +p.packSize : null) || pePackUnitVal !== (p.unit || "") || pePackVal !== (p.packaging || "");
+    var catChanged = cat !== p.cat && CATS[p.cat] !== undefined;
+    if (!canDo("product_price") && (price !== p.price || oldP !== (p.old || null) || imgsChanged || name !== p.name || catChanged || desc !== (p.desc || "") || packChanged)){ errEl.textContent = "🔒 Tomar role (" + currentUserRole + ") e product record bodlano jabe na — naam, category, description, পরিমাণ, price ba chhobi sudhu Super Admin / Manager bodlate pare; tomar sudhu stock bodlano jabe"; denyAction("product_price"); return; }
     var saveBtn = document.getElementById("peSave"); saveBtn.disabled = true; saveBtn.textContent = "Saving…";
     var finalImages = [];
     try{
@@ -3315,7 +3371,9 @@ function openProductEdit(pid){
     var patch = { name: name, category: cat, price: price, old_price: oldP, stock: stock, description: desc, images: finalImages, image_url: finalImages.length ? finalImages[0] : null, pack_size: pePackSizeVal === "" ? null : +pePackSizeVal, unit: pePackUnitVal, packaging: pePackVal };
     var r = await sbUpdate("products", "id", p.supabaseId || p.id, patch);
     saveBtn.disabled = false; saveBtn.textContent = "Save changes";
-    if (!r || r.error){ errEl.textContent = "Database e save hoy ni — uporer toast e ashol karon dekhun."; return; }
+    /* P1-8 residual (2026-11-26): verified write — 0-row guard; on
+       .error sbUpdate already showed the reason via sbSaveFailed. */
+    if (!r || r.error || !r.data || r.data.length !== 1){ errEl.textContent = "Database e save hoy ni — " + (r && r.error ? "uporer toast e ashol karon dekhun." : "row save hoy ni, abar chesta korun."); return; }
     var diffs = [];
     if (p.name !== name) diffs.push("name: " + p.name + " → " + name);
     if (p.cat !== cat) diffs.push("category: " + (CATS[p.cat] || p.cat) + " → " + (CATS[cat] || cat));
@@ -3386,6 +3444,9 @@ async function sendAdminCustomerMessage(c, text){
   try{
     var r = await sb.from("support_tickets").insert({ subject: "ADMIN-MSG | " + (c.phone || "") + " | " + c.name, message: text, status: "open" }).select();
     if (r.error) throw r.error;
+    /* P1-8 residual (2026-11-26): verified insert — 0 rows means the
+       row was not created; the catch below shows the honest toast. */
+    if (!r.data || r.data.length !== 1) throw new Error("Message insert verify hoy ni — 0 row");
     logActivity("Sent message to customer " + c.name + " (" + (c.phone || "") + ")");
     return true;
   }catch(e){ sbWarn("support_tickets", e); toast("⚠ Message save hoy ni — " + esc(e.message || "database error") + " (support_tickets policy check korun).", 8000); return false; }
@@ -3445,13 +3506,13 @@ function openCustomer(name){
     + '<p class="note" style="margin:0 0 8px">Message ta customer er Account → Messages e dekhabe. Kono SMS/email jabe na.</p>'
     + '<div id="custMsgList"><p class="note">Ager message load hochhe…</p></div>'
     + '<textarea id="custMsgText" rows="3" placeholder="Customer ke likhun…" style="width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;margin-top:8px"></textarea>'
-    + '<div style="margin:10px 0"><button class="btn sm" type="button" id="custMsgSend">📩 Message pathan</button></div>'
+    + (canDo("customer_message") ? '<div style="margin:10px 0"><button class="btn sm" type="button" id="custMsgSend">📩 Message pathan</button></div>' : "")
     + (canDo("customer_block") ? '<div style="margin:12px 0"><button class="btn danger sm" type="button" id="custBlockBtn">'+(c.blocked?"Unblock customer":"Block customer")+'</button></div>' : "")
     + '<h4 style="margin:20px 0 4px">Recent orders</h4>'
     + (their.length ? their.map(function(o){ return '<div class="kv"><span>'+esc(o.localId || o.id)+' · '+esc(o.date)+'</span><b class="num">'+fmt(orderTotal(o))+" · "+effectiveMasterStatus(o)+'</b></div>'; }).join("") : '<p class="note">No orders in the recent list for this customer.</p>');
   $("#customerModalWrap").classList.add("show");
   loadCustomerMessages(c, document.getElementById("custMsgList"));
-  var msb=document.getElementById("custMsgSend"); if(msb) msb.addEventListener("click", async function(){ var tx=document.getElementById("custMsgText"); var t=tx ? tx.value.trim() : ""; if(!t){ toast("⚠ Age message likhun."); return; } msb.disabled=true; var ok=await sendAdminCustomerMessage(c, t); msb.disabled=false; if(ok){ tx.value=""; toast("✓ Message pathano hoyeche — customer Account e dekhte pabe"); loadCustomerMessages(c, document.getElementById("custMsgList")); } });
+  var msb=document.getElementById("custMsgSend"); if(msb) msb.addEventListener("click", async function(){ /* Job 2(b) (2026-11-26): customer message — Super Admin / Manager / Order Manager / Support only (Warehouse cannot message customers). */ if (!canDo("customer_message")) return denyAction("customer_message"); var tx=document.getElementById("custMsgText"); var t=tx ? tx.value.trim() : ""; if(!t){ toast("⚠ Age message likhun."); return; } msb.disabled=true; var ok=await sendAdminCustomerMessage(c, t); msb.disabled=false; if(ok){ tx.value=""; toast("✓ Message pathano hoyeche — customer Account e dekhte pabe"); loadCustomerMessages(c, document.getElementById("custMsgList")); } });
   var bb=$("#custBlockBtn"); if(bb) bb.addEventListener("click", function(){
     /* P1-23 (2026-11-26): customer block — Super Admin / Manager. */
     if (!canDo("customer_block")) return denyAction("customer_block");
@@ -3461,7 +3522,9 @@ function openCustomer(name){
     var newBlocked = !c.blocked; bb.disabled = true;
     sbUpdate("profiles", "id", c.profileId, { status: newBlocked ? "blocked" : "active" }).then(function(r){
       bb.disabled = false;
-      if (!r || r.error){ toast("⚠ Block status database e save hoy ni — abar chesta koro"); return; }
+      /* P1-8 residual (2026-11-26): verified write — 0-row guard; on
+         .error sbUpdate already showed the reason via sbSaveFailed. */
+      if (!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Block status database e save hoy ni — abar chesta koro"); return; }
       c.blocked = newBlocked;
       logActivity((newBlocked?"Blocked":"Unblocked")+" customer "+c.name);
       toast(newBlocked?"🚫 Customer blocked — <b>"+esc(c.name)+"</b>":"✓ Customer unblocked — <b>"+esc(c.name)+"</b>");
@@ -3747,7 +3810,12 @@ function renderCampaigns(){
       renderAll();
       return;
     }
-    m.status="rejected"; sbUpdate("mega_submissions", "id", m.supabaseId || m.id, { status: "rejected" }); logActivity("Rejected Mega Sale submission: " + m.product + " — Reason: " + reason); toast("Mega request rejected — <b>"+esc(m.product)+"</b>"); renderAll();
+    /* P1-8 residual (2026-11-26): verified write — the pending reject
+       is awaited and requires data.length === 1 (the approved-reject
+       path above already does this). */
+    var rr2 = await sbUpdate("mega_submissions", "id", m.supabaseId || m.id, { status: "rejected" });
+    if (!rr2 || rr2.error || !rr2.data || rr2.data.length !== 1){ if (!rr2 || !rr2.error) toast("⚠ Mega request reject hoy ni — database e save hoy ni, abar chesta korun."); return; }
+    m.status="rejected"; logActivity("Rejected Mega Sale submission: " + m.product + " — Reason: " + reason); toast("Mega request rejected — <b>"+esc(m.product)+"</b>"); renderAll();
   }); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-mega-unlive]"), function(b){ b.addEventListener("click", async function(){
     var m = megaRequests.filter(function(x){ return String(x.id)===String(b.getAttribute("data-mega-unlive")); })[0];
@@ -3999,10 +4067,31 @@ function renderSettings(){
     if (ok){ logActivity("Updated delivery zones — " + Object.keys(deliveryZones).length + " district fee(s) saved"); toast("✓ <span class='lime'>Delivery zones saved</span> — storefront checkout e ei fee gulo use hobe"); renderSettings(); }
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-zone-del]"), function(b){ b.addEventListener("click", async function(){
-    var slug = b.getAttribute("data-zone-del"); delete deliveryZones[slug]; saveLocalSettings();
-    var r = await sbDelete("settings", "key", "delivery_zone_" + slug + "_fee");
-    if (r && r.error) toast("⚠ Zone database theke delete hoy ni — " + esc(r.error.message || ""));
-    else { logActivity("Removed delivery zone: " + slug); toast("✓ Zone removed — default fee abar cholbe"); }
+    var slug = b.getAttribute("data-zone-del");
+    /* P1-8 residual (2026-11-26): verified delete — the settings table
+       has no "id" column, so the delete ends with .select("key") and
+       requires 1 row. A 0-row delete may mean the zone was never saved
+       (local-only): confirm absence before failing honestly. The local
+       delete happens only after the DB delete is proven. */
+    var key = "delivery_zone_" + slug + "_fee";
+    var r = null;
+    try { r = await sb.from("settings").delete().eq("key", key).select("key"); }
+    catch(e){ r = { error: e }; }
+    var gone = !!(r && !r.error && r.data && r.data.length === 1);
+    if (!gone && r && !r.error){
+      var chk = null;
+      try { chk = await sb.from("settings").select("key").eq("key", key).limit(1); }
+      catch(e2){}
+      gone = !!(chk && !chk.error && chk.data && chk.data.length === 0);
+    }
+    if (!gone){
+      if (r && r.error) sbSaveFailed("settings", r.error);
+      else toast("⚠ Zone database theke delete hoy ni — abar chesta koro");
+      renderSettings();
+      return;
+    }
+    delete deliveryZones[slug]; saveLocalSettings();
+    logActivity("Removed delivery zone: " + slug); toast("✓ Zone removed — default fee abar cholbe");
     renderSettings();
   }); });
   var hf=$("#heroForm"); if(hf) hf.addEventListener("submit", async function(e){ e.preventDefault(); settings.heroTitle=$("#sfHeroTitle").value.trim(); settings.heroLead=$("#sfHeroLead").value.trim(); if (!await saveSettingsAndWait(e.target.querySelector('button[type="submit"]'))) return; logActivity("Updated homepage hero text"); toast('<span class="lime">✓ Hero text saved</span> — storefront e sathe sathe dekhabe (ei browser e)'); renderAll(); });
@@ -4155,7 +4244,7 @@ function renderStaff(){
      button na thakle listener attach hoy na (null guard). */
   var asb = $("#addStaffBtn"); if (asb) asb.addEventListener("click", function(){ openStaffForm(null); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-staff-edit]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-edit")); })[0]; /* P1-23 (2026-11-26): staff manage — Super Admin only. */ if (!canDo("staff_manage")) return denyAction("staff_manage"); openStaffForm(s); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-staff-toggle]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-toggle")); })[0]; if(!s) return; /* P1-23 (2026-11-26): staff suspend/activate-o staff manage — Super Admin only. (Matrix-e toggle nam chilo na; staff status bodlano edit-i, tai eki gate — nahole staff_manage gate bypass hoye jeto.) */ if (!canDo("staff_manage")) return denyAction("staff_manage"); s.status = s.status==="suspended" ? "active" : "suspended"; s.last = s.status==="active" ? "Reactivated today" : s.last; sbSyncStaffRow(s); logActivity((s.status==="active"?"Activated":"Suspended")+" staff account "+s.name); toast("Staff <b>"+esc(s.name)+"</b> is now <span class='lime'>"+s.status+"</span>"+(s.status!=="active"?" — ekhon ar login korte parbe na":"")); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-staff-toggle]"), function(b){ b.addEventListener("click", async function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-toggle")); })[0]; if(!s) return; /* P1-23 (2026-11-26): staff suspend/activate-o staff manage — Super Admin only. (Matrix-e toggle nam chilo na; staff status bodlano edit-i, tai eki gate — nahole staff_manage gate bypass hoye jeto.) */ if (!canDo("staff_manage")) return denyAction("staff_manage"); var prevStatus = s.status, prevLast = s.last; s.status = s.status==="suspended" ? "active" : "suspended"; s.last = s.status==="active" ? "Reactivated today" : s.last; if (!await sbSyncStaffRow(s)){ s.status = prevStatus; s.last = prevLast; toast("⚠ Staff status save hoy ni — database e bodlay ni, abar chesta korun."); renderAll(); return; } logActivity((s.status==="active"?"Activated":"Suspended")+" staff account "+s.name); toast("Staff <b>"+esc(s.name)+"</b> is now <span class='lime'>"+s.status+"</span>"+(s.status!=="active"?" — ekhon ar login korte parbe na":"")); renderAll(); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-staff-del]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-del")); })[0]; if(!s) return; /* P1-23 (2026-11-26): staff manage — Super Admin only. */ if (!canDo("staff_manage")) return denyAction("staff_manage"); askConfirm("Remove "+s.name+"?", s.name+" will lose admin access immediately. Their past order actions stay in the history.", async function(){
     /* P1-24 (2026-11-26) + A4 fix (2026-11-26): verified delete.
        RLS-blocked DELETE returns success with 0 rows and NO error, so
@@ -4325,19 +4414,31 @@ async function sbAddStaffFromProfile(data, newPw){
   }
   return { ok: true, uid: uid, isNew: isNew };
 }
-function sbSyncStaffRow(s){
-  if (!sbReady() || !s || !s.supabaseId) return;
+async function sbSyncStaffRow(s){
+  if (!sbReady() || !s || !s.supabaseId) return false;
   /* The staff row carries the granular role and status and is
-     admin-writable (staff_admin_all) — that update always runs. The
-     profiles row is admin-writable too ("profiles admin update" policy
-     using the anbo_is_admin() helper), so name/phone/role/status in
-     profiles are updated for EVERY staff row, not just the signed-in
-     admin's own row. */
-  sbUpdate("staff", "user_id", s.supabaseId, { role: sbProfileRole(s.role), status: s.status });
-  sbUpdate("profiles", "id", s.supabaseId, { full_name: s.name, phone: s.phone, role: sbProfileDbRole(s.role), status: s.status });
+     admin-writable (staff_admin_update, Super Admin only) — that
+     update runs first. The profiles row is admin-writable too
+     ("profiles admin update" policy using the anbo_is_admin()
+     helper), so name/phone/role/status in profiles are updated for
+     EVERY staff row, not just the signed-in admin's own row.
+     P1-8 residual (2026-11-26): verified writes — each update is
+     awaited and requires data.length === 1; returns true only when
+     BOTH writes landed. Callers restore local state on false. */
+  var r1 = await sbUpdate("staff", "user_id", s.supabaseId, { role: sbProfileRole(s.role), status: s.status });
+  if (!r1 || r1.error || !r1.data || r1.data.length !== 1){
+    if (!r1 || !r1.error) toast("⚠ Staff row save hoy ni — " + esc(s.name || "") + " er staff record database e update hoy ni.", 6500);
+    return false;
+  }
+  var r2 = await sbUpdate("profiles", "id", s.supabaseId, { full_name: s.name, phone: s.phone, role: sbProfileDbRole(s.role), status: s.status });
+  if (!r2 || r2.error || !r2.data || r2.data.length !== 1){
+    if (!r2 || !r2.error) toast("⚠ Staff profile save hoy ni — " + esc(s.name || "") + " er profile database e update hoy ni; staff row ta update hoyeche.", 6500);
+    return false;
+  }
   /* NOTE: status now persists to Postgres — profiles.status and
      staff.status both carry it — so Suspended/Invited survives reloads
      and the sign-in gate blocks a suspended staff member. */
+  return true;
 }
 $("#staffForm").addEventListener("submit", async function(e){
   e.preventDefault();
@@ -4355,9 +4456,16 @@ $("#staffForm").addEventListener("submit", async function(e){
   if(id){
     var s = staff.filter(function(x){ return String(x.id)===String(id) || x.id===parseInt(id,10); })[0];
     if (!s){ toast("⚠ Staff record paowa jay ni"); return; }
+    /* P1-8 residual (2026-11-26): verified write — snapshot first,
+       sync, restore + keep the modal open on failure. */
+    var prev = { name: s.name, email: s.email, phone: s.phone, role: s.role, status: s.status, passwordHash: s.passwordHash };
     Object.keys(data).forEach(function(k){ s[k]=data[k]; });
     if(newPw) s.passwordHash = hashPw(newPw);
-    sbSyncStaffRow(s);
+    if (!await sbSyncStaffRow(s)){
+      Object.keys(prev).forEach(function(k){ s[k]=prev[k]; });
+      toast("⚠ Staff update hoy ni — database e save hoy ni, abar chesta korun.");
+      return;
+    }
     logActivity("Updated staff account " + s.name + " (" + s.role + ")");
     /* Name/phone/role/status live in profiles + staff, and the admin
        update policy covers every staff row — so an edit here persists
@@ -4478,8 +4586,8 @@ function renderSellers(){
   var ss2 = $("#sellerSearch");
   ss2.addEventListener("input", function(e){ sellerQuery=e.target.value; var pos=e.target.selectionStart; renderSellers(); var n=$("#sellerSearch"); n.focus(); n.setSelectionRange(pos,pos); });
   $("#addSellerBtn").addEventListener("click", function(){ closeAllOverlays(); $("#sellerModalWrap").classList.add("show"); $("#selShop").focus(); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-apr-ok]"), function(b){ b.addEventListener("click", function(){ var a=productApprovals[parseInt(b.getAttribute("data-apr-ok"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. Local flip-er AGEI gate. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); a.status="Approved"; var pp2=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp2) pp2.status="approved"; sbProductDecision(a, "approved"); logActivity("Approved seller product "+a.product+" ("+a.shop+")"); toast("<span class='lime'>✓ Product live</span> — "+esc(a.product)); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-apr-no]"), function(b){ b.addEventListener("click", function(){ var a=productApprovals[parseInt(b.getAttribute("data-apr-no"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); askConfirmReason("Reject product?", a.product+" — "+a.shop+" — karon ta activity log e record thakbe.", function(reason){ sbProductDecision(a, "rejected", { reject_reason: reason }); var pp4=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp4){ pp4.status="rejected"; pp4.rejectReason=reason; } logActivity("Rejected seller product " + a.product + " — Reason: " + reason); productApprovals=productApprovals.filter(function(x){return x!==a;}); toast("Product rejected — <b>"+esc(a.product)+"</b>"); renderAll(); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-apr-ok]"), function(b){ b.addEventListener("click", async function(){ var a=productApprovals[parseInt(b.getAttribute("data-apr-ok"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. Local flip-er AGEI gate. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); if (!await sbProductDecision(a, "approved")) return; a.status="Approved"; var pp2=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp2) pp2.status="approved"; logActivity("Approved seller product "+a.product+" ("+a.shop+")"); toast("<span class='lime'>✓ Product live</span> — "+esc(a.product)); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-apr-no]"), function(b){ b.addEventListener("click", function(){ var a=productApprovals[parseInt(b.getAttribute("data-apr-no"),10)]; /* P1-23 (2026-11-26): product moderate — Super Admin / Manager. */ if (!canDo("product_moderate")) return denyAction("product_moderate"); askConfirmReason("Reject product?", a.product+" — "+a.shop+" — karon ta activity log e record thakbe.", async function(reason){ if (!await sbProductDecision(a, "rejected", { reject_reason: reason })) return; var pp4=products.filter(function(x){ return String(x.id)===String(a.supabaseId||a.id); })[0]; if(pp4){ pp4.status="rejected"; pp4.rejectReason=reason; } logActivity("Rejected seller product " + a.product + " — Reason: " + reason); productApprovals=productApprovals.filter(function(x){return x!==a;}); toast("Product rejected — <b>"+esc(a.product)+"</b>"); renderAll(); }); }); });
   var go1=el.querySelector("[data-goto-orders]"); if(go1) go1.addEventListener("click", function(){ showView("orders"); });
   var go2=el.querySelector("[data-goto-coupons2]"); if(go2) go2.addEventListener("click", function(){ showView("coupons"); });
   var go3=el.querySelector("[data-goto-campaigns]"); if(go3) go3.addEventListener("click", function(){ showView("campaigns"); });
@@ -4753,7 +4861,7 @@ function openSellerDetail(id){
   var rn = $("#revealNid"); if(rn) rn.addEventListener("click", function(){ var m = $("#nidMasked"); if(m) m.textContent = s.nidNumber; logActivity("Revealed NID number for seller " + s.shop + " in seller detail"); rn.remove(); });
   var rl = $("#revealLicence"); if(rl) rl.addEventListener("click", function(){ var m = $("#licenceMasked"); if(m) m.textContent = s.license; logActivity("Revealed trade licence number for seller " + s.shop + " in seller detail"); rl.remove(); });
   loadKycDocs(s);
-  var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", async function(){ /* P1-23 (2026-11-26): seller commission rate — seller governance write (seller_decide, Super Admin / Manager). */ if (!canDo("seller_decide")) return denyAction("seller_decide"); var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } var r = await sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); if(!r || r.error){ toast("⚠ Commission save hoy ni — database e jay ni"); return; } /* P3 (2026-11-23): log BOTH rates — the edited seller rate and the effective rate the UI will show. A seller rate of 0 means "unset": the category rate applies, so the log must never claim the edited number when displays show the category rate. s.commissionRate is set to the effective rate (as the loader does) so the re-render matches post-reload. */ var eff=effectiveCommissionRate({commissionRate:v}, anboCatNorm(s.cat)); s.commissionRate=eff; logActivity("Changed commission of "+s.shop+" — seller rate "+v+"%, effective rate "+eff+"% ("+(v>0?"seller override":"category rate "+catLabel(s.cat)+" applies")+"); displays show the effective rate"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+eff+"% (effective)"); renderAll(); openSellerDetail(s.id); });
+  var cs=$("#sdCommSave"); if(cs) cs.addEventListener("click", async function(){ /* P1-23 (2026-11-26): seller commission rate — seller governance write (seller_decide, Super Admin / Manager). */ if (!canDo("seller_decide")) return denyAction("seller_decide"); var v=parseInt($("#sdCommRate").value,10); if(isNaN(v)||v<0||v>30){ toast("⚠ Commission 0–30% er moddhe dao"); return; } var r = await sbUpdate("shops", "id", s.supabaseId || s.id, { commission_rate: v }); /* P1-8 residual (2026-11-26): verified write — 0-row guard; on .error sbUpdate already showed the reason via sbSaveFailed. */ if(!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Commission save hoy ni — database e jay ni"); return; } /* P3 (2026-11-23): log BOTH rates — the edited seller rate and the effective rate the UI will show. A seller rate of 0 means "unset": the category rate applies, so the log must never claim the edited number when displays show the category rate. s.commissionRate is set to the effective rate (as the loader does) so the re-render matches post-reload. */ var eff=effectiveCommissionRate({commissionRate:v}, anboCatNorm(s.cat)); s.commissionRate=eff; logActivity("Changed commission of "+s.shop+" — seller rate "+v+"%, effective rate "+eff+"% ("+(v>0?"seller override":"category rate "+catLabel(s.cat)+" applies")+"); displays show the effective rate"); toast("<span class='lime'>✓ Commission updated</span> — "+esc(s.shop)+" ekhon "+eff+"% (effective)"); renderAll(); openSellerDetail(s.id); });
 }
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller]"), function(b){ b.addEventListener("click", function(){ $("#sellerModalWrap").classList.remove("show"); }); });
 Array.prototype.forEach.call(document.querySelectorAll("[data-close-seller-detail]"), function(b){ b.addEventListener("click", function(){ $("#sellerDetailWrap").classList.remove("show"); }); });
@@ -5487,10 +5595,10 @@ function renderLogistics(){
       toast(persisted ? "Courier updated — <b>"+esc(j.order)+"</b> → "+val : "Courier updated — <b>"+esc(j.order)+"</b> → "+val+" (sudhu ei session e — sub-order row nei, tai database e save hoy ni)");
       renderAll();
     }
-    if (j.subId){ sbUpdate("sub_orders", "id", j.subId, { courier: val }).then(function(r){ if(!r || r.error){ toast("⚠ Courier database e save hoy ni — abar chesta koro"); renderAll(); return; } applyCourier(true); }); }
+    if (j.subId){ sbUpdate("sub_orders", "id", j.subId, { courier: val }).then(function(r){ /* P1-8 residual (2026-11-26): verified write — 0-row guard; on .error sbUpdate already showed the reason via sbSaveFailed. */ if(!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Courier database e save hoy ni — abar chesta koro"); renderAll(); return; } applyCourier(true); }); }
     else applyCourier(false);
   }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-track-gen]"), function(b){ b.addEventListener("click", function(){ var j=jobs[parseInt(b.getAttribute("data-track-gen"),10)]; var pre = j.courier==="RedX"?"RDX":j.courier==="Sundarban Courier"?"SND":j.courier==="Steadfast"?"STF":"PTH"; var tid = pre+"-"+Math.floor(100000+Math.random()*899999); courierAssign[j.order] = courierAssign[j.order] || {}; courierAssign[j.order].courier = j.courier; courierAssign[j.order].tracking = tid; if (j.subId) sbUpdate("sub_orders", "id", j.subId, { tracking_id: tid }); toast("Tracking ID: <span class='lime'>"+tid+"</span> — "+esc(j.order)); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-track-gen]"), function(b){ b.addEventListener("click", function(){ var j=jobs[parseInt(b.getAttribute("data-track-gen"),10)]; var pre = j.courier==="RedX"?"RDX":j.courier==="Sundarban Courier"?"SND":j.courier==="Steadfast"?"STF":"PTH"; var tid = pre+"-"+Math.floor(100000+Math.random()*899999); /* P1-8 residual (2026-11-26): verified write — the tracking ID is only confirmed (and kept locally) after the DB write lands; on failure the previous tracking is restored and no success toast shows. */ var prevTracking = (courierAssign[j.order] && courierAssign[j.order].tracking) || null; courierAssign[j.order] = courierAssign[j.order] || {}; courierAssign[j.order].courier = j.courier; courierAssign[j.order].tracking = tid; if (j.subId){ sbUpdate("sub_orders", "id", j.subId, { tracking_id: tid }).then(function(r){ if(!r || r.error || !r.data || r.data.length !== 1){ if (prevTracking) courierAssign[j.order].tracking = prevTracking; else delete courierAssign[j.order].tracking; if (!r || !r.error) toast("⚠ Tracking ID database e save hoy ni — abar chesta koro"); renderAll(); return; } toast("Tracking ID: <span class='lime'>"+tid+"</span> — "+esc(j.order)); renderAll(); }); } else { toast("Tracking ID: <span class='lime'>"+tid+"</span> — "+esc(j.order)+" (sudhu ei session e — sub-order row nei, tai database e save hoy ni)"); renderAll(); } }); });
 }
 
 /* ==================== SUPPORT & REVIEWS ==================== */
@@ -5540,8 +5648,8 @@ function renderSupport(){
   }
   el.innerHTML = html;
   Array.prototype.forEach.call(el.querySelectorAll("[data-support-tab]"), function(b){ b.addEventListener("click", function(){ supportTab = b.getAttribute("data-support-tab"); renderSupport(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-tkt]"), function(b){ b.addEventListener("click", function(){ var t=supportTickets[parseInt(b.getAttribute("data-tkt"),10)]; if(!t) return; var btn=b; btn.disabled=true; sbUpdate("support_tickets","id",t.supabaseId||t.id,{status:"resolved"}).then(function(r){ if(!r || r.error){ btn.disabled=false; return; } t.status="Resolved"; logActivity("Resolved ticket "+t.id); toast("<span class='lime'>✓ Ticket resolved</span> — "+t.id); renderAll(); }); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-rev-no]"), function(b){ b.addEventListener("click", function(){ var r=reviewQueue[parseInt(b.getAttribute("data-rev-no"),10)]; if(!r) return; /* P1-23 (2026-11-26): review remove — Super Admin / Manager. */ if (!canDo("review_remove")) return denyAction("review_remove"); askConfirm("Remove this review?", r.product+" — "+r.customer+" er review ta muche jabe.", function(){ sbDelete("reviews","id",r.supabaseId||r.id).then(function(res){ if(!res || res.error){ toast("⚠ Review remove hoy ni — database error (policy check korun)"); return; } reviewQueue=reviewQueue.filter(function(x){return x!==r;}); logActivity("Removed review: "+r.product+" ("+r.customer+")"); toast("Review removed"); renderAll(); }); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-tkt]"), function(b){ b.addEventListener("click", function(){ var t=supportTickets[parseInt(b.getAttribute("data-tkt"),10)]; if(!t) return; var btn=b; btn.disabled=true; sbUpdate("support_tickets","id",t.supabaseId||t.id,{status:"resolved"}).then(function(r){ /* P1-8 residual (2026-11-26): verified write — 0-row guard; on .error sbUpdate already showed the reason via sbSaveFailed. */ if(!r || r.error || !r.data || r.data.length !== 1){ btn.disabled=false; if (!r || !r.error) toast("⚠ Ticket resolve hoy ni — database e save hoy ni, abar chesta koro"); return; } t.status="Resolved"; logActivity("Resolved ticket "+t.id); toast("<span class='lime'>✓ Ticket resolved</span> — "+t.id); renderAll(); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-rev-no]"), function(b){ b.addEventListener("click", function(){ var r=reviewQueue[parseInt(b.getAttribute("data-rev-no"),10)]; if(!r) return; /* P1-23 (2026-11-26): review remove — Super Admin / Manager. */ if (!canDo("review_remove")) return denyAction("review_remove"); askConfirm("Remove this review?", r.product+" — "+r.customer+" er review ta muche jabe.", function(){ /* P1-8 residual (2026-11-26): verified delete — .select("id") + length check; the old sbDelete call only checked .error, so a blocked delete looked like success. */ sb.from("reviews").delete().eq("id", r.supabaseId||r.id).select("id").then(function(res){ if(!res || res.error || !res.data || res.data.length !== 1){ if (res && res.error) sbSaveFailed("reviews", res.error); else toast("⚠ Review remove hoy ni — database e row khuje pay ni, abar chesta korun"); return; } reviewQueue=reviewQueue.filter(function(x){return x!==r;}); logActivity("Removed review: "+r.product+" ("+r.customer+")"); toast("Review removed"); renderAll(); }).catch(function(e){ sbSaveFailed("reviews", e); }); }); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-disp-save]"), function(b){ b.addEventListener("click", async function(){
     /* P1-23 (2026-11-26): dispute resolve — Super Admin / Manager /
        Support. */
@@ -5551,7 +5659,8 @@ function renderSupport(){
     var st = stEl ? stEl.value : d.status; var res = resEl ? resEl.value.trim() : "";
     if ((st === "resolved" || st === "rejected") && !res){ toast("⚠ Resolved / Rejected korle resolution likhte hobe"); return; }
     var r = await sbUpdate("disputes", "id", d.supabaseId || d.id, { status: st, resolution: res, resolved_by: currentUserName || "Admin" });
-    if (!r || r.error){ toast("⚠ Dispute save hoy ni — database e jay ni"); return; }
+    /* P1-8 residual (2026-11-26): verified write — 0-row guard; on .error sbUpdate already showed the reason via sbSaveFailed. */
+    if (!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Dispute save hoy ni — database e jay ni"); return; }
     d.status = st; d.resolution = res; d.resolvedBy = currentUserName || "Admin";
     logActivity("Updated dispute for " + d.order + " → " + st + (res ? " — " + res : ""));
     toast("✓ <span class='lime'>Dispute updated</span> — customer storefront e status dekhte pabe");
@@ -5565,7 +5674,8 @@ function renderSupport(){
     var ans = ansEl ? ansEl.value.trim() : "";
     if (!ans){ toast("⚠ Answer khali rakha jabe na"); return; }
     var r = await sbUpdate("product_qa", "id", q.supabaseId || q.id, { answer: ans, answered_by: currentUserName || "Admin", answered_at: new Date().toISOString() });
-    if (!r || r.error){ toast("⚠ Answer save hoy ni — database e jay ni"); return; }
+    /* P1-8 residual (2026-11-26): verified write — 0-row guard; on .error sbUpdate already showed the reason via sbSaveFailed. */
+    if (!r || r.error || !r.data || r.data.length !== 1){ if (!r || !r.error) toast("⚠ Answer save hoy ni — database e jay ni"); return; }
     q.answer = ans; q.answeredBy = currentUserName || "Admin"; q.answeredAt = new Date().toISOString();
     logActivity("Answered product question on " + q.product);
     toast("✓ <span class='lime'>Answer saved</span> — storefront e product page e dekhabe");
@@ -5759,9 +5869,15 @@ function saveWebsitePage(slug){
   if (!sbReady()){ toast("❌ সেভ হয়নি — Database connection nai. Live Admin site theke save koro; ei preview copy te save hobe na.", 6500); return; }
   if (btn){ btn.disabled = true; btn.textContent = "Saving…"; }
   var payload = { slug: slug, title: title, content: content, updated_at: new Date().toISOString() };
-  sb.from("site_pages").upsert(payload, { onConflict: "slug" }).then(function(r){
+  sb.from("site_pages").upsert(payload, { onConflict: "slug" }).select("slug").then(function(r){
     if (r && r.error){
       toast("❌ সেভ হয়নি — " + esc(r.error.message || "Unknown error"), 6500);
+      if (btn){ btn.disabled = false; btn.textContent = "Save page"; }
+      return;
+    }
+    /* P1-8 residual (2026-11-26): verified write — 0-row guard. */
+    if (!r || !r.data || r.data.length !== 1){
+      toast("❌ সেভ হয়নি — database e row save hoy ni (permission check korun)", 6500);
       if (btn){ btn.disabled = false; btn.textContent = "Save page"; }
       return;
     }
