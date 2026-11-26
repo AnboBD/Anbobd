@@ -603,7 +603,10 @@ reportFail:"⚠️ Could not send the report — "
 function pdT(k, vars){
   var d = PD_I18N[PD_LANG] || PD_I18N.bn;
   var s = (d && d[k] != null) ? d[k] : ((PD_I18N.bn[k] != null) ? PD_I18N.bn[k] : k);
-  if(vars) for(var key in vars) s = String(s).split("{"+key+"}").join(vars[key]);
+  /* SEC-P2-5: interpolated VALUES are HTML-escaped by default — a value
+     containing markup must render as text, never as live HTML. The template
+     itself keeps its own HTML. */
+  if(vars) for(var key in vars) s = String(s).split("{"+key+"}").join(escHtml(vars[key]));
   return s;
 }
 var CAT_LABELS_EN = {electronics:"Electronics", fashion:"Fashion", shoesbags:"Shoes & Bags", home:"Home & Kitchen", beauty:"Beauty", grocery:"Grocery", sports:"Sports", flash:"Flash Sale"};
@@ -1106,7 +1109,10 @@ async function loadQa(){
   var sb2 = pdSb();
   if(!sb2){ list.innerHTML = '<p style="color:var(--muted);margin:0">'+ pdT("qaNone") + '</p>'; return; }
   try{
-    var r = await sb2.from("product_qa").select("*").eq("product_id", PD.id).order("created_at", { ascending:false }).limit(20);
+    /* SEC-P2-7: the anon Q&A read goes through the product_qa_public view
+       (no customer_id column) — the table is only written to (insert above)
+       and read by the Seller Center. */
+    var r = await sb2.from("product_qa_public").select("id,product_id,customer_name,question,answer,answered_by,created_at,answered_at").eq("product_id", PD.id).order("created_at", { ascending:false }).limit(20);
     if(r.error) throw r.error;
     var rows = r.data || [];
     if(!rows.length){ list.innerHTML = '<p style="color:var(--muted);margin:0">'+ pdT("qaNone") + '</p>'; return; }
