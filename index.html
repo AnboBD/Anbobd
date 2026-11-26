@@ -537,42 +537,65 @@ section[id]{scroll-margin-top:150px}
 .authtabs{display:flex;gap:8px;margin-bottom:16px}
 .authtabs button{flex:1;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:9px 10px;font-weight:800;font-family:inherit}
 .authtabs button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
-/* ---------- Auth modal (login / signup) — premium redesign (2026-11-25) ----------
+/* ---------- Auth modal (login / signup) — premium redesign, round 2 (2026-11-27) ----------
+   Original AnboBD character, not a Google-style minimal card: warm cream card
+   with a lime hairline, deep-teal brand band with a lime glow, Bricolage logo,
+   big soft inputs, lime primary button, proper Google "G" mark.
    All rules scoped under #authModal: nothing outside this modal changes. */
-/* 1. Brand band — gradient header card with the animated logo */
-#authModal .auth-brand{background:linear-gradient(135deg,#0e7c6f,#07332f);border-radius:18px;padding:20px;margin-bottom:16px;box-shadow:0 8px 22px rgba(7,51,47,.25)}
-#authModal .auth-brand .logo{font-size:1.6rem}
+/* 0. Card shell — narrower, warmer, softer layered shadow */
+#authModal{padding:14px}
+#authModal .modal-card{max-width:440px;border-radius:26px;background:color-mix(in srgb, var(--lime) 4%, var(--surface));border-top:4px solid var(--lime);box-shadow:0 30px 70px rgba(7,51,47,.30),0 6px 18px rgba(7,51,47,.12)}
+#authModal .modal-card .mbody{padding:22px 22px 24px}
+#authModal .xbtn{top:12px;right:12px;width:38px;height:38px;border-radius:50%;background:var(--surface);box-shadow:0 4px 12px rgba(7,51,47,.18)}
+/* 1. Brand band — deep teal gradient, lime glow, lime underline */
+#authModal .auth-brand{position:relative;overflow:hidden;background:linear-gradient(135deg,#0e7c6f 0%,#0a5c50 55%,#07332f 100%);border-radius:20px;padding:22px 20px 18px;margin-bottom:14px;box-shadow:0 10px 26px rgba(7,51,47,.28)}
+#authModal .auth-brand::before{content:"";position:absolute;right:-46px;top:-46px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(168,225,12,.45),rgba(168,225,12,0) 70%)}
+#authModal .auth-brand::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,var(--lime),transparent 70%)}
+#authModal .auth-brand .logo{position:relative;font-size:1.9rem}
 #authModal .auth-brand .logo .an{color:#fff}
 #authModal .auth-brand .logo .bo{color:var(--coral)}
-#authModal .auth-brand .auth-acct{display:block;color:rgba(255,255,255,.65);font-size:.8rem;font-weight:700;margin-top:8px;letter-spacing:.03em}
-#authModal .auth-brand p{color:rgba(255,255,255,.8);margin:8px 0 0;line-height:1.6;font-size:.92rem}
-/* 2. Tabs — segmented control */
-#authModal .authtabs{background:var(--surface2);border-radius:999px;padding:4px;gap:4px}
-#authModal .authtabs button{border:0;background:transparent;color:var(--muted);padding:10px}
-#authModal .authtabs button.on{background:#a8e10c;color:#243b00;border-color:transparent;box-shadow:0 2px 8px rgba(36,59,0,.2)}
-/* 3. Inputs — same treatment as the profile drawer */
+#authModal .auth-brand .auth-acct{display:block;color:rgba(255,255,255,.65);font-size:.8rem;font-weight:700;margin-top:10px;letter-spacing:.04em}
+#authModal .auth-brand p{position:relative;color:rgba(255,255,255,.85);margin:6px 0 0;line-height:1.6;font-size:.92rem}
+#authModal .auth-trust{position:relative;display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.18);color:#d9f5c8;font-size:.78rem;font-weight:700}
+#authModal .auth-trust i{font-style:normal;opacity:.5}
+/* 2. Tabs — segmented control, lime active */
+#authModal .authtabs{background:var(--surface2);border-radius:999px;padding:4px;gap:4px;box-shadow:inset 0 1px 3px rgba(7,51,47,.08)}
+#authModal .authtabs button{border:0;background:transparent;color:var(--muted);padding:11px 10px;font-size:.92rem;transition:background .18s ease,color .18s ease,box-shadow .18s ease}
+#authModal .authtabs button.on{background:linear-gradient(180deg,#b8f016,#a8e10c);color:#243b00;border-color:transparent;box-shadow:0 3px 10px rgba(36,59,0,.28)}
+/* 3. Inputs — soft tinted, roomy, teal focus ring */
 #authModal .fld label{font-size:.82rem;font-weight:700;color:var(--ink)}
-#authModal .fld input,#authModal .fld select,#authModal .fld textarea{border-radius:12px;padding:12px 14px}
-#authModal .fld input:focus,#authModal .fld select:focus,#authModal .fld textarea:focus{outline:none;border-color:var(--teal);box-shadow:0 0 0 3px rgba(14,124,111,.15)}
+#authModal .fld input,#authModal .fld select,#authModal .fld textarea{border-radius:14px;padding:13px 15px;background:color-mix(in srgb, var(--lime) 5%, var(--surface));transition:border-color .15s ease,box-shadow .15s ease,background .15s ease}
+#authModal .fld input:focus,#authModal .fld select:focus,#authModal .fld textarea:focus{outline:none;border-color:var(--teal);background:var(--surface);box-shadow:0 0 0 4px rgba(14,124,111,.14)}
+#authModal .fld input::placeholder{color:var(--muted);opacity:.75}
 #authModal .passwrap input{padding-right:74px}
-/* 4. Primary submit buttons — lime, scoped to this modal only (global coral .checkout untouched) */
-#authModal .checkout{background:#a8e10c;color:#243b00;border-radius:12px;padding:13px;box-shadow:0 3px 0 #6f9a06;transition:transform .15s ease,box-shadow .15s ease}
-#authModal .checkout:hover{transform:translateY(-1px)}
+#authModal .passwrap button{color:var(--teal);background:transparent}
+/* 4. Primary submit buttons — lime gradient, scoped to this modal only (global coral .checkout untouched) */
+#authModal .checkout{background:linear-gradient(180deg,#b8f016,#a8e10c);color:#243b00;border-radius:14px;padding:14px;font-size:1rem;box-shadow:0 4px 0 #6f9a06,0 10px 20px rgba(111,154,6,.25);transition:transform .15s ease,box-shadow .15s ease,filter .15s ease}
+#authModal .checkout:hover{transform:translateY(-1px);filter:brightness(1.03)}
 #authModal .checkout:active{transform:translateY(2px);box-shadow:0 1px 0 #6f9a06}
-/* 5. Google + OTP-send buttons — clean white bordered */
-#authModal #auGoogleBtn,#authModal #auGoogleBtnUp,#authModal #auOtpSendBtn{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:12px;font-weight:800;width:100%}
-#authModal #auGoogleBtn:hover,#authModal #auGoogleBtnUp:hover,#authModal #auOtpSendBtn:hover{border-color:var(--teal)}
+/* 5. Google + OTP buttons — white, centered, gentle lift on hover */
+#authModal #auGoogleBtn,#authModal #auGoogleBtnUp,#authModal #auOtpSendBtn{background:var(--surface);border:1.5px solid var(--line);border-radius:14px;padding:12px;font-weight:800;width:100%;display:flex;align-items:center;justify-content:center;gap:10px;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}
+#authModal #auGoogleBtn:hover,#authModal #auGoogleBtnUp:hover,#authModal #auOtpSendBtn:hover{border-color:var(--teal);box-shadow:0 6px 16px rgba(7,51,47,.12);transform:translateY(-1px)}
+#authModal .gmark{width:20px;height:20px;flex:none;display:inline-grid;place-items:center}
+#authModal .gmark svg{width:20px;height:20px;display:block}
+#authModal #auOtpSendBtn{border-style:dashed;border-color:color-mix(in srgb, var(--teal) 45%, var(--line));color:var(--teal)}
 /* "অথবা" divider row */
-#authModal .auth-or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:.85rem}
+#authModal .auth-or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.85rem;margin:2px 0}
 #authModal .auth-or span{flex:1;height:1px;background:var(--line)}
-/* 6. Phone OTP — soft tinted card */
-#authModal .auth-otp{background:var(--surface2);border-radius:14px;padding:14px;display:grid;gap:10px}
+/* 6. Phone OTP — soft teal-tinted card */
+#authModal .auth-otp{background:color-mix(in srgb, var(--teal) 7%, var(--surface));border:1.5px solid color-mix(in srgb, var(--teal) 22%, var(--line));border-radius:16px;padding:14px;display:grid;gap:10px}
 /* 7. Signup info box — soft lime tint */
-#authModal .auth-note{background:#eef7c8;border-radius:12px;padding:12px;font-size:.82rem;color:var(--ink);line-height:1.55;margin:0}
+#authModal .auth-note{background:color-mix(in srgb, var(--lime) 14%, var(--surface));border:1px solid color-mix(in srgb, var(--lime) 45%, var(--line));border-radius:14px;padding:12px 14px;font-size:.82rem;color:var(--ink);line-height:1.55;margin:0}
 /* 8. Links stay teal + underlined */
 #authModal #auForgotBtn{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
 #authModal #auGoUp{color:var(--teal);text-decoration:underline;text-underline-offset:3px}
-@media (max-width:520px){#authModal .mbody{padding:18px}}
+@media (max-width:520px){
+  #authModal{padding:10px}
+  #authModal .modal-card{border-radius:22px}
+  #authModal .modal-card .mbody{padding:18px 16px 20px}
+  #authModal .auth-brand{padding:18px 16px 16px}
+  #authModal .auth-brand .logo{font-size:1.65rem}
+}
 .acct-head{display:flex;gap:13px;align-items:center;margin-bottom:14px}
 .acct-head .av{width:50px;height:50px;border-radius:50%;background:var(--teal);color:#fff;display:grid;place-items:center;font-weight:800;font-size:1.25rem;flex:none}
 .rolebadge{display:inline-block;font-size:.72rem;font-weight:800;border-radius:99px;padding:2px 9px;background:#e2f4ee;color:#0a5c50}
@@ -851,6 +874,8 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
 .histclear{margin-left:auto;font-size:.78rem;color:var(--muted);background:none;border:0;cursor:pointer;font-weight:700;padding:2px 4px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.119.2/dist/umd/supabase.js" integrity="sha384-A97u3Qnt9GZHURO9YJZRe7VQgGUeFzcv6I1oIGnUTxQrCxnpQMwR0/G8F2zt9abZ" crossorigin="anonymous"></script>
+<!-- P3 Part B (SEC-P1-7): Cloudflare Turnstile — human verification at checkout. The widget script + challenge iframe come from challenges.cloudflare.com (allowed in the CSP in vercel.json). -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body>
 <div class="topstrip"><span data-i18n="topDelDhaka">🚚 ঢাকায় ডেলিভারি</span> <b id="topDhakaFee">৳60</b> • <span data-i18n="topDelCountry">সারা দেশে</span> <b id="topOutsideFee">৳120</b><span id="topFreeDelWrap">&nbsp;•&nbsp; <span id="topFreeDel">ঢাকায় ৳2,000+ অর্ডারে <b>FREE ডেলিভারি</b></span></span><span id="topPromoWrap">&nbsp;•&nbsp; <span data-i18n="topPromo">প্রোমো কোড <b>ANBO10</b> = 10% ছাড়</span></span></div>
@@ -1274,6 +1299,8 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
     <div class="fld"><label for="coNote" data-i18n="coNote">বিশেষ নির্দেশনা (ঐচ্ছিক)</label><input id="coNote" placeholder="যেমন: বিকেলে ডেলিভারি দিলে ভালো হয়" data-i18n-ph="coNotePh" /></div>
     <div id="loyaltyBox"></div>
     <div class="trow grand" style="border:0"><span data-i18n="coGrand">সর্বমোট (ডেলিভারিসহ)</span><span id="coTotal">৳0</span></div>
+    <!-- P3 Part B (SEC-P1-7): Turnstile human verification — renders when checkout opens; the token is exchanged for a one-time server proof at order time. -->
+    <div id="turnstileBox" style="display:flex;justify-content:center;margin:6px 0 2px;min-height:65px"></div>
     <button class="checkout" type="submit" id="placeOrderBtn" data-i18n="placeOrder">✅ অর্ডার কনফার্ম করুন</button>
     <p style="font-size:.8rem;color:var(--muted);margin:0;text-align:center" data-i18n="coFlowNote">অর্ডারটি প্রথমে AnboBD Admin যাচাই করে কনফার্ম করবে, তারপর Seller-এর কাছে পাঠানো হবে — Seller প্যাক করে পাঠিয়ে দেবে।</p>
   </form>
@@ -1411,7 +1438,7 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
     <button class="xbtn" data-close aria-label="বন্ধ করুন">✕</button>
     <div class="mbody">
       <div id="auForms">
-        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><span class="auth-acct">অ্যাকাউন্ট</span><p>আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।</p></div>
+        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><span class="auth-acct">অ্যাকাউন্ট</span><p>আপনার অর্ডার, উইশলিস্ট আর কার্ট শুধু আপনার অ্যাকাউন্টেই থাকবে।</p><div class="auth-trust">নিরাপদ পেমেন্ট <i>•</i> দ্রুত ডেলিভারি <i>•</i> সহজ রিটার্ন</div></div>
         <div class="notice" id="auSupabaseNotice" style="display:none;margin-bottom:14px">⚠️ অ্যাকাউন্ট এখন শুধু এই ব্রাউজারে সংরক্ষিত থাকছে।</div>
         <div class="authtabs" role="tablist" aria-label="সাইন ইন / সাইন আপ">
           <button type="button" id="auTabIn" class="on">সাইন ইন</button>
@@ -1428,7 +1455,7 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
           <p class="notice" id="auForgotMsg" role="status" style="display:none;margin:0"></p>
           <p style="font-size:.86rem;color:var(--muted);margin:0">অ্যাকাউন্ট নেই? <button type="button" id="auGoUp" style="background:none;border:0;color:var(--teal);font-weight:800;cursor:pointer;font-family:inherit;padding:0;min-height:0">সাইন আপ করুন</button> — নাম, ইমেইল, মোবাইল আর পাসওয়ার্ড দিলেই হবে।</p>
           <div class="auth-or"><span></span>অথবা<span></span></div>
-          <button type="button" class="btn-sec" id="auGoogleBtn" style="width:100%">🔵 Google দিয়ে লগইন</button>
+          <button type="button" class="btn-sec" id="auGoogleBtn" style="width:100%"><span class="gmark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg></span>Google দিয়ে লগইন</button>
           <div class="auth-otp">
             <div class="fld"><label for="auPhone">মোবাইল নম্বর দিয়ে লগইন</label><input id="auPhone" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" /></div>
             <button type="button" class="btn-sec" id="auOtpSendBtn">📩 OTP পাঠান</button>
@@ -1452,12 +1479,12 @@ body.cmpbar-on .toast:not(.show){transform:translate(-50%,250px)}
           <div class="login-err" id="auUpErr"></div>
           <button class="checkout" type="submit" style="margin-top:2px">অ্যাকাউন্ট তৈরি করুন →</button>
           <div class="auth-or"><span></span>অথবা<span></span></div>
-          <button type="button" class="btn-sec" id="auGoogleBtnUp" style="width:100%">🔵 Google দিয়ে সাইন আপ</button>
+          <button type="button" class="btn-sec" id="auGoogleBtnUp" style="width:100%"><span class="gmark" aria-hidden="true"><svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303C33.654 32.657 29.223 36 24 36c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571.001-.001.002-.001.003-.002l6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/></svg></span>Google দিয়ে সাইন আপ</button>
           <p class="auth-note">সাইন আপ করলেই সাইন ইন হয়ে যাবেন। নতুন অ্যাকাউন্ট একদম খালি থাকে — কোনো অর্ডার, কার্ট বা উইশলিস্ট আগে থেকে থাকে না।</p>
         </form>
       </div>
       <div id="auReset" style="display:none">
-        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><p>নতুন পাসওয়ার্ড দিন</p></div>
+        <div class="auth-brand"><span class="logo"><span class="an">An</span><span class="bo">bo</span><span class="bd"><span class="lb">B</span><span class="ld">D</span></span></span><p>নতুন পাসওয়ার্ড দিন</p><div class="auth-trust">নিরাপদ পেমেন্ট <i>•</i> দ্রুত ডেলিভারি <i>•</i> সহজ রিটার্ন</div></div>
         <p style="color:var(--muted);margin:0 0 14px;line-height:1.6">ইমেইলে পাওয়া রিসেট লিংক থেকে এসেছেন — এখানে নতুন পাসওয়ার্ড দিন।</p>
         <form id="auResetForm" novalidate style="display:grid;gap:12px">
           <div class="fld"><label for="auNewPass">নতুন পাসওয়ার্ড * (কমপক্ষে 6 অক্ষর)</label>
@@ -1892,6 +1919,7 @@ loyaltyInfo:"⭐ Loyalty: আপনার <b>{n} point</b> আছে — {pts} p
 loyaltyUse:"⭐ Loyalty point ব্যবহার করুন — <b>{pts} point = ৳{v} ছাড়</b> (balance: {n} point)",
 loyaltyNoCoupon:" — কুপনের সাথে একসাথে চলবে না",
 placeOrderSending:"⏳ অর্ডারটি পাঠানো হচ্ছে…",
+tsVerifyFail:"🛡️ যাচাই করা যায়নি — আবার চেষ্টা করুন",
 placeOrderWait:"⏳ {s} সেকেন্ড পর আবার চেষ্টা করুন",
 coGuestWait:"⏳ একটু অপেক্ষা করুন — এইমাত্র একটি অর্ডার দেওয়া হয়েছে, ৩০ সেকেন্ড পর আবার অর্ডার করতে পারবেন।",
 orderSyncOk:"✅ <b>অর্ডারটি অনলাইনে সেভ হয়েছে</b> — Admin-এর প্যানেলে পৌঁছে গেছে। Admin কনফার্ম করলেই Seller-এর কাছে যাবে।",
@@ -2214,6 +2242,7 @@ loyaltyInfo:"⭐ Loyalty: you have <b>{n} points</b> — at {pts} points you get
 loyaltyUse:"⭐ Use loyalty points — <b>{pts} points = ৳{v} off</b> (balance: {n} points)",
 loyaltyNoCoupon:" — can't be used together with a coupon",
 placeOrderSending:"⏳ Placing your order…",
+tsVerifyFail:"🛡️ Verification failed — please try again",
 placeOrderWait:"⏳ Try again in {s}s",
 coGuestWait:"⏳ Please wait a moment — you just placed an order; you can order again in 30 seconds.",
 orderSyncOk:"✅ <b>Your order has been saved online</b> — it has reached the Admin panel. Once Admin confirms, it goes to the seller.",
@@ -3604,6 +3633,87 @@ async function anboIsCustomerBlocked(uid){
     return !!(prof && (prof.status === "blocked" || prof.status === "suspended"));
   }catch(e){ return false; }
 }
+/* ---------- P3 Part B (SEC-P1-7): Cloudflare Turnstile ----------
+   Managed widget (site key is public — it lives in the page, never the
+   secret). The widget is rendered when the checkout form opens
+   (toCheckoutBtn, below) so its iframe loads while the customer fills
+   the form. The TOKEN is minted fresh at order time: tokens are
+   single-use and short-lived, so checkoutSubmit always runs a new
+   challenge (usually invisible in Managed mode) and waits for its
+   callback — a token minted when the form opened is never reused.
+   The token is exchanged for a one-time server proof via /api/turnstile
+   (Edge Function verifies it with Cloudflare, stores the proof in
+   turnstile_proofs); the proof rides in the place_order payload and
+   place_order v3 checks + consumes it. Any failure here returns "" and
+   the caller aborts the order — nothing is ever placed without a proof. */
+var ANBO_TS_SITEKEY = "0x4AAAAAAGUgmFRIQ9Ft98Lg";
+var __anboTsWidget = null;
+var __anboTsToken = "";
+var __anboTsWaiters = [];
+function anboTsResolve(token){
+  __anboTsToken = token || "";
+  var w = __anboTsWaiters; __anboTsWaiters = [];
+  w.forEach(function(fn){ try{ fn(__anboTsToken); }catch(e){} });
+}
+function anboEnsureTsWidget(){
+  var box = document.getElementById("turnstileBox");
+  if(!box) return null;
+  /* The cart drawer template is cloned ONCE (ensureDrawers), so the box
+     normally lives for the whole page — but if the box lost its iframe
+     (re-clone), the cached widget id is dead and must be re-rendered. */
+  if(__anboTsWidget !== null){
+    if(box.querySelector("iframe")) return __anboTsWidget;
+    __anboTsWidget = null;
+  }
+  if(typeof window.turnstile === "undefined" || !window.turnstile.render) return null;
+  try{
+    __anboTsWidget = window.turnstile.render(box, {
+      sitekey: ANBO_TS_SITEKEY,
+      callback: function(tok){ anboTsResolve(tok); },
+      "expired-callback": function(){ anboTsResolve(""); },
+      "error-callback": function(){ anboTsResolve(""); }
+    });
+  }catch(e){ __anboTsWidget = null; }
+  return __anboTsWidget;
+}
+function anboTsWaitToken(timeoutMs){
+  return new Promise(function(resolve){
+    var done = false;
+    var timer = setTimeout(function(){ if(!done){ done = true; resolve(""); } }, timeoutMs || 60000);
+    __anboTsWaiters.push(function(tok){ if(!done){ done = true; clearTimeout(timer); resolve(tok); } });
+  });
+}
+async function anboTurnstileProof(phone){
+  var wid = anboEnsureTsWidget();
+  if(wid === null) return "";
+  /* Register the waiter BEFORE execute(): the callback may fire as soon
+     as the challenge finishes, and it must find a waiter to resolve. */
+  var waitP = anboTsWaitToken(60000);
+  try{ window.turnstile.execute(wid); }catch(e){ return ""; }
+  var token = await waitP;
+  if(!token){
+    /* Callback never fired (or fired empty) — fall back to whatever
+       token the widget currently holds, if any. */
+    try{ token = window.turnstile.getResponse(wid) || ""; }catch(e){ token = ""; }
+    if(!token) return "";
+  }
+  var normPhone = (typeof anboNormPhone === "function") ? anboNormPhone(phone) : String(phone || "").replace(/[^0-9]/g, "");
+  var proof = "";
+  try{
+    var res = await fetch("/api/turnstile", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ token: token, phone: normPhone })
+    });
+    var data = await res.json();
+    if(data && data.ok && data.proof) proof = String(data.proof);
+  }catch(e){ proof = ""; }
+  /* The token is single-use and already exchanged — reset the widget so
+     the next order starts clean. */
+  try{ window.turnstile.reset(wid); }catch(e){}
+  __anboTsToken = "";
+  return proof;
+}
 async function checkoutSubmit(e){
   e.preventDefault();
   /* SEC-P1-7 (2026-11-26, client half only): guest checkout cooldown —
@@ -3696,6 +3806,15 @@ async function checkoutSubmit(e){
     userId: (window.__anboCurrentUser ? window.__anboCurrentUser.id : null),
     userEmail: (window.__anboCurrentUser ? window.__anboCurrentUser.email : null)
   };
+  /* P3 Part B (SEC-P1-7): Turnstile human verification — mint a fresh
+     token, exchange it for a one-time server proof, and attach it to the
+     order. The proof is checked + consumed by place_order v3. Any
+     failure here stops the order BEFORE it is stored locally, so a
+     failed verification never leaves a phantom pending order for
+     retryPendingOrders to replay without a proof. */
+  var _tsProof = await anboTurnstileProof(phone);
+  if(!_tsProof){ __coUnlock(); toast(t("tsVerifyFail")); return; }
+  order.turnstileProof = _tsProof;
   ANBOBD_STORE.orders.push(order);
   /* সাকসেস স্ক্রিন দেখানোর আগেই অনলাইনে সেভের চেষ্টা শেষ করা হয় এবং
      ফলাফলটা সাকসেস স্ক্রিনেই সত্যি করে জানানো হয়। সেভ না হলে অর্ডারটি
@@ -4194,6 +4313,10 @@ function ensureDrawers(){
     if(cartCount()===0){ toast("🛒 কার্ট খালি — আগে পণ্য যোগ করুন!"); return; }
     document.getElementById("cartMain").style.display="none";
     document.getElementById("checkoutForm").classList.add("open");
+    /* P3 Part B (SEC-P1-7): render the Turnstile widget now, so its
+       iframe loads while the customer fills the form; the token itself
+       is minted fresh at submit time (checkoutSubmit). */
+    anboEnsureTsWidget();
     if(window.ANBOBD_DB && ANBOBD_DB.fetchPlatformSettings){ ANBOBD_DB.fetchPlatformSettings().then(function(){ fillCheckoutSummary(); syncPaymentMethods(); }).catch(function(){ fillCheckoutSummary(); syncPaymentMethods(); }); }
     else { fillCheckoutSummary(); syncPaymentMethods(); }
   });
@@ -4603,7 +4726,7 @@ function anboRpcErrCode(err){
   var m = String((err && err.message) || "").match(/^\s*([a-z_]+)\s*:/);
   if(!m) return null;
   var c = m[1];
-  if(["bad_request","bad_customer","bad_product","out_of_stock","bad_coupon","coupon_expired","coupon_limit","bad_loyalty","bad_payment","dup_trx","bad_order","rate_limited"].indexOf(c) === -1) return null;
+  if(["bad_request","bad_customer","bad_product","out_of_stock","bad_coupon","coupon_expired","coupon_limit","bad_loyalty","bad_payment","dup_trx","bad_order","rate_limited","bad_captcha"].indexOf(c) === -1) return null;
   return c;
 }
 function anboRpcErrMessage(code, detail){
@@ -4625,6 +4748,7 @@ function anboRpcErrMessage(code, detail){
     case "dup_trx": return "⚠️ এই Transaction ID দিয়ে আগেই একটি অর্ডার করা হয়েছে — নতুন পেমেন্টের Transaction ID দিন";
     case "bad_order": return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
     case "rate_limited": return (typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en") ? "⏰ Too many orders from this number in the last hour — please try again later." : "⏰ এক ঘণ্টায় এই নম্বর থেকে অনেকগুলো অর্ডার দেওয়া হয়েছে — একটু পরে আবার চেষ্টা করুন।";
+    case "bad_captcha": return (typeof ANBO_LANG !== "undefined" && ANBO_LANG === "en") ? "🛡️ Verification did not complete — please try again." : "🛡️ যাচাই সম্পন্ন হয়নি — আবার চেষ্টা করুন";
     default: return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
   }
 }
@@ -4892,7 +5016,13 @@ var ANBOBD_DB = {
       transaction_id: order.payment.transactionId || null,
       sender_number: order.payment.senderNumber || null,
       delivery_slot: order.deliverySlot || "anytime",
-      idempotency_key: order.idemKey
+      idempotency_key: order.idemKey,
+      /* P3 Part B (SEC-P1-7): one-time Turnstile proof minted by
+         /api/turnstile.js — place_order v3 checks + consumes it.
+         retryPendingOrders replays with the SAME proof; a lost-response
+         retry is safe because v3 answers the idempotency replay BEFORE
+         the proof check. */
+      turnstile_proof: order.turnstileProof || null
     };
     var res;
     try{ res = await sb.rpc("place_order", { p_payload: payload }); }
