@@ -1643,6 +1643,11 @@ function soldFmt(n){ return n>=1000 ? (n/1000).toFixed(1).replace(".0","")+"k" :
 function stars(r){ var f=Math.round(r), s=""; for(var i=0;i<5;i++) s += i<f?"★":"☆"; return s+" <span>("+Number(r||0).toFixed(1)+")</span>"; }
 function etaDate(days){ var d=new Date(); d.setDate(d.getDate()+days); try{ return d.toLocaleDateString(ANBO_LANG==="en"?"en-US":"bn-BD",{weekday:"long", day:"numeric", month:"long"}); }catch(e){ return d.toDateString(); } }
 function etaText(zone){ return zone==="dhaka" ? t("etaDhaka", {d:etaDate(1)}) : t("etaOutside", {d1:etaDate(2), d2:etaDate(3)}); }
+/* P0-6: the place_order RPC returns estimated_delivery as an ISO date
+   ("2026-11-27"); format it exactly like etaDate() so success screen,
+   tracking and My Orders keep showing the same Bengali/English date.
+   Non-ISO values (old rows already hold a formatted string) pass through. */
+function anboFmtIsoDate(iso){ var m = String(iso||"").match(/^(\d{4})-(\d{2})-(\d{2})/); if(!m) return String(iso||""); var d = new Date(+m[1], +m[2]-1, +m[3]); try{ return d.toLocaleDateString(ANBO_LANG==="en"?"en-US":"bn-BD",{weekday:"long", day:"numeric", month:"long"}); }catch(e){ return d.toDateString(); } }
 /* Batch C (2026-11-25): EN product descriptions for the 6 live honey products.
    EN mode-e modal-e ei English line dekhabe; BN mode-e DB desc-i thakbe.
    Map-e na thaka product-e DB desc fallback. */
@@ -2690,6 +2695,10 @@ function promoDiscount(sub){
   if(c.type==="flat") return Math.min(c.value, es);
   return 0;
 }
+/* P0-6: totals() is DISPLAY-ONLY — cart + checkout summary + success-screen
+   estimate. Nothing it computes is ever sent to the server; place_order
+   recomputes every taka from the DB and saveOrder adopts the server's
+   amounts. */
 function totals(){
   var sub = cartSubtotal(), pDisc = promoDiscount(sub);
   var c = promoCode ? findCouponAny(promoCode) : null;
@@ -3595,6 +3604,8 @@ async function checkoutSubmit(e){
     list.push({ label:(ANBO_LANG==="en"?"Home":"বাসা"), name:name, phone:phone, address:addr, district:dist, default: !list.length });
     anboSaveAddressesToDb(list).then(function(res){ if(res.ok){ anboSetAddresses(list); } });
   })();
+  /* P0-6: placeholder local id only — saveOrder replaces it with the
+     server's #ANBO number on success; offline it stays as the local id. */
   var orderId = "#ANBO" + Math.floor(100000 + Math.random()*900000);
   var order = {
     id: orderId,
@@ -3621,6 +3632,18 @@ async function checkoutSubmit(e){
     ? ANBOBD_DB.saveOrder(order).catch(function(err){ console.warn("Order save failed, order kept locally:", err); return null; })
     : Promise.resolve(null);
   savePromise.then(function(saved){
+    /* P0-6: RPC business error — the order was never created. Remove the
+       local record (it must not linger as a phantom order), tell the
+       customer plainly, and stay on the checkout form with the cart
+       intact so they can fix it (new TrxID, less qty, coupon off) and
+       resubmit. */
+    if(saved && saved.rpcError){
+      var _ix = ANBOBD_STORE.orders.indexOf(order); if(_ix > -1) ANBOBD_STORE.orders.splice(_ix, 1);
+      if(window.__anboPersistState) window.__anboPersistState();
+      if(btn){ btn.disabled = false; btn.textContent = t("placeOrder"); }
+      toast(saved.rpcError);
+      return;
+    }
     order.onlineSaved = !!saved;
     /* P2: saved payment number — manual payment + "মনে রাখুন" checkbox thakle nijer sender number save (per method, per account). */
     if(isManual && document.getElementById("coSavePay") && document.getElementById("coSavePay").checked) anboSavePayNumber(pay, paySender);
@@ -3638,7 +3661,11 @@ async function checkoutSubmit(e){
       }
     }
     if(saved && window.renderAccount && window.__anboCurrentUser) renderAccount();
-    finishCheckoutUI(name, phone, addr, dist, pay, isManual, trxId, paySender, tt, order);
+    /* P0-6: success screen shows the SERVER's amounts (saveOrder already
+       replaced order.amounts with the RPC return); offline it falls back
+       to the client estimate. shipOverride is display-only. */
+    var ttShow = { sub: order.amounts.subtotal, discount: order.amounts.discount, ship: order.amounts.deliveryFee, total: order.amounts.total, shipOverride: tt.shipOverride };
+    finishCheckoutUI(name, phone, addr, dist, pay, isManual, trxId, paySender, ttShow, order);
   });
   return;
 }
@@ -4083,6 +4110,15 @@ function applyPromo(){
     var usedN = anboCouponUseCount(code);
     if(usedN >= +c.perCustomerLimit){ promoCode=null; renderCart(); toast("⚠️ Ei coupon ti apni <b>"+usedN+" bar</b> use korechen — ei coupon-er সীমা "+(+c.perCustomerLimit)+" bar, ar cholbe na"); return; }
   }
+  /* P0-6: NEW200 is new-customers-only — the RPC refuses it for guests (once
+     the new_customer_only flag is live in the DB). A guest must sign in
+     first; never let them reach submit and fail there. */
+  if(code === "NEW200" && !window.__anboCurrentUser){
+    promoCode = null; renderCart();
+    toast("🎟️ NEW200 শুধু নতুন গ্রাহকদের জন্য — এই কুপনটি ব্যবহার করতে সাইন ইন করুন");
+    if(typeof openAuth === "function") openAuth("signin");
+    return;
+  }
   promoCode = code; c.used = (c.used||0)+1; renderCart(); toast("🎉 কুপন <b>"+code+"</b> প্রযোজ্য হয়েছে!"+(c.sellerId?" (শপ কুপন — "+escHtml(SL(c.sellerId).name)+")":""));
 }
 /* Track Order: phone chara kon order khola jabe — sudhu ei session/account-er
@@ -4269,7 +4305,7 @@ applyLang(); /* P2: language switcher — prothom load-e saved choice apply. */
    • সাইন আপে profiles table-এ row তৈরি হয়:
      { id = auth user id, email, full_name, phone, role }
      Seller হলে shops table-এও একটি row তৈরি হয় (status: pending)
-   • ক্যাটালগ/কুপন → products, coupons, shops tables থেকে পড়া হয়
+   • ক্যাটালগ/কুপন → products, coupons tables থেকে, আর দোকানের public তথ্য → public_shops view থেকে পড়া হয় (P0-1: raw shops table-এ PII থাকে, storefront সেটা আর পড়ে না)
    • অর্ডার → orders table-এ insert হয়, Seller অনুযায়ী ভাগ হয়ে
      sub_orders table-এ (shop_id দিয়ে) insert হয়
    • স্ট্যাটাস/পণ্য/কুপন/Mega/Payout বদল → সংশ্লিষ্ট table-এ write-back হয়;
@@ -4374,11 +4410,46 @@ function anboOrderFromRow(row, user){
     promoCode: row.promo_code||null, zone: (meta&&meta.zone)||"", status: row.status||"AwaitingAdmin",
     deliverySlot: (meta&&meta.deliverySlot)||(row.delivery_slot||"anytime"),
     statusHistory: [], placedAt: row.created_at||new Date().toISOString(),
-    estimatedDelivery: (meta&&meta.estimatedDelivery)||"", source:"supabase", userId: row.customer_id||null, userEmail: user ? user.email : "" };
+    estimatedDelivery: (meta&&meta.estimatedDelivery)?anboFmtIsoDate(meta.estimatedDelivery):"", source:"supabase", userId: row.customer_id||null, userEmail: user ? user.email : "" };
 }
 function anboDbErr(what, err){
   console.warn(what, err);
   if(typeof toast==="function") toast("⚠️ " + what + " — আবার চেষ্টা করুন।");
+}
+/* ---------- P0-6: place_order RPC error mapping ----------
+   The RPC raises '<code>: <detail>'; PostgREST returns it in
+   error.message. A KNOWN code is a business error: the order was never
+   created, so it is shown to the customer and never retried.
+   Anything without a known code (network drop, 500, function missing)
+   is NOT a business error: the order stays pending locally and
+   retryPendingOrders replays it with the same idempotency key. */
+function anboRpcErrCode(err){
+  var m = String((err && err.message) || "").match(/^\s*([a-z_]+)\s*:/);
+  if(!m) return null;
+  var c = m[1];
+  if(["bad_request","bad_customer","bad_product","out_of_stock","bad_coupon","coupon_expired","coupon_limit","bad_loyalty","bad_payment","dup_trx","bad_order"].indexOf(c) === -1) return null;
+  return c;
+}
+function anboRpcErrMessage(code, detail){
+  var d = String(detail || "");
+  switch(code){
+    case "bad_request": return "⚠️ অর্ডারের তথ্যে ভুল আছে — নাম, নম্বর, ঠিকানা আর পণ্য ঠিক করে আবার চেষ্টা করুন";
+    case "bad_customer": return "🚫 Apnar account ti block kora hoyeche — ekhon order kora jabe na. Sahajjer jonno support e jogajog korun.";
+    case "bad_product": return "❌ কার্টের কোনো পণ্য আর লাইভ নেই বা পাওয়া যাচ্ছে না — পণ্যটি সরিয়ে আবার চেষ্টা করুন";
+    case "out_of_stock": return "📦 কার্টের কোনো পণ্যের স্টক শেষ — পরিমাণ কমিয়ে বা পণ্যটি সরিয়ে আবার চেষ্টা করুন";
+    case "bad_coupon":
+      if(d.indexOf("new customers only") !== -1) return "🎟️ এই কুপনটি শুধু নতুন গ্রাহকদের জন্য — সাইন ইন করে আবার চেষ্টা করুন, অথবা কুপনটি সরিয়ে দিন";
+      return "❌ এই কুপনটি এখন আর চলছে না — কুপনটি সরিয়ে আবার চেষ্টা করুন";
+    case "coupon_expired": return "⏰ এই ভাউচারের মেয়াদ শেষ";
+    case "coupon_limit": return "⚠️ এই কুপনের ব্যবহারের সীমা শেষ হয়ে গেছে";
+    case "bad_loyalty":
+      if(d.indexOf("signed-in") !== -1 || d.indexOf("sign in") !== -1) return "⭐ Loyalty point ব্যবহার করতে সাইন ইন করুন";
+      return "⭐ Loyalty point kom — 100 point na thakle redeem hobe na";
+    case "bad_payment": return "📱 ম্যানুয়াল পেমেন্টের জন্য আপনার নম্বর ও Transaction ID দিন — Admin যাচাই করে অর্ডার কনফার্ম করবে";
+    case "dup_trx": return "⚠️ এই Transaction ID দিয়ে আগেই একটি অর্ডার করা হয়েছে — নতুন পেমেন্টের Transaction ID দিন";
+    case "bad_order": return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
+    default: return "⚠️ অর্ডারটি করা যায়নি — একটু পরে আবার চেষ্টা করুন";
+  }
 }
 
 var ANBOBD_DB = {
@@ -4501,13 +4572,28 @@ var ANBOBD_DB = {
        ekhon Promise.all-e pashapashi chole; prottek-ta nijer try/catch rakhe,
        tai ek-ta fail korleo baki gulo cholbe. Post-processing order ager motoi. */
     await Promise.all([
-    /* shops — Seller তালিকা (SL() lookup-এর জন্য), Admin/Seller panel-এর একই shops table */
+    /* P0-1 (2026-11-26): shops — Seller তালিকা (SL() lookup-এর জন্য) এখন
+       public_shops VIEW থেকে পড়া হয়, raw shops table থেকে নয়. View-তে
+       শুধু public column আছে (id, shop_name, slug, status, logo_url,
+       banner_url, category, district, description, delivery_fee,
+       free_delivery_threshold, owner_id, created_at) — owner_phone / NID /
+       payout / bank / commission কোনোটাই এখানে আসে না. owner_id শুধুই
+       shop owner-er profiles.id (plain UUID, PII নয়) — saveOrder এটা
+       দিয়ে sub_orders.seller_id বসায়, তাই view-তেই থাকতে হয়; created_at
+       "Seller since" date-এর জন্য. email/phone/payoutMethod/payoutNo/
+       commissionRate শুধু signed-in seller-এর নিজের দোকানে লাগে, সেটা
+       আলাদা owner-scoped fetchShopByOwner() (shops table,
+       owner_id = auth.uid()) থেকে আসে (anboAdoptDbShop) — public entry-র
+       ownerId adopted entry-র সঙ্গেই মিলে (একই UUID), তাই merge-এ কোনো
+       মান নষ্ট হয় না. Status filter belt-and-braces: view approved-only
+       হলেও non-approved row এখানে ঢুকবে না. */
     (async function(){ try{
-      var shr = await sb.from('shops').select('*');
+      var shr = await sb.from('public_shops').select('id,shop_name,slug,status,logo_url,banner_url,category,district,description,delivery_fee,free_delivery_threshold,owner_id,created_at');
       if(shr.error) throw shr.error;
       (shr.data||[]).forEach(function(r){
         if(r.id==null) return;
-        var entry = { id:r.id, supabaseId:r.id, name:r.shop_name||r.name||"দোকান", logoUrl:r.logo_url||"", area:r.district||"বাংলাদেশ", rating:Number(r.rating||0), email:r.email||"", phone:r.phone||"", payoutMethod:r.payout_method||"bKash", payoutNo:r.payout_account||"", commissionRate:(r.commission_rate!=null?r.commission_rate:8), status:r.status||"approved", ownerId:r.owner_id||null, deliveryFee:(r.delivery_fee!=null?Number(r.delivery_fee):null), freeDeliveryThreshold:(r.free_delivery_threshold!=null?Number(r.free_delivery_threshold):null) };
+        if(String(r.status||"approved")!=="approved") return;
+        var entry = { id:r.id, supabaseId:r.id, name:r.shop_name||"দোকান", logoUrl:r.logo_url||"", area:r.district||"বাংলাদেশ", rating:0, status:r.status||"approved", deliveryFee:(r.delivery_fee!=null?Number(r.delivery_fee):null), freeDeliveryThreshold:(r.free_delivery_threshold!=null?Number(r.free_delivery_threshold):null), ownerId:r.owner_id||null, createdAt:r.created_at||"" };
         var ex = ANBOBD_STORE.sellers.filter(function(s){ return String(s.id)===String(r.id); })[0];
         if(ex){ for(var k in entry) ex[k]=entry[k]; } else ANBOBD_STORE.sellers.push(entry);
       });
@@ -4572,121 +4658,89 @@ var ANBOBD_DB = {
     if(window.__anboRender) window.__anboRender();
     if(window.renderShopCoupons) window.renderShopCoupons();
   },
+  /* P0-6 (2026-11-26): checkout goes through the server-side place_order
+     RPC — the browser sends ONLY untrusted inputs (who, what, which coupon,
+     how to pay). Prices, stock, coupon rules, delivery fee, loyalty and
+     commission are all recomputed in the DB; client-computed amounts are
+     never posted. The RPC is one transaction: any failure rolls everything
+     back, so there are no partial orders. On success the server's truth is
+     adopted (#ANBO number, amounts, ETA, sub-orders). The idempotency key
+     is generated ONCE per checkout attempt and stored on the order, so a
+     retry (retryPendingOrders, or a lost response) replays the same order
+     instead of creating a duplicate. */
   saveOrder: async function(order){
     var sb = this.sb(); if(!sb) return null;
     /* Blocked customer — retryPendingOrders diyeo blocked account-er order
        DB-te jabe na (checkoutSubmit-e toast diye thamanor backup). Guest
        order-er userId null — unaffected. */
     if(order.userId && await anboIsCustomerBlocked(order.userId)) return null;
-    /* Order-এর UUID ক্লায়েন্টেই বানানো হয় (crypto.randomUUID, না থাকলে
-       Math.random fallback) এবং insert-এর আগেই order.supabaseId-তে রাখা হয়,
-       payload-এ id হিসেবে পাঠানো হয়। কারণ: .select() (return=representation)
-       দিয়ে insert করলে PostgREST RETURNING row-গুলোতে anon SELECT policy
-       প্রয়োগ করে — orders-এ anon-এর কোনো SELECT policy নেই, তাই guest
-       insert সবসময় 42501 দিয়ে reject হয় (লাইভ API দিয়ে যাচাইকৃত)।
-       .select() ছাড়া plain insert সফল হয়। Insert ব্যর্থ হলে এই কল-এ বানানো
-       id মুছে দেওয়া হয়, যাতে অর্ডারটি আগের মতোই "এই ডিভাইসে আছে" হিসেবে
-       থাকে এবং retryPendingOrders সেটা আবার পাঠাতে পারে। */
-    var generatedId = false;
-    if(!anboIsUuid(order.supabaseId)){
-      var newOrderId = null;
-      try{ if(window.crypto && typeof window.crypto.randomUUID==="function") newOrderId = window.crypto.randomUUID(); }catch(e){ newOrderId = null; }
-      if(!newOrderId){
-        newOrderId = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c){
-          var r = Math.floor(Math.random()*16), v = (c==="x") ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
+    /* Idempotency key — once per checkout attempt, kept on the order object
+       so every retry of THIS attempt reuses it. */
+    if(!order.idemKey || !anboIsUuid(order.idemKey)){
+      var _k = null;
+      try{ if(window.crypto && typeof window.crypto.randomUUID==="function") _k = window.crypto.randomUUID(); }catch(e){ _k = null; }
+      if(!_k){
+        _k = "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function(c){
+          var _r = Math.floor(Math.random()*16), _v = (c==="x") ? _r : (_r & 0x3 | 0x8);
+          return _v.toString(16);
         });
       }
-      order.supabaseId = newOrderId; generatedId = true;
+      order.idemKey = _k;
     }
-    /* ⚠️ Payload-এ শুধুমাত্র live table-এ সত্যিই আছে এমন column যাবে।
-       আগের payload user_id, note, sender_number, subtotal, discount,
-       delivery_fee, zone, estimated_delivery পাঠাত — orders table-এ এই
-       column গুলোর একটাও নেই, তাই PostgREST প্রতিটি insert-ই PGRST204
-       ("Could not find the 'delivery_fee' column") দিয়ে reject করত এবং
-       কোনো অর্ডারই কখনো সেভ হত না (লাইভ API দিয়ে যাচাইকৃত)।
-       যেসব তথ্যের নিজস্ব column নেই (amounts-এর ভাগ, note, sender নম্বর,
-       zone, আনুমানিক ডেলিভারি, লোকাল অর্ডার নম্বর) সেগুলো items JSON-এর
-       শেষে একটি meta আইটেমে যায় — anboOrderFromRow সেটা ফিরিয়ে আনে। */
-    var metaItem = { meta:true, productId:null, sku:"", name:"", qty:0, unitPrice:0, lineTotal:0, sellerId:null,
-      localId: order.id, amounts: order.amounts, note: order.customer.note||"",
-      senderNumber: order.payment.senderNumber||null, zone: order.zone||"",
-      deliverySlot: order.deliverySlot||"anytime",
-      estimatedDelivery: order.estimatedDelivery||"" };
-    /* DB check constraint orders_payment_method_check শুধুমাত্র 'COD', 'bKash',
-       'Nagad', 'Card' মানে — 'Rocket' যোগ করতে SQL migration লাগবে (নিচে দেখুন)।
-       checkout-এর বাংলা লেবেল "ক্যাশ অন ডেলিভারি" সরাসরি পাঠালে insert reject হয়।
-       তাই payload-এর জন্য method normalize করা হয়; লোকাল order object ও গ্রাহকের
-       দেখা সবকিছু আগের মতোই বাংলায় থাকে।
-       REQUIRED SQL (Supabase dashboard → SQL Editor), Rocket order save হওয়ার আগে:
-       ALTER TABLE orders DROP CONSTRAINT orders_payment_method_check;
-       ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check
-         CHECK (payment_method IN ('COD','bKash','Nagad','Rocket','Card'));
-       Migration না হওয়া পর্যন্ত Rocket order insert reject হবে আর গ্রাহককে আসল
-       কারণসহ "অর্ডারটি এখনো অনলাইনে সেভ হয়নি" দেখাবে — কখনো ভুল method-এ সেভ হবে না। */
+    /* Payment method normalize — checkout-er বাংলা "ক্যাশ অন ডেলিভারি"
+       লেবেল সরাসরি পাঠালে RPC reject করে; তাই COD-তে normalize করা হয়। */
     var dbPayMethod = (order.payment.method==="ক্যাশ অন ডেলিভারি") ? "COD"
       : (order.payment.method==="bKash" || order.payment.method==="Nagad" || order.payment.method==="Rocket" || order.payment.method==="Card")
         ? order.payment.method : "COD";
+    /* Lines — ONLY product id + qty + variant label. No price, name or shop
+       id is ever sent: the server prices everything from the DB. */
+    var lines = (order.items||[]).filter(function(it){ return it && !it.meta; }).map(function(it){
+      return { product_id: it.productId, qty: it.qty, variant: it.variant || null };
+    });
     var payload = {
-      id: order.supabaseId,
-      customer_id: anboIsUuid(order.userId) ? order.userId : null,
-      customer_name: order.customer.name, customer_phone: order.customer.phone,
-      address: order.customer.address, district: order.customer.district,
-      payment_method: dbPayMethod, payment_status: order.payment.status,
-      transaction_id: order.payment.transactionId||null,
-      total: order.amounts.total,
-      delivery_slot: order.deliverySlot||"anytime",
-      promo_code: order.promoCode||null, status: order.status,
-      items: order.items.concat([metaItem])
+      customer_name: order.customer.name,
+      customer_phone: order.customer.phone,
+      customer_address: order.customer.address,
+      customer_district: order.customer.district,
+      customer_note: order.customer.note || "",
+      lines: lines,
+      promo_code: (order.promoCode === "LOYALTY100") ? null : (order.promoCode ? String(order.promoCode).toUpperCase() : null),
+      loyalty: order.promoCode === "LOYALTY100",
+      payment_method: dbPayMethod,
+      transaction_id: order.payment.transactionId || null,
+      sender_number: order.payment.senderNumber || null,
+      delivery_slot: order.deliverySlot || "anytime",
+      idempotency_key: order.idemKey
     };
     var res;
-    /* .select() ছাড়া plain insert — উপরের নোট দেখুন: .select() দিলে PostgREST
-       RETURNING row-তে anon SELECT policy প্রয়োগ করে guest insert 42501-এ
-       reject করে। Plain insert সফল হলে res.data খালি থাকে, তাই saved এখানেই
-       ক্লায়েন্ট-বানানো id দিয়ে তৈরি হয় — আগের কোড res.data[0] খুঁজত বলে
-       সেভ হলেও "সেভ হয়নি" দেখাত। */
-    try{ res = await sb.from('orders').insert(payload); }
-    catch(e){ console.warn("Order insert failed:", e); order.syncError = String(e && e.message || e); if(generatedId) order.supabaseId = null; return null; }
-    if(res.error){ console.warn("Order insert rejected:", res.error); order.syncError = res.error.message || res.error.code || "insert rejected"; if(generatedId) order.supabaseId = null; return null; }
-    var saved = { id: order.supabaseId };
-    order.onlineSaved = true; order.syncError = null;
-    /* sub_orders-এর আসল column: id, order_id, shop_id, seller_id, subtotal,
-       status, created_at, delivered_at — আগের payload items/total/
-       payment_method, transaction_id, customer name/phone, district, address পাঠাত,
-       যার একটাও নেই (PGRST204)। shop_id/seller_id শুধুমাত্র আসল UUID
-       হলেই যাবে — ক্যাটালগের placeholder "s1" পাঠালে row reject হয়। */
-    var bySeller = {};
-    order.items.forEach(function(it){ (bySeller[it.sellerId] = bySeller[it.sellerId]||[]).push(it); });
-    for(var sid in bySeller){
-      var subItems = bySeller[sid];
-      var subTotal = subItems.reduce(function(s,it){ return s+it.lineTotal; },0);
-      if(!saved || !saved.id) break;
-      var subPayload = { order_id: saved.id, subtotal: subTotal, status: order.status };
-      if(anboIsUuid(sid)){
-        subPayload.shop_id = sid;
-        /* FK fix (2026-11-21): sub_orders.seller_id references the seller PERSON
-           (profiles.id = shop owner), NOT the shop UUID — sending sid as seller_id
-           violates sub_orders_seller_id_fkey. Resolve the owner id from the loaded
-           sellers list; omit seller_id when unknown. */
-        var sv = null;
-        (ANBOBD_STORE.sellers || []).forEach(function(s){ if (String(s.id) === String(sid) || String(s.supabaseId || "") === String(sid)) sv = s; });
-        if (sv && sv.ownerId) subPayload.seller_id = sv.ownerId;
+    try{ res = await sb.rpc("place_order", { p_payload: payload }); }
+    catch(e){ console.warn("place_order RPC failed:", e); order.syncError = String(e && e.message || e); return null; }
+    if(res.error){
+      var _code = anboRpcErrCode(res.error);
+      if(_code){
+        /* Business error — the order was never created and never will be
+           with this payload. Tell the customer plainly; do NOT keep it
+           pending for retry (retryPendingOrders would only fail again). */
+        order.syncError = anboRpcErrMessage(_code, res.error.message);
+        return { rpcError: order.syncError, rpcCode: _code };
       }
-      try{
-        var sr = await sb.from('sub_orders').insert(subPayload);
-        if(sr.error) console.warn("Sub-order insert rejected (main order saved):", sr.error);
-      }catch(e){ console.warn("Sub-order insert failed (main order saved):", e); }
+      console.warn("place_order RPC rejected:", res.error);
+      order.syncError = res.error.message || res.error.code || "place_order failed";
+      return null;
     }
-    if(saved && saved.id){
-      try{
-        var back = await sb.from('orders').select('*').eq('id', saved.id).single();
-        if(!back.error && back.data) order.supabaseRow = back.data;
-        var subs = await sb.from('sub_orders').select('*').eq('order_id', saved.id);
-        if(!subs.error && subs.data) order.subOrders = subs.data;
-      }catch(e){ console.warn("Supabase order read-back failed:", e); }
-    }
-    return saved;
+    var d = res.data || {};
+    /* Adopt the server's truth. The local #ANBO id (client-generated) is
+       replaced by the server's; amounts + ETA + sub-orders come from the
+       RPC return, never from the cart. */
+    if(d.order_id) order.supabaseId = d.order_id;
+    if(d.local_id) order.id = d.local_id;
+    if(d.subtotal != null) order.amounts = { subtotal: +d.subtotal, discount: +(d.discount||0), deliveryFee: +(d.delivery_fee||0), total: +d.total };
+    if(d.estimated_delivery) order.estimatedDelivery = anboFmtIsoDate(d.estimated_delivery);
+    if(Array.isArray(d.sub_orders)) order.subOrders = d.sub_orders;
+    order.onlineSaved = true; order.syncError = null;
+    return { id: order.supabaseId, localId: d.local_id || null, amounts: order.amounts, estimatedDelivery: order.estimatedDelivery, subOrders: d.sub_orders || [], replayed: !!d.replayed };
   },
+
   loadMyOrders: async function(user){
     var sb = this.sb(); if(!sb || !user || !anboIsUuid(user.id)){ window.__anboMyOrdersLoaded = true; return; }
     /* P1 follow-up: My Orders loading state — renderAccount shows
@@ -4717,14 +4771,18 @@ var ANBOBD_DB = {
      খুললেই ডাকা হয়, যাতে একবার ব্যর্থ হলেও অর্ডার Admin-এর কাছে পৌঁছায়। */
   retryPendingOrders: async function(){
     if(!this.configured()) return 0;
-    var pending = ANBOBD_STORE.orders.filter(function(o){ return !o.supabaseId && !o.onlineSaved; });
-    var savedCount = 0;
+    var pending = ANBOBD_STORE.orders.filter(function(o){ return !o.supabaseId && !o.onlineSaved && !o.permanentFail; });
+    var savedCount = 0, markedCount = 0;
     for(var i=0;i<pending.length;i++){
       var saved = await this.saveOrder(pending[i]);
+      /* P0-6: business error — this payload can never succeed; mark it so
+         it is never retried again, and keep going (it must not block the
+         queue behind it). */
+      if(saved && saved.rpcError){ pending[i].permanentFail = true; markedCount++; continue; }
       if(saved) savedCount++;
       else break; /* প্রথম ব্যর্থতাতেই থামো — সার্ভার/অনুমতির সমস্যা থাকলে বাকিগুলোও ব্যর্থ হবে */
     }
-    if(savedCount && window.__anboPersistState) window.__anboPersistState();
+    if((savedCount || markedCount) && window.__anboPersistState) window.__anboPersistState();
     return savedCount;
   }
 };
