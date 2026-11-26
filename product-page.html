@@ -311,7 +311,8 @@ footer{margin-top:56px;border-top:1px solid var(--line);padding:34px 0 110px;col
 
   <!-- P2 (2026-11-23): Q&A — ASK side. product_qa table theke proshno+uttor
        pore; signed-in customer proshno korte parbe. Table na thakle honest
-       empty state — kokhono error toast na. Uttor Admin panel theke lekha hoy. -->
+       empty state — kokhono error toast na. Uttor Seller Center / Admin panel
+       theke lekha hoy (P2-14). -->
   <section class="box" id="pdQaBox" style="display:none;margin-top:22px">
     <h3 style="margin:0 0 6px" data-i18n="qaTitle">❓ প্রশ্ন ও উত্তর</h3>
     <div id="pdQaList"><p style="color:var(--muted);margin:0" data-i18n="qaLoading">প্রশ্ন লোড হচ্ছে…</p></div>
@@ -515,7 +516,7 @@ qaLogin:"প্রশ্ন করতে <a href=\"/index.html?auth=signin\" sty
 qaErrEmpty:"⚠️ প্রশ্নটি লিখুন।", qaErrNoConn:"⚠️ অনলাইন সংযোগ নেই।",
 qaErrNotStarted:"⚠️ প্রশ্ন-উত্তর এখনো চালু হয়নি — পরে আবার চেষ্টা করুন।",
 qaErrFail:"⚠️ প্রশ্ন পাঠানো যায়নি — ",
-qaNoAns:"⏳ উত্তর আসেনি — দোকানদার/Admin দেখে উত্তর দেবে।", qaByShop:"দোকানদার",
+qaNoAns:"⏳ উত্তর আসেনি — দোকানদার/Admin দেখে উত্তর দেবে।", qaByShop:"দোকানদার", revReplyBy:"দোকানদারের উত্তর",
 fbtLoading:"লোড হচ্ছে…", fbtNone:"এই পণ্যের সাথে জোড়া পণ্য নেই।",
 fbtLoadFail:"জোড়া পণ্য লোড করা যায়নি — পরে আবার চেষ্টা করুন।", fbtAdd:"+ যোগ করুন",
 relLoading:"সম্পর্কিত পণ্য লোড হচ্ছে…",
@@ -582,7 +583,7 @@ qaLogin:"Please <a href=\"/index.html?auth=signin\" style=\"color:var(--teal);fo
 qaErrEmpty:"⚠️ Please write your question.", qaErrNoConn:"⚠️ No online connection.",
 qaErrNotStarted:"⚠️ Questions & answers isn't live yet — please try again later.",
 qaErrFail:"⚠️ Could not send the question — ",
-qaNoAns:"⏳ No answer yet — the shopkeeper/Admin will answer.", qaByShop:"Shopkeeper",
+qaNoAns:"⏳ No answer yet — the shopkeeper/Admin will answer.", qaByShop:"Shopkeeper", revReplyBy:"Seller's reply",
 fbtLoading:"Loading…", fbtNone:"No bundled products for this item.",
 fbtLoadFail:"Could not load bundled products — please try again later.", fbtAdd:"+ Add",
 relLoading:"Loading related products…",
@@ -799,7 +800,8 @@ async function loadProduct(){
           if(!String(txt).trim()) return;
           PD.reviews.push({ n:r.customer_name || r.name || r.reviewer || r.customer || "Customer",
             d:r.created_at ? String(r.created_at).slice(0,10) : "",
-            t:String(txt), rating:Number(r.rating||0)||0 });
+            t:String(txt), rating:Number(r.rating||0)||0,
+            reply:r.seller_reply || "", replyAt:r.seller_replied_at ? String(r.seller_replied_at).slice(0,10) : "" }); /* P2-14: seller reply (seller_reply / seller_replied_at) — na thakle khali */
         });
       }
     }catch(e){}
@@ -905,7 +907,8 @@ function renderProduct(){
     ? PD.reviews.map(function(rv){
         return '<div class="review"><div class="rh"><span class="av">'+escHtml(String(rv.n||"C").charAt(0))+'</span><div><b style="font-size:.92rem">'+escHtml(rv.n||"Customer")+'</b> <span style="color:var(--muted);font-size:.78rem">• '+escHtml(rv.d||"")+'</span></div>' +
         (rv.rating>0 ? '<span class="stars" style="margin-left:auto">'+stars(rv.rating)+'</span>' : '') +
-        '</div><p>'+escHtml(rv.t||"")+'</p></div>';
+        '</div><p>'+escHtml(rv.t||"")+'</p>' +
+        (rv.reply ? '<div style="margin-top:8px;padding:10px 12px;background:var(--surface2);border-radius:10px"><b style="color:var(--teal)">💬 '+escHtml(pdT("revReplyBy"))+':</b> '+escHtml(rv.reply)+(rv.replyAt ? ' <span style="color:var(--muted);font-size:.82rem">• '+escHtml(rv.replyAt)+'</span>' : '')+'</div>' : '') + '</div>'; /* P2-14: seller reply thakle review-er niche dekhabe */
       }).join("")
     : '<p style="color:var(--muted);margin:0">' + pdT("revNone") + '</p>';
   syncWishBtn();
