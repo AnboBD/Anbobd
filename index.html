@@ -4008,7 +4008,7 @@ function renderTracking(order){
      reuse — document-level [data-cancel-order] delegation (My Orders-er
      motoi two-step confirm + cascade + honest error). */
   if(order.status === "AwaitingAdmin"){
-    html += '<div style="margin-top:14px"><button class="btn-sec" type="button" data-cancel-order="'+escHtml(order.id)+'">" + t("myCancel") + "</button><p style="font-size:.85rem;color:var(--muted);margin:6px 0 0;line-height:1.6">" + t("myCancelNote") + "</p></div>';
+    html += '<div style="margin-top:14px"><button class="btn-sec" type="button" data-cancel-order="'+escHtml(order.id)+'">' + t("myCancel") + '</button><p style="font-size:.85rem;color:var(--muted);margin:6px 0 0;line-height:1.6">' + t("myCancelNote") + '</p></div>';
   }
   /* P1-13 — Return আবেদন (Delivered order, delivery-r return window-er moddhe;
      window + on/off Admin Settings theke: returns_enabled / return_window_days). */
@@ -5858,7 +5858,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       return '<div class="ocard"><div class="ohead"><span class="oid">' + o.id + '</span><span class="st ' + fm.cls + '">' + flowLabel(o.status) + '</span><span style="margin-left:auto;font-weight:800">' + fmt(o.amounts.total) + '</span></div>' +
         '<div class="oitems">' + o.items.map(function(it){ return "• " + esc(it.name) + (it.variant ? " (" + esc(it.variant) + ")" : "") + " × " + it.qty + " — " + fmt(it.lineTotal); }).join("<br>") + '</div>' +
         '<div class="ocust">📅 ' + t("etaEst", {d:o.estimatedDelivery}) + (o.deliverySlot && o.deliverySlot !== "anytime" ? t("trSlotLbl") + esc(anboSlotLabel(o.deliverySlot)) : '') + ' • ' + anboPayMethodLabel(o.payment.method) + (o.payment.transactionId ? '<br>📱 Transaction ID: <b>' + esc(o.payment.transactionId) + '</b> — ' + anboPayLabel(o) : '') + '</div>' +
-        '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">" + t("myTrack") + "</button>' + ' <button class="btn-sec" data-invoice-order="' + o.id + '">" + t("myInvoice") + "</button>' + (o.status === "AwaitingAdmin" ? ' <button class="btn-sec" data-cancel-order="' + o.id + '">" + t("myCancel") + "</button>' : '') + (o.status === "Delivered" ? ' <button class="btn-sec" data-buyagain-order="' + o.id + '">" + t("myBuyAgain") + "</button>' + ' <button class="btn-sec" data-return-order="' + o.id + '">" + t("myReturn") + "</button>' + ' <button class="btn-sec" data-dispute-order="' + o.id + '"' + (filed ? ' disabled' : '') + '>' + (filed ? t("myDisputeFiled") : t("myDispute")) + '</button>' + reviewBtnsFor(o, u) : '') + '</div></div>';
+        '<div class="oacts"><button class="btn-sec" data-track-order="' + o.id + '">' + t("myTrack") + '</button>' + ' <button class="btn-sec" data-invoice-order="' + o.id + '">' + t("myInvoice") + '</button>' + (o.status === "AwaitingAdmin" ? ' <button class="btn-sec" data-cancel-order="' + o.id + '">' + t("myCancel") + '</button>' : '') + (o.status === "Delivered" ? ' <button class="btn-sec" data-buyagain-order="' + o.id + '">' + t("myBuyAgain") + '</button>' + ' <button class="btn-sec" data-return-order="' + o.id + '">' + t("myReturn") + '</button>' + ' <button class="btn-sec" data-dispute-order="' + o.id + '"' + (filed ? ' disabled' : '') + '>' + (filed ? t("myDisputeFiled") : t("myDispute")) + '</button>' + reviewBtnsFor(o, u) : '') + '</div></div>';
     }).join("") : (window.__anboMyOrdersLoaded ? '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("myOrdersEmpty")+'</p>' : '<p style="color:var(--muted);margin:0;line-height:1.6">'+t("myOrdersLoading")+'</p>');
     var lbEl = document.getElementById("auLoyalty");
     if(lbEl){ var lb3 = loyaltyBalance(), cfg3 = loyaltyCfg(); lbEl.innerHTML = '<div class="ocard"><div style="font-size:1.05rem"><b>'+lb3.balance+' point</b> <span style="color:var(--muted);font-size:.85rem">(earned '+lb3.earned+' · used '+lb3.spent+')</span></div><div style="font-size:.88rem;color:var(--muted);margin-top:4px">Delivered order e proti ৳100 e '+cfg3.per100+' point — '+cfg3.points+' point = ৳'+cfg3.value+' discount, checkout e use kora jay.</div></div>'; }
@@ -6045,7 +6045,7 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
       var mine = (ANBOBD_STORE.productReviews && ANBOBD_STORE.productReviews[String(p.id)]) || [];
       var already = mine.some(function(rv){ return rv.uid ? rv.uid === u.id : rv.n === (u && u.name); }); /* P2-8: ager review reviewer id diye match, id na thakle naam fallback */
       if(already){ out += ' <span style="font-size:.85rem;color:var(--muted)">'+t("myReviewDone")+'</span>'; return; }
-      out += ' <button class="btn-sec" type="button" data-review-product="' + escHtml(String(p.id)) + '" data-review-name="' + escHtml(p.name) + '">" + t("myReviewGive") + "</button>';
+      out += ' <button class="btn-sec" type="button" data-review-product="' + escHtml(String(p.id)) + '" data-review-name="' + escHtml(p.name) + '">' + t("myReviewGive") + '</button>';
     });
     return out;
   }
