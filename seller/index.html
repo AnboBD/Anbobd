@@ -4270,6 +4270,22 @@
   });
   (function(){ var lt = $("setLogoText"); if (lt) lt.addEventListener("input", function(){ var v = lt.value.trim().toUpperCase().slice(0,2); var lp = $("logoPreview"); if (lp) lp.textContent = v || initials(me() ? me().shop : "S"); var av = $("shopAvatar"); if (av && v && !(me() && me().logoUrl)) av.textContent = v; }); })();
 
+  /* Storage orphan cleanup — upload hoye DB update fail hole sobe-upload kora
+     file ta bucket e orphan hoye pore thake. Best-effort muche fela: cleanup
+     er nijer kono error kokhono throw kore na, failure message o bodlay na. */
+  async function removeFromBucket(bucket, path){
+    if (!supabaseConnected || !supabase || !bucket || !path) return;
+    try { await supabase.storage.from(bucket).remove([path]); } catch(e){}
+  }
+  /* uploadImageToBucket public URL ferot dey, storage path na. Public URL theke
+     path ta ber kora — "/object/public/<bucket>/" er porer ongsho tai path. */
+  function storagePathFromPublicUrl(url, bucket){
+    var u = String(url || "");
+    var marker = "/object/public/" + bucket + "/";
+    var i = u.indexOf(marker);
+    if (i === -1) return "";
+    return u.slice(i + marker.length).split("?")[0];
+  }
   /* Shop logo / banner upload — 'shop-images' bucket e jay, shops table er
      logo_url / banner_url column e save hoy, preview sathe sathe bodlay. */
   async function handleShopImage(kind, input){
@@ -4285,11 +4301,12 @@
       try { url = await uploadImageToBucket("shop-images", f); }
       catch(e){ input.disabled = false; toast("Image upload hoy ni: " + (e && e.message ? e.message : "আবার চেষ্টা করুন")); return; }
       var patch = {}; if (kind === "logo") patch.logo_url = url; else patch.banner_url = url;
+      var uploadedPath = storagePathFromPublicUrl(url, "shop-images");
       try {
         var upS = await supabase.from('shops').update(patch).eq('id', s.shopId).select("id");
-        if (upS.error) { input.disabled = false; toast("Image save hoy ni: " + upS.error.message); return; }
-        if (!upS.data || !upS.data.length) { input.disabled = false; toast("Image save hoy ni — database e kono row update hoy ni. Abar chesta korun."); return; }
-      } catch(e2){ input.disabled = false; toast("Image save hoy ni — abar chesta korun."); return; }
+        if (upS.error) { await removeFromBucket("shop-images", uploadedPath); input.disabled = false; toast("Image save hoy ni: " + upS.error.message); return; }
+        if (!upS.data || !upS.data.length) { await removeFromBucket("shop-images", uploadedPath); input.disabled = false; toast("Image save hoy ni — database e kono row update hoy ni. Abar chesta korun."); return; }
+      } catch(e2){ await removeFromBucket("shop-images", uploadedPath); input.disabled = false; toast("Image save hoy ni — abar chesta korun."); return; }
       input.disabled = false;
     } else {
       url = URL.createObjectURL(f);
@@ -4363,6 +4380,9 @@
         else if (statusEl) statusEl.textContent = "";
         toast(hadRerequest ? "ডকুমেন্ট আপডেট হয়েছে — Admin-এর পুনরায় চাওয়াটি মুছে গেছে" : (kind === "nid" ? "NID কপি আপডেট হয়েছে" : "ট্রেড লাইসেন্স কপি আপডেট হয়েছে"));
       } catch(e) {
+        /* DB update fail hole sobe-upload kora file ta orphan na rekhe muche fela
+           (best-effort — path na thakle mane upload-i hoy ni, tokhon kichu korar nai). */
+        if (path) await removeFromBucket("kyc-docs", path);
         if (statusEl) statusEl.innerHTML = '<span style="color:var(--red);font-weight:600">আপলোড হয়নি: ' + esc(e && e.message ? e.message : "আবার চেষ্টা করুন") + '</span>';
       }
       input.disabled = false;
