@@ -2346,7 +2346,31 @@ modalPayLine:"Cash on Delivery • bKash / Nagad / Rocket manual payment • ↩
 modalDelBox:"🚚 <b>Delivery info:</b> Inside Dhaka ৳60 — delivery in 24 hours • Outside Dhaka ৳120 — delivery in 48–72 hours • Free delivery on Dhaka orders over ৳2,000 • Cash on Delivery (COD) available<br>↩️ <b>Return policy:</b> Easy 7-day return — if there's a problem with the product, you'll get a refund or replacement"
 }
 };
+/* SEC-P2-2 (2026-11-26): client-side rate limiting — 60s lockout after 5 failed
+   attempts in 10 minutes, plus 60s resend cooldowns. localStorage-backed so a
+   reload does not reset it. Only counts + timestamps are stored — never a
+   password, OTP code or coupon. This is friction only; the server still
+   decides every auth/coupon outcome. */
+var ANBO_RATE_MAX = 5, ANBO_RATE_WINDOW_MS = 10*60*1000, ANBO_RATE_LOCK_MS = 60*1000;
+function anboRateState(key){ try{ var st = JSON.parse(localStorage.getItem("anbobd-ratelimit-"+key)||"null"); return (st && typeof st==="object") ? st : {n:0, first:0, until:0}; }catch(e){ return {n:0, first:0, until:0}; } }
+function anboRateSave(key, st){ try{ localStorage.setItem("anbobd-ratelimit-"+key, JSON.stringify(st)); }catch(e){} }
+function anboRateLocked(key){ var st = anboRateState(key); if(st.until && Date.now() < st.until) return Math.ceil((st.until - Date.now())/1000); if(st.until){ st.until = 0; st.n = 0; st.first = 0; anboRateSave(key, st); } return 0; }
+function anboRateHit(key){ var st = anboRateState(key); var now = Date.now(); if(st.until && now < st.until) return; if(!st.first || now - st.first > ANBO_RATE_WINDOW_MS){ st.n = 0; st.first = now; } st.n++; if(st.n >= ANBO_RATE_MAX){ st.until = now + ANBO_RATE_LOCK_MS; } anboRateSave(key, st); }
+function anboRateReset(key){ try{ localStorage.removeItem("anbobd-ratelimit-"+key); }catch(e){} }
+function anboCooldownLeft(key, secs){ var t = 0; try{ t = +localStorage.getItem("anbobd-cooldown-"+key) || 0; }catch(e){} var left = Math.ceil((t + secs*1000 - Date.now())/1000); return left > 0 ? left : 0; }
+function anboCooldownSet(key){ try{ localStorage.setItem("anbobd-cooldown-"+key, String(Date.now())); }catch(e){} }
 function t(k, vars){
+  var d = I18N[ANBO_LANG] || I18N.bn;
+  var s = (d && d[k] != null) ? d[k] : ((I18N.bn[k] != null) ? I18N.bn[k] : k);
+  /* SEC-P2-5: interpolated VALUES are HTML-escaped by default — a product/shop
+     name or coupon label containing markup must render as text, never as live
+     HTML. The template itself keeps its own HTML (e.g. <br> in dict strings). */
+  if(vars) for(var key in vars) s = String(s).split("{"+key+"}").join(escHtml(vars[key]));
+  return s;
+}
+/* SEC-P2-5 opt-out: use ONLY where the value intentionally contains trusted
+   markup. Today that is one call site: trCodNote's <b> amount. */
+function tHtml(k, vars){
   var d = I18N[ANBO_LANG] || I18N.bn;
   var s = (d && d[k] != null) ? d[k] : ((I18N.bn[k] != null) ? I18N.bn[k] : k);
   if(vars) for(var key in vars) s = String(s).split("{"+key+"}").join(vars[key]);
@@ -2642,7 +2666,7 @@ function voucherTerms(c){
   var parts = [];
   if(c.minSpend>0) parts.push(t("vouchMinSpend", {amt:fmt(c.minSpend)}));
   if(c.type==="percent" && c.maxDiscount>0) parts.push(t("vouchMaxDisc", {amt:fmt(c.maxDiscount)}));
-  if(c.expires) parts.push(t("vouchExpiry", {d:escHtml(ANBO_LANG==="en" && c.expires_en ? c.expires_en : c.expires)}));
+  if(c.expires) parts.push(t("vouchExpiry", {d:(ANBO_LANG==="en" && c.expires_en ? c.expires_en : c.expires)}));
   return parts.join(" • ");
 }
 function renderVouchers(){
@@ -2861,7 +2885,7 @@ function renderCart(){
   var freeShipNow = tt.sub>0 && tt.ship===0;
   var freeBlockedOutside = freeDeliveryMode()==="dhaka" && anboCheckoutZone()!=="dhaka";
   /* P3: shop-er nijer delivery charge/threshold thakle seta honestly janano. */
-  var ovrNote = (tt.shipOverride && (tt.shipOverride.fee!=null || tt.shipOverride.threshold!=null)) ? "<br><span style='font-size:.85rem;color:var(--muted)'>"+t("shipOvrNote", {shop:escHtml(tt.shipOverride.shopName)})+"</span>" : "";
+  var ovrNote = (tt.shipOverride && (tt.shipOverride.fee!=null || tt.shipOverride.threshold!=null)) ? "<br><span style='font-size:.85rem;color:var(--muted)'>"+t("shipOvrNote", {shop:tt.shipOverride.shopName})+"</span>" : "";
   document.getElementById("shipBox").innerHTML = freeShipNow
     ? t("shipFreeNow")+"<br><span class='deldate'>"+etaText(anboCheckoutZone())+"</span>" + ovrNote
     : freeBlockedOutside
@@ -3124,7 +3148,7 @@ function openModal(id){
     '<div style="flex:1;min-width:0"><div class="scname">🏪 <a href="/shop?id='+encodeURIComponent(s.id)+'" style="color:inherit;text-decoration:underline;text-underline-offset:2px">'+escHtml(s.name)+'</a></div>' +
     '<div class="scmeta">📍 '+escHtml(s.area||distOf())+' • '+t("modalRatingLbl")+(s.rating||0)+' ★</div>' +
     (p.megaDeal ? '<span class="st st-ship">🔥 MEGA SALE</span>' : '') +
-    (scp ? '<br><button type="button" class="shopcoup-tag" data-voucher="'+scp.code+'">'+t("modalShopCoup", {code:escHtml(scp.code), label:escHtml(couponLabel(scp))})+'</button>' : '') +
+    (scp ? '<br><button type="button" class="shopcoup-tag" data-voucher="'+scp.code+'">'+t("modalShopCoup", {code:scp.code, label:couponLabel(scp)})+'</button>' : '') +
     '</div>';
   syncModalWish();
   /* Frequently Bought Together */
@@ -3529,7 +3553,7 @@ function syncManualPay(){
   var info = document.getElementById("platformPayInfo");
   if(info){
     if(num){
-      info.innerHTML = '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px 14px;margin-top:10px"><div style="font-size:.85rem;color:var(--muted)">'+t("payNumTitle", {m:escHtml(method)})+'</div><div style="display:flex;align-items:center;gap:10px;margin-top:4px"><b style="font-size:1.25rem;letter-spacing:.5px" id="platformPayNum">'+escHtml(num)+'</b><button type="button" class="btn-sec" id="copyPayNumBtn" style="padding:6px 12px">'+t("payCopy")+'</button></div><div style="font-size:.82rem;color:var(--muted);margin-top:4px">'+t("payNumWarn")+'</div></div>';
+      info.innerHTML = '<div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:12px;padding:12px 14px;margin-top:10px"><div style="font-size:.85rem;color:var(--muted)">'+t("payNumTitle", {m:method})+'</div><div style="display:flex;align-items:center;gap:10px;margin-top:4px"><b style="font-size:1.25rem;letter-spacing:.5px" id="platformPayNum">'+escHtml(num)+'</b><button type="button" class="btn-sec" id="copyPayNumBtn" style="padding:6px 12px">'+t("payCopy")+'</button></div><div style="font-size:.82rem;color:var(--muted);margin-top:4px">'+t("payNumWarn")+'</div></div>';
       var cb = document.getElementById("copyPayNumBtn");
       if(cb) cb.addEventListener("click", function(){
         var n = document.getElementById("platformPayNum").textContent;
@@ -3538,7 +3562,7 @@ function syncManualPay(){
         else { fallbackCopy(n); done(); }
       });
     } else {
-      info.innerHTML = '<div style="background:#fefce8;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;margin-top:10px">'+t("payNumMissing", {m:escHtml(method)})+'</div>';
+      info.innerHTML = '<div style="background:#fefce8;border:1.5px solid #fde68a;border-radius:12px;padding:12px 14px;margin-top:10px">'+t("payNumMissing", {m:method})+'</div>';
     }
   }
 }
@@ -3831,7 +3855,11 @@ function renderTracking(order){
   var flow = ANBOBD_STORE.orderFlow, idx = flow.indexOf(order.status);
   var labels = { AwaitingAdmin:trackLabel("AwaitingAdmin"), AdminConfirmed:trackLabel("AdminConfirmed"), Packed:trackLabel("Packed"), Shipped:trackLabel("Shipped"), Delivered:trackLabel("Delivered") };
   var subs = { AwaitingAdmin:trackSubLabel("AwaitingAdmin"), AdminConfirmed:trackSubLabel("AdminConfirmed"), Packed:trackSubLabel("Packed"), Shipped:trackSubLabel("Shipped"), Delivered:trackSubLabel("Delivered") };
-  var html = '<div class="sumbox" style="background:var(--surface2);border-radius:14px;padding:13px 15px;font-size:.92rem">'+t("trOrderLbl")+'<b>'+escHtml(order.id)+'</b> • '+escHtml(order.customer.district)+(order.deliverySlot && order.deliverySlot!=="anytime" ? t("trSlotLbl")+escHtml(anboSlotLabel(order.deliverySlot)) : '')+t("trTotalLbl")+'<b>'+fmt(order.amounts.total)+'</b><br>'+t("trEstLbl")+'<b>'+escHtml(order.estimatedDelivery)+'</b>'+t("trPayLbl")+escHtml(anboPayMethodLabel(order.payment.method))+'</div>';
+  /* SEC-P2-8: RPC row-te estimatedDelivery / payment method thake na —
+     na janle oi ongsho-gulo lukiye rakho, khali label dekhiyo na. */
+  var _trEst = order.estimatedDelivery ? t("trEstLbl")+'<b>'+escHtml(order.estimatedDelivery)+'</b>' : '';
+  var _trPay = (order.payment && order.payment.method) ? t("trPayLbl")+escHtml(anboPayMethodLabel(order.payment.method)) : '';
+  var html = '<div class="sumbox" style="background:var(--surface2);border-radius:14px;padding:13px 15px;font-size:.92rem">'+t("trOrderLbl")+'<b>'+escHtml(order.id)+'</b> • '+escHtml(order.customer.district)+(order.deliverySlot && order.deliverySlot!=="anytime" ? t("trSlotLbl")+escHtml(anboSlotLabel(order.deliverySlot)) : '')+t("trTotalLbl")+'<b>'+fmt(order.amounts.total)+'</b>'+((_trEst||_trPay) ? '<br>'+_trEst+_trPay : '')+'</div>';
   if(order.payment && order.payment.transactionId){
     /* Payment label keys off payment_status (anboPayStatus), NOT the order
        status — a Cancelled order must never read as "verified". */
@@ -3840,9 +3868,9 @@ function renderTracking(order){
       : _ps === "rejected" ? t("trPayTxtRej")
       : order.status === "Cancelled" ? t("trPayTxtCanc")
       : t("trPayTxtWait");
-    html += '<div class="paystatus">'+t("trManualPay", {m:escHtml(order.payment.method)})+' — Transaction ID: <b>'+escHtml(order.payment.transactionId)+'</b>'+(order.payment.senderNumber ? t("trSenderNo")+escHtml(order.payment.senderNumber) : '')+'<br>'+_payTxt+'</div>';
+    html += '<div class="paystatus">'+t("trManualPay", {m:order.payment.method})+' — Transaction ID: <b>'+escHtml(order.payment.transactionId)+'</b>'+(order.payment.senderNumber ? t("trSenderNo")+escHtml(order.payment.senderNumber) : '')+'<br>'+_payTxt+'</div>';
   } else if(order.payment && order.payment.method==="ক্যাশ অন ডেলিভারি"){
-    html += '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">'+t("trCodNote", {amt:"<b>"+fmt(order.amounts.total)+"</b>"})+'</div>';
+    html += '<div class="paystatus" style="background:var(--surface2);color:var(--ink)">'+tHtml("trCodNote", {amt:"<b>"+fmt(order.amounts.total)+"</b>"})+'</div>';
   }
   /* Courier + tracking ID — subOrders age thekei thakle ekhoni dekhabe;
      na thakle khali box thakbe, anboLoadTrackingSubs (niche) ene bhorbe.
@@ -3979,6 +4007,10 @@ async function anboStartDispute(order){
   var sb = (window.ANBOBD_DB && ANBOBD_DB.sb) ? ANBOBD_DB.sb() : null;
   if(!sb){ wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">'+t("dispNoConn")+'</p>'; return; }
   var supId = order.supabaseId || (anboIsUuid(order.id) ? order.id : null);
+  /* SEC-P2-8: RPC-tracked order-er UUID thake na — supId na thakle form
+     dekhale order_id null diye orphan dispute insert hoto. Honest message
+     diye atkao; UUID RPC-te ferot ele (parent) ei guard ar cholbe na. */
+  if(!supId){ wrap.innerHTML = '<p style="color:var(--danger);font-weight:700">⚠️ অর্ডারটির সম্পূর্ণ তথ্য পাওয়া যায়নি — Dispute এখন করা যাচ্ছে না, হটলাইনে (09638-555555) যোগাযোগ করুন।</p>'; return; }
   /* Agei dispute ache kina — best effort (table na thakle skip). */
   if(supId){
     try{
@@ -4175,21 +4207,29 @@ function anboCouponUseCount(code){
   var c = String(code||"").toUpperCase();
   return ANBOBD_STORE.orders.filter(function(o){ return o.userId === u.id && o.status !== "Cancelled" && String(o.promoCode||"").toUpperCase() === c; }).length;
 }
+/* SEC-P2-2: coupon guessing — 5 failed tries in 10 minutes locks coupon
+   attempts for 60 seconds. */
 function applyPromo(){
+  var lk = anboRateLocked("coupon");
+  if(lk){ toast("⚠️ অনেকবার ভুল কোড চেষ্টা হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"); return; }
+  var ok = applyPromoInner();
+  if(ok) anboRateReset("coupon"); else anboRateHit("coupon");
+}
+function applyPromoInner(){
   var code = document.getElementById("promoInput").value.trim().toUpperCase();
   var c = findCouponAny(code);
-  if(!c || !c.active){ promoCode=null; renderCart(); toast("❌ কোডটি সঠিক নয়, মেয়াদ শেষ বা Pause করা আছে"); return; }
-  if(couponExpired(c)){ promoCode=null; renderCart(); toast("⏰ এই ভাউচারের মেয়াদ শেষ"); return; }
-  if(c.sellerId && couponEligibleSub(c)===0){ promoCode=null; renderCart(); toast("🏪 "+code+" শুধু <b>"+escHtml(SL(c.sellerId).name)+"</b>-এর পণ্যে চলবে — কার্টে ওই দোকানের পণ্য নেই"); return; }
-  if(megaStackingBlocked(c)){ promoCode=null; renderCart(); toast("🔥 Mega price-এর পণ্যে এই শপ কুপন চলবে না — Admin Settings-এ Mega stacking OFF আছে"); return; }
+  if(!c || !c.active){ promoCode=null; renderCart(); toast("❌ কোডটি সঠিক নয়, মেয়াদ শেষ বা Pause করা আছে"); return false; }
+  if(couponExpired(c)){ promoCode=null; renderCart(); toast("⏰ এই ভাউচারের মেয়াদ শেষ"); return false; }
+  if(c.sellerId && couponEligibleSub(c)===0){ promoCode=null; renderCart(); toast("🏪 "+code+" শুধু <b>"+escHtml(SL(c.sellerId).name)+"</b>-এর পণ্যে চলবে — কার্টে ওই দোকানের পণ্য নেই"); return false; }
+  if(megaStackingBlocked(c)){ promoCode=null; renderCart(); toast("🔥 Mega price-এর পণ্যে এই শপ কুপন চলবে না — Admin Settings-এ Mega stacking OFF আছে"); return false; }
   var es = c.sellerId ? couponEligibleSub(c) : cartSubtotal();
-  if(es < c.minSpend){ promoCode=null; renderCart(); toast("⚠️ "+code+" পেতে "+(c.sellerId?"ওই দোকানের ":"")+"কমপক্ষে "+fmt(c.minSpend)+" অর্ডার লাগবে"); return; }
+  if(es < c.minSpend){ promoCode=null; renderCart(); toast("⚠️ "+code+" পেতে "+(c.sellerId?"ওই দোকানের ":"")+"কমপক্ষে "+fmt(c.minSpend)+" অর্ডার লাগবে"); return false; }
   /* P3: per-customer limit — coupon-er per_customer_limit thakle ar signed-in
      customer agei sei sima chhuye fele thakle coupon cholbe na. Null limit =
      kono sima nei. Guest: count kora jay na, tai skip (claim-o kora hoy na). */
   if(c.perCustomerLimit!=null && !isNaN(+c.perCustomerLimit) && window.__anboCurrentUser){
     var usedN = anboCouponUseCount(code);
-    if(usedN >= +c.perCustomerLimit){ promoCode=null; renderCart(); toast("⚠️ Ei coupon ti apni <b>"+usedN+" bar</b> use korechen — ei coupon-er সীমা "+(+c.perCustomerLimit)+" bar, ar cholbe na"); return; }
+    if(usedN >= +c.perCustomerLimit){ promoCode=null; renderCart(); toast("⚠️ Ei coupon ti apni <b>"+usedN+" bar</b> use korechen — ei coupon-er সীমা "+(+c.perCustomerLimit)+" bar, ar cholbe na"); return false; }
   }
   /* P0-6: NEW200 is new-customers-only — the RPC refuses it for guests (once
      the new_customer_only flag is live in the DB). A guest must sign in
@@ -4198,9 +4238,10 @@ function applyPromo(){
     promoCode = null; renderCart();
     toast("🎟️ NEW200 শুধু নতুন গ্রাহকদের জন্য — এই কুপনটি ব্যবহার করতে সাইন ইন করুন");
     if(typeof openAuth === "function") openAuth("signin");
-    return;
+    return false;
   }
   promoCode = code; c.used = (c.used||0)+1; renderCart(); toast("🎉 কুপন <b>"+code+"</b> প্রযোজ্য হয়েছে!"+(c.sellerId?" (শপ কুপন — "+escHtml(SL(c.sellerId).name)+")":""));
+  return true;
 }
 /* Track Order: phone chara kon order khola jabe — sudhu ei session/account-er
    nijer order (ekhoni place kora, ba sign-in kora owner-er order). Onno
@@ -4479,6 +4520,43 @@ function anboMapCouponRow(r){
     expires:r.expiry||r.expires||(r.expires_at?String(r.expires_at).slice(0,10):""),
     active: st ? (st==="live"||st==="active") : (r.active!==false),
     sellerId:r.shop_id||r.seller_id||null, used:(r.used_count!=null?r.used_count:(r.used||0)), perCustomerLimit:(r.per_customer_limit!=null ? Number(r.per_customer_limit) : null) };
+}
+/* SEC-P2-8 (2026-11-26): anbo_track_order ekhon full orders row dey na —
+   RETURNS TABLE(local_id, status, courier, tracking_id, items, district,
+   total). items-e sudhu {name, qty, unitPrice} thake (meta row nei, kono
+   internal field nei). Ei mapper RPC row-ke local order shape-e ane.
+   phone = track form-e type kora (server-side verify kora) number — RPC
+   row-te phone thake na, tai ekhane bosano hoy; na hole track submit-er
+   local lookup phoneOk=false diye not-found dekhabe. Ja RPC dey na
+   (payment method/status/TrxID, placed date, estimated delivery, order
+   UUID) ta khali/null thake — renderTracking oi line-gulo lukiye rakhe,
+   ar return/dispute/cancel-er jonno UUID dorkar (parent-ke RPC-te id
+   ferot dite hobe). */
+function anboOrderFromTrackedRow(row, phone){
+  var rawItems = Array.isArray(row.items) ? row.items : [];
+  var items = rawItems.map(function(it){
+    var q = Number((it && it.qty) || 0) || 1;
+    var up = Number((it && it.unitPrice) || 0) || 0;
+    return { name: (it && it.name) || "", qty: q, unitPrice: up, lineTotal: q * up };
+  });
+  var subTotal = items.reduce(function(s,it){ return s + (Number(it.lineTotal)||0); }, 0);
+  var total = Number(row.total) || 0;
+  var o = { id: row.local_id || "", supabaseId: row.id || null,
+    items: items,
+    customer: { name:"", phone: phone || "", address:"", district: row.district || "", note:"" },
+    payment: { method: (row.payment_method === "COD" ? "ক্যাশ অন ডেলিভারি" : (row.payment_method || "")), status: row.payment_status || "", transactionId: row.transaction_id || null, senderNumber: row.sender_number || null },
+    amounts: { subtotal:subTotal, discount:0, deliveryFee:Math.max(0, total - subTotal), total:total },
+    promoCode: null, zone:"", status: row.status || "AwaitingAdmin",
+    deliverySlot:"anytime",
+    statusHistory: [], placedAt: row.created_at || null,
+    estimatedDelivery: "", source:"supabase", userId: null, userEmail:"" };
+  /* RPC sub_orders thekei courier/tracking_id ene dey (prothom sub-order)
+     — subOrders-e bosiye dile courier box ekhoni dekhabe; anboLoadTrackingSubs
+     supabaseId na pele emnitei skip kore. */
+  var c = String(row.courier || "").trim();
+  var trk = String(row.tracking_id || "").trim();
+  if(c || trk) o.subOrders = [{ courier: c, tracking_id: trk }];
+  return o;
 }
 function anboOrderFromRow(row, user){
   /* Live orders table-এর আসল column (যাচাইকৃত): id, customer_id, customer_name,
@@ -5199,7 +5277,7 @@ ANBOBD_DB.findOrderForTracking = async function(rawId, phone){
       if(normPhone){
         try{
           var rpcU = await sb.rpc('anbo_track_order', { p_local_id: id, p_phone: normPhone });
-          if(!rpcU.error && rpcU.data && rpcU.data.length) return this._adoptTrackedOrder(rpcU.data[0]);
+          if(!rpcU.error && rpcU.data && rpcU.data.length) return this._adoptTrackedOrder(rpcU.data[0], normPhone);
         }catch(e){ console.warn("Track-order RPC unavailable:", e); }
         return null;
       }
@@ -5220,16 +5298,17 @@ ANBOBD_DB.findOrderForTracking = async function(rawId, phone){
        thake (orders table-e er kono column nei), ar orders table-e anon SELECT
        policy-o nei — tai column query diye ager session-er / onno customer-er
        order kokhono pawa jabe na. Somadhan: SECURITY DEFINER RPC
-       public.anbo_track_order(p_local_id text, p_phone text) — returns setof
-       orders, server-side-e normalized customer_phone AND items-jsonb
-       meta.localId miliye dey. RPC-ti parent-ke Supabase dashboard-e toiri
-       korte hobe (existing public.anbo_customer_owns_order(uuid) helper-er
-       motoi pattern); RPC na thakle (404) ba row na pele ekhane chupchap
-       not-found-e jabe — kono technical error na, onno kono order-o na. */
+       public.anbo_track_order(p_local_id text, p_phone text) — SEC-P2-8
+       (2026-11-26) theke RETURNS TABLE(local_id, status, courier,
+       tracking_id, items, district, total); items-e sudhu {name, qty,
+       unitPrice}. Server-side-e normalized customer_phone AND items-jsonb
+       meta.localId miliye dey. RPC na thakle (404) ba row na pele ekhane
+       chupchap not-found-e jabe — kono technical error na, onno kono
+       order-o na. */
     if(/^ANBO\d+$/i.test(id) && normPhone){
       try{
         var rpc = await sb.rpc('anbo_track_order', { p_local_id: "#"+id.toUpperCase(), p_phone: normPhone });
-        if(!rpc.error && rpc.data && rpc.data.length) return this._adoptTrackedOrder(rpc.data[0]);
+        if(!rpc.error && rpc.data && rpc.data.length) return this._adoptTrackedOrder(rpc.data[0], normPhone);
       }catch(e){ console.warn("Track-order RPC unavailable:", e); }
       return null; /* number deoa hoyeche kintu RPC kichu pay ni — phone-er
         latest order kokhono ferot deoa jabe na (age #ANBO366551 + phone-e
@@ -5244,7 +5323,18 @@ ANBOBD_DB.findOrderForTracking = async function(rawId, phone){
   }catch(e){ console.warn("Order tracking lookup failed:", e); }
   return null;
 };
-ANBOBD_DB._adoptTrackedOrder = function(row){
+ANBOBD_DB._adoptTrackedOrder = function(row, phone){
+  /* SEC-P2-8: RPC row-er notun shape (local_id ache, id column nei) hole
+     anboOrderFromTrackedRow diye map koro; full orders row hole ager moto
+     anboOrderFromRow. Dedup local_id diyeo milao — na hole eki order
+     dubar push hobe. */
+  if(row && row.local_id != null && row.id == null){
+    var ex2 = ANBOBD_STORE.orders.filter(function(o){ return String(o.id)===String(row.local_id); })[0];
+    if(ex2) return ex2;
+    var o2 = anboOrderFromTrackedRow(row, phone);
+    ANBOBD_STORE.orders.push(o2);
+    return o2;
+  }
   var ex = ANBOBD_STORE.orders.filter(function(o){ return String(o.supabaseId||"")===String(row.id) || String(o.id)===String(row.id); })[0];
   if(ex) return ex;
   var o = anboOrderFromRow(row, null);
@@ -5394,6 +5484,19 @@ var ANBOBD_AUTH = {
   logout: function(){
     var sb = ANBOBD_DB.sb();
     if(sb){ sb.auth.signOut().catch(function(){}); }
+    /* SEC-P2-3: signOut removes the Supabase session, but sweep explicitly too —
+       a failed signOut (offline) must not leave the token behind — plus the
+       account-specific cached data (saved payment sender numbers, notif read
+       marker, search history, compare list). Guest cart/state (anbobd-state-*)
+       and language + platform-settings cache stay. */
+    try{
+      var i, k;
+      for(i = localStorage.length - 1; i >= 0; i--){ k = localStorage.key(i); if(k && k.indexOf("sb-") === 0) localStorage.removeItem(k); }
+      for(i = localStorage.length - 1; i >= 0; i--){ k = localStorage.key(i); if(k && k.indexOf("anbobd-pay-memory-") === 0) localStorage.removeItem(k); }
+      localStorage.removeItem("anbobd-notif-seen");
+      localStorage.removeItem(SEARCH_HIST_KEY);
+      localStorage.removeItem(COMPARE_LS_KEY);
+    }catch(e){}
     this.session = null; window.__anboCurrentUser = null;
     window.__anboMyOrdersLoaded = false; window.__anboMyOrdersLoading = false;
   },
@@ -5962,12 +6065,16 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     var ph = anboNormBdPhone(document.getElementById("auPhone").value);
     if(!ph){ show("সঠিক 11 ডিজিটের মোবাইল নম্বর দিন (01 দিয়ে শুরু)।"); return; }
     window.__anboOtpPhone = ph;
+    /* SEC-P2-2: OTP resend cooldown — 60 seconds between sends. */
+    var cd = anboCooldownLeft("otp-send", 60);
+    if(cd){ show("আবার "+cd+" সেকেন্ড পরে OTP পাঠাতে পারবেন।"); return; }
     this.disabled = true;
     try{
       var sb = ANBOBD_DB.sb();
       var r = await sb.auth.signInWithOtp({ phone: ph });
       if(r && r.error){ show("⚠ OTP পাঠানো যায়নি — " + (r.error.message || "আবার চেষ্টা করুন।")); }
       else {
+        anboCooldownSet("otp-send");
         document.getElementById("auOtpWrap").style.display = "";
         document.getElementById("auOtpVerifyBtn").style.display = "";
         show("✅ OTP পাঠানো হয়েছে " + ph + "-এ — 6 ডিজিটের কোডটি লিখে Verify চাপ দিন।");
@@ -5984,13 +6091,16 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     if(!ph){ show("আগে সঠিক মোবাইল নম্বর দিয়ে OTP পাঠান।"); return; }
     if(code.length !== 6){ show("6 ডিজিটের OTP কোডটি লিখুন।"); return; }
     if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show("⚠ OTP লগইনের জন্য লাইভ সংযোগ দরকার — লাইভ সাইটে গিয়ে আবার চেষ্টা করুন।"); return; }
+    /* SEC-P2-2: 5 wrong OTP codes in 10 minutes locks verify for 60 seconds. */
+    var lk = anboRateLocked("otp-verify");
+    if(lk){ show("অনেকবার ভুল OTP দেওয়া হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"); return; }
     this.disabled = true;
     try{
       var sb = ANBOBD_DB.sb();
       var r = await sb.auth.verifyOtp({ phone: ph, token: code, type: "sms" });
-      if(r && (r.error || !r.data || !r.data.user)){ show("⚠ OTP মেলেনি — কোডটি ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।"); return; }
+      if(r && (r.error || !r.data || !r.data.user)){ anboRateHit("otp-verify"); show("⚠ OTP মেলেনি — কোডটি ঠিক আছে কিনা দেখে আবার চেষ্টা করুন।"); return; }
       var ok = await anboFinishSupabaseLogin(r.data.user);
-      if(ok){ var f = document.getElementById("auInForm"); if(f) f.reset(); }
+      if(ok){ anboRateReset("otp-verify"); var f = document.getElementById("auInForm"); if(f) f.reset(); }
       else show("⚠ লগইন হয়েছে, কিন্তু প্রোফাইল লোড হয়নি — পেজ রিলোড করে আবার চেষ্টা করুন।");
     }catch(e){ show("⚠ OTP যাচাই করা যায়নি — " + ((e && e.message) || "আবার চেষ্টা করুন।")); }
     this.disabled = false;
@@ -6073,9 +6183,13 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
   });
   document.getElementById("auInForm").addEventListener("submit", function(e){
     e.preventDefault(); hideErr("auInErr");
+    /* SEC-P2-2: 5 failed logins in 10 minutes locks sign-in for 60 seconds. */
+    var lk = anboRateLocked("login");
+    if(lk){ showErr("auInErr", "অনেকবার ভুল চেষ্টা হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"); return; }
     var form = this;
     Promise.resolve(ANBOBD_AUTH.login(document.getElementById("auInEmail").value, document.getElementById("auInPass").value)).then(function(res){
-      if(!res.ok) return showErr("auInErr", res.error);
+      if(!res.ok){ anboRateHit("login"); return showErr("auInErr", res.error); }
+      anboRateReset("login");
       form.reset();
       afterAuth(res.user, false);
     }).catch(function(err){ showErr("auInErr", t("auErrLogin") + ((err && err.message) || t("auErrTryAgain"))); });
@@ -6090,12 +6204,15 @@ if(window.ANBOBD_DB && ANBOBD_DB.configured()){ ANBOBD_DB.fetchPlatformSettings(
     if(!em){ show(t("auForgotNoEmail")); return; }
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(em)){ show(t("auForgotBadEmail")); return; }
     if(!window.ANBOBD_DB || !ANBOBD_DB.configured()){ show(t("auForgotNoConn")); return; }
+    /* SEC-P2-2: reset link resend cooldown — 60 seconds between sends. */
+    var cd = anboCooldownLeft("forgot", 60);
+    if(cd){ show("আবার "+cd+" সেকেন্ড পরে রিসেট লিংক পাঠাতে পারবেন।"); return; }
     this.disabled = true;
     try{
       var sb = ANBOBD_DB.sb();
       var r = await sb.auth.resetPasswordForEmail(em);
       if(r && r.error){ console.warn("auth.resetPassword", r.error); show(t("auForgotFail")); }
-      else show(t("auForgotSent", {email:em}));
+      else { anboCooldownSet("forgot"); show(t("auForgotSent", {email:em})); }
     }catch(e){ console.warn("auth.resetPassword", e); show(t("auForgotErr")); }
     this.disabled = false;
   });
