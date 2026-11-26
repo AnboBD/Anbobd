@@ -3353,10 +3353,42 @@ function renderCoupons(){
   Array.prototype.forEach.call(el.querySelectorAll("[data-coupon-del]"), function(b){
     b.addEventListener("click", function(){ var c=coupons[parseInt(b.getAttribute("data-coupon-del"),10)]; askConfirm("Delete coupon "+c.code+"?", "Customers will no longer be able to redeem it at checkout.", function(){ sbDelete("coupons", "code", c.code); logActivity("Deleted platform coupon " + c.code); coupons=coupons.filter(function(x){ return x!==c; }); toast("🗑 Coupon <b>"+esc(c.code)+"</b> deleted"); renderAll(); }); });
   });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-approve]"), function(b){ b.addEventListener("click", function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-approve"),10)]; c.status="live"; c.placement="Shop page banner · Product page · Checkout"; sbUpdate("coupons", "code", c.code, { status: "live" }); logActivity("Approved seller coupon " + c.code + " (" + c.shop + ") — live on website"); toast("<span class='lime'>✓ Seller coupon live</span> — "+esc(c.code)+" ekhon website e show hobe"); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-pause]"), function(b){ b.addEventListener("click", function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-pause"),10)]; c.status="paused"; sbUpdate("coupons", "code", c.code, { status: "paused" }); logActivity("Paused seller coupon " + c.code + " (" + c.shop + ")"); toast("Seller coupon <b>"+esc(c.code)+"</b> paused — website theke sore geche"); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-live]"), function(b){ b.addEventListener("click", function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-live"),10)]; c.status="live"; sbUpdate("coupons", "code", c.code, { status: "live" }); logActivity("Made seller coupon live again: " + c.code); toast("<span class='lime'>✓ Live</span> — "+esc(c.code)+" abar website e show hobe"); renderAll(); }); });
-  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-del]"), function(b){ b.addEventListener("click", function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-del"),10)]; askConfirm("Remove seller coupon "+c.code+"?", c.shop+" er coupon ta website theke permanently sore jabe.", function(){ sbDelete("coupons", "code", c.code); logActivity("Removed seller coupon " + c.code); sellerCoupons=sellerCoupons.filter(function(x){return x!==c;}); toast("🗑 Seller coupon removed — <b>"+esc(c.code)+"</b>"); renderAll(); }); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-approve]"), function(b){ b.addEventListener("click", async function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-approve"),10)]; if(!c) return; if (!sbReady()){ toast("⚠ Supabase connect hoy ni — reload kore abar chesta korun."); return; }
+    /* P1-8 (2026-11-26): verified write — sbUpdate-er .select() nai, tai
+       0-row write (RLS-blocked) dhora jay na; approve toast shudhu verify
+       howar pore. Age local flip + unconditional toast-e coupon live
+       dekhaleo reload-e Pending-e fire jeto. */
+    var r;
+    try { r = await sb.from("coupons").update({ status: "live" }).eq("code", c.code).select("id"); }
+    catch(e){ r = { error: e }; }
+    if (!r || r.error || !r.data || r.data.length !== 1){ if (r && r.error) sbSaveFailed("coupons", r.error); else toast("⚠ Approve save hoy ni — coupon ta live hoy ni, abar chesta korun."); return; }
+    c.status="live"; c.placement="Shop page banner · Product page · Checkout"; logActivity("Approved seller coupon " + c.code + " (" + c.shop + ") — live on website"); toast("<span class='lime'>✓ Seller coupon live</span> — "+esc(c.code)+" ekhon website e show hobe"); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-pause]"), function(b){ b.addEventListener("click", async function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-pause"),10)]; if(!c) return; if (!sbReady()){ toast("⚠ Supabase connect hoy ni — reload kore abar chesta korun."); return; }
+    /* P1-8 (2026-11-26): verified write — age local flip + unconditional
+       toast-e pause dekhaleo DB-te na gele reload-e live-e fire jeto. */
+    var r;
+    try { r = await sb.from("coupons").update({ status: "paused" }).eq("code", c.code).select("id"); }
+    catch(e){ r = { error: e }; }
+    if (!r || r.error || !r.data || r.data.length !== 1){ if (r && r.error) sbSaveFailed("coupons", r.error); else toast("⚠ Pause save hoy ni — coupon ta live-i ache, abar chesta korun."); return; }
+    c.status="paused"; logActivity("Paused seller coupon " + c.code + " (" + c.shop + ")"); toast("Seller coupon <b>"+esc(c.code)+"</b> paused — website theke sore geche"); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-live]"), function(b){ b.addEventListener("click", async function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-live"),10)]; if(!c) return; if (!sbReady()){ toast("⚠ Supabase connect hoy ni — reload kore abar chesta korun."); return; }
+    /* P1-8 (2026-11-26): verified write — age local flip + unconditional
+       toast-e live dekhaleo DB-te na gele reload-e paused-i thakto. */
+    var r;
+    try { r = await sb.from("coupons").update({ status: "live" }).eq("code", c.code).select("id"); }
+    catch(e){ r = { error: e }; }
+    if (!r || r.error || !r.data || r.data.length !== 1){ if (r && r.error) sbSaveFailed("coupons", r.error); else toast("⚠ Live save hoy ni — coupon ta paused-i ache, abar chesta korun."); return; }
+    c.status="live"; logActivity("Made seller coupon live again: " + c.code); toast("<span class='lime'>✓ Live</span> — "+esc(c.code)+" abar website e show hobe"); renderAll(); }); });
+  Array.prototype.forEach.call(el.querySelectorAll("[data-scoupon-del]"), function(b){ b.addEventListener("click", function(){ var c=sellerCoupons[parseInt(b.getAttribute("data-scoupon-del"),10)]; if(!c) return; askConfirm("Remove seller coupon "+c.code+"?", c.shop+" er coupon ta website theke permanently sore jabe.", async function(){
+    /* P1-8 (2026-11-26): verified delete — age list theke soriye + success
+       toast dile DB-te na mocheo coupon chole jeto; delete verify holei
+       list theke sorano hoy. */
+    if (!sbReady()){ toast("⚠ Supabase connect hoy ni — reload kore abar chesta korun."); return; }
+    var r;
+    try { r = await sb.from("coupons").delete().eq("code", c.code).select("id"); }
+    catch(e){ r = { error: e }; }
+    if (!r || r.error || !r.data || r.data.length !== 1){ if (r && r.error) sbSaveFailed("coupons", r.error); else toast("⚠ Delete save hoy ni — coupon ta roye geche, abar chesta korun."); return; }
+    logActivity("Removed seller coupon " + c.code); sellerCoupons=sellerCoupons.filter(function(x){return x!==c;}); toast("🗑 Seller coupon removed — <b>"+esc(c.code)+"</b>"); renderAll(); }); }); });
 }
 
 /* ==================== CAMPAIGNS / MEGA SALE ==================== */
