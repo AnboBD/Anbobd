@@ -1294,6 +1294,7 @@
      Rate hisabe Admin er category rate (adminCatRate) lage — Seller er
      nijer COMMISSION map (age Grocery 5 chilo) na, karon Admin ledger Grocery te 8% dhore. */
   function orderEarning(o){ if (o && typeof o._earning === "number" && o._earning) return o._earning; var tot=orderTotal(o); if (typeof o.commissionRate==="number") { return Math.round(tot - tot*o.commissionRate/100); } var e=0; (o.items||[]).forEach(function(it){ var p=prodById(it.pid || it.product_id || it.productId); if(p){ var gross=p.price*(it.qty||1); e += gross - gross*adminCatRate(p.cat)/100; } }); return Math.round(e); }
+  function orderCommPctLbl(o){ /* Commission label fix (2026-11-26): show the rate of the AMOUNT displayed, not the stored shop rate — derive it from the actual commission (subtotal − earning) over the subtotal, so the label can never disagree with the amount. Falls back to the stored rate / "category rate" when there is no subtotal. */ var t=orderTotal(o); if(t>0) return Math.round((t-orderEarning(o))/t*100)+"%"; return (typeof o.commissionRate==="number"?o.commissionRate+"%":"category rate"); }
   /* Wallet settlement — single source of truth, derived from the
      seller's OWN orders/payouts/returns (Admin derives it the same
      way). Delivered earning sits in pendingClearance for the payout hold
@@ -3098,7 +3099,7 @@
       + (Number(o.discount || 0) > 0 ? '<div class="kv"><span>Discount</span><b style="color:var(--red)">−' + fmt(o.discount) + '</b></div>' : '')
       + (Number(o.deliveryFee || 0) > 0 ? '<div class="kv"><span>Delivery fee</span><b>' + fmt(o.deliveryFee) + '</b></div>' : '')
       + '<div class="kv"><span>Order total</span><b>' + fmt(Math.max(0, orderTotal(o) - Number(o.discount || 0) + Number(o.deliveryFee || 0))) + '</b></div>'
-      + '<div class="kv"><span>AnboBD commission (' + (typeof o.commissionRate === "number" ? o.commissionRate + "%" : "category rate") + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
+      + '<div class="kv"><span>AnboBD commission (' + orderCommPctLbl(o) + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
       + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
       + (o.codCollect ? '<div class="kv"><span>COD collect</span><b>' + fmt(o.codCollect) + '</b></div>' : '')
       + '</div>'
@@ -3287,7 +3288,7 @@
       + (Number(o.discount || 0) > 0 ? '<div class="kv"><span>Discount</span><b style="color:var(--red)">−' + fmt(o.discount) + '</b></div>' : '')
       + (Number(o.deliveryFee || 0) > 0 ? '<div class="kv"><span>Delivery fee</span><b>' + fmt(o.deliveryFee) + '</b></div>' : '')
       + '<div class="kv"><span>Order total</span><b>' + fmt(Math.max(0, orderTotal(o) - Number(o.discount || 0) + Number(o.deliveryFee || 0))) + '</b></div>'
-      + '<div class="kv"><span>Commission (' + (typeof o.commissionRate==="number" ? o.commissionRate + "%" : "category rate") + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
+      + '<div class="kv"><span>Commission (' + orderCommPctLbl(o) + ')</span><b style="color:var(--red)">−' + fmt(orderTotal(o) - orderEarning(o)) + '</b></div>'
       + '<div class="kv"><span>Your earning</span><b style="color:var(--brand)">' + fmt(orderEarning(o)) + '</b></div>'
       + '<h3 style="font-size:.95rem;margin:1.1rem 0 .3rem">Tracking — Admin → Seller → Customer</h3><ul class="timeline">' + tl + '</ul>' + (o.status==="Cancelled" ? '' : '<button class="btn ghost" id="drawerLabel" type="button" style="width:100%;margin-bottom:.6rem">Print Shipping Label</button>')
       + '<button class="btn ghost" id="drawerInvoice" type="button" style="width:100%;margin-bottom:.6rem">Download / Print Invoice</button>'
