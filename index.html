@@ -3860,6 +3860,13 @@ function renderTracking(order){
   var _trEst = order.estimatedDelivery ? t("trEstLbl")+'<b>'+escHtml(order.estimatedDelivery)+'</b>' : '';
   var _trPay = (order.payment && order.payment.method) ? t("trPayLbl")+escHtml(anboPayMethodLabel(order.payment.method)) : '';
   var html = '<div class="sumbox" style="background:var(--surface2);border-radius:14px;padding:13px 15px;font-size:.92rem">'+t("trOrderLbl")+'<b>'+escHtml(order.id)+'</b> • '+escHtml(order.customer.district)+(order.deliverySlot && order.deliverySlot!=="anytime" ? t("trSlotLbl")+escHtml(anboSlotLabel(order.deliverySlot)) : '')+t("trTotalLbl")+'<b>'+fmt(order.amounts.total)+'</b>'+((_trEst||_trPay) ? '<br>'+_trEst+_trPay : '')+'</div>';
+  /* Track dialog-e items dekhao — age kono items section-i chilo na (full-row
+     / RPC — kono path-ei na), tai hunny ×1 @ ৳500 dekha jeto na. My Orders-er
+     (L5720) motoi format: • name × qty — lineTotal. */
+  var _trItems = (order.items || []).filter(function(it){ return it && !it.meta && it.name; });
+  if(_trItems.length){
+    html += '<div class="oitems" style="margin-top:10px">' + _trItems.map(function(it){ var _q = Number(it.qty)||1; var _lt = Number(it.lineTotal)||0; if(!_lt) _lt = _q * (Number(it.unitPrice)||0); return "• " + escHtml(it.name) + (it.variant ? " (" + escHtml(it.variant) + ")" : "") + " × " + _q + " — " + fmt(_lt); }).join("<br>") + '</div>';
+  }
   if(order.payment && order.payment.transactionId){
     /* Payment label keys off payment_status (anboPayStatus), NOT the order
        status — a Cancelled order must never read as "verified". */
@@ -4279,8 +4286,7 @@ document.getElementById("trackForm").addEventListener("submit", function(e){
        local array-te push kore diyechilo, tai bhul/no mobile-eo local hit
        hoto ar RPC kokhono dakai hoto na. Ekhon: phone type kora thakle seta
        order-er phone-er sathe (normalized) miltei hobe — nijer order holeo;
-       phone na dile sudhu ei session/account-er nijer order khulbe. */
-    var phoneOk = !!(normPhone && o.customer && anboNormPhone(o.customer.phone) === normPhone);
+       phone na dile sudhu ei session/account-er nijer order khulbe. */    var phoneOk = !!(normPhone && o.customer && anboNormPhone(o.customer.phone) === normPhone);
     if(phone && !phoneOk){ notFound(); return; }
     if(isOwnSessionOrder(o) || phoneOk){ renderTracking(o); return; }
     notFound(); return;
@@ -4523,15 +4529,13 @@ function anboMapCouponRow(r){
 }
 /* SEC-P2-8 (2026-11-26): anbo_track_order ekhon full orders row dey na —
    RETURNS TABLE(local_id, status, courier, tracking_id, items, district,
-   total). items-e sudhu {name, qty, unitPrice} thake (meta row nei, kono
-   internal field nei). Ei mapper RPC row-ke local order shape-e ane.
+   total, id, created_at, payment_method, payment_status, transaction_id,
+   sender_number). items-e sudhu {name, qty, unitPrice} thake (meta row nei,
+   kono internal field nei). Ei mapper RPC row-ke local order shape-e ane.
    phone = track form-e type kora (server-side verify kora) number — RPC
    row-te phone thake na, tai ekhane bosano hoy; na hole track submit-er
-   local lookup phoneOk=false diye not-found dekhabe. Ja RPC dey na
-   (payment method/status/TrxID, placed date, estimated delivery, order
-   UUID) ta khali/null thake — renderTracking oi line-gulo lukiye rakhe,
-   ar return/dispute/cancel-er jonno UUID dorkar (parent-ke RPC-te id
-   ferot dite hobe). */
+   local lookup phoneOk=false diye not-found dekhabe. Sudhu estimatedDelivery
+   RPC dey na — seta khali thake, renderTracking oi line lukiye rakhe. */
 function anboOrderFromTrackedRow(row, phone){
   var rawItems = Array.isArray(row.items) ? row.items : [];
   var items = rawItems.map(function(it){
@@ -5300,7 +5304,8 @@ ANBOBD_DB.findOrderForTracking = async function(rawId, phone){
        order kokhono pawa jabe na. Somadhan: SECURITY DEFINER RPC
        public.anbo_track_order(p_local_id text, p_phone text) — SEC-P2-8
        (2026-11-26) theke RETURNS TABLE(local_id, status, courier,
-       tracking_id, items, district, total); items-e sudhu {name, qty,
+       tracking_id, items, district, total, id, created_at, payment_method,
+       payment_status, transaction_id, sender_number); items-e sudhu {name, qty,
        unitPrice}. Server-side-e normalized customer_phone AND items-jsonb
        meta.localId miliye dey. RPC na thakle (404) ba row na pele ekhane
        chupchap not-found-e jabe — kono technical error na, onno kono
@@ -5324,11 +5329,15 @@ ANBOBD_DB.findOrderForTracking = async function(rawId, phone){
   return null;
 };
 ANBOBD_DB._adoptTrackedOrder = function(row, phone){
-  /* SEC-P2-8: RPC row-er notun shape (local_id ache, id column nei) hole
-     anboOrderFromTrackedRow diye map koro; full orders row hole ager moto
-     anboOrderFromRow. Dedup local_id diyeo milao — na hole eki order
-     dubar push hobe. */
-  if(row && row.local_id != null && row.id == null){
+  /* SEC-P2-8: RPC row-te local_id thakle (orders table-e local_id column
+     nei, tai eta-i RPC row-er chinno) anboOrderFromTrackedRow diye map
+     koro; full orders row hole ager moto anboOrderFromRow. Widened RPC
+     (2026-11-26) local_id + id (UUID) — dutoy ferot dey, tai sudhu
+     local_id dekhei chinbo; age "id == null" shorto chilo, seta widened
+     RPC-te kokhono milto na — tai full-row path-e giye order.id UUID
+     hoye jeto. Dedup local_id diyeo milao — na hole eki order dubar
+     push hobe. */
+  if(row && row.local_id != null){
     var ex2 = ANBOBD_STORE.orders.filter(function(o){ return String(o.id)===String(row.local_id); })[0];
     if(ex2) return ex2;
     var o2 = anboOrderFromTrackedRow(row, phone);
