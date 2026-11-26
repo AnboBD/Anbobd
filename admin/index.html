@@ -3321,7 +3321,19 @@ function renderProducts(){
    values; a failed DB write shows the real error and logs nothing. The modal
    is built dynamically (no new static HTML), so nothing else in the panel
    moves. */
+/* SEC-P2-4: client-side type + size gate before the upload starts (the bucket
+   policy is the server-side backstop). */
+var ANBO_IMG_MAX_BYTES = 5 * 1024 * 1024;
+function anboImageFileError(f){
+  if(!f) return "ফাইল বাছাই করা হয়নি।";
+  var okType = ["image/jpeg","image/png","image/webp","image/gif"].indexOf(f.type) > -1 || /\.(jpe?g|png|webp|gif)$/i.test(f.name || "");
+  if(!okType) return "শুধু ছবি ফাইল দিন (jpg/png/webp/gif) — 5 MB এর মধ্যে।";
+  if(f.size > ANBO_IMG_MAX_BYTES) return "ছবি 5 MB এর বেশি বড় — ছোট ছবি দিন।";
+  return "";
+}
 function sbUploadAdminImage(file){
+  var _imgErr = anboImageFileError(file);
+  if(_imgErr) return Promise.reject(new Error(_imgErr));
   if (!sbReady()) return Promise.reject(new Error("Live connection nei"));
   var clean = String(file.name || "image").replace(/[^A-Za-z0-9._-]/g, "_");
   var path = "admin/" + Date.now() + "_" + clean;
@@ -5161,6 +5173,9 @@ $("#loginForm").addEventListener("submit", function(e){
   e.preventDefault();
   var err = $("#loginErr");
   var em = $("#loginEmail").value.trim(), pw = $("#loginPass").value;
+  /* SEC-P2-2: 5 failed logins in 10 minutes locks sign-in for 60 seconds. */
+  var lk = anboRateLocked("admin-login");
+  if(lk){ err.textContent = "অনেকবার ভুল চেষ্টা হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"; err.classList.add("show"); return; }
   if (sbReady()){ sbSignIn(em, pw, err); return; }
   var member = findAccount(em);
   if (!member || member.status !== "active" || !member.passwordHash || member.passwordHash !== hashPw(pw || "")){
@@ -5169,20 +5184,37 @@ $("#loginForm").addEventListener("submit", function(e){
       : (member && member.status !== "active"
         ? "This account is "+member.status+" — the owner needs to activate it before you can sign in."
         : "Wrong email or password. Only accounts created by the owner can sign in.");
+    anboRateHit("admin-login");
     err.classList.add("show");
     return;
   }
   err.classList.remove("show");
+  anboRateReset("admin-login");
   activityLog.unshift({time:nowLabel()+", just now", who:member.name+" ("+member.role+")", what:"Signed in"});
   enterApp(member);
 });
 /* Sign-in on Supabase Auth: supabase.auth.signInWithPassword, then the caller's
    profile row decides the admin role. Data tables load right after. */
+/* SEC-P2-2 (2026-11-26): client-side rate limiting — 60s lockout after 5 failed
+   attempts in 10 minutes, plus 60s resend cooldowns. localStorage-backed so a
+   reload does not reset it. Only counts + timestamps are stored — never a
+   password. This is friction only; the server still decides every auth outcome. */
+var ANBO_RATE_MAX = 5, ANBO_RATE_WINDOW_MS = 10*60*1000, ANBO_RATE_LOCK_MS = 60*1000;
+function anboRateState(key){ try{ var st = JSON.parse(localStorage.getItem("anbobd-ratelimit-"+key)||"null"); return (st && typeof st==="object") ? st : {n:0, first:0, until:0}; }catch(e){ return {n:0, first:0, until:0}; } }
+function anboRateSave(key, st){ try{ localStorage.setItem("anbobd-ratelimit-"+key, JSON.stringify(st)); }catch(e){} }
+function anboRateLocked(key){ var st = anboRateState(key); if(st.until && Date.now() < st.until) return Math.ceil((st.until - Date.now())/1000); if(st.until){ st.until = 0; st.n = 0; st.first = 0; anboRateSave(key, st); } return 0; }
+function anboRateHit(key){ var st = anboRateState(key); var now = Date.now(); if(st.until && now < st.until) return; if(!st.first || now - st.first > ANBO_RATE_WINDOW_MS){ st.n = 0; st.first = now; } st.n++; if(st.n >= ANBO_RATE_MAX){ st.until = now + ANBO_RATE_LOCK_MS; } anboRateSave(key, st); }
+function anboRateReset(key){ try{ localStorage.removeItem("anbobd-ratelimit-"+key); }catch(e){} }
+function anboCooldownLeft(key, secs){ var t = 0; try{ t = +localStorage.getItem("anbobd-cooldown-"+key) || 0; }catch(e){} var left = Math.ceil((t + secs*1000 - Date.now())/1000); return left > 0 ? left : 0; }
+function anboCooldownSet(key){ try{ localStorage.setItem("anbobd-cooldown-"+key, String(Date.now())); }catch(e){} }
 async function sbSignIn(em, pw, err){
   err.classList.remove("show");
-  function fail(msg){ err.textContent = msg; err.classList.add("show"); }
+  function fail(msg){ anboRateHit("admin-login"); err.textContent = msg; err.classList.add("show"); }
   em = String(em || "").trim().toLowerCase();
   if (!em || !pw){ fail("Enter your email and password."); return; }
+  /* SEC-P2-2: lockout check (the submit handler checks first; this covers any other caller). */
+  var lk = anboRateLocked("admin-login");
+  if(lk){ fail("অনেকবার ভুল চেষ্টা হয়েছে — "+lk+" সেকেন্ড পরে আবার চেষ্টা করুন।"); return; }
   try{
     var res = await sb.auth.signInWithPassword({ email: em, password: pw });
     if (res.error || !res.data || !res.data.user){
@@ -5215,7 +5247,7 @@ async function sbSignIn(em, pw, err){
       var mfaOk = await sbPromptMfaCode();
       if (!mfaOk){ await sb.auth.signOut().catch(function(){}); fail("2FA code na dile login hobe na."); return; }
     }
-    await sbEnterWithUser(res.data.user, fail);
+    var _m = await sbEnterWithUser(res.data.user, fail); if(_m) anboRateReset("admin-login");
   }catch(e){
     sbWarn("auth.signIn", e);
     fail("Sign-in failed. Please try again — if it keeps failing, ask the owner to check your account.");
@@ -5327,11 +5359,14 @@ document.getElementById("forgotPwBtn").addEventListener("click", async function(
     return;
   }
   if (!em){ show("Type your account email above first, then tap the reset link."); return; }
+  /* SEC-P2-2: reset link resend cooldown — 60 seconds between sends. */
+  var cd = anboCooldownLeft("admin-forgot", 60);
+  if(cd){ show("আবার "+cd+" সেকেন্ড পরে রিসেট লিংক পাঠাতে পারবেন।"); return; }
   this.disabled = true;
   try{
     var r = await sb.auth.resetPasswordForEmail(em);
     if (r && r.error){ sbWarn("auth.resetPassword", r.error); show("The reset email could not be sent. Check the email address and try again."); }
-    else show("Reset link sent to " + em + " — open that email, set a new password, then sign in here with the new password. (If the inbox doesn't exist or mail isn't set up for that address, the link can't arrive — the account password then has to be reset from the account provider's dashboard.)");
+    else { anboCooldownSet("admin-forgot"); show("Reset link sent to " + em + " — open that email, set a new password, then sign in here with the new password. (If the inbox doesn't exist or mail isn't set up for that address, the link can't arrive — the account password then has to be reset from the account provider's dashboard.)"); }
   }catch(e){
     sbWarn("auth.resetPassword", e);
     show("The reset email could not be sent. Check the email address and try again.");
@@ -5388,6 +5423,11 @@ $("#logoutBtn").addEventListener("click", async function(){
      customer name, phone, address or order number in the DOM or in memory
      (previously the handler only hid #appView). */
   if (sbReady()){ try{ await sb.auth.signOut(); }catch(e){ sbWarn("auth", e); } }
+  /* SEC-P2-3: explicit sweep — signOut removes the Supabase session, but a
+     failed signOut (offline) must not leave the token behind; also clear the
+     per-account notification-read map. Platform settings cache (SETTINGS_KEY)
+     stays — it is not account data. */
+  try{ var i, k; for(i = localStorage.length - 1; i >= 0; i--){ k = localStorage.key(i); if(k && k.indexOf("sb-") === 0) localStorage.removeItem(k); } localStorage.removeItem(NOTIF_READ_KEY); }catch(e){}
   orders.length = 0; customers.length = 0; products.length = 0; sellers.length = 0; returnRequests.length = 0;
   Array.prototype.forEach.call(document.querySelectorAll(".view"), function(v){ v.innerHTML = ""; });
   var od = $("#orderDrawer"); if(od) od.innerHTML = "";
