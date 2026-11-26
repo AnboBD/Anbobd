@@ -4157,17 +4157,32 @@ function renderStaff(){
   Array.prototype.forEach.call(el.querySelectorAll("[data-staff-edit]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-edit")); })[0]; /* P1-23 (2026-11-26): staff manage — Super Admin only. */ if (!canDo("staff_manage")) return denyAction("staff_manage"); openStaffForm(s); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-staff-toggle]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-toggle")); })[0]; if(!s) return; /* P1-23 (2026-11-26): staff suspend/activate-o staff manage — Super Admin only. (Matrix-e toggle nam chilo na; staff status bodlano edit-i, tai eki gate — nahole staff_manage gate bypass hoye jeto.) */ if (!canDo("staff_manage")) return denyAction("staff_manage"); s.status = s.status==="suspended" ? "active" : "suspended"; s.last = s.status==="active" ? "Reactivated today" : s.last; sbSyncStaffRow(s); logActivity((s.status==="active"?"Activated":"Suspended")+" staff account "+s.name); toast("Staff <b>"+esc(s.name)+"</b> is now <span class='lime'>"+s.status+"</span>"+(s.status!=="active"?" — ekhon ar login korte parbe na":"")); renderAll(); }); });
   Array.prototype.forEach.call(el.querySelectorAll("[data-staff-del]"), function(b){ b.addEventListener("click", function(){ var s=staff.filter(function(x){ return String(x.id)===String(b.getAttribute("data-staff-del")); })[0]; if(!s) return; /* P1-23 (2026-11-26): staff manage — Super Admin only. */ if (!canDo("staff_manage")) return denyAction("staff_manage"); askConfirm("Remove "+s.name+"?", s.name+" will lose admin access immediately. Their past order actions stay in the history.", async function(){
-    /* P1-24 (2026-11-26): verified delete — the old code fired both deletes
-       fire-and-forget and toasted success no matter what, so an RLS/FK-blocked
-       delete left a half-removed account. Await both deletes (sbDelete already
-       surfaces failures via sbSaveFailed); only when BOTH succeed is the row
-       removed locally and success toasted. If the staff row is gone but the
-       profile delete fails, the entry stays in the list so Admin can retry. */
+    /* P1-24 (2026-11-26) + A4 fix (2026-11-26): verified delete.
+       RLS-blocked DELETE returns success with 0 rows and NO error, so
+       checking .error alone lies — live 2026-11-26 the handler toasted
+       "Staff removed" while the row came back after reload, because
+       profiles had no DELETE policy and its delete matched 0 rows.
+       Each delete therefore ends with .select("id") and the row must be
+       VERIFIED gone before success is claimed. A 0-row delete can also
+       mean "already gone" (retry after a partial delete, e.g. staff row
+       gone but profile row still there), so a 0-row result is confirmed
+       with a re-read instead of failing the retry outright. Only when
+       BOTH rows are confirmed gone is the row removed locally and
+       success toasted; anything else keeps the row in the list. */
+    async function deleteRowVerified(table, col, val){
+      var r;
+      try { r = await sb.from(table).delete().eq(col, val).select("id"); } catch (e){ return false; }
+      if (r && r.error) return false;
+      if (r && r.data && r.data.length === 1) return true;
+      /* 0 rows deleted — may already be gone; confirm absence. */
+      var chk;
+      try { chk = await sb.from(table).select("id").eq(col, val).limit(1); } catch (e2){ return false; }
+      return !!(chk && !chk.error && chk.data && chk.data.length === 0);
+    }
     if (s.supabaseId){
-      var rStaff = await sbDelete("staff", "user_id", s.supabaseId);
-      if (!rStaff || rStaff.error){ toast("⚠ Staff remove hoy ni — staff row delete korte pari ni. Abar chesta korun."); return; }
-      var rProf = await sbDelete("profiles", "id", s.supabaseId);
-      if (!rProf || rProf.error){ toast("⚠ Staff access sorano hoyeche, kintu profile delete hoy ni — profile row roye geche. Abar chesta korun."); return; }
+      if (!sbReady()){ toast("⚠ Staff remove hoy ni — database connection nei. Abar chesta korun."); return; }
+      if (!await deleteRowVerified("staff", "user_id", s.supabaseId)){ toast("⚠ Staff remove hoy ni — <b>"+esc(s.name)+"</b> er staff row delete korte pari ni. Abar chesta korun."); return; }
+      if (!await deleteRowVerified("profiles", "id", s.supabaseId)){ toast("⚠ Staff remove hoy ni — <b>"+esc(s.name)+"</b> er profile row delete korte pari ni. Abar chesta korun."); return; }
     }
     logActivity("Removed staff account " + s.name); staff = staff.filter(function(x){ return String(x.id)!==String(s.id); }); toast("🗑 Staff removed — <b>"+esc(s.name)+"</b>"); renderAll(); }); }); });
 }
