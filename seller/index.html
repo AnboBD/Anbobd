@@ -3425,7 +3425,7 @@
     var expD = (c.expiry && !isNaN(Date.parse(c.expiry))) ? new Date(Date.parse(c.expiry)) : null;
     var expVal = expD ? expD.getFullYear() + "-" + ("0" + (expD.getMonth() + 1)).slice(-2) + "-" + ("0" + expD.getDate()).slice(-2) : ""; /* local date parts: toISOString() is UTC, so it showed one day early in UTC+6 */
     openModal(
-      '<h2>Edit Coupon — ' + esc(c.code) + '</h2><div class="msub">Coupon code bodlano jabe na — baki sob bodlano jabe.' + (c.status === "Live" ? ' Live coupon edit korle seta abar Pending Approval e jabe — Admin approve korle tobei notun niyom live hobe.' : ' Save korle notun niyom website e live hobe.') + '</div>'
+      '<h2>Edit Coupon — ' + esc(c.code) + '</h2><div class="msub">Coupon code bodlano jabe na — baki sob bodlano jabe.' + (c.status === "Live" ? ' Live coupon edit korle seta abar Pending Approval e jabe — Admin approve korle tobei notun niyom live hobe.' : ' Save korle change ta Admin approval er jonno jabe — approve na hole website e ager niyom-i thakbe.') + '</div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Discount type</label><select id="cType" aria-label="Discount type"><option ' + (c.type === "Percent" ? "selected" : "") + '>Percent</option><option ' + (c.type === "Flat" ? "selected" : "") + '>Flat</option></select></div>'
       + '<div class="field"><label>Discount value</label><input id="cVal" aria-label="Discount value" type="number" min="1" value="' + c.value + '" /></div></div>'
       + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem"><div class="field"><label>Minimum order (৳)</label><input id="cMin" aria-label="Minimum order" type="number" min="0" value="' + c.min + '" /></div>'
